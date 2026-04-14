@@ -8,20 +8,23 @@ import { distributeLeadToNextBuyer } from '@/lib/distribute'
  * Meta Webhook verification (required for setup)
  */
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams
-  const mode = searchParams.get('hub.mode')
-  const token = searchParams.get('hub.verify_token')
-  const challenge = searchParams.get('hub.challenge')
+  // Parse URL manually to handle hub.* params that Next.js may encode
+  const url = new URL(request.url)
+  const mode = url.searchParams.get('hub.mode')
+  const token = url.searchParams.get('hub.verify_token')
+  const challenge = url.searchParams.get('hub.challenge')
 
   const expectedToken = process.env.META_VERIFY_TOKEN || 'leadflow_verify_2026'
 
+  console.log(`[Meta Webhook] GET: mode=${mode}, token=${token?.slice(0,10)}..., expected=${expectedToken.slice(0,10)}...`)
+
   if (mode === 'subscribe' && token === expectedToken) {
     console.log('[Meta Webhook] Verified successfully')
-    return new NextResponse(challenge, { status: 200 })
+    // Meta expects plain text response with the challenge
+    return new Response(challenge, { status: 200, headers: { 'Content-Type': 'text/plain' } })
   }
 
-  console.log(`[Meta Webhook] Verification failed: mode=${mode}, token=${token}, expected=${expectedToken}`)
-  return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  return new Response('Forbidden', { status: 403 })
 }
 
 /**
