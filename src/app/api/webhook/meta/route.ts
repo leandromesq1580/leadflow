@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const mode = url.searchParams.get('hub.mode')
   const token = url.searchParams.get('hub.verify_token')
   const challenge = url.searchParams.get('hub.challenge')
-  const expectedToken = process.env.META_VERIFY_TOKEN || 'leadflow_verify_2026'
+  const expectedToken = (process.env.META_VERIFY_TOKEN || 'leadflow_verify_2026').trim()
 
   // Always log for debugging
   console.log('[Meta Webhook GET]', { mode, tokenMatch: token === expectedToken, challenge: challenge?.slice(0, 20) })
