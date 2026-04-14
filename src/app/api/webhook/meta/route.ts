@@ -16,11 +16,14 @@ export async function GET(request: NextRequest) {
 
   const expectedToken = process.env.META_VERIFY_TOKEN || 'leadflow_verify_2026'
 
-  console.log(`[Meta Webhook] GET: mode=${mode}, token=${token?.slice(0,10)}..., expected=${expectedToken.slice(0,10)}...`)
+  // Debug: return all params so we can see what arrives
+  if (url.searchParams.get('debug') === '1') {
+    const allParams: Record<string, string> = {}
+    url.searchParams.forEach((v, k) => { allParams[k] = v })
+    return Response.json({ params: allParams, envToken: expectedToken.slice(0, 10), url: request.url.slice(0, 200) })
+  }
 
   if (mode === 'subscribe' && token === expectedToken) {
-    console.log('[Meta Webhook] Verified successfully')
-    // Meta expects plain text response with the challenge
     return new Response(challenge, { status: 200, headers: { 'Content-Type': 'text/plain' } })
   }
 
