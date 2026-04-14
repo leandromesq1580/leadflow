@@ -1,4 +1,5 @@
 import { createServerSupabase } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { redirect } from 'next/navigation'
 
@@ -8,14 +9,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   if (!user) redirect('/login')
 
-  const { data: buyer } = await supabase
+  // Use admin client to bypass RLS for reading buyer profile
+  const adminDb = createAdminClient()
+  const { data: buyer } = await adminDb
     .from('buyers')
     .select('name, is_admin')
     .eq('auth_user_id', user.id)
     .single()
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-slate-50">
       <Sidebar type="buyer" userName={buyer?.name || user.email || ''} />
       <main className="flex-1 p-6 overflow-auto">
         {children}

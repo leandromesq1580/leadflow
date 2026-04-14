@@ -1,4 +1,5 @@
 import { createServerSupabase } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { StatCard } from '@/components/ui/stat-card'
 import { Badge } from '@/components/ui/badge'
 import { timeAgo } from '@/lib/utils'
@@ -11,7 +12,8 @@ export default async function DashboardPage() {
 
   if (!user) redirect('/login')
 
-  const { data: buyer } = await supabase
+  const adminDb = createAdminClient()
+  const { data: buyer } = await adminDb
     .from('buyers')
     .select('id')
     .eq('auth_user_id', user.id)
@@ -34,7 +36,7 @@ export default async function DashboardPage() {
   let remaining = 0, totalPurchased = 0
 
   try {
-    const { count } = await supabase
+    const { count } = await adminDb
       .from('leads')
       .select('*', { count: 'exact', head: true })
       .eq('assigned_to', buyerId)
@@ -42,7 +44,7 @@ export default async function DashboardPage() {
   } catch {}
 
   try {
-    const { count } = await supabase
+    const { count } = await adminDb
       .from('leads')
       .select('*', { count: 'exact', head: true })
       .eq('assigned_to', buyerId)
@@ -51,7 +53,7 @@ export default async function DashboardPage() {
   } catch {}
 
   try {
-    const { count } = await supabase
+    const { count } = await adminDb
       .from('lead_activity')
       .select('*', { count: 'exact', head: true })
       .eq('buyer_id', buyerId)
@@ -60,7 +62,7 @@ export default async function DashboardPage() {
   } catch {}
 
   try {
-    const { data: credits } = await supabase
+    const { data: credits } = await adminDb
       .from('credits')
       .select('type, total_purchased, total_used')
       .eq('buyer_id', buyerId)
@@ -78,7 +80,7 @@ export default async function DashboardPage() {
   }> = []
 
   try {
-    const { data } = await supabase
+    const { data } = await adminDb
       .from('leads')
       .select('*')
       .eq('assigned_to', buyerId)
