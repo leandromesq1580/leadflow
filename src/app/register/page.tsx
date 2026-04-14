@@ -39,16 +39,17 @@ export default function RegisterPage() {
     }
 
     if (authData.user) {
-      const { error: buyerError } = await supabase.from('buyers').insert({
-        auth_user_id: authData.user.id,
-        email,
-        name,
-        phone,
+      // Use API route with service role to bypass RLS
+      await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          auth_user_id: authData.user.id,
+          email,
+          name,
+          phone,
+        }),
       })
-
-      if (buyerError) {
-        console.error('Failed to create buyer:', buyerError)
-      }
     }
 
     setSuccess(true)
