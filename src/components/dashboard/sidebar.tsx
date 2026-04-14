@@ -1,24 +1,23 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { cn } from '@/lib/utils'
+import { usePathname } from 'next/navigation'
 
 const buyerLinks = [
-  { href: '/dashboard', label: 'Visao Geral', icon: '📊' },
-  { href: '/dashboard/leads', label: 'Meus Leads', icon: '🎯' },
-  { href: '/dashboard/appointments', label: 'Appointments', icon: '📅' },
-  { href: '/dashboard/credits', label: 'Creditos', icon: '💳' },
-  { href: '/dashboard/settings', label: 'Configuracoes', icon: '⚙️' },
+  { href: '/dashboard', label: 'Visao Geral' },
+  { href: '/dashboard/leads', label: 'Meus Leads' },
+  { href: '/dashboard/appointments', label: 'Appointments' },
+  { href: '/dashboard/credits', label: 'Creditos' },
+  { href: '/dashboard/settings', label: 'Configuracoes' },
 ]
 
 const adminLinks = [
-  { href: '/admin', label: 'Dashboard', icon: '📊' },
-  { href: '/admin/buyers', label: 'Compradores', icon: '👥' },
-  { href: '/admin/leads', label: 'Todos os Leads', icon: '📋' },
-  { href: '/admin/appointments', label: 'Fila Appointments', icon: '📅' },
-  { href: '/admin/revenue', label: 'Receita', icon: '💰' },
-  { href: '/admin/settings', label: 'Configuracoes', icon: '⚙️' },
+  { href: '/admin', label: 'Dashboard' },
+  { href: '/admin/buyers', label: 'Compradores' },
+  { href: '/admin/leads', label: 'Todos os Leads' },
+  { href: '/admin/appointments', label: 'Fila Appointments' },
+  { href: '/admin/revenue', label: 'Receita' },
+  { href: '/admin/settings', label: 'Configuracoes' },
 ]
 
 interface SidebarProps {
@@ -28,7 +27,6 @@ interface SidebarProps {
 
 export function Sidebar({ type, userName }: SidebarProps) {
   const pathname = usePathname()
-  const router = useRouter()
   const links = type === 'admin' ? adminLinks : buyerLinks
 
   async function handleLogout() {
@@ -42,19 +40,19 @@ export function Sidebar({ type, userName }: SidebarProps) {
   }
 
   return (
-    <aside className="w-[260px] bg-slate-900 min-h-screen flex flex-col">
+    <aside className="w-[220px] bg-white border-r flex flex-col" style={{ borderColor: '#eaeaea' }}>
       {/* Logo */}
-      <div className="px-6 py-6">
-        <Link href="/" className="text-xl font-extrabold text-white tracking-tight">
-          Lead<span className="text-blue-400">Flow</span>
+      <div className="h-16 flex items-center px-5 border-b" style={{ borderColor: '#eaeaea' }}>
+        <Link href="/" className="text-[15px] font-bold" style={{ color: '#111' }}>
+          LeadFlow
         </Link>
         {type === 'admin' && (
-          <span className="ml-2 text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Admin</span>
+          <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: '#fee', color: '#c00' }}>ADMIN</span>
         )}
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-2 space-y-1">
+      <nav className="flex-1 py-3 px-2">
         {links.map((link) => {
           const isActive = pathname === link.href ||
             (link.href !== '/dashboard' && link.href !== '/admin' && pathname.startsWith(link.href))
@@ -63,14 +61,14 @@ export function Sidebar({ type, userName }: SidebarProps) {
             <Link
               key={link.href}
               href={link.href}
-              className={cn(
-                'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200',
-                isActive
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
-              )}
+              className="block px-3 py-2 rounded-md text-[13px] font-medium transition-colors mb-0.5"
+              style={{
+                color: isActive ? '#111' : '#666',
+                background: isActive ? '#fafafa' : 'transparent',
+              }}
+              onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = '#fafafa' }}
+              onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
             >
-              <span className="text-lg">{link.icon}</span>
               {link.label}
             </Link>
           )
@@ -78,21 +76,13 @@ export function Sidebar({ type, userName }: SidebarProps) {
       </nav>
 
       {/* User */}
-      <div className="px-4 py-5 border-t border-white/5">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-sm font-bold text-white shadow-lg">
-            {userName?.[0]?.toUpperCase() || 'U'}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-white truncate">{userName || 'Usuario'}</p>
-            <p className="text-xs text-slate-500">{type === 'admin' ? 'Administrador' : 'Comprador'}</p>
-          </div>
-        </div>
-        <button
-          onClick={handleLogout}
-          className="w-full text-left text-xs text-slate-500 hover:text-red-400 transition-colors px-1 py-1"
-        >
-          ← Sair da conta
+      <div className="px-4 py-4 border-t" style={{ borderColor: '#eaeaea' }}>
+        <p className="text-[13px] font-semibold truncate" style={{ color: '#111' }}>{userName || 'Usuario'}</p>
+        <p className="text-[11px] mt-0.5" style={{ color: '#999' }}>{type === 'admin' ? 'Admin' : 'Comprador'}</p>
+        <button onClick={handleLogout} className="text-[11px] mt-3 transition-colors" style={{ color: '#999' }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#c00'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#999'}>
+          Sair
         </button>
       </div>
     </aside>

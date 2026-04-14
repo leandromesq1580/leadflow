@@ -6,21 +6,15 @@ import { redirect } from 'next/navigation'
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
-
   if (!user) redirect('/login')
 
-  // Use admin client to bypass RLS for reading buyer profile
-  const adminDb = createAdminClient()
-  const { data: buyer } = await adminDb
-    .from('buyers')
-    .select('name, is_admin')
-    .eq('auth_user_id', user.id)
-    .single()
+  const db = createAdminClient()
+  const { data: buyer } = await db.from('buyers').select('name, is_admin').eq('auth_user_id', user.id).single()
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen" style={{ background: '#fafafa' }}>
       <Sidebar type="buyer" userName={buyer?.name || user.email || ''} />
-      <main className="flex-1 p-6 overflow-auto">
+      <main className="flex-1 p-8 overflow-auto">
         {children}
       </main>
     </div>
