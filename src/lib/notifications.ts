@@ -1,6 +1,12 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+let _resend: Resend | null = null
+function getResend(): Resend {
+  if (!_resend) {
+    _resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder')
+  }
+  return _resend
+}
 
 interface Buyer {
   name: string
@@ -21,7 +27,7 @@ interface Lead {
  */
 export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead) {
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: 'LeadFlow <leads@leadflow.com>',
       to: buyer.email,
       subject: `Novo Lead! ${lead.name} de ${lead.city}, ${lead.state}`,
@@ -79,7 +85,7 @@ export async function sendAppointmentNotificationEmail(
       minute: '2-digit',
     })
 
-    await resend.emails.send({
+    await getResend().emails.send({
       from: 'LeadFlow <leads@leadflow.com>',
       to: buyer.email,
       subject: `Appointment Agendado! ${lead.name} — ${formatted}`,
@@ -118,7 +124,7 @@ export async function sendAppointmentNotificationEmail(
  */
 export async function sendAdminAlert(message: string) {
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: 'LeadFlow System <system@leadflow.com>',
       to: process.env.ADMIN_EMAIL!,
       subject: `[LeadFlow Alert] ${message}`,
