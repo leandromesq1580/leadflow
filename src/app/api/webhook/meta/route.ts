@@ -13,11 +13,14 @@ export async function GET(request: NextRequest) {
   const token = searchParams.get('hub.verify_token')
   const challenge = searchParams.get('hub.challenge')
 
-  if (mode === 'subscribe' && token === process.env.META_VERIFY_TOKEN) {
+  const expectedToken = process.env.META_VERIFY_TOKEN || 'leadflow_verify_2026'
+
+  if (mode === 'subscribe' && token === expectedToken) {
     console.log('[Meta Webhook] Verified successfully')
     return new NextResponse(challenge, { status: 200 })
   }
 
+  console.log(`[Meta Webhook] Verification failed: mode=${mode}, token=${token}, expected=${expectedToken}`)
   return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 }
 
