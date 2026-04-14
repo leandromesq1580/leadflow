@@ -1,9 +1,24 @@
 import Stripe from 'stripe'
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-03-25.dahlia',
-  typescript: true,
-})
+// Lazy init — avoids build-time crash when STRIPE_SECRET_KEY is not set
+let _stripe: Stripe | null = null
+
+export function getStripe(): Stripe {
+  if (!_stripe) {
+    const key = process.env.STRIPE_SECRET_KEY
+    if (!key || key.includes('placeholder')) {
+      throw new Error('STRIPE_SECRET_KEY not configured')
+    }
+    _stripe = new Stripe(key, {
+      apiVersion: '2026-03-25.dahlia',
+      typescript: true,
+    })
+  }
+  return _stripe
+}
+
+// Alias for backward compat — use getStripe() in API routes
+export const stripe = null as unknown as Stripe
 
 // Product configs — prices in cents
 export const PRODUCTS = {

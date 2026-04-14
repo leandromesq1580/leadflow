@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe, PRODUCTS } from '@/lib/stripe'
+import { getStripe, PRODUCTS } from '@/lib/stripe'
 import { createServerSupabase } from '@/lib/supabase/server'
 
 /**
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Stripe Checkout Session
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       mode: 'payment',
       customer: buyer.stripe_customer_id || undefined,
       customer_email: !buyer.stripe_customer_id ? buyer.email : undefined,
