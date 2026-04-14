@@ -33,43 +33,45 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link href="/" className="text-3xl font-extrabold text-gray-900">
+        {/* Logo */}
+        <div className="text-center mb-10">
+          <Link href="/" className="inline-block text-3xl font-extrabold text-slate-900 tracking-tight">
             Lead<span className="text-blue-600">Flow</span>
           </Link>
-          <p className="text-gray-500 mt-2">Acesse sua conta</p>
+          <p className="text-slate-500 mt-3 text-base">Acesse sua conta</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        {/* Form Card */}
+        <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-bold text-slate-800 mb-2">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
                 required
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-base text-slate-900 font-medium placeholder:text-slate-400 placeholder:font-normal focus:bg-white transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Senha</label>
+              <label className="block text-sm font-bold text-slate-800 mb-2">Senha</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Sua senha"
                 required
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-base text-slate-900 font-medium placeholder:text-slate-400 placeholder:font-normal focus:bg-white transition-colors"
               />
             </div>
 
             {error && (
-              <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-xl">
+              <div className="bg-red-50 border-2 border-red-200 text-red-700 text-sm font-semibold px-4 py-3 rounded-xl">
                 {error}
               </div>
             )}
@@ -77,15 +79,15 @@ function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-base hover:bg-blue-700 transition-all disabled:opacity-50 shadow-lg shadow-blue-600/20 hover:shadow-xl hover:shadow-blue-600/30 hover:-translate-y-0.5 active:translate-y-0"
             >
               {loading ? 'Entrando...' : 'Entrar'}
             </button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-gray-500">
-            Nao tem conta?{' '}
-            <Link href="/register" className="text-blue-600 font-semibold hover:underline">
+          <div className="mt-8 text-center">
+            <span className="text-slate-500 text-base">Nao tem conta? </span>
+            <Link href="/register" className="text-blue-600 font-bold text-base hover:underline">
               Criar conta
             </Link>
           </div>
@@ -97,7 +99,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">Carregando...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-400 text-lg">Carregando...</div>}>
       <LoginForm />
     </Suspense>
   )
