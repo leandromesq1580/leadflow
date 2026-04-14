@@ -8,26 +8,39 @@ import { distributeLeadToNextBuyer } from '@/lib/distribute'
  * Meta Webhook verification (required for setup)
  */
 export async function GET(request: NextRequest) {
-  // Parse URL manually to handle hub.* params that Next.js may encode
   const url = new URL(request.url)
   const mode = url.searchParams.get('hub.mode')
   const token = url.searchParams.get('hub.verify_token')
   const challenge = url.searchParams.get('hub.challenge')
-
   const expectedToken = process.env.META_VERIFY_TOKEN || 'leadflow_verify_2026'
 
-  // Debug: return all params so we can see what arrives
-  if (url.searchParams.get('debug') === '1') {
-    const allParams: Record<string, string> = {}
-    url.searchParams.forEach((v, k) => { allParams[k] = v })
-    return Response.json({ params: allParams, envToken: expectedToken.slice(0, 10), url: request.url.slice(0, 200) })
-  }
+  // Always log for debugging
+  console.log('[Meta Webhook GET]', { mode, tokenMatch: token === expectedToken, challenge: challenge?.slice(0, 20) })
 
+  // Meta verification: return challenge as plain text
   if (mode === 'subscribe' && token === expectedToken) {
-    return new Response(challenge, { status: 200, headers: { 'Content-Type': 'text/plain' } })
+    return new Response(challenge || 'ok', { status: 200, headers: { 'Content-Type': 'text/plain' } })
   }
 
-  return new Response('Forbidden', { status: 403 })
+  // Debug endpoint
+  if (url.searchParams.has('debug')) {
+    const p: Record<string, string> = {}
+    url.searchParams.forEach((v, k) => { p[k] = v })
+    return Response.json({ params: p, tokenMatch: token === expectedToken })
+  }
+
+  // If we got hub params but they didn't match, show why
+  if (mode || token) {
+    return Response.json({
+      error: 'Verification failed',
+      received_mode: mode,
+      received_token: token?.slice(0, 10) + '...',
+      expected_token: expectedToken.slice(0, 10) + '...',
+      match: token === expectedToken,
+    }, { status: 403 })
+  }
+
+  return new Response('OK', { status: 200 })
 }
 
 /**
