@@ -28,8 +28,8 @@ function LoginForm() {
       return
     }
 
-    router.push(redirect)
-    router.refresh()
+    // Force full page reload to propagate auth cookies
+    window.location.href = redirect
   }
 
   return (

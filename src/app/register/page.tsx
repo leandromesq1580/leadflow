@@ -56,8 +56,8 @@ export default function RegisterPage() {
     setLoading(false)
 
     if (authData.session) {
-      router.push('/dashboard')
-      router.refresh()
+      window.location.href = '/dashboard'
+      return
     }
   }
 
