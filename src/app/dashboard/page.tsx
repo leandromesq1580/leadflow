@@ -134,9 +134,9 @@ export default async function DashboardPage() {
                   <p className="text-[12px]" style={{ color: '#94a3b8' }}>{lead.city}, {lead.state} · {lead.interest}</p>
                 </div>
                 <div className="hidden sm:block">
-                  <a href={`tel:${lead.phone}`} onClick={(e) => e.stopPropagation()} className="text-[13px] font-semibold" style={{ color: '#6366f1' }}>
+                  <span className="text-[13px] font-semibold" style={{ color: '#6366f1' }}>
                     {lead.phone}
-                  </a>
+                  </span>
                 </div>
                 <Badge status={lead.status} />
                 <span className="text-[12px] whitespace-nowrap" style={{ color: '#94a3b8' }}>{timeAgo(lead.created_at)}</span>
