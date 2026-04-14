@@ -6,26 +6,30 @@ import { redirect } from 'next/navigation'
 export const dynamic = 'force-dynamic'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  try {
-    const supabase = await createServerSupabase()
-    const { data: { user }, error } = await supabase.auth.getUser()
+  let shouldRedirect = false
 
-    if (error || !user) redirect('/login')
+  const supabase = await createServerSupabase()
+  const { data: { user }, error } = await supabase.auth.getUser()
 
-    const db = createAdminClient()
-    const { data: buyer } = await db.from('buyers').select('name, is_admin').eq('auth_user_id', user.id).single()
+  if (error || !user) shouldRedirect = true
 
-    if (!buyer?.is_admin) redirect('/dashboard')
+  if (shouldRedirect) redirect('/login')
 
-    return (
-      <div className="flex min-h-screen" style={{ background: '#f8f9fc' }}>
-        <Sidebar type="admin" userName={buyer?.name || user.email || ''} />
-        <main className="flex-1 p-8 overflow-auto">
-          {children}
-        </main>
-      </div>
-    )
-  } catch {
-    redirect('/login')
-  }
+  const db = createAdminClient()
+  const { data: buyer } = await db
+    .from('buyers')
+    .select('name, is_admin')
+    .eq('auth_user_id', user!.id)
+    .single()
+
+  if (!buyer?.is_admin) redirect('/dashboard')
+
+  return (
+    <div className="flex min-h-screen" style={{ background: '#f8f9fc' }}>
+      <Sidebar type="admin" userName={buyer?.name || user!.email || ''} />
+      <main className="flex-1 p-8 overflow-auto">
+        {children}
+      </main>
+    </div>
+  )
 }
