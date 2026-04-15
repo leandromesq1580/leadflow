@@ -18,8 +18,8 @@ async function sendWhatsApp(phone: string, message: string) {
 
   if (!evoKey) return
 
-  // Clean phone: remove spaces, dashes, parentheses, keep only digits and +
-  const cleanPhone = phone.replace(/[\s\-\(\)]/g, '').replace(/^\+/, '')
+  // If it's a group ID (contains @g.us), use as-is. Otherwise clean phone number.
+  const cleanPhone = phone.includes('@g.us') ? phone : phone.replace(/[\s\-\(\)]/g, '').replace(/^\+/, '')
 
   try {
     await fetch(`${evoUrl}/message/sendText/${instance}`, {
@@ -96,7 +96,21 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead) {
     console.error('[Notify] Failed to send email:', error)
   }
 
-  // WhatsApp notification
+  // WhatsApp notification to ADMIN GROUP
+  const adminGroupId = process.env.WHATSAPP_ADMIN_GROUP || '120363403347083071@g.us'
+  const adminMsg = `🔔 *NOVO LEAD RECEBIDO*
+
+📋 *${lead.name}*
+📞 ${lead.phone}
+📍 ${lead.state}
+💡 ${lead.interest}
+
+👤 Distribuido para: *${buyer.name}*
+📧 ${buyer.email}`
+
+  await sendWhatsApp(adminGroupId, adminMsg)
+
+  // WhatsApp notification to BUYER
   if (buyer.phone) {
     const whatsappMsg = `🎯 *Novo Lead LeadFlow!*
 
