@@ -135,7 +135,9 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead) {
 👤 Distribuido para: *${buyer.name}*
 📧 ${buyer.email}`
 
-  await sendWhatsAppViaJarvis(adminGroupId, adminMsg)
+  // Try group first, fallback to admin direct number
+  const adminPhone = process.env.ADMIN_WHATSAPP || '18632808023'
+  await sendWhatsApp(adminPhone, adminMsg)
 
   // WhatsApp notification to BUYER
   if (buyer.phone) {
