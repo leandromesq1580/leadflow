@@ -3,7 +3,7 @@ import { Resend } from 'resend'
 let _resend: Resend | null = null
 function getResend(): Resend {
   if (!_resend) {
-    _resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder')
+    _resend = new Resend((process.env.RESEND_API_KEY || '').trim())
   }
   return _resend
 }
@@ -28,7 +28,7 @@ interface Lead {
 export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead) {
   try {
     await getResend().emails.send({
-      from: 'LeadFlow <leads@leadflow.com>',
+      from: 'LeadFlow <onboarding@resend.dev>',
       to: buyer.email,
       subject: `Novo Lead! ${lead.name} de ${lead.city}, ${lead.state}`,
       html: `
@@ -86,7 +86,7 @@ export async function sendAppointmentNotificationEmail(
     })
 
     await getResend().emails.send({
-      from: 'LeadFlow <leads@leadflow.com>',
+      from: 'LeadFlow <onboarding@resend.dev>',
       to: buyer.email,
       subject: `Appointment Agendado! ${lead.name} — ${formatted}`,
       html: `
@@ -125,7 +125,7 @@ export async function sendAppointmentNotificationEmail(
 export async function sendAdminAlert(message: string) {
   try {
     await getResend().emails.send({
-      from: 'LeadFlow System <system@leadflow.com>',
+      from: 'LeadFlow System <onboarding@resend.dev>',
       to: process.env.ADMIN_EMAIL!,
       subject: `[LeadFlow Alert] ${message}`,
       html: `
