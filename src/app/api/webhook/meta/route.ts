@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { parseMetaWebhook } from '@/lib/meta'
 import { distributeLeadToNextBuyer } from '@/lib/distribute'
 
 /**
- * GET /api/webhook/meta
- * Meta Webhook verification (required for setup)
+ * GET /api/webhook/meta — Verification
  */
 export async function GET(request: NextRequest) {
   const url = new URL(request.url)
@@ -14,111 +12,146 @@ export async function GET(request: NextRequest) {
   const challenge = url.searchParams.get('hub.challenge')
   const expectedToken = (process.env.META_VERIFY_TOKEN || 'leadflow_verify_2026').trim()
 
-  // Always log for debugging
-  console.log('[Meta Webhook GET]', { mode, tokenMatch: token === expectedToken, challenge: challenge?.slice(0, 20) })
-
-  // Meta verification: return challenge as plain text
   if (mode === 'subscribe' && token === expectedToken) {
     return new Response(challenge || 'ok', { status: 200, headers: { 'Content-Type': 'text/plain' } })
   }
 
-  // Debug endpoint
   if (url.searchParams.has('debug')) {
     const p: Record<string, string> = {}
     url.searchParams.forEach((v, k) => { p[k] = v })
     return Response.json({ params: p, tokenMatch: token === expectedToken })
   }
 
-  // If we got hub params but they didn't match, show why
-  if (mode || token) {
-    return Response.json({
-      error: 'Verification failed',
-      received_mode: mode,
-      received_token: token?.slice(0, 10) + '...',
-      expected_token: expectedToken.slice(0, 10) + '...',
-      match: token === expectedToken,
-    }, { status: 403 })
-  }
-
   return new Response('OK', { status: 200 })
 }
 
 /**
- * POST /api/webhook/meta
- * Receive new leads from Meta Lead Ads
+ * Fetch lead data from Meta Graph API using leadgen_id
+ */
+async function fetchLeadFromMeta(leadgenId: string): Promise<{
+  name: string; email: string; phone: string; city: string; state: string; interest: string
+} | null> {
+  const pageToken = process.env.META_PAGE_TOKEN
+  if (!pageToken) {
+    console.error('[Meta] No META_PAGE_TOKEN configured')
+    return null
+  }
+
+  try {
+    const resp = await fetch(
+      `https://graph.facebook.com/v25.0/${leadgenId}?access_token=${pageToken}`
+    )
+    const data = await resp.json()
+
+    if (data.error) {
+      console.error('[Meta] Graph API error:', data.error.message)
+      return null
+    }
+
+    // Parse field_data from Graph API response
+    const fields = data.field_data || []
+    const getField = (name: string): string => {
+      const field = fields.find((f: { name: string; values: string[] }) =>
+        f.name.toLowerCase().includes(name.toLowerCase())
+      )
+      return field?.values?.[0] || ''
+    }
+
+    return {
+      name: getField('full_name') || getField('name') || 'Lead Meta',
+      email: getField('email') || '',
+      phone: getField('phone') || getField('phone_number') || '',
+      city: getField('city') || getField('cidade') || '',
+      state: getField('state') || getField('estado') || '',
+      interest: getField('interest') || getField('interesse') || 'Seguro de vida',
+    }
+  } catch (err) {
+    console.error('[Meta] Failed to fetch lead:', err)
+    return null
+  }
+}
+
+/**
+ * POST /api/webhook/meta — Receive lead events
+ * Meta sends: { entry: [{ changes: [{ value: { leadgen_id, page_id, form_id } }] }] }
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    console.log('[Meta Webhook] POST received:', JSON.stringify(body).slice(0, 500))
 
-    // Parse the Meta webhook payload
-    const leadData = parseMetaWebhook(body)
-    if (!leadData) {
-      console.error('[Meta Webhook] Failed to parse payload:', JSON.stringify(body).slice(0, 500))
-      return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
+    // Always respond 200 quickly (Meta requires fast response)
+    const entry = body.entry?.[0]
+    if (!entry) {
+      console.log('[Meta Webhook] No entry in payload')
+      return NextResponse.json({ status: 'ok' })
     }
 
-    console.log(`[Meta Webhook] New lead: ${leadData.name} (${leadData.phone})`)
+    const changes = entry.changes?.[0]
+    const value = changes?.value || {}
+    const leadgenId = value.leadgen_id || value.leadgen_id?.toString()
+
+    if (!leadgenId) {
+      console.log('[Meta Webhook] No leadgen_id found')
+      return NextResponse.json({ status: 'ok' })
+    }
+
+    console.log(`[Meta Webhook] Lead event: leadgen_id=${leadgenId}`)
 
     const supabase = createAdminClient()
 
-    // Check for duplicate (meta_lead_id)
-    if (leadData.meta_lead_id) {
-      const { data: existing } = await supabase
-        .from('leads')
-        .select('id')
-        .eq('meta_lead_id', leadData.meta_lead_id)
-        .single()
+    // Check for duplicate
+    const { data: existing } = await supabase
+      .from('leads')
+      .select('id')
+      .eq('meta_lead_id', leadgenId)
+      .single()
 
-      if (existing) {
-        console.log(`[Meta Webhook] Duplicate lead ${leadData.meta_lead_id}, skipping`)
-        return NextResponse.json({ status: 'duplicate' })
-      }
+    if (existing) {
+      console.log(`[Meta Webhook] Duplicate ${leadgenId}`)
+      return NextResponse.json({ status: 'duplicate' })
     }
 
-    // Determine product type based on distribution settings
-    // For now, default to 'lead' — admin can change in settings
-    const productType = 'lead'
+    // Fetch full lead data from Meta Graph API
+    const leadData = await fetchLeadFromMeta(leadgenId)
 
-    // Save lead to database
+    // Save lead
     const { data: newLead, error } = await supabase
       .from('leads')
       .insert({
-        meta_lead_id: leadData.meta_lead_id || null,
-        name: leadData.name,
-        email: leadData.email,
-        phone: leadData.phone,
-        city: leadData.city,
-        state: leadData.state,
-        interest: leadData.interest,
-        campaign_name: leadData.campaign_name,
-        form_name: leadData.form_name,
-        raw_data: leadData.raw_data,
+        meta_lead_id: leadgenId,
+        name: leadData?.name || 'Lead Meta',
+        email: leadData?.email || '',
+        phone: leadData?.phone || '',
+        city: leadData?.city || '',
+        state: leadData?.state || '',
+        interest: leadData?.interest || 'Seguro de vida',
+        campaign_name: 'Meta Lead Ads',
+        form_name: value.form_id?.toString() || '',
+        raw_data: body,
         type: 'hot',
         status: 'new',
-        product_type: productType,
+        product_type: 'lead',
       })
       .select()
       .single()
 
     if (error || !newLead) {
-      console.error('[Meta Webhook] Failed to save lead:', error)
-      return NextResponse.json({ error: 'Failed to save' }, { status: 500 })
+      console.error('[Meta Webhook] Save failed:', error)
+      return NextResponse.json({ error: 'Save failed' }, { status: 500 })
     }
 
-    // Auto-distribute if product_type is 'lead'
-    if (productType === 'lead') {
-      const assignedBuyer = await distributeLeadToNextBuyer(newLead)
-      if (assignedBuyer) {
-        console.log(`[Meta Webhook] Lead distributed to ${assignedBuyer.name}`)
-      } else {
-        console.log('[Meta Webhook] No eligible buyers — lead queued')
-      }
+    console.log(`[Meta Webhook] Lead saved: ${newLead.id} - ${leadData?.name}`)
+
+    // Distribute
+    const buyer = await distributeLeadToNextBuyer(newLead)
+    if (buyer) {
+      console.log(`[Meta Webhook] Distributed to ${buyer.name}`)
     }
 
     return NextResponse.json({ status: 'ok', lead_id: newLead.id })
   } catch (error) {
     console.error('[Meta Webhook] Error:', error)
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+    return NextResponse.json({ status: 'ok' }) // Always 200 for Meta
   }
 }
