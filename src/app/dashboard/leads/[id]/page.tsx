@@ -1,183 +1,113 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createServerSupabase } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { Badge } from '@/components/ui/badge'
-import { formatDate, statusLabel } from '@/lib/utils'
+import { formatDate, getInitials } from '@/lib/utils'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { redirect } from 'next/navigation'
 
-interface Activity {
-  id: string
-  action: string
-  notes: string
-  created_at: string
-  buyer: { name: string }
-}
+export const dynamic = 'force-dynamic'
 
-interface Lead {
-  id: string
-  name: string
-  email: string
-  phone: string
-  city: string
-  state: string
-  interest: string
-  type: string
-  status: string
-  campaign_name: string
-  created_at: string
-  activities: Activity[]
-}
+export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const supabase = await createServerSupabase()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
-export default function LeadDetailPage() {
-  const { id } = useParams<{ id: string }>()
-  const [lead, setLead] = useState<Lead | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [action, setAction] = useState('')
-  const [notes, setNotes] = useState('')
-  const [submitting, setSubmitting] = useState(false)
+  const db = createAdminClient()
 
-  useEffect(() => {
-    loadLead()
-  }, [id])
+  const { data: lead } = await db
+    .from('leads')
+    .select('*')
+    .eq('id', id)
+    .single()
 
-  async function loadLead() {
-    const res = await fetch(`/api/leads/${id}`)
-    const data = await res.json()
-    setLead(data.lead)
-    setLoading(false)
+  if (!lead) {
+    return (
+      <div className="max-w-3xl">
+        <Link href="/dashboard/leads" className="text-[13px] font-medium" style={{ color: '#6366f1' }}>← Voltar</Link>
+        <p className="text-center py-20" style={{ color: '#94a3b8' }}>Lead nao encontrado</p>
+      </div>
+    )
   }
 
-  async function addActivity() {
-    if (!action) return
-    setSubmitting(true)
-
-    await fetch(`/api/leads/${id}/activity`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, notes }),
-    })
-
-    setAction('')
-    setNotes('')
-    setSubmitting(false)
-    loadLead()
-  }
-
-  if (loading) return <div className="text-center py-12 text-gray-400">Carregando...</div>
-  if (!lead) return <div className="text-center py-12 text-gray-400">Lead nao encontrado</div>
+  const { data: activities } = await db
+    .from('lead_activity')
+    .select('*')
+    .eq('lead_id', id)
+    .order('created_at', { ascending: false })
 
   return (
     <div className="max-w-3xl">
-      <Link href="/dashboard/leads" className="text-sm text-gray-400 hover:text-gray-600 mb-4 inline-block">
+      <Link href="/dashboard/leads" className="text-[13px] font-medium mb-6 inline-block" style={{ color: '#6366f1' }}>
         ← Voltar para lista
       </Link>
 
+      {/* Header */}
       <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-extrabold text-gray-900">{lead.name}</h1>
-          <p className="text-sm text-gray-500">{lead.city}, {lead.state} — {lead.interest}</p>
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-[16px] font-bold text-white"
+            style={{ background: `hsl(${(lead.name.charCodeAt(0) * 37) % 360}, 65%, 55%)` }}>
+            {getInitials(lead.name)}
+          </div>
+          <div>
+            <h1 className="text-[22px] font-extrabold" style={{ color: '#1a1a2e' }}>{lead.name}</h1>
+            <p className="text-[14px]" style={{ color: '#64748b' }}>{lead.city}{lead.state ? `, ${lead.state}` : ''} — {lead.interest}</p>
+          </div>
         </div>
         <Badge status={lead.status} />
       </div>
 
-      {/* Lead Info */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-        <h2 className="font-bold text-gray-900 mb-4">Informacoes do Lead</h2>
+      {/* Contact Info */}
+      <div className="rounded-2xl p-6 mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+        <h2 className="text-[15px] font-bold mb-4" style={{ color: '#1a1a2e' }}>Informacoes do Lead</h2>
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-gray-50 rounded-xl p-4">
-            <p className="text-xs text-gray-400 font-medium">Telefone</p>
-            <a href={`tel:${lead.phone}`} className="text-base font-bold text-blue-600 hover:underline">
-              {lead.phone}
+          <div className="rounded-xl p-4" style={{ background: '#f8f9fc' }}>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Telefone</p>
+            <a href={`tel:${lead.phone}`} className="text-[15px] font-bold block mt-1" style={{ color: '#6366f1' }}>
+              {lead.phone || '—'}
             </a>
           </div>
-          <div className="bg-gray-50 rounded-xl p-4">
-            <p className="text-xs text-gray-400 font-medium">Email</p>
-            <a href={`mailto:${lead.email}`} className="text-sm font-semibold text-gray-900 hover:text-blue-600">
-              {lead.email}
-            </a>
+          <div className="rounded-xl p-4" style={{ background: '#f8f9fc' }}>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Email</p>
+            <p className="text-[14px] font-semibold mt-1" style={{ color: '#1a1a2e' }}>{lead.email || '—'}</p>
           </div>
-          <div className="bg-gray-50 rounded-xl p-4">
-            <p className="text-xs text-gray-400 font-medium">Interesse</p>
-            <p className="text-sm font-semibold text-gray-900">{lead.interest}</p>
+          <div className="rounded-xl p-4" style={{ background: '#f8f9fc' }}>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Interesse</p>
+            <p className="text-[14px] font-semibold mt-1" style={{ color: '#1a1a2e' }}>{lead.interest}</p>
           </div>
-          <div className="bg-gray-50 rounded-xl p-4">
-            <p className="text-xs text-gray-400 font-medium">Campanha</p>
-            <p className="text-sm font-semibold text-gray-900">{lead.campaign_name}</p>
+          <div className="rounded-xl p-4" style={{ background: '#f8f9fc' }}>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Campanha</p>
+            <p className="text-[14px] font-semibold mt-1" style={{ color: '#1a1a2e' }}>{lead.campaign_name || '—'}</p>
           </div>
-          <div className="bg-gray-50 rounded-xl p-4">
-            <p className="text-xs text-gray-400 font-medium">Tipo</p>
+          <div className="rounded-xl p-4" style={{ background: '#f8f9fc' }}>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Tipo</p>
             <Badge status={lead.type} />
           </div>
-          <div className="bg-gray-50 rounded-xl p-4">
-            <p className="text-xs text-gray-400 font-medium">Recebido em</p>
-            <p className="text-sm font-semibold text-gray-900">{formatDate(lead.created_at)}</p>
+          <div className="rounded-xl p-4" style={{ background: '#f8f9fc' }}>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Recebido em</p>
+            <p className="text-[14px] font-semibold mt-1" style={{ color: '#1a1a2e' }}>{formatDate(lead.created_at)}</p>
           </div>
         </div>
       </div>
 
-      {/* Add Activity */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-        <h2 className="font-bold text-gray-900 mb-4">Registrar Atividade</h2>
-        <div className="flex gap-3 mb-3 flex-wrap">
-          {[
-            { key: 'contacted', label: '📞 Contatei', color: 'bg-green-50 text-green-700 border-green-200' },
-            { key: 'no_answer', label: '📵 Sem resposta', color: 'bg-gray-50 text-gray-600 border-gray-200' },
-            { key: 'callback', label: '🔄 Retornar', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
-            { key: 'meeting_set', label: '📅 Reuniao marcada', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-            { key: 'converted', label: '✅ Convertido!', color: 'bg-green-50 text-green-700 border-green-200' },
-            { key: 'lost', label: '❌ Perdido', color: 'bg-red-50 text-red-700 border-red-200' },
-          ].map(opt => (
-            <button
-              key={opt.key}
-              onClick={() => setAction(opt.key)}
-              className={`px-3 py-2 rounded-lg text-sm font-semibold border transition-all ${
-                action === opt.key ? opt.color + ' ring-2 ring-offset-1 ring-blue-400' : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Adicionar notas (opcional)..."
-          rows={2}
-          className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-3 resize-none"
-        />
-        <button
-          onClick={addActivity}
-          disabled={!action || submitting}
-          className="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors disabled:opacity-40"
-        >
-          {submitting ? 'Salvando...' : 'Salvar Atividade'}
-        </button>
-      </div>
-
-      {/* Activity Timeline */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h2 className="font-bold text-gray-900 mb-4">Historico</h2>
-        {lead.activities && lead.activities.length > 0 ? (
+      {/* Activity History */}
+      <div className="rounded-2xl p-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+        <h2 className="text-[15px] font-bold mb-4" style={{ color: '#1a1a2e' }}>Historico</h2>
+        {activities && activities.length > 0 ? (
           <div className="space-y-4">
-            {lead.activities
-              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-              .map((act) => (
+            {activities.map((act: any) => (
               <div key={act.id} className="flex gap-3 items-start">
-                <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0" />
+                <div className="w-2 h-2 rounded-full mt-2 flex-shrink-0" style={{ background: '#6366f1' }} />
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">
-                    {statusLabel(act.action)}
-                  </p>
-                  {act.notes && <p className="text-sm text-gray-500 mt-0.5">{act.notes}</p>}
-                  <p className="text-xs text-gray-400 mt-1">{formatDate(act.created_at)}</p>
+                  <p className="text-[13px] font-semibold" style={{ color: '#1a1a2e' }}>{act.action}</p>
+                  {act.notes && <p className="text-[13px] mt-0.5" style={{ color: '#64748b' }}>{act.notes}</p>}
+                  <p className="text-[11px] mt-1" style={{ color: '#94a3b8' }}>{formatDate(act.created_at)}</p>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-sm text-gray-400">Nenhuma atividade registrada</p>
+          <p className="text-[13px]" style={{ color: '#94a3b8' }}>Nenhuma atividade registrada</p>
         )}
       </div>
     </div>
