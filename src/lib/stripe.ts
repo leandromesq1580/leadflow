@@ -9,10 +9,7 @@ export function getStripe(): Stripe {
     if (!key || key.includes('placeholder')) {
       throw new Error('STRIPE_SECRET_KEY not configured')
     }
-    _stripe = new Stripe(key, {
-      apiVersion: '2026-03-25.dahlia',
-      typescript: true,
-    })
+    _stripe = new Stripe(key)
   }
   return _stripe
 }
