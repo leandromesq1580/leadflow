@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { distributeColdLeads } from '@/lib/cold-leads'
 import Stripe from 'stripe'
 
 /**
@@ -75,6 +76,28 @@ export async function POST(request: NextRequest) {
 
       if (paymentError) {
         console.error('[Stripe Webhook] Failed to record payment:', paymentError)
+      }
+
+      // If cold_lead purchase, distribute cold leads immediately
+      if (productType === 'cold_lead') {
+        const distributed = await distributeColdLeads(buyerId, quantity)
+        console.log(`[Stripe Webhook] Distributed ${distributed} cold leads to ${buyerId}`)
+
+        // Update credits used count
+        if (distributed > 0) {
+          const { data: newCredit } = await supabase
+            .from('credits')
+            .select('id')
+            .eq('buyer_id', buyerId)
+            .eq('type', 'cold_lead')
+            .order('purchased_at', { ascending: false })
+            .limit(1)
+            .single()
+
+          if (newCredit) {
+            await supabase.from('credits').update({ total_used: distributed }).eq('id', newCredit.id)
+          }
+        }
       }
 
       // Update buyer's Stripe customer ID if not set

@@ -21,6 +21,7 @@ export default async function AdminDashboard() {
   const { count: pendingAppts } = await db.from('leads').select('*', { count: 'exact', head: true }).eq('product_type', 'appointment').eq('status', 'new')
   const { count: totalBuyers } = await db.from('buyers').select('*', { count: 'exact', head: true })
   const { count: activeBuyers } = await db.from('buyers').select('*', { count: 'exact', head: true }).eq('is_active', true)
+  const { count: coldLeads } = await db.from('leads').select('*', { count: 'exact', head: true }).eq('type', 'cold').eq('status', 'new')
   const { data: payments } = await db.from('payments').select('amount').eq('status', 'completed')
   const totalRevenue = payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0
 
@@ -52,6 +53,17 @@ export default async function AdminDashboard() {
         <StatCard label="Compradores" value={`${activeBuyers}/${totalBuyers}`} icon="👥" />
         <StatCard label="Appts Pendentes" value={pendingAppts || 0} icon="📅" accent={(pendingAppts || 0) > 0} />
       </div>
+
+      {/* Cold leads alert */}
+      {(coldLeads || 0) > 0 && (
+        <div className="rounded-2xl p-4 mb-4 flex items-center gap-3" style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+          <span className="text-xl">❄️</span>
+          <div>
+            <p className="text-[13px] font-bold" style={{ color: '#1e40af' }}>{coldLeads} leads frios disponiveis para venda</p>
+            <p className="text-[12px]" style={{ color: '#3b82f6' }}>Leads com 7+ dias sem distribuir. Podem ser vendidos como pacote frio.</p>
+          </div>
+        </div>
+      )}
 
       {/* Alerts */}
       {(unassignedLeads || 0) > 0 && (

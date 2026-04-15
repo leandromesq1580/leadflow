@@ -27,6 +27,14 @@ export const PRODUCTS = {
       { id: 'lead_50', quantity: 50, unitPriceCents: 1800, totalDisplay: 900, label: '50 Leads — $900', pricePerUnit: 18 },
     ],
   },
+  cold_lead: {
+    name: 'Lead Frio',
+    packages: [
+      { id: 'cold_25', quantity: 25, unitPriceCents: 500, totalDisplay: 125, label: '25 Leads Frios — $125', pricePerUnit: 5 },
+      { id: 'cold_50', quantity: 50, unitPriceCents: 400, totalDisplay: 200, label: '50 Leads Frios — $200', pricePerUnit: 4 },
+      { id: 'cold_100', quantity: 100, unitPriceCents: 300, totalDisplay: 300, label: '100 Leads Frios — $300', pricePerUnit: 3 },
+    ],
+  },
   appointment: {
     name: 'Appointment Agendado',
     packages: [

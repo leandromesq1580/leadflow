@@ -67,6 +67,20 @@ export default async function CreditsPage({
         ))}
       </div>
 
+      {/* Cold Lead Packages */}
+      <h2 className="text-[16px] font-bold mb-4" style={{ color: '#1a1a2e' }}>❄️ Leads Frios (7+ dias)</h2>
+      <p className="text-[13px] mb-4" style={{ color: '#94a3b8' }}>Leads que nao foram distribuidos a tempo. Preco reduzido, entrega imediata.</p>
+      <div className="grid grid-cols-3 gap-4 mb-8">
+        {PRODUCTS.cold_lead.packages.map((pkg) => (
+          <div key={pkg.id} className="rounded-2xl p-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+            <p className="text-[13px] font-medium" style={{ color: '#64748b' }}>{pkg.quantity} Leads Frios</p>
+            <p className="text-[32px] font-extrabold mt-1" style={{ color: '#1a1a2e' }}>${pkg.totalDisplay}</p>
+            <p className="text-[12px]" style={{ color: '#94a3b8' }}>${pkg.pricePerUnit}/lead</p>
+            <BuyButton packageId={pkg.id} color="#64748b" />
+          </div>
+        ))}
+      </div>
+
       {/* Appointment Packages */}
       <h2 className="text-[16px] font-bold mb-4" style={{ color: '#1a1a2e' }}>📅 Pacotes de Appointments</h2>
       <div className="grid grid-cols-2 gap-4 mb-8">
