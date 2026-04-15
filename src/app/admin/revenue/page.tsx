@@ -12,11 +12,16 @@ export default async function RevenuePage() {
 
   const db = createAdminClient()
   const { data: payments } = await db.from('payments').select('*, buyer:buyers(name, email)').order('created_at', { ascending: false })
+  const { data: allCredits } = await db.from('credits').select('type, total_purchased, total_used, price_per_unit')
 
   const completed = payments?.filter(p => p.status === 'completed') || []
   const totalRevenue = completed.reduce((s, p) => s + Number(p.amount), 0)
-  const totalLeadsSold = completed.filter(p => p.product_type === 'lead').reduce((s, p) => s + p.quantity, 0)
-  const totalApptsSold = completed.filter(p => p.product_type === 'appointment').reduce((s, p) => s + p.quantity, 0)
+
+  // Count from credits table (includes manual + Stripe)
+  const creds = allCredits || []
+  const totalLeadsSold = creds.filter(c => c.type === 'lead').reduce((s, c) => s + c.total_purchased, 0)
+  const totalApptsSold = creds.filter(c => c.type === 'appointment').reduce((s, c) => s + c.total_purchased, 0)
+  const totalLeadsUsed = creds.filter(c => c.type === 'lead').reduce((s, c) => s + c.total_used, 0)
 
   return (
     <div className="max-w-[1100px]">
@@ -24,8 +29,8 @@ export default async function RevenuePage() {
       <p className="text-[14px] mb-8" style={{ color: '#64748b' }}>Acompanhe seus ganhos</p>
 
       <div className="grid grid-cols-4 gap-4 mb-8">
-        <StatCard label="Receita Total" value={`$${totalRevenue.toLocaleString()}`} icon="💰" />
-        <StatCard label="Leads Vendidos" value={totalLeadsSold} icon="📋" />
+        <StatCard label="Receita Stripe" value={`$${totalRevenue.toLocaleString()}`} icon="💰" />
+        <StatCard label="Leads Vendidos" value={totalLeadsSold} icon="📋" change={`${totalLeadsUsed} entregues`} />
         <StatCard label="Appts Vendidos" value={totalApptsSold} icon="📅" />
         <StatCard label="Pagamentos" value={completed.length} icon="💳" />
       </div>

@@ -19,9 +19,7 @@ export default async function AdminDashboard() {
   const { count: assignedLeads } = await db.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'assigned')
   const { count: unassignedLeads } = await db.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'new')
   const { count: pendingAppts } = await db.from('leads').select('*', { count: 'exact', head: true }).eq('product_type', 'appointment').eq('status', 'new')
-  const { count: totalBuyers } = await db.from('buyers').select('*', { count: 'exact', head: true }).eq('is_admin', false)
-  const { count: activeBuyers } = await db.from('buyers').select('*', { count: 'exact', head: true }).eq('is_active', true).eq('is_admin', false)
-
+  const { count: totalBuyers } = await db.from('buyers').select('*', { count: 'exact', head: true })  const { count: activeBuyers } = await db.from('buyers').select('*', { count: 'exact', head: true }).eq('is_active', true)
   const { data: payments } = await db.from('payments').select('amount').eq('status', 'completed')
   const totalRevenue = payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0
 

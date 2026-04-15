@@ -14,10 +14,10 @@ export default async function BuyersPage() {
 
   const db = createAdminClient()
 
+  // Show ALL buyers including admin (admin is also a buyer/tester)
   const { data: buyers } = await db
     .from('buyers')
     .select('*')
-    .eq('is_admin', false)
     .order('created_at', { ascending: false })
 
   // Get states and credits for each buyer
