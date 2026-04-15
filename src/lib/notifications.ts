@@ -8,6 +8,37 @@ function getResend(): Resend {
   return _resend
 }
 
+/**
+ * Send WhatsApp notification via Evolution API
+ */
+async function sendWhatsApp(phone: string, message: string) {
+  const evoUrl = process.env.EVOLUTION_API_URL || 'http://31.220.97.186:8080'
+  const evoKey = process.env.EVOLUTION_API_KEY || ''
+  const instance = process.env.EVOLUTION_INSTANCE || 'leadflow'
+
+  if (!evoKey) return
+
+  // Clean phone: remove spaces, dashes, parentheses, keep only digits and +
+  const cleanPhone = phone.replace(/[\s\-\(\)]/g, '').replace(/^\+/, '')
+
+  try {
+    await fetch(`${evoUrl}/message/sendText/${instance}`, {
+      method: 'POST',
+      headers: {
+        'apikey': evoKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        number: cleanPhone,
+        text: message,
+      }),
+    })
+    console.log(`[WhatsApp] Sent to ${cleanPhone}`)
+  } catch (err) {
+    console.error('[WhatsApp] Failed:', err)
+  }
+}
+
 interface Buyer {
   name: string
   email: string
@@ -63,6 +94,21 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead) {
     console.log(`[Notify] Email sent to ${buyer.email} for lead ${lead.name}`)
   } catch (error) {
     console.error('[Notify] Failed to send email:', error)
+  }
+
+  // WhatsApp notification
+  if (buyer.phone) {
+    const whatsappMsg = `🎯 *Novo Lead LeadFlow!*
+
+📋 *${lead.name}*
+📞 ${lead.phone}
+📍 ${lead.state}
+💡 ${lead.interest}
+
+⚡ Ligue nos proximos 5 minutos!
+🔗 leadflow-five-tawny.vercel.app/dashboard`
+
+    await sendWhatsApp(buyer.phone, whatsappMsg)
   }
 }
 
