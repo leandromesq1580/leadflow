@@ -1,129 +1,55 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createServerSupabase } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { StatCard } from '@/components/ui/stat-card'
+import { redirect } from 'next/navigation'
 
-interface Payment {
-  id: string
-  amount: number
-  product_type: string
-  quantity: number
-  price_per_unit: number
-  status: string
-  created_at: string
-  buyer: { name: string; email: string }
-}
+export const dynamic = 'force-dynamic'
 
-export default function RevenuePage() {
-  const [payments, setPayments] = useState<Payment[]>([])
-  const [loading, setLoading] = useState(true)
+export default async function RevenuePage() {
+  const supabase = await createServerSupabase()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
-  useEffect(() => { loadPayments() }, [])
+  const db = createAdminClient()
+  const { data: payments } = await db.from('payments').select('*, buyer:buyers(name, email)').order('created_at', { ascending: false })
 
-  async function loadPayments() {
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('payments')
-      .select('*, buyer:buyers(name, email)')
-      .order('created_at', { ascending: false })
-
-    setPayments(data || [])
-    setLoading(false)
-  }
-
-  const completedPayments = payments.filter(p => p.status === 'completed')
-  const totalRevenue = completedPayments.reduce((s, p) => s + Number(p.amount), 0)
-  const totalLeadsSold = completedPayments.filter(p => p.product_type === 'lead').reduce((s, p) => s + p.quantity, 0)
-  const totalApptsSold = completedPayments.filter(p => p.product_type === 'appointment').reduce((s, p) => s + p.quantity, 0)
-
-  // Monthly breakdown
-  const monthly: Record<string, number> = {}
-  completedPayments.forEach(p => {
-    const month = new Date(p.created_at).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
-    monthly[month] = (monthly[month] || 0) + Number(p.amount)
-  })
+  const completed = payments?.filter(p => p.status === 'completed') || []
+  const totalRevenue = completed.reduce((s, p) => s + Number(p.amount), 0)
+  const totalLeadsSold = completed.filter(p => p.product_type === 'lead').reduce((s, p) => s + p.quantity, 0)
+  const totalApptsSold = completed.filter(p => p.product_type === 'appointment').reduce((s, p) => s + p.quantity, 0)
 
   return (
-    <div>
-      <h1 className="text-2xl font-extrabold text-gray-900 mb-1">Receita</h1>
-      <p className="text-sm text-gray-500 mb-6">Acompanhe seus ganhos</p>
+    <div className="max-w-[1100px]">
+      <h1 className="text-[24px] font-extrabold mb-1" style={{ color: '#1a1a2e' }}>Receita</h1>
+      <p className="text-[14px] mb-8" style={{ color: '#64748b' }}>Acompanhe seus ganhos</p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Receita Total" value={`$${totalRevenue.toLocaleString()}`} />
-        <StatCard label="Leads Vendidos" value={totalLeadsSold} />
-        <StatCard label="Appointments Vendidos" value={totalApptsSold} />
-        <StatCard label="Pagamentos" value={completedPayments.length} />
+      <div className="grid grid-cols-4 gap-4 mb-8">
+        <StatCard label="Receita Total" value={`$${totalRevenue.toLocaleString()}`} icon="💰" />
+        <StatCard label="Leads Vendidos" value={totalLeadsSold} icon="📋" />
+        <StatCard label="Appts Vendidos" value={totalApptsSold} icon="📅" />
+        <StatCard label="Pagamentos" value={completed.length} icon="💳" />
       </div>
 
-      {/* Monthly Chart */}
-      {Object.keys(monthly).length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-          <h2 className="font-bold text-gray-900 mb-4">Receita por Mes</h2>
-          <div className="flex items-end gap-3 h-48">
-            {Object.entries(monthly).reverse().map(([month, amount]) => {
-              const maxAmount = Math.max(...Object.values(monthly))
-              const height = (amount / maxAmount) * 100
-              return (
-                <div key={month} className="flex-1 flex flex-col items-center">
-                  <span className="text-xs font-bold text-gray-700 mb-1">${amount}</span>
-                  <div
-                    className="w-full bg-gradient-to-t from-blue-600 to-purple-500 rounded-t-lg"
-                    style={{ height: `${Math.max(height, 5)}%` }}
-                  />
-                  <span className="text-xs text-gray-400 mt-2">{month}</span>
+      <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+        <div className="px-6 py-4" style={{ borderBottom: '1px solid #e8ecf4' }}>
+          <h2 className="text-[15px] font-bold" style={{ color: '#1a1a2e' }}>Historico de Pagamentos</h2>
+        </div>
+        {completed.length > 0 ? (
+          <div>
+            {completed.map((p: any, i: number) => (
+              <div key={p.id} className="flex items-center gap-4 px-6 py-3" style={{ borderBottom: i < completed.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                <div className="flex-1">
+                  <p className="text-[13px] font-semibold" style={{ color: '#1a1a2e' }}>{p.buyer?.name}</p>
+                  <p className="text-[11px]" style={{ color: '#94a3b8' }}>{p.buyer?.email}</p>
                 </div>
-              )
-            })}
+                <span className="text-[12px] font-medium" style={{ color: '#64748b' }}>{p.quantity}x {p.product_type === 'lead' ? 'Lead' : 'Appt'}</span>
+                <span className="text-[14px] font-bold" style={{ color: '#10b981' }}>${Number(p.amount).toFixed(0)}</span>
+                <span className="text-[11px]" style={{ color: '#94a3b8' }}>{new Date(p.created_at).toLocaleDateString('pt-BR')}</span>
+              </div>
+            ))}
           </div>
-        </div>
-      )}
-
-      {/* Payments Table */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-50">
-          <h2 className="font-bold text-gray-900">Historico de Pagamentos</h2>
-        </div>
-        {loading ? (
-          <div className="text-center py-12 text-gray-400">Carregando...</div>
-        ) : payments.length > 0 ? (
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Comprador</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Produto</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Qtd</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Valor</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Status</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Data</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payments.map(p => (
-                <tr key={p.id} className="border-t border-gray-50 hover:bg-gray-50">
-                  <td className="px-5 py-3">
-                    <p className="text-sm font-semibold">{p.buyer?.name}</p>
-                    <p className="text-xs text-gray-400">{p.buyer?.email}</p>
-                  </td>
-                  <td className="px-5 py-3 text-sm capitalize">{p.product_type === 'lead' ? '📋 Lead' : '📅 Appt'}</td>
-                  <td className="px-5 py-3 text-sm">{p.quantity}x</td>
-                  <td className="px-5 py-3 text-sm font-bold text-green-600">${Number(p.amount).toFixed(0)}</td>
-                  <td className="px-5 py-3">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                      p.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {p.status === 'completed' ? 'Pago' : 'Pendente'}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-xs text-gray-400">
-                    {new Date(p.created_at).toLocaleDateString('pt-BR')}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         ) : (
-          <div className="text-center py-12 text-gray-400 text-sm">Nenhum pagamento ainda</div>
+          <div className="text-center py-12 text-[13px]" style={{ color: '#94a3b8' }}>Nenhum pagamento</div>
         )}
       </div>
     </div>

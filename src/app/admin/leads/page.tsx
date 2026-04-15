@@ -1,112 +1,60 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createServerSupabase } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { Badge } from '@/components/ui/badge'
-import { timeAgo } from '@/lib/utils'
+import { timeAgo, getInitials } from '@/lib/utils'
+import { redirect } from 'next/navigation'
 
-interface Lead {
-  id: string
-  name: string
-  email: string
-  phone: string
-  city: string
-  state: string
-  interest: string
-  type: string
-  status: string
-  product_type: string
-  campaign_name: string
-  created_at: string
-  buyer: { name: string } | null
-}
+export const dynamic = 'force-dynamic'
 
-export default function AdminLeadsPage() {
-  const [leads, setLeads] = useState<Lead[]>([])
-  const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('all')
+export default async function AdminLeadsPage() {
+  const supabase = await createServerSupabase()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
-  useEffect(() => { loadLeads() }, [])
+  const db = createAdminClient()
+  const { data: leads } = await db
+    .from('leads')
+    .select('*, buyer:buyers!assigned_to(name)')
+    .order('created_at', { ascending: false })
+    .limit(100)
 
-  async function loadLeads() {
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('leads')
-      .select('*, buyer:buyers!assigned_to(name)')
-      .order('created_at', { ascending: false })
-      .limit(100)
-
-    setLeads(data || [])
-    setLoading(false)
-  }
-
-  const filtered = leads.filter(l => {
-    if (filter === 'available') return l.status === 'new'
-    if (filter === 'sold') return l.status !== 'new'
-    return true
-  })
+  const allLeads = leads || []
+  const available = allLeads.filter(l => l.status === 'new').length
+  const sold = allLeads.filter(l => l.status !== 'new').length
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-extrabold text-gray-900">Todos os Leads</h1>
-          <p className="text-sm text-gray-500">{leads.length} leads no total</p>
-        </div>
+    <div className="max-w-[1100px]">
+      <div className="mb-6">
+        <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>Todos os Leads</h1>
+        <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>{allLeads.length} leads · {available} na fila · {sold} vendidos</p>
       </div>
 
-      <div className="flex gap-2 mb-4">
-        {[
-          { key: 'all', label: `Todos (${leads.length})` },
-          { key: 'available', label: `Disponiveis (${leads.filter(l => l.status === 'new').length})` },
-          { key: 'sold', label: `Vendidos (${leads.filter(l => l.status !== 'new').length})` },
-        ].map(tab => (
-          <button key={tab.key} onClick={() => setFilter(tab.key)}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${filter === tab.key ? 'bg-blue-100 text-blue-700' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        {loading ? (
-          <div className="text-center py-12 text-gray-400">Carregando...</div>
+      <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+        {allLeads.length > 0 ? (
+          <div>
+            {allLeads.map((lead: any, i: number) => (
+              <div key={lead.id} className="flex items-center gap-3 px-6 py-3" style={{ borderBottom: i < allLeads.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center text-[11px] font-bold text-white" style={{ background: `hsl(${(lead.name.charCodeAt(0) * 37) % 360}, 65%, 55%)` }}>
+                  {getInitials(lead.name)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold" style={{ color: '#1a1a2e' }}>{lead.name}</p>
+                  <p className="text-[11px]" style={{ color: '#94a3b8' }}>{lead.phone} · {lead.email}</p>
+                </div>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold" style={{ background: '#eef2ff', color: '#6366f1' }}>{lead.state || '?'}</span>
+                <span className="text-[12px] font-medium min-w-[100px]" style={{ color: '#64748b' }}>
+                  {lead.buyer?.name || <span style={{ color: '#f59e0b' }}>Na fila</span>}
+                </span>
+                <Badge status={lead.product_type === 'appointment' ? 'scheduled' : lead.status}>
+                  {lead.product_type === 'appointment' ? 'Appt' : undefined}
+                </Badge>
+                <Badge status={lead.status} />
+                <span className="text-[11px] whitespace-nowrap" style={{ color: '#94a3b8' }}>{timeAgo(lead.created_at)}</span>
+              </div>
+            ))}
+          </div>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Lead</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Cidade</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Campanha</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Produto</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Vendido para</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Status</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Data</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(lead => (
-                <tr key={lead.id} className="border-t border-gray-50 hover:bg-gray-50">
-                  <td className="px-5 py-3">
-                    <p className="font-semibold text-sm">{lead.name}</p>
-                    <p className="text-xs text-gray-400">{lead.phone}</p>
-                  </td>
-                  <td className="px-5 py-3 text-sm text-gray-600">{lead.city}, {lead.state}</td>
-                  <td className="px-5 py-3 text-xs text-gray-500">{lead.campaign_name}</td>
-                  <td className="px-5 py-3">
-                    <Badge status={lead.product_type === 'lead' ? 'cold' : 'hot'}>
-                      {lead.product_type === 'lead' ? 'Lead' : 'Appointment'}
-                    </Badge>
-                  </td>
-                  <td className="px-5 py-3 text-sm">
-                    {lead.buyer?.name || <span className="text-orange-500 font-semibold">Disponivel</span>}
-                  </td>
-                  <td className="px-5 py-3"><Badge status={lead.status} /></td>
-                  <td className="px-5 py-3 text-xs text-gray-400">{timeAgo(lead.created_at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="text-center py-16 text-[13px]" style={{ color: '#94a3b8' }}>Nenhum lead</div>
         )}
       </div>
     </div>
