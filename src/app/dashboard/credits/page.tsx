@@ -1,167 +1,117 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createServerSupabase } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { PRODUCTS } from '@/lib/stripe'
-import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { BuyButton } from './buy-button'
 
-interface Credit {
-  id: string
-  type: string
-  total_purchased: number
-  total_used: number
-  price_per_unit: number
-  purchased_at: string
-}
+export const dynamic = 'force-dynamic'
 
-export default function CreditsPage() {
-  const [credits, setCredits] = useState<Credit[]>([])
-  const [loading, setLoading] = useState(true)
-  const [purchasing, setPurchasing] = useState('')
-  const searchParams = useSearchParams()
-  const success = searchParams.get('success')
+export default async function CreditsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ success?: string; cancelled?: string }>
+}) {
+  const params = await searchParams
+  const supabase = await createServerSupabase()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
-  useEffect(() => {
-    loadCredits()
-  }, [])
+  const db = createAdminClient()
+  const { data: buyer } = await db.from('buyers').select('id').eq('auth_user_id', user.id).single()
+  if (!buyer) redirect('/login')
 
-  async function loadCredits() {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+  const { data: credits } = await db
+    .from('credits')
+    .select('*')
+    .eq('buyer_id', buyer.id)
+    .order('purchased_at', { ascending: false })
 
-    const { data: buyer } = await supabase
-      .from('buyers')
-      .select('id')
-      .eq('auth_user_id', user.id)
-      .single()
-
-    if (!buyer) return
-
-    const { data } = await supabase
-      .from('credits')
-      .select('*')
-      .eq('buyer_id', buyer.id)
-      .order('purchased_at', { ascending: false })
-
-    setCredits(data || [])
-    setLoading(false)
-  }
-
-  async function buyPackage(packageId: string) {
-    setPurchasing(packageId)
-
-    const res = await fetch('/api/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ packageId }),
-    })
-
-    const data = await res.json()
-
-    if (data.url) {
-      window.location.href = data.url
-    } else {
-      alert('Erro: ' + JSON.stringify(data))
-      setPurchasing('')
-    }
-  }
-
-  const totalRemaining = (type: string) => {
-    return credits
-      .filter(c => c.type === type)
-      .reduce((sum, c) => sum + (c.total_purchased - c.total_used), 0)
-  }
+  const allCredits = credits || []
+  const totalLeads = allCredits.filter(c => c.type === 'lead').reduce((s, c) => s + c.total_purchased - c.total_used, 0)
+  const totalAppts = allCredits.filter(c => c.type === 'appointment').reduce((s, c) => s + c.total_purchased - c.total_used, 0)
 
   return (
-    <div>
-      <h1 className="text-2xl font-extrabold text-gray-900 mb-1">Creditos</h1>
-      <p className="text-sm text-gray-500 mb-6">Compre creditos para receber leads ou appointments</p>
+    <div className="max-w-[1040px]">
+      <h1 className="text-[24px] font-extrabold mb-1" style={{ color: '#1a1a2e' }}>Creditos</h1>
+      <p className="text-[14px] mb-6" style={{ color: '#64748b' }}>Compre creditos para receber leads ou appointments</p>
 
-      {success && (
-        <div className="bg-green-50 text-green-700 px-5 py-4 rounded-2xl mb-6 font-medium text-sm border border-green-100">
+      {params.success && (
+        <div className="mb-6 px-5 py-4 rounded-xl text-[14px] font-semibold" style={{ background: '#ecfdf5', color: '#10b981', border: '1px solid #a7f3d0' }}>
           ✅ Pagamento confirmado! Seus creditos ja estao disponiveis.
         </div>
       )}
 
-      {/* Current Balance */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-500 font-medium">Leads Disponiveis</p>
-          <p className="text-3xl font-extrabold text-blue-600 mt-1">{totalRemaining('lead')}</p>
+      {/* Balance */}
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+          <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Leads Disponiveis</p>
+          <p className="text-[32px] font-extrabold mt-1" style={{ color: '#6366f1' }}>{totalLeads}</p>
         </div>
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-500 font-medium">Appointments Disponiveis</p>
-          <p className="text-3xl font-extrabold text-orange-600 mt-1">{totalRemaining('appointment')}</p>
+        <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+          <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Appointments Disponiveis</p>
+          <p className="text-[32px] font-extrabold mt-1" style={{ color: '#f59e0b' }}>{totalAppts}</p>
         </div>
       </div>
 
       {/* Lead Packages */}
-      <h2 className="text-lg font-bold text-gray-900 mb-4">📋 Pacotes de Leads Exclusivos</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <h2 className="text-[16px] font-bold mb-4" style={{ color: '#1a1a2e' }}>📋 Pacotes de Leads Exclusivos</h2>
+      <div className="grid grid-cols-3 gap-4 mb-8">
         {PRODUCTS.lead.packages.map((pkg) => (
-          <div key={pkg.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all">
-            <p className="text-sm text-gray-500 font-medium">{pkg.quantity} Leads</p>
-            <p className="text-3xl font-extrabold text-gray-900 mt-1">${pkg.totalDisplay}</p>
-            <p className="text-xs text-gray-400 mt-1">${pkg.pricePerUnit}/lead</p>
-            <button
-              onClick={() => buyPackage(pkg.id)}
-              disabled={purchasing === pkg.id}
-              className="w-full mt-4 bg-blue-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors disabled:opacity-50"
-            >
-              {purchasing === pkg.id ? 'Redirecionando...' : 'Comprar'}
-            </button>
+          <div key={pkg.id} className="rounded-2xl p-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+            <p className="text-[13px] font-medium" style={{ color: '#64748b' }}>{pkg.quantity} Leads</p>
+            <p className="text-[32px] font-extrabold mt-1" style={{ color: '#1a1a2e' }}>${pkg.totalDisplay}</p>
+            <p className="text-[12px]" style={{ color: '#94a3b8' }}>${pkg.pricePerUnit}/lead</p>
+            <BuyButton packageId={pkg.id} color="#6366f1" />
           </div>
         ))}
       </div>
 
       {/* Appointment Packages */}
-      <h2 className="text-lg font-bold text-gray-900 mb-4">📅 Pacotes de Appointments</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+      <h2 className="text-[16px] font-bold mb-4" style={{ color: '#1a1a2e' }}>📅 Pacotes de Appointments</h2>
+      <div className="grid grid-cols-2 gap-4 mb-8">
         {PRODUCTS.appointment.packages.map((pkg) => (
-          <div key={pkg.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:border-orange-300 hover:shadow-md transition-all">
-            <p className="text-sm text-gray-500 font-medium">{pkg.quantity} Appointments</p>
-            <p className="text-3xl font-extrabold text-gray-900 mt-1">${pkg.totalDisplay}</p>
-            <p className="text-xs text-gray-400 mt-1">${pkg.pricePerUnit}/appointment</p>
-            <button
-              onClick={() => buyPackage(pkg.id)}
-              disabled={purchasing === pkg.id}
-              className="w-full mt-4 bg-orange-500 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-orange-600 transition-colors disabled:opacity-50"
-            >
-              {purchasing === pkg.id ? 'Redirecionando...' : 'Comprar'}
-            </button>
+          <div key={pkg.id} className="rounded-2xl p-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+            <p className="text-[13px] font-medium" style={{ color: '#64748b' }}>{pkg.quantity} Appointments</p>
+            <p className="text-[32px] font-extrabold mt-1" style={{ color: '#1a1a2e' }}>${pkg.totalDisplay}</p>
+            <p className="text-[12px]" style={{ color: '#94a3b8' }}>${pkg.pricePerUnit}/appointment</p>
+            <BuyButton packageId={pkg.id} color="#f59e0b" />
           </div>
         ))}
       </div>
 
       {/* Purchase History */}
-      <h2 className="text-lg font-bold text-gray-900 mb-4">Historico de Compras</h2>
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        {credits.length > 0 ? (
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Tipo</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Quantidade</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Usado</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Restante</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Data</th>
-              </tr>
-            </thead>
-            <tbody>
-              {credits.map(c => (
-                <tr key={c.id} className="border-t border-gray-50">
-                  <td className="px-5 py-3 text-sm font-semibold capitalize">{c.type === 'lead' ? '📋 Lead' : '📅 Appointment'}</td>
-                  <td className="px-5 py-3 text-sm text-gray-600">{c.total_purchased}</td>
-                  <td className="px-5 py-3 text-sm text-gray-600">{c.total_used}</td>
-                  <td className="px-5 py-3 text-sm font-bold text-green-600">{c.total_purchased - c.total_used}</td>
-                  <td className="px-5 py-3 text-xs text-gray-400">{new Date(c.purchased_at).toLocaleDateString('pt-BR')}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <h2 className="text-[16px] font-bold mb-4" style={{ color: '#1a1a2e' }}>Historico de Compras</h2>
+      <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+        {allCredits.length > 0 ? (
+          <div>
+            {allCredits.map((c, i) => (
+              <div key={c.id} className="flex items-center gap-4 px-6 py-4" style={{ borderBottom: i < allCredits.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                <span className="text-[20px]">{c.type === 'lead' ? '📋' : '📅'}</span>
+                <div className="flex-1">
+                  <p className="text-[14px] font-semibold" style={{ color: '#1a1a2e' }}>
+                    {c.total_purchased} {c.type === 'lead' ? 'Leads' : 'Appointments'}
+                  </p>
+                  <p className="text-[12px]" style={{ color: '#94a3b8' }}>
+                    ${Number(c.price_per_unit).toFixed(0)}/{c.type === 'lead' ? 'lead' : 'appt'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[13px] font-bold" style={{ color: '#10b981' }}>
+                    {c.total_purchased - c.total_used} restante{c.total_purchased - c.total_used !== 1 ? 's' : ''}
+                  </p>
+                  <p className="text-[11px]" style={{ color: '#94a3b8' }}>
+                    {c.total_used} usado{c.total_used !== 1 ? 's' : ''}
+                  </p>
+                </div>
+                <span className="text-[11px]" style={{ color: '#94a3b8' }}>
+                  {new Date(c.purchased_at).toLocaleDateString('pt-BR')}
+                </span>
+              </div>
+            ))}
+          </div>
         ) : (
-          <div className="text-center py-12 text-gray-400 text-sm">Nenhuma compra ainda</div>
+          <div className="text-center py-12 text-[13px]" style={{ color: '#94a3b8' }}>Nenhuma compra ainda</div>
         )}
       </div>
     </div>
