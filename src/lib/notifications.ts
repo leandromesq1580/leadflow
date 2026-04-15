@@ -9,30 +9,29 @@ function getResend(): Resend {
 }
 
 /**
- * Send WhatsApp notification via Evolution API (leadflow instance - 17867442126)
+ * Send WhatsApp notification via wa-bridge (whatsapp-web.js).
+ * Supports both direct (phone number) and groups (JID@g.us).
  */
 async function sendWhatsApp(phone: string, message: string) {
-  const evoUrl = process.env.EVOLUTION_API_URL || 'http://31.220.97.186:8080'
-  const evoKey = (process.env.EVOLUTION_API_KEY || 'jarvis-evo-key-2026').trim()
-  const instance = process.env.EVOLUTION_INSTANCE || 'leadflow'
+  const bridgeUrl = (process.env.WA_BRIDGE_URL || 'http://31.220.97.186:3457').replace(/\/$/, '')
+  const bridgeKey = (process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026').trim()
 
-  if (!evoKey) return
+  if (!bridgeKey) return
 
-  const cleanPhone = phone.includes('@g.us') ? phone : phone.replace(/[\s\-\(\)]/g, '').replace(/^\+/, '')
+  const cleanNumber = phone.includes('@g.us')
+    ? phone
+    : phone.replace(/[\s\-\(\)]/g, '').replace(/^\+/, '')
 
   try {
-    const res = await fetch(`${evoUrl}/message/sendText/${instance}`, {
+    const res = await fetch(`${bridgeUrl}/send`, {
       method: 'POST',
       headers: {
-        'apikey': evoKey,
+        'apikey': bridgeKey,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        number: cleanPhone,
-        textMessage: { text: message },
-      }),
+      body: JSON.stringify({ number: cleanNumber, message }),
     })
-    console.log(`[WhatsApp] Sent to ${cleanPhone} — status ${res.status}`)
+    console.log(`[WhatsApp] ${cleanNumber} — ${res.status}`)
   } catch (err) {
     console.error('[WhatsApp] Failed:', err)
   }
