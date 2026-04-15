@@ -30,7 +30,7 @@ async function sendWhatsApp(phone: string, message: string) {
       },
       body: JSON.stringify({
         number: cleanPhone,
-        text: message,
+        textMessage: { text: message },
       }),
     })
     console.log(`[WhatsApp] Sent to ${cleanPhone}`)
