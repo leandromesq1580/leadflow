@@ -19,12 +19,13 @@ export default async function AdminDashboard() {
   const { count: assignedLeads } = await db.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'assigned')
   const { count: unassignedLeads } = await db.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'new')
   const { count: pendingAppts } = await db.from('leads').select('*', { count: 'exact', head: true }).eq('product_type', 'appointment').eq('status', 'new')
-  const { count: totalBuyers } = await db.from('buyers').select('*', { count: 'exact', head: true })  const { count: activeBuyers } = await db.from('buyers').select('*', { count: 'exact', head: true }).eq('is_active', true)
+  const { count: totalBuyers } = await db.from('buyers').select('*', { count: 'exact', head: true })
+  const { count: activeBuyers } = await db.from('buyers').select('*', { count: 'exact', head: true }).eq('is_active', true)
   const { data: payments } = await db.from('payments').select('amount').eq('status', 'completed')
   const totalRevenue = payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0
 
   const { data: recentLeads } = await db.from('leads').select('*, buyer:buyers!assigned_to(name)').order('created_at', { ascending: false }).limit(8)
-  const { data: buyers } = await db.from('buyers').select('*').eq('is_admin', false).order('created_at', { ascending: false }).limit(5)
+  const { data: buyers } = await db.from('buyers').select('*').order('created_at', { ascending: false }).limit(5)
 
   return (
     <div className="max-w-[1100px]">
