@@ -39,6 +39,33 @@ async function sendWhatsApp(phone: string, message: string) {
   }
 }
 
+/**
+ * Send WhatsApp via Jarvis instance (for admin group notifications)
+ */
+async function sendWhatsAppViaJarvis(number: string, message: string) {
+  const evoUrl = process.env.EVOLUTION_API_URL || 'http://31.220.97.186:8080'
+  const jarvisKey = process.env.EVOLUTION_JARVIS_KEY || ''
+
+  if (!jarvisKey) return
+
+  try {
+    await fetch(`${evoUrl}/message/sendText/jarvis`, {
+      method: 'POST',
+      headers: {
+        'apikey': jarvisKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        number,
+        textMessage: { text: message },
+      }),
+    })
+    console.log(`[WhatsApp Jarvis] Sent to group ${number}`)
+  } catch (err) {
+    console.error('[WhatsApp Jarvis] Failed:', err)
+  }
+}
+
 interface Buyer {
   name: string
   email: string
@@ -96,7 +123,7 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead) {
     console.error('[Notify] Failed to send email:', error)
   }
 
-  // WhatsApp notification to ADMIN GROUP
+  // WhatsApp notification to ADMIN GROUP (via jarvis instance - already in group)
   const adminGroupId = process.env.WHATSAPP_ADMIN_GROUP || '120363403347083071@g.us'
   const adminMsg = `🔔 *NOVO LEAD RECEBIDO*
 
@@ -108,7 +135,7 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead) {
 👤 Distribuido para: *${buyer.name}*
 📧 ${buyer.email}`
 
-  await sendWhatsApp(adminGroupId, adminMsg)
+  await sendWhatsAppViaJarvis(adminGroupId, adminMsg)
 
   // WhatsApp notification to BUYER
   if (buyer.phone) {
