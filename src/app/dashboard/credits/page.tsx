@@ -62,7 +62,7 @@ export default function CreditsPage() {
     if (data.url) {
       window.location.href = data.url
     } else {
-      alert('Erro ao criar checkout. Tente novamente.')
+      alert('Erro: ' + JSON.stringify(data))
       setPurchasing('')
     }
   }
