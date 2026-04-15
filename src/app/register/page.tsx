@@ -45,7 +45,7 @@ export default function RegisterPage() {
       const ref = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace('https://', '').split('.')[0]
       const cookieValue = btoa(JSON.stringify({ access_token: authData.session.access_token, refresh_token: authData.session.refresh_token, token_type: 'bearer' }))
       document.cookie = `sb-${ref}-auth-token=${cookieValue}; path=/; max-age=86400; SameSite=Lax`
-      window.location.href = '/dashboard'
+      window.location.href = '/onboarding'
     }
   }
 
