@@ -46,14 +46,14 @@ export default async function DashboardPage() {
   const firstName = buyer.name?.split(' ')[0] || ''
 
   return (
-    <div className="max-w-[1040px]">
+    <div className="max-w-[1040px] mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-3">
         <div>
-          <h1 className="text-[26px] font-extrabold tracking-tight" style={{ color: '#1a1a2e' }}>
+          <h1 className="text-[22px] sm:text-[26px] font-extrabold tracking-tight" style={{ color: '#1a1a2e' }}>
             Bom dia, {firstName} 👋
           </h1>
-          <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>
+          <p className="text-[13px] sm:text-[14px] mt-1" style={{ color: '#64748b' }}>
             Acompanhe seus leads, creditos e conversoes.
           </p>
         </div>
@@ -97,7 +97,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <StatCard label="Total de Leads" value={totalLeads} icon="👥" />
         <StatCard label="Aguardando Contato" value={newLeads} icon="📞" accent={newLeads > 0} change={newLeads > 0 ? 'Ligar agora!' : undefined} trend="up" />
         <StatCard label="Convertidos" value={converted} icon="🏆" change={totalLeads > 0 ? `${Math.round((converted / totalLeads) * 100)}% taxa` : undefined} trend="up" />
