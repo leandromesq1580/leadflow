@@ -95,7 +95,7 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead) {
     console.error('[Notify] Failed to send email:', error)
   }
 
-  // WhatsApp notification to ADMIN GROUP (via jarvis instance - already in group)
+  // WhatsApp notification to ADMIN GROUP "Atendimento EUA"
   const adminGroupId = process.env.WHATSAPP_ADMIN_GROUP || '120363403347083071@g.us'
   const adminMsg = `🔔 *NOVO LEAD RECEBIDO*
 
@@ -107,9 +107,10 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead) {
 👤 Distribuido para: *${buyer.name}*
 📧 ${buyer.email}`
 
-  // Try group first, fallback to admin direct number
+  // Send to group (primary) + admin direct (backup)
+  await sendWhatsApp(adminGroupId, adminMsg)
   const adminPhone = process.env.ADMIN_WHATSAPP || '18632808023'
-  await sendWhatsApp(adminPhone, adminMsg)
+  if (adminPhone) await sendWhatsApp(adminPhone, adminMsg)
 
   // WhatsApp notification to BUYER
   if (buyer.phone) {
