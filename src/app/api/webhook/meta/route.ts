@@ -115,17 +115,32 @@ export async function POST(request: NextRequest) {
     // Fetch full lead data from Meta Graph API
     const leadData = await fetchLeadFromMeta(leadgenId)
 
+    // Fallback: parse field_data from webhook body (for tests or when Graph API fails)
+    const fieldData = value.field_data as Array<{ name: string; values: string[] }> | undefined
+    const getField = (name: string): string => {
+      if (!fieldData) return ''
+      const field = fieldData.find(f => f.name.toLowerCase().includes(name.toLowerCase()))
+      return field?.values?.[0] || ''
+    }
+
+    const finalName = leadData?.name || getField('full_name') || getField('name') || 'Lead Meta'
+    const finalEmail = leadData?.email || getField('email') || ''
+    const finalPhone = leadData?.phone || getField('phone') || getField('phone_number') || ''
+    const finalCity = leadData?.city || getField('city') || ''
+    const finalState = leadData?.state || getField('state') || ''
+    const finalInterest = leadData?.interest || getField('interest') || 'Seguro de vida'
+
     // Save lead
     const { data: newLead, error } = await supabase
       .from('leads')
       .insert({
         meta_lead_id: leadgenId,
-        name: leadData?.name || 'Lead Meta',
-        email: leadData?.email || '',
-        phone: leadData?.phone || '',
-        city: leadData?.city || '',
-        state: leadData?.state || '',
-        interest: leadData?.interest || 'Seguro de vida',
+        name: finalName,
+        email: finalEmail,
+        phone: finalPhone,
+        city: finalCity,
+        state: finalState,
+        interest: finalInterest,
         campaign_name: 'Meta Lead Ads',
         form_name: value.form_id?.toString() || '',
         raw_data: body,
