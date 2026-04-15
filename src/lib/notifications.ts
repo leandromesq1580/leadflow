@@ -30,7 +30,7 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead) {
     await getResend().emails.send({
       from: 'LeadFlow <onboarding@resend.dev>',
       to: buyer.email,
-      subject: `Novo Lead! ${lead.name} de ${lead.city}, ${lead.state}`,
+      subject: `Novo Lead! ${lead.name} — ${lead.state}`,
       html: `
         <div style="font-family:sans-serif;max-width:500px;margin:0 auto;">
           <div style="background:#1a56db;color:#fff;padding:20px;border-radius:12px 12px 0 0;">
@@ -42,7 +42,7 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead) {
             <div style="background:#fff;padding:16px;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:16px;">
               <p style="margin:4px 0;"><strong>Nome:</strong> ${lead.name}</p>
               <p style="margin:4px 0;"><strong>Telefone:</strong> <a href="tel:${lead.phone}" style="color:#1a56db;font-weight:700;">${lead.phone}</a></p>
-              <p style="margin:4px 0;"><strong>Cidade:</strong> ${lead.city}, ${lead.state}</p>
+              <p style="margin:4px 0;"><strong>Estado:</strong> ${lead.state}</p>
               <p style="margin:4px 0;"><strong>Interesse:</strong> ${lead.interest}</p>
             </div>
 
