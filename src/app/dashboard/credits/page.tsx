@@ -102,7 +102,7 @@ export default function CreditsPage() {
         {PRODUCTS.lead.packages.map((pkg) => (
           <div key={pkg.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all">
             <p className="text-sm text-gray-500 font-medium">{pkg.quantity} Leads</p>
-            <p className="text-3xl font-extrabold text-gray-900 mt-1">${(pkg.price / 100).toFixed(0)}</p>
+            <p className="text-3xl font-extrabold text-gray-900 mt-1">${pkg.totalDisplay}</p>
             <p className="text-xs text-gray-400 mt-1">${pkg.pricePerUnit}/lead</p>
             <button
               onClick={() => buyPackage(pkg.id)}
@@ -121,7 +121,7 @@ export default function CreditsPage() {
         {PRODUCTS.appointment.packages.map((pkg) => (
           <div key={pkg.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:border-orange-300 hover:shadow-md transition-all">
             <p className="text-sm text-gray-500 font-medium">{pkg.quantity} Appointments</p>
-            <p className="text-3xl font-extrabold text-gray-900 mt-1">${(pkg.price / 100).toFixed(0)}</p>
+            <p className="text-3xl font-extrabold text-gray-900 mt-1">${pkg.totalDisplay}</p>
             <p className="text-xs text-gray-400 mt-1">${pkg.pricePerUnit}/appointment</p>
             <button
               onClick={() => buyPackage(pkg.id)}

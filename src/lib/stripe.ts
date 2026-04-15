@@ -20,21 +20,21 @@ export function getStripe(): Stripe {
 // Alias for backward compat — use getStripe() in API routes
 export const stripe = null as unknown as Stripe
 
-// Product configs — prices in cents
+// Product configs — unitPriceCents is per-unit in cents for Stripe
 export const PRODUCTS = {
   lead: {
     name: 'Lead Exclusivo',
     packages: [
-      { id: 'lead_10', quantity: 10, price: 2200, label: '10 Leads — $220', pricePerUnit: 22 },
-      { id: 'lead_25', quantity: 25, price: 5000, label: '25 Leads — $500 (economize $50)', pricePerUnit: 20 },
-      { id: 'lead_50', quantity: 50, price: 9000, label: '50 Leads — $900 (economize $200)', pricePerUnit: 18 },
+      { id: 'lead_10', quantity: 10, unitPriceCents: 2200, totalDisplay: 220, label: '10 Leads — $220', pricePerUnit: 22 },
+      { id: 'lead_25', quantity: 25, unitPriceCents: 2000, totalDisplay: 500, label: '25 Leads — $500', pricePerUnit: 20 },
+      { id: 'lead_50', quantity: 50, unitPriceCents: 1800, totalDisplay: 900, label: '50 Leads — $900', pricePerUnit: 18 },
     ],
   },
   appointment: {
     name: 'Appointment Agendado',
     packages: [
-      { id: 'appt_10', quantity: 10, price: 3800, label: '10 Appointments — $380', pricePerUnit: 38 },
-      { id: 'appt_25', quantity: 25, price: 8750, label: '25 Appointments — $875 (economize $75)', pricePerUnit: 35 },
+      { id: 'appt_10', quantity: 10, unitPriceCents: 3800, totalDisplay: 380, label: '10 Appointments — $380', pricePerUnit: 38 },
+      { id: 'appt_25', quantity: 25, unitPriceCents: 3500, totalDisplay: 875, label: '25 Appointments — $875', pricePerUnit: 35 },
     ],
   },
 } as const
