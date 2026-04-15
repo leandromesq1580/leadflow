@@ -86,10 +86,8 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
       .eq('id', selectedBuyer.credit_id)
   }
 
-  // Notify buyer
-  if (selectedBuyer.notification_email) {
-    await sendLeadNotificationEmail(selectedBuyer, lead)
-  }
+  // Notify buyer (always — function sends email + WhatsApp to buyer/admin/group)
+  await sendLeadNotificationEmail(selectedBuyer, lead)
 
   console.log(`[Distribute] Lead ${lead.id} (${lead.state}) → ${selectedBuyer.name} (remaining: ${selectedBuyer.remaining - 1})`)
 
