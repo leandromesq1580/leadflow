@@ -9,18 +9,19 @@ function getResend(): Resend {
 }
 
 /**
- * Send WhatsApp notification via Evolution API (jarvis instance - stable)
+ * Send WhatsApp notification via Evolution API (leadflow instance - 17867442126)
  */
 async function sendWhatsApp(phone: string, message: string) {
   const evoUrl = process.env.EVOLUTION_API_URL || 'http://31.220.97.186:8080'
-  const evoKey = (process.env.EVOLUTION_JARVIS_KEY || 'jarvis-evo-key-2026').trim()
+  const evoKey = (process.env.EVOLUTION_API_KEY || 'jarvis-evo-key-2026').trim()
+  const instance = process.env.EVOLUTION_INSTANCE || 'leadflow'
 
   if (!evoKey) return
 
   const cleanPhone = phone.includes('@g.us') ? phone : phone.replace(/[\s\-\(\)]/g, '').replace(/^\+/, '')
 
   try {
-    await fetch(`${evoUrl}/message/sendText/jarvis`, {
+    const res = await fetch(`${evoUrl}/message/sendText/${instance}`, {
       method: 'POST',
       headers: {
         'apikey': evoKey,
@@ -31,36 +32,9 @@ async function sendWhatsApp(phone: string, message: string) {
         textMessage: { text: message },
       }),
     })
-    console.log(`[WhatsApp] Sent to ${cleanPhone}`)
+    console.log(`[WhatsApp] Sent to ${cleanPhone} — status ${res.status}`)
   } catch (err) {
     console.error('[WhatsApp] Failed:', err)
-  }
-}
-
-/**
- * Send WhatsApp via Jarvis instance (for admin group notifications)
- */
-async function sendWhatsAppViaJarvis(number: string, message: string) {
-  const evoUrl = process.env.EVOLUTION_API_URL || 'http://31.220.97.186:8080'
-  const jarvisKey = process.env.EVOLUTION_JARVIS_KEY || ''
-
-  if (!jarvisKey) return
-
-  try {
-    await fetch(`${evoUrl}/message/sendText/jarvis`, {
-      method: 'POST',
-      headers: {
-        'apikey': jarvisKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        number,
-        textMessage: { text: message },
-      }),
-    })
-    console.log(`[WhatsApp Jarvis] Sent to group ${number}`)
-  } catch (err) {
-    console.error('[WhatsApp Jarvis] Failed:', err)
   }
 }
 
