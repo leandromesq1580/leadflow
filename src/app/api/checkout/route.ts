@@ -70,8 +70,8 @@ export async function POST(request: NextRequest) {
         price_per_unit: String(selectedPackage.pricePerUnit),
         package_id: selectedPackage.id,
       },
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://leadflow-five-tawny.vercel.app'}/dashboard/credits?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://leadflow-five-tawny.vercel.app'}/dashboard/credits?cancelled=true`,
+      success_url: 'https://leadflow-five-tawny.vercel.app/dashboard/credits?success=true',
+      cancel_url: 'https://leadflow-five-tawny.vercel.app/dashboard/credits?cancelled=true',
     })
 
     return NextResponse.json({ url: session.url })
