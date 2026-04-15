@@ -2,6 +2,7 @@ import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Badge } from '@/components/ui/badge'
 import { getInitials } from '@/lib/utils'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
@@ -34,11 +35,16 @@ export default async function AdminLeadsPage() {
 
   return (
     <div className="max-w-[1100px]">
-      <div className="mb-6">
-        <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>Todos os Leads</h1>
-        <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>
-          {allLeads.length} leads · {sold} vendidos · {hot} quentes na fila · {cold} frios
-        </p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>Todos os Leads</h1>
+          <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>
+            {allLeads.length} leads · {sold} vendidos · {hot} quentes na fila · {cold} frios
+          </p>
+        </div>
+        <Link href="/admin/import" className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-white" style={{ background: '#6366f1' }}>
+          📥 Importar do Google Sheets
+        </Link>
       </div>
 
       {/* Header row */}
