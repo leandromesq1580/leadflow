@@ -9,20 +9,18 @@ function getResend(): Resend {
 }
 
 /**
- * Send WhatsApp notification via Evolution API
+ * Send WhatsApp notification via Evolution API (jarvis instance - stable)
  */
 async function sendWhatsApp(phone: string, message: string) {
   const evoUrl = process.env.EVOLUTION_API_URL || 'http://31.220.97.186:8080'
-  const evoKey = process.env.EVOLUTION_API_KEY || ''
-  const instance = process.env.EVOLUTION_INSTANCE || 'leadflow'
+  const evoKey = (process.env.EVOLUTION_JARVIS_KEY || 'jarvis-evo-key-2026').trim()
 
   if (!evoKey) return
 
-  // If it's a group ID (contains @g.us), use as-is. Otherwise clean phone number.
   const cleanPhone = phone.includes('@g.us') ? phone : phone.replace(/[\s\-\(\)]/g, '').replace(/^\+/, '')
 
   try {
-    await fetch(`${evoUrl}/message/sendText/${instance}`, {
+    await fetch(`${evoUrl}/message/sendText/jarvis`, {
       method: 'POST',
       headers: {
         'apikey': evoKey,
