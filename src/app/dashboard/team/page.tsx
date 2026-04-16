@@ -23,6 +23,10 @@ export default function TeamPage() {
   const [newEmail, setNewEmail] = useState('')
   const [newPhone, setNewPhone] = useState('')
   const [saving, setSaving] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editEmail, setEditEmail] = useState('')
+  const [editPhone, setEditPhone] = useState('')
   const [authUserId, setAuthUserId] = useState('')
 
   useEffect(() => {
@@ -75,6 +79,26 @@ export default function TeamPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_active: !active }),
     })
+    loadData(authUserId)
+  }
+
+  function startEdit(m: Member) {
+    setEditingId(m.id)
+    setEditName(m.name)
+    setEditEmail(m.email || '')
+    setEditPhone(m.phone || '')
+  }
+
+  async function saveEdit() {
+    if (!editingId || !editName.trim()) return
+    setSaving(true)
+    await fetch(`/api/team/members/${editingId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: editName, email: editEmail || null, phone: editPhone || null }),
+    })
+    setEditingId(null)
+    setSaving(false)
     loadData(authUserId)
   }
 
@@ -189,37 +213,68 @@ export default function TeamPage() {
       ) : (
         <div className="space-y-3">
           {members.map(m => (
-            <div key={m.id} className="rounded-xl p-4 flex items-center gap-4"
-              style={{ background: '#fff', border: '1px solid #e8ecf4', opacity: m.is_active ? 1 : 0.5 }}>
-              <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-[14px] font-bold"
-                style={{ background: m.is_active ? '#6366f1' : '#94a3b8' }}>
-                {m.name.charAt(0).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[14px] font-bold truncate" style={{ color: '#1a1a2e' }}>{m.name}</p>
-                <p className="text-[12px] truncate" style={{ color: '#94a3b8' }}>
-                  {m.phone || m.email || 'Sem contato'}
-                </p>
-              </div>
-              <div className="text-center px-3">
-                <p className="text-[18px] font-extrabold" style={{ color: '#6366f1' }}>{m.leads_count}</p>
-                <p className="text-[10px]" style={{ color: '#94a3b8' }}>leads</p>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => toggleMember(m.id, m.is_active)}
-                  className="px-3 py-1.5 rounded-lg text-[11px] font-bold"
-                  style={{
-                    background: m.is_active ? '#fef3c7' : '#dcfce7',
-                    color: m.is_active ? '#92400e' : '#166534',
-                  }}>
-                  {m.is_active ? 'Pausar' : 'Ativar'}
-                </button>
-                <button onClick={() => removeMember(m.id)}
-                  className="px-3 py-1.5 rounded-lg text-[11px] font-bold"
-                  style={{ background: '#fef2f2', color: '#ef4444' }}>
-                  Remover
-                </button>
-              </div>
+            <div key={m.id} className="rounded-xl p-4"
+              style={{ background: '#fff', border: editingId === m.id ? '2px solid #6366f1' : '1px solid #e8ecf4', opacity: m.is_active ? 1 : 0.5 }}>
+
+              {editingId === m.id ? (
+                /* Edit mode */
+                <div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                    <input type="text" value={editName} onChange={e => setEditName(e.target.value)} placeholder="Nome *"
+                      className="px-3 py-2.5 rounded-lg text-[13px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+                    <input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="Email"
+                      className="px-3 py-2.5 rounded-lg text-[13px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+                    <input type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="WhatsApp"
+                      className="px-3 py-2.5 rounded-lg text-[13px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <button onClick={() => setEditingId(null)} className="px-4 py-2 rounded-lg text-[12px] font-semibold" style={{ color: '#94a3b8' }}>Cancelar</button>
+                    <button onClick={saveEdit} disabled={saving || !editName.trim()}
+                      className="px-5 py-2 rounded-lg text-[12px] font-bold text-white disabled:opacity-50"
+                      style={{ background: '#6366f1' }}>
+                      {saving ? 'Salvando...' : 'Salvar'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* View mode */
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-[14px] font-bold"
+                    style={{ background: m.is_active ? '#6366f1' : '#94a3b8' }}>
+                    {m.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-bold truncate" style={{ color: '#1a1a2e' }}>{m.name}</p>
+                    <p className="text-[12px] truncate" style={{ color: '#94a3b8' }}>
+                      {m.phone || m.email || 'Sem contato'}
+                    </p>
+                  </div>
+                  <div className="text-center px-3">
+                    <p className="text-[18px] font-extrabold" style={{ color: '#6366f1' }}>{m.leads_count}</p>
+                    <p className="text-[10px]" style={{ color: '#94a3b8' }}>leads</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => startEdit(m)}
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-bold"
+                      style={{ background: '#eef2ff', color: '#6366f1' }}>
+                      Editar
+                    </button>
+                    <button onClick={() => toggleMember(m.id, m.is_active)}
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-bold"
+                      style={{
+                        background: m.is_active ? '#fef3c7' : '#dcfce7',
+                        color: m.is_active ? '#92400e' : '#166534',
+                      }}>
+                      {m.is_active ? 'Pausar' : 'Ativar'}
+                    </button>
+                    <button onClick={() => removeMember(m.id)}
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-bold"
+                      style={{ background: '#fef2f2', color: '#ef4444' }}>
+                      Remover
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
