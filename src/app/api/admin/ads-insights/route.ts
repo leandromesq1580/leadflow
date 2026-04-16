@@ -55,16 +55,16 @@ export async function GET(request: NextRequest) {
       const ctr = parseFloat(row.ctr || '0')
       const cpc = parseFloat(row.cpc || '0')
 
-      // Extract lead count and CPL from actions
+      // Extract lead count and CPL — ONLY use action_type === 'lead' (deduplicated)
       let leads = 0
       let cpl = 0
       for (const a of row.actions || []) {
-        if (a.action_type?.includes('lead') || a.action_type?.includes('offsite_complete_registration')) {
-          leads += parseInt(a.value || '0')
+        if (a.action_type === 'lead') {
+          leads = parseInt(a.value || '0')
         }
       }
       for (const c of row.cost_per_action_type || []) {
-        if (c.action_type?.includes('lead') || c.action_type?.includes('offsite_complete_registration')) {
+        if (c.action_type === 'lead') {
           cpl = parseFloat(c.value || '0')
         }
       }
