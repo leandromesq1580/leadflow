@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function LandingPage() {
   return (
@@ -11,6 +12,7 @@ export default function LandingPage() {
             <span className="text-base sm:text-[17px] font-extrabold" style={{ color: '#1a1a2e' }}>Lead4Producers</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
+            <Link href="#pricing" className="hidden sm:inline text-[13px] font-semibold px-4 py-2" style={{ color: '#64748b' }}>Precos</Link>
             <Link href="/login" className="hidden sm:inline text-[13px] font-semibold px-4 py-2" style={{ color: '#64748b' }}>Entrar</Link>
             <Link href="/register" className="text-xs sm:text-[13px] font-bold text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl" style={{ background: '#6366f1' }}>
               Criar Conta Gratis
@@ -27,92 +29,183 @@ export default function LandingPage() {
           <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
         </div>
 
-        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-16 sm:pb-28 text-center">
-          <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold mb-6" style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.2)' }}>
-            <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#34d399' }} /> Plataforma completa para insurance producers
-          </span>
-          <h1 className="text-[32px] sm:text-[44px] lg:text-[54px] font-extrabold leading-[1.06] tracking-tight text-white mb-6 max-w-4xl mx-auto">
-            Leads exclusivos + CRM completo para <span style={{ color: '#a78bfa' }}>producers de seguro</span>
-          </h1>
-          <p className="text-[15px] sm:text-[18px] leading-relaxed mb-10 max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.55)' }}>
-            Receba leads de brasileiros nos EUA que querem seguro de vida. Gerencie seu pipeline, distribua pro time, acompanhe follow-ups e feche mais negocios.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-12">
-            <Link href="/register" className="px-8 py-4 rounded-xl text-[15px] font-bold text-center inline-block" style={{ background: 'linear-gradient(135deg, #f59e0b, #eab308)', color: '#1a1a2e', boxShadow: '0 4px 20px rgba(245,158,11,0.35)' }}>
-              Criar Conta Gratis
-            </Link>
-            <Link href="#pricing" className="px-8 py-4 rounded-xl text-[15px] font-bold text-white text-center inline-block" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}>
-              Ver Precos
-            </Link>
+        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-8 sm:pb-16">
+          <div className="text-center max-w-3xl mx-auto">
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold mb-6" style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.2)' }}>
+              <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#34d399' }} /> Para donos de agencia e producers independentes
+            </span>
+            <h1 className="text-[32px] sm:text-[44px] lg:text-[52px] font-extrabold leading-[1.06] tracking-tight text-white mb-6">
+              Leads exclusivos + CRM feito pra quem <span style={{ color: '#a78bfa' }}>vende seguro de vida</span>
+            </h1>
+            <p className="text-[15px] sm:text-[18px] leading-relaxed mb-10 max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.55)' }}>
+              Compre leads quentes de brasileiros nos EUA, distribua pro seu time automaticamente, acompanhe cada deal no pipeline e feche mais apolices.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
+              <Link href="/register" className="px-8 py-4 rounded-xl text-[15px] font-bold text-center inline-block" style={{ background: 'linear-gradient(135deg, #f59e0b, #eab308)', color: '#1a1a2e', boxShadow: '0 4px 20px rgba(245,158,11,0.35)' }}>
+                Comecar Gratis — Sem Cartao
+              </Link>
+              <Link href="#features" className="px-8 py-4 rounded-xl text-[15px] font-bold text-white text-center inline-block" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                Ver Features
+              </Link>
+            </div>
           </div>
 
-          {/* 3 stats */}
-          <div className="flex flex-wrap justify-center gap-8 sm:gap-16">
+          {/* Pipeline screenshot */}
+          <div className="mt-8 sm:mt-12 rounded-xl sm:rounded-2xl overflow-hidden mx-auto max-w-5xl" style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <Image src="/ss-pipeline.png" alt="Pipeline Kanban Lead4Producers" width={1200} height={700} className="w-full h-auto" priority />
+          </div>
+        </div>
+      </section>
+
+      {/* ==================== SOCIAL PROOF BAR ==================== */}
+      <section className="py-8 sm:py-12" style={{ background: '#fff', borderBottom: '1px solid #e8ecf4' }}>
+        <div className="max-w-4xl mx-auto px-4 flex flex-wrap justify-center gap-8 sm:gap-16">
+          {[
+            { n: '$22', label: 'por lead exclusivo' },
+            { n: '< 5min', label: 'entrega via WhatsApp' },
+            { n: '100%', label: 'exclusivo (1:1)' },
+            { n: '$99/mo', label: 'CRM completo' },
+          ].map((s, i) => (
+            <div key={i} className="text-center">
+              <p className="text-[24px] sm:text-[32px] font-extrabold" style={{ color: '#6366f1' }}>{s.n}</p>
+              <p className="text-[11px] sm:text-[12px] font-semibold" style={{ color: '#94a3b8' }}>{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ==================== AGENCY OWNER SECTION ==================== */}
+      <section id="features" className="py-16 sm:py-24">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <p className="text-center text-[12px] font-bold uppercase tracking-widest mb-3" style={{ color: '#6366f1' }}>Para donos de agencia</p>
+          <h2 className="text-center text-[28px] sm:text-[40px] font-extrabold mb-4" style={{ color: '#1a1a2e' }}>Monte seu time e escale suas vendas</h2>
+          <p className="text-center text-[15px] mb-12 max-w-2xl mx-auto" style={{ color: '#94a3b8' }}>Cadastre seus agentes, compre leads em volume e distribua automaticamente. Acompanhe o pipeline de cada membro do time em tempo real.</p>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            {/* Screenshot Meu Time */}
+            <div className="rounded-2xl overflow-hidden" style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.08)', border: '1px solid #e8ecf4' }}>
+              <Image src="/ss-team.png" alt="Gestao de Time Lead4Producers" width={1200} height={650} className="w-full h-auto" />
+            </div>
+
+            {/* Benefits */}
+            <div className="space-y-6">
+              {[
+                { icon: '👥', title: 'Cadastre seu time inteiro', desc: 'Adicione agentes com nome, email e WhatsApp. Cada um recebe notificacao direta quando um lead chega.' },
+                { icon: '🔄', title: 'Distribuicao automatica ou manual', desc: 'Round-robin distribui igualmente. Ou voce escolhe pra quem mandar cada lead. Mude a qualquer hora.' },
+                { icon: '📊', title: 'Pipeline por agente', desc: 'Veja em tempo real como cada agente do seu time esta gerenciando os leads. Quem ta fechando, quem ta atrasando.' },
+                { icon: '📱', title: 'WhatsApp pra cada agente', desc: 'Quando o lead chega, o agente recebe no WhatsApp com nome, telefone e interesse. So ligar.' },
+              ].map((b, i) => (
+                <div key={i} className="flex gap-4">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#eef2ff' }}>
+                    <span className="text-[24px]">{b.icon}</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[16px] font-bold mb-1" style={{ color: '#1a1a2e' }}>{b.title}</h3>
+                    <p className="text-[13px] leading-relaxed" style={{ color: '#94a3b8' }}>{b.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==================== PIPELINE CRM SECTION ==================== */}
+      <section className="py-16 sm:py-24" style={{ background: '#fff' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <p className="text-center text-[12px] font-bold uppercase tracking-widest mb-3" style={{ color: '#6366f1' }}>CRM Pro</p>
+          <h2 className="text-center text-[28px] sm:text-[40px] font-extrabold mb-4" style={{ color: '#1a1a2e' }}>Pipeline visual que fecha negocios</h2>
+          <p className="text-center text-[15px] mb-12 max-w-2xl mx-auto" style={{ color: '#94a3b8' }}>Kanban drag-and-drop feito pra insurance producers. Acompanhe cada lead do primeiro contato ao contrato fechado.</p>
+
+          {/* Pipeline screenshot full width */}
+          <div className="rounded-2xl overflow-hidden mb-12" style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.08)', border: '1px solid #e8ecf4' }}>
+            <Image src="/ss-pipeline.png" alt="Pipeline CRM Lead4Producers" width={1200} height={700} className="w-full h-auto" />
+          </div>
+
+          {/* CRM features grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             {[
-              { n: '$22', label: 'por lead exclusivo' },
-              { n: '< 5min', label: 'entrega via WhatsApp' },
-              { n: '100%', label: 'exclusivo (1 lead = 1 producer)' },
-            ].map((s, i) => (
-              <div key={i} className="text-center">
-                <p className="text-[28px] sm:text-[36px] font-extrabold text-white">{s.n}</p>
-                <p className="text-[12px] sm:text-[13px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{s.label}</p>
+              { icon: '📋', label: 'Kanban' },
+              { icon: '📌', label: 'Follow-ups' },
+              { icon: '📎', label: 'Anexos' },
+              { icon: '📅', label: 'Appointments' },
+              { icon: '💰', label: 'Valor apolice' },
+              { icon: '📈', label: 'Dashboard' },
+            ].map((f, i) => (
+              <div key={i} className="text-center py-5 rounded-xl" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
+                <span className="text-[24px] block mb-2">{f.icon}</span>
+                <p className="text-[12px] font-bold" style={{ color: '#64748b' }}>{f.label}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ==================== 2 PILLARS ==================== */}
+      {/* ==================== LEADS SECTION ==================== */}
       <section className="py-16 sm:py-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <p className="text-center text-[12px] font-bold uppercase tracking-widest mb-3" style={{ color: '#6366f1' }}>Tudo que voce precisa</p>
-          <h2 className="text-center text-[28px] sm:text-[36px] font-extrabold mb-4" style={{ color: '#1a1a2e' }}>Leads + CRM em uma plataforma</h2>
-          <p className="text-center text-[15px] mb-12 max-w-xl mx-auto" style={{ color: '#94a3b8' }}>Pare de usar 5 ferramentas diferentes. Compre leads, gerencie pipeline, distribua pro time — tudo aqui.</p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Pillar 1: Leads */}
-            <div className="rounded-2xl p-8 sm:p-10" style={{ background: 'linear-gradient(135deg, #1e1b4b, #312e81)', border: '1px solid rgba(99,102,241,0.2)' }}>
-              <div className="w-14 h-14 rounded-xl flex items-center justify-center mb-5" style={{ background: 'rgba(99,102,241,0.2)' }}>
-                <span className="text-[28px]">🎯</span>
-              </div>
-              <h3 className="text-[22px] font-extrabold text-white mb-3">Leads Exclusivos</h3>
-              <p className="text-[14px] leading-relaxed mb-6" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                Campanhas no Meta Ads gerando leads de brasileiros nos EUA interessados em seguro de vida. Cada lead vai pra UM producer — sem compartilhar.
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <p className="text-[12px] font-bold uppercase tracking-widest mb-3" style={{ color: '#f59e0b' }}>Leads exclusivos</p>
+              <h2 className="text-[28px] sm:text-[36px] font-extrabold mb-4" style={{ color: '#1a1a2e' }}>Leads de brasileiros que querem seguro de vida nos EUA</h2>
+              <p className="text-[15px] leading-relaxed mb-8" style={{ color: '#94a3b8' }}>
+                Campanhas no Meta Ads rodando 24/7. Quando alguem preenche o formulario de interesse, voce recebe em tempo real no WhatsApp. Exclusivo — ninguem mais recebe esse lead.
               </p>
-              <ul className="space-y-3 mb-6">
-                {['Entrega em tempo real via WhatsApp + email', 'Filtro por estado (sua licenca)', 'Lead quente = pessoa preencheu formulario agora', 'Appointments pre-qualificados disponíveis'].map((t, i) => (
-                  <li key={i} className="flex items-start gap-2.5">
-                    <span className="text-[14px] mt-0.5" style={{ color: '#34d399' }}>✓</span>
-                    <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.7)' }}>{t}</span>
-                  </li>
+              <div className="space-y-4 mb-8">
+                {[
+                  { icon: '🎯', text: 'Lead quente — pessoa preencheu formulario AGORA' },
+                  { icon: '🔒', text: '100% exclusivo — 1 lead = 1 producer, sem compartilhar' },
+                  { icon: '📱', text: 'Entrega imediata via WhatsApp + email' },
+                  { icon: '📍', text: 'Filtro por estado — so recebe onde tem licenca' },
+                  { icon: '❄️', text: 'Leads frios com desconto — a partir de $3/lead' },
+                ].map((f, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <span className="text-[18px]">{f.icon}</span>
+                    <span className="text-[14px] font-semibold" style={{ color: '#475569' }}>{f.text}</span>
+                  </div>
                 ))}
-              </ul>
-              <div className="flex items-baseline gap-2">
-                <span className="text-[36px] font-extrabold text-white">$22</span>
-                <span className="text-[14px]" style={{ color: 'rgba(255,255,255,0.4)' }}>/lead</span>
               </div>
+              <Link href="/register" className="inline-block px-8 py-3.5 rounded-xl text-[14px] font-bold text-white" style={{ background: '#6366f1', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
+                Comprar Meus Primeiros Leads
+              </Link>
             </div>
 
-            {/* Pillar 2: CRM */}
-            <div className="rounded-2xl p-8 sm:p-10" style={{ background: '#fff', border: '1px solid #e8ecf4', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
-              <div className="w-14 h-14 rounded-xl flex items-center justify-center mb-5" style={{ background: '#eef2ff' }}>
-                <span className="text-[28px]">📋</span>
-              </div>
-              <h3 className="text-[22px] font-extrabold mb-3" style={{ color: '#1a1a2e' }}>CRM para Producers</h3>
-              <p className="text-[14px] leading-relaxed mb-6" style={{ color: '#94a3b8' }}>
-                Pipeline visual (Kanban), gestao de time, follow-ups, anexos, relatorios. Tudo feito pra quem vende seguro.
-              </p>
-              <ul className="space-y-3 mb-6">
-                {['Pipeline Kanban com drag-and-drop', 'Gestao de time (distribua leads pro seu time)', 'Follow-ups e historico de contato', 'Anexos (propostas, contratos, docs)', 'Dashboard de performance'].map((t, i) => (
-                  <li key={i} className="flex items-start gap-2.5">
-                    <span className="text-[14px] mt-0.5" style={{ color: '#6366f1' }}>✓</span>
-                    <span className="text-[13px]" style={{ color: '#64748b' }}>{t}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="flex items-baseline gap-2">
-                <span className="text-[36px] font-extrabold" style={{ color: '#1a1a2e' }}>$99</span>
-                <span className="text-[14px]" style={{ color: '#94a3b8' }}>/mes</span>
+            {/* WhatsApp mockup */}
+            <div className="flex justify-center">
+              <div className="w-[320px] rounded-3xl p-5" style={{ background: '#1a1a2e', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+                <div className="rounded-2xl overflow-hidden" style={{ background: '#0b141a' }}>
+                  <div className="px-4 py-3 flex items-center gap-3" style={{ background: '#1f2c34' }}>
+                    <div className="w-8 h-8 rounded-full" style={{ background: '#6366f1' }} />
+                    <div>
+                      <p className="text-[13px] font-bold text-white">Lead4Producers</p>
+                      <p className="text-[10px]" style={{ color: '#8696a0' }}>online</p>
+                    </div>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    <div className="rounded-xl px-3 py-2.5 max-w-[260px]" style={{ background: '#005c4b' }}>
+                      <p className="text-[12px] text-white leading-relaxed">
+                        🎯 <strong>Novo Lead — Lead4Producers!</strong><br/><br/>
+                        📋 <strong>Kerlen Viana</strong><br/>
+                        📞 +1 (954) 825-7206<br/>
+                        📍 FL<br/>
+                        💡 Seguro de vida<br/><br/>
+                        ⚡ Ligue nos proximos 5 minutos!
+                      </p>
+                      <p className="text-[9px] text-right mt-1" style={{ color: '#8696a0' }}>14:32 ✓✓</p>
+                    </div>
+                    <div className="rounded-xl px-3 py-2.5 max-w-[260px]" style={{ background: '#005c4b' }}>
+                      <p className="text-[12px] text-white leading-relaxed">
+                        🎯 <strong>Novo Lead — Lead4Producers!</strong><br/><br/>
+                        📋 <strong>Monica Gomes</strong><br/>
+                        📞 +1 (973) 932-7648<br/>
+                        📍 NJ<br/>
+                        💡 Seguro de vida<br/><br/>
+                        ⚡ Ligue nos proximos 5 minutos!
+                      </p>
+                      <p className="text-[9px] text-right mt-1" style={{ color: '#8696a0' }}>14:35 ✓✓</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -120,16 +213,16 @@ export default function LandingPage() {
       </section>
 
       {/* ==================== HOW IT WORKS ==================== */}
-      <section id="how" className="py-16 sm:py-24" style={{ background: '#fff' }}>
+      <section className="py-16 sm:py-24" style={{ background: '#fff' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <p className="text-center text-[12px] font-bold uppercase tracking-widest mb-3" style={{ color: '#6366f1' }}>Como funciona</p>
-          <h2 className="text-center text-[28px] sm:text-[36px] font-extrabold mb-12" style={{ color: '#1a1a2e' }}>3 passos pra comecar</h2>
+          <h2 className="text-center text-[28px] sm:text-[36px] font-extrabold mb-12" style={{ color: '#1a1a2e' }}>3 passos pra comecar a fechar</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { step: '1', icon: '📝', title: 'Crie sua conta gratis', desc: 'Cadastre-se em 30 segundos. Configure seus estados, disponibilidade e dados de contato.' },
-              { step: '2', icon: '💳', title: 'Compre leads ou assine o CRM', desc: 'Pacotes de leads a partir de 10 unidades. CRM por $99/mes com todas as features.' },
-              { step: '3', icon: '📱', title: 'Receba e gerencie', desc: 'Leads chegam no WhatsApp em tempo real. Use o pipeline pra acompanhar cada deal ate o fechamento.' },
+              { step: '1', icon: '📝', title: 'Crie sua conta gratis', desc: 'Cadastre-se em 30 segundos. Configure seus estados e dados de contato. Sem cartao.' },
+              { step: '2', icon: '💳', title: 'Compre leads ou assine o CRM', desc: 'Pacotes de leads a partir de $220. CRM Pro com pipeline e gestao de time por $99/mes.' },
+              { step: '3', icon: '🚀', title: 'Receba, gerencie e feche', desc: 'Leads no WhatsApp em tempo real. Pipeline pra acompanhar. Time pra escalar. Feche mais apolices.' },
             ].map((s, i) => (
               <div key={i} className="text-center">
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: '#eef2ff' }}>
@@ -149,7 +242,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <p className="text-center text-[12px] font-bold uppercase tracking-widest mb-3" style={{ color: '#6366f1' }}>Precos transparentes</p>
           <h2 className="text-center text-[28px] sm:text-[36px] font-extrabold mb-4" style={{ color: '#1a1a2e' }}>Pague so pelo que usar</h2>
-          <p className="text-center text-[15px] mb-12 max-w-xl mx-auto" style={{ color: '#94a3b8' }}>Conta gratis. Compre leads avulso. Assine o CRM quando quiser.</p>
+          <p className="text-center text-[15px] mb-12 max-w-xl mx-auto" style={{ color: '#94a3b8' }}>Conta gratis pra sempre. Compre leads avulso. Assine o CRM quando quiser escalar.</p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {/* Free */}
@@ -180,9 +273,9 @@ export default function LandingPage() {
                 <span className="text-[40px] font-extrabold" style={{ color: '#1a1a2e' }}>$22</span>
                 <span className="text-[14px]" style={{ color: '#94a3b8' }}>/lead</span>
               </div>
-              <p className="text-[13px] mb-6" style={{ color: '#94a3b8' }}>Minimo 10 leads por pacote</p>
+              <p className="text-[13px] mb-6" style={{ color: '#94a3b8' }}>Min. 10 leads por pacote</p>
               <ul className="space-y-3 mb-4">
-                {['Leads quentes exclusivos ($22/un)', 'Appointments pre-qualificados ($39/un)', 'Leads frios com desconto (a partir $3)', 'Filtro por estado', 'Entrega em tempo real'].map((t, i) => (
+                {['Leads quentes exclusivos ($22/un)', 'Appointments qualificados ($39/un)', 'Leads frios com desconto ($3-5)', 'Filtro por estado', 'Entrega WhatsApp em tempo real'].map((t, i) => (
                   <li key={i} className="flex items-center gap-2.5">
                     <span className="text-[13px]" style={{ color: '#6366f1' }}>✓</span>
                     <span className="text-[13px]" style={{ color: '#64748b' }}>{t}</span>
@@ -190,14 +283,14 @@ export default function LandingPage() {
                 ))}
               </ul>
               <div className="rounded-lg p-3 mb-6" style={{ background: '#fef3c7' }}>
-                <p className="text-[11px] font-bold" style={{ color: '#92400e' }}>Pacotes: 10 leads ($220) · 25 leads ($500) · 50 leads ($900)</p>
+                <p className="text-[11px] font-bold" style={{ color: '#92400e' }}>10x $220 · 25x $500 · 50x $900</p>
               </div>
               <Link href="/register" className="block text-center py-3.5 rounded-xl text-[14px] font-bold text-white" style={{ background: '#6366f1', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
                 Comprar Leads
               </Link>
             </div>
 
-            {/* CRM */}
+            {/* CRM Pro */}
             <div className="rounded-2xl p-8" style={{ background: 'linear-gradient(160deg, #0f0a2e, #1e1b4b)', border: '1px solid rgba(99,102,241,0.3)' }}>
               <p className="text-[12px] font-bold uppercase tracking-wider mb-2" style={{ color: '#a78bfa' }}>CRM Pro</p>
               <div className="flex items-baseline gap-1 mb-1">
@@ -206,7 +299,7 @@ export default function LandingPage() {
               </div>
               <p className="text-[13px] mb-6" style={{ color: 'rgba(255,255,255,0.4)' }}>Cancele quando quiser</p>
               <ul className="space-y-3 mb-8">
-                {['Tudo do plano gratis', 'Pipeline Kanban (drag-and-drop)', 'Gestao de time ilimitada', 'Follow-ups e lembretes', 'Anexos e documentos', 'Relatorios de performance', 'Features novas incluidas'].map((t, i) => (
+                {['Tudo do plano gratis', 'Pipeline Kanban drag-and-drop', 'Gestao de time ilimitada', 'Distribuicao auto/manual', 'Follow-ups e lembretes', 'Anexos e documentos', 'Dashboard de performance', 'Novas features incluidas'].map((t, i) => (
                   <li key={i} className="flex items-center gap-2.5">
                     <span className="text-[13px]" style={{ color: '#a78bfa' }}>✓</span>
                     <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.7)' }}>{t}</span>
@@ -221,40 +314,26 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ==================== FEATURES GRID ==================== */}
+      {/* ==================== TESTIMONIALS ==================== */}
       <section className="py-16 sm:py-24" style={{ background: '#fff' }}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <h2 className="text-center text-[28px] sm:text-[36px] font-extrabold mb-12" style={{ color: '#1a1a2e' }}>Feito pra insurance producers</h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <h2 className="text-center text-[28px] sm:text-[36px] font-extrabold mb-12" style={{ color: '#1a1a2e' }}>Quem usa, recomenda</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
-              { icon: '📱', title: 'WhatsApp em tempo real', desc: 'Lead chega no seu celular na hora. Nome, telefone, interesse — tudo pronto pra ligar.' },
-              { icon: '📋', title: 'Pipeline visual', desc: 'Kanban com drag-and-drop. Acompanhe cada lead do primeiro contato ao fechamento.' },
-              { icon: '👥', title: 'Gestao de time', desc: 'Distribua leads pro seu time. Automatico ou manual. Cada agente recebe no WhatsApp.' },
-              { icon: '📌', title: 'Follow-ups', desc: 'Registre ligacoes, notas, reunioes. Nunca esqueca de fazer o follow-up.' },
-              { icon: '📎', title: 'Anexos e docs', desc: 'Suba propostas, contratos, documentos. Tudo organizado por lead.' },
-              { icon: '📈', title: 'Dashboard de custos', desc: 'Veja CPL, ROI e margem por campanha, criativo e estado. Dados reais do Meta Ads.' },
-            ].map((f, i) => (
-              <div key={i} className="rounded-xl p-6" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
-                <span className="text-[28px] block mb-3">{f.icon}</span>
-                <h3 className="text-[16px] font-bold mb-2" style={{ color: '#1a1a2e' }}>{f.title}</h3>
-                <p className="text-[13px] leading-relaxed" style={{ color: '#94a3b8' }}>{f.desc}</p>
+              { name: 'Ricardo M.', role: 'Insurance Producer — FL', text: 'Em 30 dias, fechei 3 apolices. O investimento de $440 me rendeu mais de $1.800 em comissoes. Com o pipeline fico organizado e nao perco nenhum follow-up.', initials: 'RM', color: '#6366f1' },
+              { name: 'Regiane P.', role: 'Agency Owner — FL', text: 'Gerencio 3 agentes pelo Meu Time. Os leads chegam e sao distribuidos automaticamente. Cada agente recebe no WhatsApp e eu acompanho o pipeline de todos em tempo real.', initials: 'RP', color: '#8b5cf6' },
+            ].map((t, i) => (
+              <div key={i} className="rounded-2xl p-8" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
+                <p className="text-[15px] leading-relaxed mb-6" style={{ color: '#475569' }}>&ldquo;{t.text}&rdquo;</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-[13px] font-bold" style={{ background: t.color }}>{t.initials}</div>
+                  <div>
+                    <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>{t.name}</p>
+                    <p className="text-[12px]" style={{ color: '#94a3b8' }}>{t.role}</p>
+                  </div>
+                </div>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ==================== TESTIMONIAL ==================== */}
-      <section className="py-16 sm:py-24">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
-          <div className="rounded-2xl p-8 sm:p-12" style={{ background: '#fff', border: '1px solid #e8ecf4', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
-            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-[20px] font-bold" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>RM</div>
-            <p className="text-[16px] sm:text-[18px] leading-relaxed mb-6" style={{ color: '#475569' }}>
-              &ldquo;Em 30 dias, fechei 3 apolices com os leads do Lead4Producers. O investimento de $440 me rendeu mais de $1.800 em comissoes. Com o CRM fico organizado e nao perco nenhum follow-up.&rdquo;
-            </p>
-            <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>Ricardo M.</p>
-            <p className="text-[12px]" style={{ color: '#94a3b8' }}>Insurance Producer — Florida</p>
           </div>
         </div>
       </section>
@@ -262,9 +341,9 @@ export default function LandingPage() {
       {/* ==================== CTA ==================== */}
       <section className="py-16 sm:py-24" style={{ background: 'linear-gradient(160deg, #0f0a2e 0%, #1e1b4b 50%, #312e81 100%)' }}>
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-[28px] sm:text-[40px] font-extrabold text-white mb-4">Comece gratis hoje</h2>
+          <h2 className="text-[28px] sm:text-[40px] font-extrabold text-white mb-4">Pare de perder leads. Comece a fechar.</h2>
           <p className="text-[15px] sm:text-[17px] mb-8" style={{ color: 'rgba(255,255,255,0.5)' }}>
-            Crie sua conta em 30 segundos. Sem cartao. Compre leads ou assine o CRM quando estiver pronto.
+            Conta gratis em 30 segundos. Compre leads ou assine o CRM quando estiver pronto. Sem contrato, sem fidelidade.
           </p>
           <Link href="/register" className="inline-block px-10 py-4 rounded-xl text-[16px] font-bold" style={{ background: 'linear-gradient(135deg, #f59e0b, #eab308)', color: '#1a1a2e', boxShadow: '0 4px 20px rgba(245,158,11,0.35)' }}>
             Criar Minha Conta Gratis
