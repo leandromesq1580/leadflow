@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 /**
  * GET /api/leads/[id]
@@ -65,7 +66,9 @@ export async function PATCH(
     }
   }
 
-  const { data, error } = await supabase
+  // Use admin client to bypass RLS for updates
+  const adminDb = createAdminClient()
+  const { data, error } = await adminDb
     .from('leads')
     .update(updates)
     .eq('id', id)
