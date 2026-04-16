@@ -47,7 +47,7 @@ export function Sidebar({ type, userName }: SidebarProps) {
             L
           </div>
           <span className="text-[17px] font-extrabold" style={{ color: '#1a1a2e' }}>
-            LeadFlow
+            Lead4Producers
           </span>
           {type === 'admin' && (
             <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: '#fef2f2', color: '#ef4444' }}>Admin</span>

@@ -9,7 +9,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16 sm:h-[72px]">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-white text-xs sm:text-sm font-black" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>L</div>
-            <span className="text-base sm:text-[17px] font-extrabold" style={{ color: '#1a1a2e' }}>LeadFlow</span>
+            <span className="text-base sm:text-[17px] font-extrabold" style={{ color: '#1a1a2e' }}>Lead4Producers</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <Link href="/login" className="hidden sm:inline text-[13px] font-semibold px-4 py-2" style={{ color: '#64748b' }}>Entrar</Link>
@@ -78,7 +78,7 @@ export default function LandingPage() {
                     <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#10b981' }} />
                   </div>
                   <div className="flex-1 mx-8 px-3 py-1 rounded text-[10px] text-center" style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)' }}>
-                    leadflow.com/dashboard
+                    lead4producers.com/dashboard
                   </div>
                 </div>
                 <div className="p-5">
@@ -283,7 +283,7 @@ export default function LandingPage() {
         <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <div className="text-[36px] sm:text-[48px] mb-6" style={{ color: 'rgba(99,102,241,0.3)' }}>&ldquo;</div>
           <p className="text-[18px] sm:text-[24px] font-bold text-white leading-relaxed mb-8">
-            Em 30 dias, fechei 3 apolices com os leads do LeadFlow. O investimento de $440 me rendeu mais de $1.800 em comissoes. Melhor ROI que qualquer campanha que eu ja fiz.
+            Em 30 dias, fechei 3 apolices com os leads do Lead4Producers. O investimento de $440 me rendeu mais de $1.800 em comissoes. Melhor ROI que qualquer campanha que eu ja fiz.
           </p>
           <div className="flex items-center justify-center gap-3">
             <div className="w-12 h-12 rounded-full flex items-center justify-center text-white text-[14px] font-bold" style={{ background: 'linear-gradient(135deg, #6366f1, #a78bfa)' }}>RM</div>
@@ -397,9 +397,9 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded flex items-center justify-center text-white text-[10px] font-black" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>L</div>
-              <span className="text-[14px] font-bold" style={{ color: '#94a3b8' }}>LeadFlow</span>
+              <span className="text-[14px] font-bold" style={{ color: '#94a3b8' }}>Lead4Producers</span>
             </div>
-            <p className="text-[11px]" style={{ color: '#475569' }}>&copy; 2026 LeadFlow. Todos os direitos reservados.</p>
+            <p className="text-[11px]" style={{ color: '#475569' }}>&copy; 2026 Lead4Producers. Todos os direitos reservados.</p>
             <div className="flex gap-4 text-[12px]" style={{ color: '#64748b' }}>
               <Link href="/login">Entrar</Link>
               <Link href="/register">Criar Conta</Link>

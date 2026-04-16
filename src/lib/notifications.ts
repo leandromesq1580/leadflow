@@ -14,7 +14,7 @@ function getResend(): Resend {
  */
 async function sendWhatsApp(phone: string, message: string) {
   const bridgeUrl = (process.env.WA_BRIDGE_URL || 'http://31.220.97.186:3457').replace(/\/$/, '')
-  const bridgeKey = (process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026').trim()
+  const bridgeKey = (process.env.WA_BRIDGE_KEY || 'lead4producers-bridge-2026').trim()
 
   if (!bridgeKey) return
 
@@ -57,7 +57,7 @@ interface Lead {
 export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead) {
   try {
     await getResend().emails.send({
-      from: 'LeadFlow <onboarding@resend.dev>',
+      from: 'Lead4Producers <onboarding@resend.dev>',
       to: buyer.email,
       subject: `Novo Lead! ${lead.name} — ${lead.state}`,
       html: `
@@ -113,7 +113,7 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead) {
 
   // WhatsApp notification to BUYER
   if (buyer.phone) {
-    const whatsappMsg = `🎯 *Novo Lead LeadFlow!*
+    const whatsappMsg = `🎯 *Novo Lead — Lead4Producers!*
 
 📋 *${lead.name}*
 📞 ${lead.phone}
@@ -147,7 +147,7 @@ export async function sendAppointmentNotificationEmail(
     })
 
     await getResend().emails.send({
-      from: 'LeadFlow <onboarding@resend.dev>',
+      from: 'Lead4Producers <onboarding@resend.dev>',
       to: buyer.email,
       subject: `Appointment Agendado! ${lead.name} — ${formatted}`,
       html: `
@@ -186,9 +186,9 @@ export async function sendAppointmentNotificationEmail(
 export async function sendAdminAlert(message: string) {
   try {
     await getResend().emails.send({
-      from: 'LeadFlow System <onboarding@resend.dev>',
+      from: 'Lead4Producers System <onboarding@resend.dev>',
       to: process.env.ADMIN_EMAIL!,
-      subject: `[LeadFlow Alert] ${message}`,
+      subject: `[Lead4Producers Alert] ${message}`,
       html: `
         <div style="font-family:sans-serif;padding:20px;">
           <h2 style="color:#dc2626;">Alerta do Sistema</h2>

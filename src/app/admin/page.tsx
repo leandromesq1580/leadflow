@@ -33,7 +33,7 @@ export default async function AdminDashboard() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-[26px] font-extrabold" style={{ color: '#1a1a2e' }}>Admin Dashboard</h1>
-          <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>Visao geral do LeadFlow</p>
+          <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>Visao geral do Lead4Producers</p>
         </div>
         <div className="flex gap-3">
           <Link href="/admin/buyers" className="px-5 py-2.5 rounded-xl text-[13px] font-bold" style={{ background: '#f8f9fc', color: '#1a1a2e', border: '1px solid #e8ecf4' }}>

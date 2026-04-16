@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   const mode = url.searchParams.get('hub.mode')
   const token = url.searchParams.get('hub.verify_token')
   const challenge = url.searchParams.get('hub.challenge')
-  const expectedToken = (process.env.META_VERIFY_TOKEN || 'leadflow_verify_2026').trim()
+  const expectedToken = (process.env.META_VERIFY_TOKEN || 'lead4producers_verify_2026').trim()
 
   if (mode === 'subscribe' && token === expectedToken) {
     return new Response(challenge || 'ok', { status: 200, headers: { 'Content-Type': 'text/plain' } })

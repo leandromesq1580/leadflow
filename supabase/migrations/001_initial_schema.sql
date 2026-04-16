@@ -1,4 +1,4 @@
--- LeadFlow Database Schema
+-- Lead4Producers Database Schema
 -- Run this in Supabase SQL Editor
 
 -- Enable UUID generation

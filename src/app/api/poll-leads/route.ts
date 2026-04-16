@@ -15,7 +15,7 @@ const FORM_IDS = [
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const secret = url.searchParams.get('secret')
-  if (secret !== (process.env.POLL_SECRET || 'leadflow-poll-2026')) {
+  if (secret !== (process.env.POLL_SECRET || 'lead4producers-poll-2026')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

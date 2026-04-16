@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LeadFlow — Leads Exclusivos de Seguro de Vida",
+  title: "Lead4Producers — Leads Exclusivos de Seguro de Vida",
   description: "Receba leads frescos de brasileiros nos EUA interessados em seguro de vida. Exclusivos, em tempo real.",
 };
 

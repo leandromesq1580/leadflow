@@ -70,7 +70,7 @@ export default function RegisterPage() {
         <div className="text-center mb-10">
           <Link href="/" className="inline-flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-black" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>L</div>
-            <span className="text-[20px] font-extrabold" style={{ color: '#1a1a2e' }}>LeadFlow</span>
+            <span className="text-[20px] font-extrabold" style={{ color: '#1a1a2e' }}>Lead4Producers</span>
           </Link>
           <p className="mt-3 text-[14px]" style={{ color: '#64748b' }}>Crie sua conta e comece a receber leads</p>
         </div>

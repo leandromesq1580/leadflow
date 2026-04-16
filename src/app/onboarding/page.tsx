@@ -74,7 +74,7 @@ export default function OnboardingPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-black mx-auto mb-3" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>L</div>
-          <h1 className="text-[22px] sm:text-[26px] font-extrabold text-white">Bem-vindo ao LeadFlow!</h1>
+          <h1 className="text-[22px] sm:text-[26px] font-extrabold text-white">Bem-vindo ao Lead4Producers!</h1>
           <p className="text-[13px] sm:text-[14px] mt-2" style={{ color: 'rgba(255,255,255,0.5)' }}>Vamos configurar sua conta em 3 passos rapidos</p>
         </div>
 
