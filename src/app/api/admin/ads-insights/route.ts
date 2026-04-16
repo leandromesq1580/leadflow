@@ -18,23 +18,25 @@ export async function GET(request: NextRequest) {
   const token = (process.env.META_PAGE_TOKEN || '').trim().replace(/\\n/g, '')
   if (!token) return NextResponse.json({ error: 'No META_PAGE_TOKEN' }, { status: 500 })
 
-  const fields = [
-    'spend', 'impressions', 'clicks', 'ctr', 'cpc',
-    'actions', 'cost_per_action_type',
-    level === 'campaign' ? 'campaign_name,campaign_id' : '',
-    level === 'adset' ? 'campaign_name,adset_name,adset_id' : '',
-    level === 'ad' ? 'campaign_name,adset_name,ad_name,ad_id' : '',
-  ].filter(Boolean).join(',')
+  const baseFields = 'spend,impressions,clicks,ctr,cpc,actions,cost_per_action_type'
+  const levelFields = breakdown
+    ? baseFields  // breakdowns don't use level-specific fields
+    : level === 'ad' ? `${baseFields},campaign_name,adset_name,ad_name,ad_id`
+    : level === 'adset' ? `${baseFields},campaign_name,adset_name,adset_id`
+    : `${baseFields},campaign_name,campaign_id`
 
   const params = new URLSearchParams({
-    fields,
+    fields: levelFields,
     date_preset: period,
     limit: '100',
     access_token: token,
   })
 
-  if (breakdown) params.set('breakdowns', breakdown)
-  else params.set('level', level)
+  if (breakdown) {
+    params.set('breakdowns', breakdown)
+  } else {
+    params.set('level', level)
+  }
 
   try {
     const res = await fetch(
@@ -55,16 +57,17 @@ export async function GET(request: NextRequest) {
       const ctr = parseFloat(row.ctr || '0')
       const cpc = parseFloat(row.cpc || '0')
 
-      // Extract lead count and CPL — ONLY use action_type === 'lead' (deduplicated)
+      // Extract lead count and CPL
+      // 'lead' is the canonical type but region breakdown only has 'onsite_conversion.lead_grouped'
       let leads = 0
       let cpl = 0
       for (const a of row.actions || []) {
-        if (a.action_type === 'lead') {
+        if (a.action_type === 'lead' || (leads === 0 && a.action_type === 'onsite_conversion.lead_grouped')) {
           leads = parseInt(a.value || '0')
         }
       }
       for (const c of row.cost_per_action_type || []) {
-        if (c.action_type === 'lead') {
+        if (c.action_type === 'lead' || (cpl === 0 && c.action_type === 'onsite_conversion.lead_grouped')) {
           cpl = parseFloat(c.value || '0')
         }
       }
