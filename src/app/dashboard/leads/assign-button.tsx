@@ -37,6 +37,7 @@ export function AssignButton({ leadId, members }: Props) {
 
   return (
     <div className="relative">
+      <div className="fixed inset-0 z-40" onClick={(e) => { e.preventDefault(); setOpen(false) }} />
       <div className="absolute right-0 top-0 z-50 rounded-xl p-2 min-w-[160px]"
         style={{ background: '#fff', border: '1px solid #e8ecf4', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
         <p className="text-[10px] font-bold px-2 py-1 mb-1" style={{ color: '#94a3b8' }}>Enviar pra:</p>
