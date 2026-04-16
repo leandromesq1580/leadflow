@@ -23,6 +23,11 @@ export default function PipelinePage() {
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null)
   const [activeCard, setActiveCard] = useState<PipelineLead | null>(null)
   const [creating, setCreating] = useState(false)
+  const [search, setSearch] = useState('')
+  const [filterStage, setFilterStage] = useState('')
+  const [filterDate, setFilterDate] = useState('')
+  const [closedOnly, setClosedOnly] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -80,9 +85,28 @@ export default function PipelinePage() {
     setCreating(false)
   }
 
+  const filteredLeads = leads.filter(l => {
+    if (search) {
+      const q = search.toLowerCase()
+      if (!l.lead.name.toLowerCase().includes(q) && !l.lead.email?.toLowerCase().includes(q) && !l.lead.phone?.includes(q)) return false
+    }
+    if (filterStage && l.stage_id !== filterStage) return false
+    if (closedOnly && !l.lead.contract_closed) return false
+    if (filterDate) {
+      const created = new Date(l.lead.created_at).getTime()
+      const now = Date.now()
+      if (filterDate === '7d' && now - created > 7 * 86400000) return false
+      if (filterDate === '30d' && now - created > 30 * 86400000) return false
+      if (filterDate === '90d' && now - created > 90 * 86400000) return false
+    }
+    return true
+  })
+
+  const hasFilters = !!(search || filterStage || filterDate || closedOnly)
+
   const getStageLeads = useCallback((stageId: string) => {
-    return leads.filter(l => l.stage_id === stageId).sort((a, b) => a.position - b.position)
-  }, [leads])
+    return filteredLeads.filter(l => l.stage_id === stageId).sort((a, b) => a.position - b.position)
+  }, [filteredLeads])
 
   function handleDragStart(event: DragStartEvent) {
     const item = leads.find(l => l.id === event.active.id)
@@ -188,6 +212,67 @@ export default function PipelinePage() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3v18M3 12h18"/></svg>
           Gerenciar
         </Link>
+      </div>
+
+      {/* Filters */}
+      <div className="rounded-xl mb-5 overflow-hidden" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+        <div className="flex items-center justify-between px-4 py-2.5">
+          <button onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 text-[12px] font-bold" style={{ color: showFilters ? '#6366f1' : '#94a3b8' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+            Filtros
+            {hasFilters && <span className="w-2 h-2 rounded-full" style={{ background: '#6366f1' }} />}
+          </button>
+          <div className="flex items-center gap-3">
+            {hasFilters && (
+              <button onClick={() => { setSearch(''); setFilterStage(''); setFilterDate(''); setClosedOnly(false) }}
+                className="text-[11px] font-semibold flex items-center gap-1" style={{ color: '#ef4444' }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                Limpar filtros
+              </button>
+            )}
+            <span className="text-[11px] font-semibold" style={{ color: '#94a3b8' }}>
+              {filteredLeads.length}/{leads.length} leads
+            </span>
+          </div>
+        </div>
+
+        {showFilters && (
+          <div className="px-4 pb-4 pt-1 flex flex-wrap gap-3 items-end" style={{ borderTop: '1px solid #f1f5f9' }}>
+            <div className="flex-1 min-w-[180px]">
+              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#c0c8d4' }}>Buscar</label>
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome, email ou telefone..."
+                className="w-full px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+            </div>
+            <div className="min-w-[140px]">
+              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#c0c8d4' }}>Estagio</label>
+              <select value={filterStage} onChange={e => setFilterStage(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200 cursor-pointer"
+                style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }}>
+                <option value="">Todos</option>
+                {activePipeline?.stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+            <div className="min-w-[120px]">
+              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#c0c8d4' }}>Periodo</label>
+              <select value={filterDate} onChange={e => setFilterDate(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200 cursor-pointer"
+                style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }}>
+                <option value="">Qualquer data</option>
+                <option value="7d">Ultimos 7 dias</option>
+                <option value="30d">Ultimos 30 dias</option>
+                <option value="90d">Ultimos 90 dias</option>
+              </select>
+            </div>
+            <label className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer"
+              style={{ background: closedOnly ? '#f0fdf4' : '#f8f9fc', border: `1px solid ${closedOnly ? '#86efac' : '#e8ecf4'}` }}>
+              <input type="checkbox" checked={closedOnly} onChange={e => setClosedOnly(e.target.checked)}
+                className="w-3.5 h-3.5 rounded accent-green-500" />
+              <span className="text-[11px] font-bold" style={{ color: closedOnly ? '#15803d' : '#94a3b8' }}>Fechados</span>
+            </label>
+          </div>
+        )}
       </div>
 
       {/* Kanban Board */}
