@@ -102,17 +102,9 @@ export default async function LeadsPage() {
                   </Link>
 
                   {/* Agent column (agency mode) */}
-                  {buyer.is_agency && (
+                  {buyer.is_agency && teamMembers.length > 0 && (
                     <div className="w-[140px] flex-shrink-0">
-                      {memberName ? (
-                        <span className="px-3 py-1 rounded-lg text-[11px] font-bold" style={{ background: '#eef2ff', color: '#6366f1' }}>
-                          {memberName}
-                        </span>
-                      ) : teamMembers.length > 0 ? (
-                        <AssignButton leadId={lead.id} members={teamMembers} />
-                      ) : (
-                        <span className="text-[11px]" style={{ color: '#94a3b8' }}>—</span>
-                      )}
+                      <AssignButton leadId={lead.id} members={teamMembers} currentMember={memberName} />
                     </div>
                   )}
 

@@ -55,7 +55,7 @@ export async function PATCH(
     'status', 'assigned_to', 'assigned_at', 'product_type', 'type',
     'name', 'email', 'phone', 'city', 'state', 'interest',
     'age_range', 'reason', 'platform', 'is_organic', 'contract_closed',
-    'policy_value', 'observation', 'attendant',
+    'policy_value', 'observation', 'attendant', 'assigned_to_member',
   ]
   const updates: Record<string, unknown> = {}
 
