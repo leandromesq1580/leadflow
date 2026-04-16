@@ -31,7 +31,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   const [fuDesc, setFuDesc] = useState('')
 
   useEffect(() => {
-    fetch(`/api/leads/${leadId}`).then(r => r.json()).then(d => setLead(d))
+    fetch(`/api/leads/${leadId}`).then(r => r.json()).then(d => setLead(d.lead || d))
     loadFollowUps()
   }, [leadId])
 

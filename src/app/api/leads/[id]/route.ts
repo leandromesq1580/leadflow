@@ -18,7 +18,8 @@ export async function GET(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { data: lead, error } = await supabase
+  const adminDb = createAdminClient()
+  const { data: lead, error } = await adminDb
     .from('leads')
     .select(`
       *,
