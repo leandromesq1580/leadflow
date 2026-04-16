@@ -185,8 +185,8 @@ export default function LandingPage() {
                     <div className="rounded-xl px-3 py-2.5 max-w-[260px]" style={{ background: '#005c4b' }}>
                       <p className="text-[12px] text-white leading-relaxed">
                         🎯 <strong>Novo Lead — Lead4Producers!</strong><br/><br/>
-                        📋 <strong>Kerlen Viana</strong><br/>
-                        📞 +1 (954) 825-7206<br/>
+                        📋 <strong>Carlos Mendes</strong><br/>
+                        📞 +1 (407) 555-0101<br/>
                         📍 FL<br/>
                         💡 Seguro de vida<br/><br/>
                         ⚡ Ligue nos proximos 5 minutos!
@@ -196,9 +196,9 @@ export default function LandingPage() {
                     <div className="rounded-xl px-3 py-2.5 max-w-[260px]" style={{ background: '#005c4b' }}>
                       <p className="text-[12px] text-white leading-relaxed">
                         🎯 <strong>Novo Lead — Lead4Producers!</strong><br/><br/>
-                        📋 <strong>Monica Gomes</strong><br/>
-                        📞 +1 (973) 932-7648<br/>
-                        📍 NJ<br/>
+                        📋 <strong>Amanda Silva</strong><br/>
+                        📞 +1 (305) 555-0202<br/>
+                        📍 MA<br/>
                         💡 Seguro de vida<br/><br/>
                         ⚡ Ligue nos proximos 5 minutos!
                       </p>
