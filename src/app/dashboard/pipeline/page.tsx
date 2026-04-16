@@ -23,6 +23,10 @@ export default function PipelinePage() {
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null)
   const [activeCard, setActiveCard] = useState<PipelineLead | null>(null)
   const [creating, setCreating] = useState(false)
+  const [view, setView] = useState<'mine' | 'team'>('mine')
+  const [teamLeads, setTeamLeads] = useState<any[]>([])
+  const [teamMembers, setTeamMembers] = useState<any[]>([])
+  const [isAgency, setIsAgency] = useState(false)
   const [search, setSearch] = useState('')
   const [filterStage, setFilterStage] = useState('')
   const [filterDate, setFilterDate] = useState('')
@@ -50,7 +54,20 @@ export default function PipelinePage() {
     const r = await fetch(`/api/settings?auth_user_id=${authId}`)
     const buyer = await r.json()
     setBuyerId(buyer.id)
+    setIsAgency(buyer.is_agency || false)
     loadPipelines(buyer.id)
+    if (buyer.is_agency) loadTeamData(buyer.id)
+  }
+
+  async function loadTeamData(bid: string) {
+    const [membersRes, leadsRes] = await Promise.all([
+      fetch(`/api/team/members?auth_user_id=&buyer_id=${bid}`),
+      fetch(`/api/team/leads?buyer_id=${bid}`),
+    ])
+    const membersData = await membersRes.json()
+    const leadsData = await leadsRes.json()
+    setTeamMembers(membersData.members || [])
+    setTeamLeads(leadsData.leads || [])
   }
 
   async function loadPipelines(bid: string) {
@@ -214,6 +231,72 @@ export default function PipelinePage() {
         </Link>
       </div>
 
+      {/* View toggle (agency only) */}
+      {isAgency && (
+        <div className="flex gap-1 p-1 rounded-xl mb-5" style={{ background: '#f1f5f9', display: 'inline-flex' }}>
+          <button onClick={() => setView('mine')}
+            className="px-5 py-2 rounded-lg text-[12px] font-bold transition-all"
+            style={{ background: view === 'mine' ? '#fff' : 'transparent', color: view === 'mine' ? '#6366f1' : '#94a3b8',
+              boxShadow: view === 'mine' ? '0 1px 4px rgba(0,0,0,0.06)' : 'none' }}>
+            Meu Pipeline
+          </button>
+          <button onClick={() => { setView('team'); if (buyerId) loadTeamData(buyerId) }}
+            className="px-5 py-2 rounded-lg text-[12px] font-bold transition-all"
+            style={{ background: view === 'team' ? '#fff' : 'transparent', color: view === 'team' ? '#6366f1' : '#94a3b8',
+              boxShadow: view === 'team' ? '0 1px 4px rgba(0,0,0,0.06)' : 'none' }}>
+            Meu Time ({teamLeads.length})
+          </button>
+        </div>
+      )}
+
+      {/* Team view */}
+      {view === 'team' && isAgency && (
+        <div className="space-y-4 mb-6">
+          {teamMembers.filter(m => m.is_active).map(member => {
+            const mLeads = teamLeads.filter((l: any) => l.assigned_to_member === member.id)
+            return (
+              <div key={member.id} className="rounded-xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+                <div className="flex items-center gap-3 px-5 py-3" style={{ background: '#f8f9fc', borderBottom: '1px solid #e8ecf4' }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white"
+                    style={{ background: '#6366f1' }}>
+                    {member.name.charAt(0).toUpperCase()}
+                  </div>
+                  <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>{member.name}</p>
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-md" style={{ background: '#eef2ff', color: '#6366f1' }}>
+                    {mLeads.length} leads
+                  </span>
+                </div>
+                {mLeads.length === 0 ? (
+                  <p className="text-center py-6 text-[12px]" style={{ color: '#c0c8d4' }}>Nenhum lead atribuido</p>
+                ) : (
+                  <div>
+                    {mLeads.map((l: any, i: number) => (
+                      <div key={l.id} className="flex items-center gap-4 px-5 py-3 cursor-pointer hover:bg-gray-50"
+                        style={{ borderBottom: i < mLeads.length - 1 ? '1px solid #f1f5f9' : 'none' }}
+                        onClick={() => setSelectedLead({ id: '', stage_id: '', position: 0, lead: l })}>
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold text-white"
+                          style={{ background: `hsl(${(l.name.charCodeAt(0) * 47) % 360}, 55%, 50%)` }}>
+                          {l.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-semibold" style={{ color: '#1a1a2e' }}>{l.name}</p>
+                          <p className="text-[11px]" style={{ color: '#94a3b8' }}>{l.interest}</p>
+                        </div>
+                        <span className="text-[12px] font-semibold" style={{ color: '#6366f1' }}>{l.phone}</span>
+                        {l.contract_closed && (
+                          <span className="text-[9px] font-bold px-2 py-1 rounded-md" style={{ background: '#dcfce7', color: '#15803d' }}>FECHADO</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {view === 'mine' && <>
       {/* Filters */}
       <div className="rounded-xl mb-5 overflow-hidden" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
         <div className="flex items-center justify-between px-4 py-2.5">
@@ -305,13 +388,15 @@ export default function PipelinePage() {
         </DndContext>
       </div>
 
+      </>}
+
       {/* Lead Modal */}
       {selectedLead && (
         <LeadModal
           leadId={selectedLead.lead.id}
           buyerId={buyerId}
           onClose={() => setSelectedLead(null)}
-          onSaved={() => { setSelectedLead(null); if (activePipeline) loadLeads(activePipeline.id) }}
+          onSaved={() => { setSelectedLead(null); if (activePipeline) loadLeads(activePipeline.id); if (isAgency) loadTeamData(buyerId) }}
         />
       )}
     </div>

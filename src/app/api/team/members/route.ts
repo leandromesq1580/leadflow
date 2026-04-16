@@ -9,11 +9,21 @@ async function getBuyerFromAuth(authUserId: string) {
 
 /** GET /api/team/members — List team members for current buyer */
 export async function GET(request: NextRequest) {
-  const authId = request.headers.get('x-auth-user-id') || new URL(request.url).searchParams.get('auth_user_id')
-  if (!authId) return NextResponse.json({ error: 'Missing auth' }, { status: 401 })
+  const url = new URL(request.url)
+  const authId = request.headers.get('x-auth-user-id') || url.searchParams.get('auth_user_id')
+  const directBuyerId = url.searchParams.get('buyer_id')
 
-  const buyer = await getBuyerFromAuth(authId)
-  if (!buyer) return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
+  let buyerId: string
+  if (directBuyerId) {
+    buyerId = directBuyerId
+  } else if (authId) {
+    const buyer = await getBuyerFromAuth(authId)
+    if (!buyer) return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
+    buyerId = buyer.id
+  } else {
+    return NextResponse.json({ error: 'Missing auth' }, { status: 401 })
+  }
+  const buyer = { id: buyerId }
 
   const db = createAdminClient()
   const { data: members } = await db
