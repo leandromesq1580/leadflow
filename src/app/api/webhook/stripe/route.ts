@@ -112,6 +112,37 @@ export async function POST(request: NextRequest) {
       break
     }
 
+    case 'customer.subscription.created':
+    case 'customer.subscription.updated': {
+      const sub = event.data.object as Stripe.Subscription
+      const buyerId = sub.metadata?.buyer_id
+      if (buyerId) {
+        const status = sub.status === 'active' || sub.status === 'trialing' ? 'active' : 'inactive'
+        const expiresAt = sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null
+        await supabase.from('buyers').update({
+          crm_plan: status === 'active' ? 'pro' : 'free',
+          crm_subscription_id: sub.id,
+          crm_subscription_status: status,
+          crm_expires_at: expiresAt,
+        }).eq('id', buyerId)
+        console.log(`[Stripe Webhook] CRM subscription ${status} for ${buyerId}`)
+      }
+      break
+    }
+
+    case 'customer.subscription.deleted': {
+      const sub = event.data.object as Stripe.Subscription
+      const buyerId = sub.metadata?.buyer_id
+      if (buyerId) {
+        await supabase.from('buyers').update({
+          crm_plan: 'free',
+          crm_subscription_status: 'cancelled',
+        }).eq('id', buyerId)
+        console.log(`[Stripe Webhook] CRM subscription cancelled for ${buyerId}`)
+      }
+      break
+    }
+
     case 'payment_intent.payment_failed': {
       const paymentIntent = event.data.object as Stripe.PaymentIntent
       console.log(`[Stripe Webhook] Payment failed: ${paymentIntent.id}`)
