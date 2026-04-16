@@ -68,9 +68,16 @@ export async function POST(request: NextRequest) {
     await db.from('buyers').update({ is_agency: true }).eq('id', buyer.id)
   }
 
+  // Auto-link: if member email matches existing buyer, link auth_user_id
+  let memberAuthId = null
+  if (email) {
+    const { data: existingBuyer } = await db.from('buyers').select('auth_user_id').eq('email', email).single()
+    if (existingBuyer?.auth_user_id) memberAuthId = existingBuyer.auth_user_id
+  }
+
   const { data, error } = await db
     .from('team_members')
-    .insert({ buyer_id: buyer.id, name, email: email || null, phone: phone || null, whatsapp: whatsapp || null })
+    .insert({ buyer_id: buyer.id, name, email: email || null, phone: phone || null, whatsapp: whatsapp || null, auth_user_id: memberAuthId })
     .select()
     .single()
 
