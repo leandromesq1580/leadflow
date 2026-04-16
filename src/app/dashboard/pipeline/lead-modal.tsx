@@ -421,10 +421,19 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                             {formatFileSize(att.file_size)} · {new Date(att.created_at).toLocaleDateString('pt-BR')}
                           </p>
                         </div>
+                        <button onClick={async () => {
+                            const r = await fetch(`/api/leads/${leadId}/attachments/download?path=${encodeURIComponent(att.file_path)}`)
+                            const d = await r.json()
+                            if (d.url) window.open(d.url, '_blank')
+                          }}
+                          className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg"
+                          style={{ background: '#eef2ff', color: '#6366f1' }}>
+                          Baixar
+                        </button>
                         <button onClick={() => deleteAttachment(att.id)}
-                          className="text-[10px] font-bold px-2 py-1 rounded-lg"
+                          className="text-[10px] font-bold px-2 py-1.5 rounded-lg"
                           style={{ background: '#fef2f2', color: '#ef4444' }}>
-                          Remover
+                          ✕
                         </button>
                       </div>
                     )
