@@ -43,6 +43,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    // Auto-link: if this email exists as team_member somewhere, set auth_user_id
+    await supabase
+      .from('team_members')
+      .update({ auth_user_id })
+      .eq('email', email)
+      .is('auth_user_id', null)
+
     return NextResponse.json({ buyer: data })
   } catch (error) {
     console.error('[Register] Error:', error)

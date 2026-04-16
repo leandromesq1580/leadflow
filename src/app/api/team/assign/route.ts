@@ -10,8 +10,17 @@ export async function POST(request: NextRequest) {
   const db = createAdminClient()
 
   // Get member
-  const { data: member } = await db.from('team_members').select('*').eq('id', member_id).single()
+  let { data: member } = await db.from('team_members').select('*').eq('id', member_id).single()
   if (!member) return NextResponse.json({ error: 'Member not found' }, { status: 404 })
+
+  // Auto-link: if member has no auth_user_id but email matches a buyer, link now
+  if (!member.auth_user_id && member.email) {
+    const { data: matchBuyer } = await db.from('buyers').select('auth_user_id').eq('email', member.email).single()
+    if (matchBuyer?.auth_user_id) {
+      await db.from('team_members').update({ auth_user_id: matchBuyer.auth_user_id }).eq('id', member_id)
+      member = { ...member, auth_user_id: matchBuyer.auth_user_id }
+    }
+  }
 
   // Get lead
   const { data: lead } = await db.from('leads').select('*').eq('id', lead_id).single()
