@@ -121,7 +121,7 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead) {
 💡 ${lead.interest}
 
 ⚡ Ligue nos proximos 5 minutos!
-🔗 leadflow-five-tawny.vercel.app/dashboard`
+🔗 lead4producers.com/dashboard`
 
     await sendWhatsApp(buyer.phone, whatsappMsg)
   }
