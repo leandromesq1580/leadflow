@@ -12,6 +12,7 @@ interface Props {
   pipelineLeadId: string
   lead: Lead
   onClick: () => void
+  stageColor?: string
 }
 
 function timeAgo(date: string) {
@@ -22,50 +23,70 @@ function timeAgo(date: string) {
   return `${Math.floor(s / 86400)}d`
 }
 
-export function LeadCard({ pipelineLeadId, lead, onClick }: Props) {
+export function LeadCard({ pipelineLeadId, lead, onClick, stageColor }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: pipelineLeadId,
     data: { lead },
   })
 
-  const style = {
+  const cardStyle: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.4 : 1,
+    opacity: isDragging ? 0.5 : 1,
+    background: '#fff',
+    borderRadius: 14,
+    padding: '14px 16px',
+    marginBottom: 8,
+    cursor: 'grab',
+    borderLeft: `3px solid ${stageColor || '#6366f1'}`,
+    boxShadow: isDragging
+      ? '0 12px 28px rgba(99,102,241,0.18), 0 4px 10px rgba(0,0,0,0.06)'
+      : '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)',
   }
 
+  const hue = (lead.name.charCodeAt(0) * 47 + (lead.name.charCodeAt(1) || 0) * 23) % 360
+
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      onClick={onClick}
-      className="rounded-xl p-3 mb-2 cursor-grab active:cursor-grabbing group"
-      style2={{ background: '#fff', border: '1px solid #e8ecf4', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', ...style }}
-    >
-      <div style={{ background: '#fff', border: '1px solid #e8ecf4', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', borderRadius: 12, padding: 12, marginBottom: 0, ...style }}>
-        <div className="flex items-center gap-2 mb-1.5">
-          <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
-            style={{ background: `hsl(${(lead.name.charCodeAt(0) * 37) % 360}, 65%, 55%)` }}>
-            {lead.name.charAt(0).toUpperCase()}
-          </div>
+    <div ref={setNodeRef} style={cardStyle} {...attributes} {...listeners} onClick={onClick}>
+      {/* Name row */}
+      <div className="flex items-center gap-2.5 mb-2">
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-extrabold text-white flex-shrink-0"
+          style={{ background: `hsl(${hue}, 55%, 50%)` }}>
+          {lead.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+        </div>
+        <div className="flex-1 min-w-0">
           <p className="text-[13px] font-bold truncate" style={{ color: '#1a1a2e' }}>{lead.name}</p>
+          {lead.interest && (
+            <p className="text-[10px] truncate" style={{ color: '#94a3b8' }}>{lead.interest}</p>
+          )}
         </div>
-        {lead.phone && (
-          <p className="text-[12px] font-semibold mb-1" style={{ color: '#6366f1' }}>{lead.phone}</p>
-        )}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            {lead.state && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#eef2ff', color: '#6366f1' }}>{lead.state}</span>
-            )}
-            {lead.contract_closed && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#dcfce7', color: '#166534' }}>Fechado</span>
-            )}
-          </div>
-          <span className="text-[10px]" style={{ color: '#94a3b8' }}>{timeAgo(lead.created_at)}</span>
+      </div>
+
+      {/* Phone */}
+      {lead.phone && (
+        <div className="flex items-center gap-1.5 mb-2.5 ml-[42px]">
+          <span className="text-[10px]">📞</span>
+          <span className="text-[12px] font-semibold" style={{ color: '#475569' }}>{lead.phone}</span>
         </div>
+      )}
+
+      {/* Footer */}
+      <div className="flex items-center justify-between ml-[42px]">
+        <div className="flex items-center gap-1.5">
+          {lead.state && (
+            <span className="text-[9px] font-bold px-2 py-[3px] rounded-md"
+              style={{ background: '#f0f4ff', color: '#4f46e5', letterSpacing: '0.5px' }}>{lead.state}</span>
+          )}
+          {lead.type === 'hot' && (
+            <span className="text-[9px] font-bold px-2 py-[3px] rounded-md"
+              style={{ background: '#fef3c7', color: '#b45309' }}>HOT</span>
+          )}
+          {lead.contract_closed && (
+            <span className="text-[9px] font-bold px-2 py-[3px] rounded-md"
+              style={{ background: '#dcfce7', color: '#15803d' }}>FECHADO</span>
+          )}
+        </div>
+        <span className="text-[10px] font-medium" style={{ color: '#c0c8d4' }}>{timeAgo(lead.created_at)}</span>
       </div>
     </div>
   )

@@ -92,27 +92,18 @@ export default function PipelinePage() {
   function handleDragOver(event: DragOverEvent) {
     const { active, over } = event
     if (!over) return
-
     const activeItem = leads.find(l => l.id === active.id)
     if (!activeItem) return
-
-    // Determine target stage
     let targetStageId: string | null = null
-
-    // Check if dropping over a stage (column)
     const stage = activePipeline?.stages.find(s => s.id === over.id)
     if (stage) {
       targetStageId = stage.id
     } else {
-      // Dropping over another lead card — use that lead's stage
       const overItem = leads.find(l => l.id === over.id)
       if (overItem) targetStageId = overItem.stage_id
     }
-
     if (targetStageId && targetStageId !== activeItem.stage_id) {
-      setLeads(prev => prev.map(l =>
-        l.id === activeItem.id ? { ...l, stage_id: targetStageId! } : l
-      ))
+      setLeads(prev => prev.map(l => l.id === activeItem.id ? { ...l, stage_id: targetStageId! } : l))
     }
   }
 
@@ -121,8 +112,6 @@ export default function PipelinePage() {
     const { active } = event
     const item = leads.find(l => l.id === active.id)
     if (!item) return
-
-    // Save to DB
     await fetch(`/api/pipeline-leads/${item.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -130,55 +119,79 @@ export default function PipelinePage() {
     })
   }
 
-  // No pipelines yet — show create prompt
+  // Empty state — no pipelines
   if (!loading && pipelines.length === 0) {
     return (
-      <div className="max-w-md mx-auto text-center py-20">
-        <p className="text-[48px] mb-4">📋</p>
-        <h1 className="text-[22px] font-extrabold mb-2" style={{ color: '#1a1a2e' }}>Pipeline de Vendas</h1>
-        <p className="text-[14px] mb-6" style={{ color: '#64748b' }}>Crie seu primeiro pipeline pra gerenciar seus leads visualmente com Kanban.</p>
-        <button onClick={createPipeline} disabled={creating}
-          className="px-6 py-3 rounded-xl text-[14px] font-bold text-white disabled:opacity-50"
-          style={{ background: '#6366f1' }}>
-          {creating ? 'Criando...' : 'Criar Pipeline "Vendas"'}
-        </button>
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <div className="text-center max-w-sm">
+          <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6"
+            style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)' }}>
+            <span className="text-[36px]">📋</span>
+          </div>
+          <h1 className="text-[24px] font-extrabold mb-2" style={{ color: '#1a1a2e' }}>Pipeline de Vendas</h1>
+          <p className="text-[14px] mb-8 leading-relaxed" style={{ color: '#94a3b8' }}>
+            Gerencie seus leads visualmente com Kanban.<br/>Arraste entre estagios conforme avanca a venda.
+          </p>
+          <button onClick={createPipeline} disabled={creating}
+            className="px-8 py-3.5 rounded-xl text-[14px] font-bold text-white disabled:opacity-50 transition-all hover:shadow-lg"
+            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
+            {creating ? 'Criando...' : 'Criar Meu Pipeline'}
+          </button>
+        </div>
       </div>
     )
   }
 
   if (loading) {
-    return <div className="text-center py-20"><p className="text-[14px]" style={{ color: '#94a3b8' }}>Carregando pipeline...</p></div>
+    return (
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <div className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: '#6366f1', borderTopColor: 'transparent' }} />
+      </div>
+    )
   }
+
+  const totalLeads = leads.length
+  const closedLeads = leads.filter(l => l.lead.contract_closed).length
 
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>Pipeline</h1>
-          {pipelines.length > 1 && (
-            <select value={activePipeline?.id || ''} onChange={e => {
-              const p = pipelines.find(pp => pp.id === e.target.value)
-              if (p) { setActivePipeline(p); loadLeads(p.id) }
-            }}
-              className="px-3 py-1.5 rounded-lg text-[13px] font-semibold"
-              style={{ border: '1px solid #e8ecf4', color: '#1a1a2e' }}>
-              {pipelines.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          )}
-          <span className="text-[12px] font-semibold px-2 py-0.5 rounded" style={{ background: '#eef2ff', color: '#6366f1' }}>
-            {leads.length} leads
-          </span>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <div className="flex items-center gap-3 mb-1">
+            <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>Pipeline</h1>
+            {pipelines.length > 1 && (
+              <select value={activePipeline?.id || ''} onChange={e => {
+                const p = pipelines.find(pp => pp.id === e.target.value)
+                if (p) { setActivePipeline(p); loadLeads(p.id) }
+              }}
+                className="px-3 py-1.5 rounded-lg text-[13px] font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                style={{ border: '1px solid #e8ecf4', color: '#1a1a2e', background: '#fff' }}>
+                {pipelines.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            )}
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-[12px] font-semibold" style={{ color: '#94a3b8' }}>
+              {totalLeads} leads
+            </span>
+            {closedLeads > 0 && (
+              <span className="text-[12px] font-bold px-2 py-0.5 rounded-md" style={{ background: '#dcfce7', color: '#15803d' }}>
+                {closedLeads} fechados
+              </span>
+            )}
+          </div>
         </div>
         <Link href="/dashboard/pipeline/settings"
-          className="px-4 py-2 rounded-xl text-[12px] font-bold"
-          style={{ background: '#f1f5f9', color: '#64748b' }}>
-          Gerenciar Pipelines
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-bold transition-all hover:shadow-sm"
+          style={{ background: '#fff', color: '#64748b', border: '1px solid #e8ecf4' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3v18M3 12h18"/></svg>
+          Gerenciar
         </Link>
       </div>
 
       {/* Kanban Board */}
-      <div className="overflow-x-auto pb-4">
+      <div className="overflow-x-auto pb-6 -mx-4 px-4" style={{ scrollbarWidth: 'thin' }}>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
@@ -186,7 +199,7 @@ export default function PipelinePage() {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-4" style={{ minWidth: (activePipeline?.stages.length || 1) * 296 }}>
+          <div className="flex gap-4" style={{ minWidth: (activePipeline?.stages.length || 1) * 306 }}>
             {activePipeline?.stages.map(stage => (
               <KanbanColumn
                 key={stage.id}
@@ -197,9 +210,9 @@ export default function PipelinePage() {
             ))}
           </div>
 
-          <DragOverlay>
+          <DragOverlay dropAnimation={null}>
             {activeCard && (
-              <div style={{ width: 264, opacity: 0.9 }}>
+              <div style={{ width: 274, transform: 'rotate(2deg)' }}>
                 <LeadCard pipelineLeadId={activeCard.id} lead={activeCard.lead} onClick={() => {}} />
               </div>
             )}

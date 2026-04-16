@@ -24,23 +24,30 @@ export function KanbanColumn({ stage, items, onLeadClick }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id })
 
   return (
-    <div className="flex-shrink-0 w-[280px]">
+    <div className="flex-shrink-0 w-[290px]">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-3 px-1">
-        <div className="w-3 h-3 rounded-full" style={{ background: stage.color }} />
-        <h3 className="text-[13px] font-bold" style={{ color: '#1a1a2e' }}>{stage.name}</h3>
-        <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: '#f1f5f9', color: '#64748b' }}>
+      <div className="flex items-center justify-between mb-3 px-1">
+        <div className="flex items-center gap-2.5">
+          <div className="w-2.5 h-2.5 rounded-full" style={{ background: stage.color, boxShadow: `0 0 8px ${stage.color}40` }} />
+          <h3 className="text-[13px] font-bold tracking-tight" style={{ color: '#1a1a2e' }}>{stage.name}</h3>
+        </div>
+        <span className="text-[11px] font-extrabold w-6 h-6 rounded-lg flex items-center justify-center"
+          style={{ background: `${stage.color}15`, color: stage.color }}>
           {items.length}
         </span>
       </div>
 
+      {/* Top accent bar */}
+      <div className="h-[3px] rounded-t-xl mb-0" style={{ background: `linear-gradient(90deg, ${stage.color}, ${stage.color}60)` }} />
+
       {/* Column body */}
       <div
         ref={setNodeRef}
-        className="rounded-xl p-2 min-h-[200px] transition-colors"
+        className="rounded-b-xl p-2.5 min-h-[calc(100vh-220px)] transition-all duration-200"
         style={{
-          background: isOver ? 'rgba(99,102,241,0.06)' : '#f8f9fc',
-          border: isOver ? '2px dashed #6366f1' : '2px dashed transparent',
+          background: isOver ? `${stage.color}08` : '#f4f6f9',
+          border: isOver ? `2px dashed ${stage.color}50` : '2px solid transparent',
+          borderTop: 'none',
         }}
       >
         <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
@@ -49,15 +56,19 @@ export function KanbanColumn({ stage, items, onLeadClick }: Props) {
               key={item.id}
               pipelineLeadId={item.id}
               lead={item.lead}
+              stageColor={stage.color}
               onClick={() => onLeadClick(item)}
             />
           ))}
         </SortableContext>
 
         {items.length === 0 && (
-          <p className="text-center text-[11px] py-8" style={{ color: '#c0c8d4' }}>
-            Arraste leads aqui
-          </p>
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-2" style={{ background: `${stage.color}10` }}>
+              <span className="text-[16px]" style={{ opacity: 0.4 }}>📋</span>
+            </div>
+            <p className="text-[11px] font-medium" style={{ color: '#c0c8d4' }}>Arraste leads aqui</p>
+          </div>
         )}
       </div>
     </div>
