@@ -8,6 +8,7 @@ const buyerLinks = [
   { href: '/dashboard/leads', label: 'Meus Leads', icon: '🎯' },
   { href: '/dashboard/pipeline', label: 'Pipeline', icon: '📋' },
   { href: '/dashboard/appointments', label: 'Appointments', icon: '📅' },
+  { href: '/dashboard/team', label: 'Meu Time', icon: '👥' },
   { href: '/dashboard/credits', label: 'Creditos', icon: '💳' },
   { href: '/dashboard/settings', label: 'Configuracoes', icon: '⚙️' },
 ]
@@ -30,11 +31,7 @@ interface SidebarProps {
 
 export function Sidebar({ type, userName, isAgency }: SidebarProps) {
   const pathname = usePathname()
-  const baseLinks = type === 'admin' ? adminLinks : buyerLinks
-  // Inject "Meu Time" after Appointments if agency mode
-  const links = type === 'buyer' && isAgency
-    ? [...baseLinks.slice(0, 3), { href: '/dashboard/team', label: 'Meu Time', icon: '👥' }, ...baseLinks.slice(3)]
-    : baseLinks
+  const links = type === 'admin' ? adminLinks : buyerLinks
 
   async function handleLogout() {
     const { createBrowserClient } = await import('@supabase/ssr')
