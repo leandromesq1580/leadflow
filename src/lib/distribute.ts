@@ -1,5 +1,5 @@
 import { createAdminClient } from './supabase/admin'
-import { sendLeadNotificationEmail } from './notifications'
+import { sendLeadNotificationEmail, sendTeamMemberNotification } from './notifications'
 
 interface Lead {
   id: string
@@ -89,7 +89,63 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
   // Notify buyer (always — function sends email + WhatsApp to buyer/admin/group)
   await sendLeadNotificationEmail(selectedBuyer, lead)
 
+  // Agency mode: sub-distribute to team member
+  const { data: buyerInfo } = await supabase
+    .from('buyers')
+    .select('is_agency, team_distribution_mode')
+    .eq('id', selectedBuyer.id)
+    .single()
+
+  if (buyerInfo?.is_agency && buyerInfo.team_distribution_mode === 'auto_roundrobin') {
+    await distributeToTeamMember(supabase, selectedBuyer.id, lead)
+  }
+
   console.log(`[Distribute] Lead ${lead.id} (${lead.state}) → ${selectedBuyer.name} (remaining: ${selectedBuyer.remaining - 1})`)
 
   return selectedBuyer
+}
+
+/**
+ * Sub-distribute a lead to the next team member (round-robin by lead count).
+ */
+async function distributeToTeamMember(supabase: ReturnType<typeof createAdminClient>, buyerId: string, lead: Lead) {
+  // Get active team members
+  const { data: members } = await supabase
+    .from('team_members')
+    .select('*')
+    .eq('buyer_id', buyerId)
+    .eq('is_active', true)
+    .order('created_at', { ascending: true })
+
+  if (!members || members.length === 0) return
+
+  // Count leads per member for round-robin
+  const { data: counts } = await supabase
+    .from('leads')
+    .select('assigned_to_member')
+    .eq('assigned_to', buyerId)
+    .not('assigned_to_member', 'is', null)
+
+  const memberCounts: Record<string, number> = {}
+  for (const m of members) memberCounts[m.id] = 0
+  for (const l of counts || []) {
+    if (l.assigned_to_member && memberCounts[l.assigned_to_member] !== undefined) {
+      memberCounts[l.assigned_to_member]++
+    }
+  }
+
+  // Pick member with fewest leads
+  const sorted = members.sort((a, b) => (memberCounts[a.id] || 0) - (memberCounts[b.id] || 0))
+  const nextMember = sorted[0]
+
+  // Assign
+  await supabase
+    .from('leads')
+    .update({ assigned_to_member: nextMember.id })
+    .eq('id', lead.id)
+
+  // Notify team member
+  await sendTeamMemberNotification(nextMember, lead)
+
+  console.log(`[Distribute] Team: ${lead.id} → member ${nextMember.name} (${memberCounts[nextMember.id] || 0} leads)`)
 }

@@ -23,11 +23,16 @@ const adminLinks = [
 interface SidebarProps {
   type: 'buyer' | 'admin'
   userName?: string
+  isAgency?: boolean
 }
 
-export function Sidebar({ type, userName }: SidebarProps) {
+export function Sidebar({ type, userName, isAgency }: SidebarProps) {
   const pathname = usePathname()
-  const links = type === 'admin' ? adminLinks : buyerLinks
+  const baseLinks = type === 'admin' ? adminLinks : buyerLinks
+  // Inject "Meu Time" after Appointments if agency mode
+  const links = type === 'buyer' && isAgency
+    ? [...baseLinks.slice(0, 3), { href: '/dashboard/team', label: 'Meu Time', icon: '👥' }, ...baseLinks.slice(3)]
+    : baseLinks
 
   async function handleLogout() {
     const { createBrowserClient } = await import('@supabase/ssr')

@@ -18,14 +18,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const db = createAdminClient()
   const { data: buyer } = await db
     .from('buyers')
-    .select('name, is_admin')
+    .select('name, is_admin, is_agency')
     .eq('auth_user_id', user!.id)
     .single()
 
   return (
     <div className="flex min-h-screen" style={{ background: '#f8f9fc' }}>
       <div className="hidden md:block">
-        <Sidebar type="buyer" userName={buyer?.name || user!.email || ''} />
+        <Sidebar type="buyer" userName={buyer?.name || user!.email || ''} isAgency={buyer?.is_agency || false} />
       </div>
       <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-auto">
         {children}

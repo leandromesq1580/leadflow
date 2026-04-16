@@ -127,6 +127,69 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead) {
   }
 }
 
+interface TeamMember {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  whatsapp: string | null
+}
+
+/**
+ * Send notification to a team member when a lead is assigned to them.
+ */
+export async function sendTeamMemberNotification(member: TeamMember, lead: Lead) {
+  // Email
+  if (member.email) {
+    try {
+      await getResend().emails.send({
+        from: 'Lead4Producers <onboarding@resend.dev>',
+        to: member.email,
+        subject: `Novo Lead! ${lead.name} — ${lead.state}`,
+        html: `
+          <div style="font-family:sans-serif;max-width:500px;margin:0 auto;">
+            <div style="background:#6366f1;color:#fff;padding:20px;border-radius:12px 12px 0 0;">
+              <h2 style="margin:0;">Novo Lead pra Voce!</h2>
+            </div>
+            <div style="background:#f8fafc;padding:24px;border:1px solid #e2e8f0;border-radius:0 0 12px 12px;">
+              <p style="color:#64748b;margin-top:0;">Ola ${member.name}, voce recebeu um lead exclusivo:</p>
+              <div style="background:#fff;padding:16px;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:16px;">
+                <p style="margin:4px 0;"><strong>Nome:</strong> ${lead.name}</p>
+                <p style="margin:4px 0;"><strong>Telefone:</strong> <a href="tel:${lead.phone}" style="color:#6366f1;font-weight:700;">${lead.phone}</a></p>
+                <p style="margin:4px 0;"><strong>Estado:</strong> ${lead.state}</p>
+                <p style="margin:4px 0;"><strong>Interesse:</strong> ${lead.interest}</p>
+              </div>
+              <div style="background:#fef3c7;padding:12px;border-radius:8px;">
+                <p style="margin:0;font-size:14px;color:#92400e;">
+                  ⚡ <strong>Ligue nos proximos 5 minutos!</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+        `,
+      })
+      console.log(`[Notify] Team email sent to ${member.email}`)
+    } catch (e) {
+      console.error('[Notify] Team email failed:', e)
+    }
+  }
+
+  // WhatsApp
+  const memberPhone = member.whatsapp || member.phone
+  if (memberPhone) {
+    const msg = `🎯 *Novo Lead — Lead4Producers!*
+
+📋 *${lead.name}*
+📞 ${lead.phone}
+📍 ${lead.state}
+💡 ${lead.interest}
+
+⚡ Ligue nos proximos 5 minutos!`
+
+    await sendWhatsApp(memberPhone, msg)
+  }
+}
+
 /**
  * Send email notification to buyer when an appointment is scheduled.
  */
