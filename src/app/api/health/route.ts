@@ -91,15 +91,12 @@ export async function GET() {
     results['stripe'] = { ok: false, detail: e.message }
   }
 
-  // 7. Resend Email
+  // 7. Resend Email (send-only key can't list domains, just verify it's set)
   try {
     const resendKey = (process.env.RESEND_API_KEY || '').trim()
     if (!resendKey) throw new Error('RESEND_API_KEY not set')
-    const res = await fetch('https://api.resend.com/domains', {
-      headers: { Authorization: `Bearer ${resendKey}` },
-    })
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    results['resend_email'] = { ok: true, detail: 'API key valid' }
+    if (!resendKey.startsWith('re_')) throw new Error('Invalid key format')
+    results['resend_email'] = { ok: true, detail: `Key set (${resendKey.slice(0, 10)}...)` }
   } catch (e: any) {
     results['resend_email'] = { ok: false, detail: e.message }
   }
