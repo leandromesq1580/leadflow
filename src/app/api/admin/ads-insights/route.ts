@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
       const roi = spend > 0 ? revenue / spend : 0
 
       return {
-        name: row.campaign_name || row.adset_name || row.ad_name || row.region || 'Total',
+        name: row.ad_name || row.adset_name || row.campaign_name || row.region || 'Total',
         campaign_name: row.campaign_name || '',
         adset_name: row.adset_name || '',
         ad_name: row.ad_name || '',
