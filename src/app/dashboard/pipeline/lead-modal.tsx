@@ -21,11 +21,17 @@ const FOLLOW_UP_TYPES = [
   { key: 'meeting', label: 'Reuniao', icon: '🤝' },
 ]
 
+interface Attachment {
+  id: string; file_name: string; file_path: string; file_size: number; file_type: string; created_at: string
+}
+
 export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
-  const [tab, setTab] = useState<'details' | 'followups'>('details')
+  const [tab, setTab] = useState<'details' | 'followups' | 'attachments'>('details')
   const [lead, setLead] = useState<any>(null)
   const [followUps, setFollowUps] = useState<FollowUp[]>([])
+  const [attachments, setAttachments] = useState<Attachment[]>([])
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [showNewFU, setShowNewFU] = useState(false)
   const [fuType, setFuType] = useState('note')
   const [fuDesc, setFuDesc] = useState('')
@@ -33,12 +39,48 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   useEffect(() => {
     fetch(`/api/leads/${leadId}`).then(r => r.json()).then(d => setLead(d.lead || d))
     loadFollowUps()
+    loadAttachments()
   }, [leadId])
 
   async function loadFollowUps() {
     const r = await fetch(`/api/leads/${leadId}/follow-ups`)
     const d = await r.json()
     setFollowUps(d.followUps || [])
+  }
+
+  async function loadAttachments() {
+    const r = await fetch(`/api/leads/${leadId}/attachments`)
+    const d = await r.json()
+    setAttachments(d.attachments || [])
+  }
+
+  async function uploadFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    const form = new FormData()
+    form.append('file', file)
+    form.append('buyer_id', buyerId)
+    await fetch(`/api/leads/${leadId}/attachments`, { method: 'POST', body: form })
+    setUploading(false)
+    loadAttachments()
+    e.target.value = ''
+  }
+
+  async function deleteAttachment(attId: string) {
+    if (!confirm('Remover este arquivo?')) return
+    await fetch(`/api/leads/${leadId}/attachments`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ attachment_id: attId }),
+    })
+    loadAttachments()
+  }
+
+  function formatFileSize(bytes: number) {
+    if (bytes < 1024) return `${bytes}B`
+    if (bytes < 1048576) return `${Math.round(bytes / 1024)}KB`
+    return `${(bytes / 1048576).toFixed(1)}MB`
   }
 
   async function saveLead() {
@@ -53,6 +95,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
         age_range: lead.age_range, attendant: lead.attendant,
         is_organic: lead.is_organic, contract_closed: lead.contract_closed,
         policy_value: lead.policy_value, observation: lead.observation,
+        closed_at: lead.closed_at || null,
       }),
     })
     setSaving(false)
@@ -136,6 +179,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
             {[
               { key: 'details', label: 'Detalhes', icon: '📋' },
               { key: 'followups', label: `Follow-ups (${followUps.length})`, icon: '📌' },
+              { key: 'attachments', label: `Anexos (${attachments.length})`, icon: '📎' },
             ].map(t => (
               <button key={t.key} onClick={() => setTab(t.key as any)}
                 className="flex-1 py-2.5 rounded-lg text-[12px] font-bold transition-all"
@@ -202,6 +246,30 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                     </div>
                   </label>
                 </div>
+
+                {/* Closing details — show when contract_closed */}
+                {lead.contract_closed && (
+                  <div className="grid grid-cols-2 gap-3 mt-3 p-4 rounded-xl" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: '#15803d' }}>
+                        📅 Data Fechamento
+                      </label>
+                      <input type="date" value={lead.closed_at ? lead.closed_at.split('T')[0] : ''}
+                        onChange={e => setLead({ ...lead, closed_at: e.target.value ? new Date(e.target.value).toISOString() : null })}
+                        className="w-full px-3.5 py-2.5 rounded-xl text-[13px] font-medium focus:outline-none focus:ring-2 focus:ring-green-200"
+                        style={{ background: '#fff', border: '1px solid #bbf7d0', color: '#1a1a2e' }} />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: '#15803d' }}>
+                        💰 Valor da Apolice
+                      </label>
+                      <input type="number" value={lead.policy_value || ''} placeholder="0.00"
+                        onChange={e => setLead({ ...lead, policy_value: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-3.5 py-2.5 rounded-xl text-[13px] font-medium focus:outline-none focus:ring-2 focus:ring-green-200"
+                        style={{ background: '#fff', border: '1px solid #bbf7d0', color: '#1a1a2e' }} />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Observation */}
@@ -308,6 +376,56 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                         {done && (
                           <span className="text-[10px] font-bold px-2 py-1 rounded-lg self-start" style={{ color: '#10b981' }}>✓</span>
                         )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {tab === 'attachments' && (
+            <div>
+              {/* Upload */}
+              <label className="w-full py-4 rounded-xl text-[13px] font-bold mb-5 transition-all hover:shadow-sm cursor-pointer flex items-center justify-center gap-2"
+                style={{ background: '#f0f4ff', color: '#6366f1', border: '1px dashed #c7d2fe' }}>
+                <input type="file" className="hidden" onChange={uploadFile} disabled={uploading}
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.xls,.xlsx,.csv,.txt" />
+                {uploading ? 'Enviando...' : '📎 Clique para anexar arquivo'}
+              </label>
+              <p className="text-[10px] mb-4" style={{ color: '#c0c8d4' }}>PDF, DOC, XLS, imagens — max 10MB</p>
+
+              {/* List */}
+              {attachments.length === 0 ? (
+                <div className="text-center py-12">
+                  <span className="text-[32px] block mb-2">📁</span>
+                  <p className="text-[13px] font-semibold" style={{ color: '#94a3b8' }}>Nenhum anexo</p>
+                  <p className="text-[11px] mt-1" style={{ color: '#c0c8d4' }}>Envie propostas, contratos e documentos</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {attachments.map(att => {
+                    const isImage = att.file_type?.startsWith('image/')
+                    const isPdf = att.file_type === 'application/pdf'
+                    const icon = isImage ? '🖼️' : isPdf ? '📄' : '📎'
+                    return (
+                      <div key={att.id} className="rounded-xl p-3.5 flex items-center gap-3"
+                        style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                          style={{ background: '#f0f4ff' }}>
+                          <span className="text-[16px]">{icon}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-semibold truncate" style={{ color: '#1a1a2e' }}>{att.file_name}</p>
+                          <p className="text-[11px]" style={{ color: '#94a3b8' }}>
+                            {formatFileSize(att.file_size)} · {new Date(att.created_at).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                        <button onClick={() => deleteAttachment(att.id)}
+                          className="text-[10px] font-bold px-2 py-1 rounded-lg"
+                          style={{ background: '#fef2f2', color: '#ef4444' }}>
+                          Remover
+                        </button>
                       </div>
                     )
                   })}
