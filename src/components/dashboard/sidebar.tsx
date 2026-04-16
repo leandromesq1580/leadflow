@@ -16,6 +16,7 @@ const adminLinks = [
   { href: '/admin/buyers', label: 'Compradores', icon: '👥' },
   { href: '/admin/leads', label: 'Todos os Leads', icon: '📋' },
   { href: '/admin/appointments', label: 'Fila Appointments', icon: '📅' },
+  { href: '/admin/ads', label: 'Meta Ads', icon: '📈' },
   { href: '/admin/revenue', label: 'Receita', icon: '💰' },
   { href: '/admin/settings', label: 'Configuracoes', icon: '⚙️' },
 ]
