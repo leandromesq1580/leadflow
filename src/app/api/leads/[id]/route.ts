@@ -51,7 +51,12 @@ export async function PATCH(
   }
 
   const body = await request.json()
-  const allowedFields = ['status', 'assigned_to', 'assigned_at', 'product_type', 'type']
+  const allowedFields = [
+    'status', 'assigned_to', 'assigned_at', 'product_type', 'type',
+    'name', 'email', 'phone', 'city', 'state', 'interest',
+    'age_range', 'reason', 'platform', 'is_organic', 'contract_closed',
+    'policy_value', 'observation', 'attendant',
+  ]
   const updates: Record<string, unknown> = {}
 
   for (const field of allowedFields) {

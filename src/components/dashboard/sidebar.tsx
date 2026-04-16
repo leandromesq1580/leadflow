@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 const buyerLinks = [
   { href: '/dashboard', label: 'Visao Geral', icon: '📊' },
   { href: '/dashboard/leads', label: 'Meus Leads', icon: '🎯' },
+  { href: '/dashboard/pipeline', label: 'Pipeline', icon: '📋' },
   { href: '/dashboard/appointments', label: 'Appointments', icon: '📅' },
   { href: '/dashboard/credits', label: 'Creditos', icon: '💳' },
   { href: '/dashboard/settings', label: 'Configuracoes', icon: '⚙️' },

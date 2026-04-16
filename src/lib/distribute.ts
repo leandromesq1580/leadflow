@@ -89,6 +89,25 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
   // Notify buyer (always — function sends email + WhatsApp to buyer/admin/group)
   await sendLeadNotificationEmail(selectedBuyer, lead)
 
+  // Auto-add to default pipeline (if buyer has one)
+  const { data: defaultPipeline } = await supabase
+    .from('pipelines')
+    .select('id, stages:pipeline_stages(id, position)')
+    .eq('buyer_id', selectedBuyer.id)
+    .eq('is_default', true)
+    .single()
+
+  if (defaultPipeline?.stages?.length) {
+    const firstStage = (defaultPipeline.stages as any[]).sort((a: any, b: any) => a.position - b.position)[0]
+    await supabase.from('pipeline_leads').upsert({
+      lead_id: lead.id,
+      pipeline_id: defaultPipeline.id,
+      stage_id: firstStage.id,
+      position: 0,
+      moved_at: new Date().toISOString(),
+    }, { onConflict: 'lead_id,pipeline_id' })
+  }
+
   // Agency mode: sub-distribute to team member
   const { data: buyerInfo } = await supabase
     .from('buyers')
