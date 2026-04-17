@@ -104,8 +104,12 @@ export async function POST(request: NextRequest) {
     })
 
     if (!r.ok) {
-      const err = await r.text()
-      return NextResponse.json({ error: `wa-bridge falhou: ${err.slice(0, 200)}` }, { status: 500 })
+      const errBody = await r.json().catch(() => ({ error: 'Falha' }))
+      const msg = errBody?.error || 'Falha ao enviar'
+      const friendly = msg.includes('No LID') || msg.includes('nao tem WhatsApp')
+        ? `Este número não tem WhatsApp ativo (${cleanPhone}). Confirme o número com o lead.`
+        : msg
+      return NextResponse.json({ error: friendly }, { status: r.status })
     }
     const { id: waId } = await r.json()
 

@@ -40,7 +40,14 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({ number: cleanPhone, message: body }),
     })
 
-    if (!res.ok) return NextResponse.json({ error: 'Falha ao enviar WhatsApp' }, { status: 500 })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Falha desconhecida' }))
+      const msg = err?.error || 'Falha ao enviar WhatsApp'
+      const friendly = msg.includes('No LID') || msg.includes('nao tem WhatsApp')
+        ? `Este número não tem WhatsApp ativo (${cleanPhone}). Confirme o número com o lead.`
+        : msg
+      return NextResponse.json({ error: friendly }, { status: res.status })
+    }
     const sendRes = await res.json().catch(() => ({ id: null }))
 
     // Salva na thread de conversa do lead (aparece na aba "Conversa")
