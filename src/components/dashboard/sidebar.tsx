@@ -5,11 +5,14 @@ import { usePathname } from 'next/navigation'
 
 const buyerLinks = [
   { href: '/dashboard', label: 'Visao Geral', icon: '📊' },
+  { href: '/dashboard/performance', label: 'Performance', icon: '📈' },
   { href: '/dashboard/leads', label: 'Meus Leads', icon: '🎯' },
   { href: '/dashboard/pipeline', label: 'Pipeline', icon: '📋' },
   { href: '/dashboard/templates', label: 'Templates', icon: '💬' },
+  { href: '/dashboard/automations', label: 'Automações', icon: '⚡' },
   { href: '/dashboard/appointments', label: 'Appointments', icon: '📅' },
   { href: '/dashboard/team', label: 'Meu Time', icon: '👥' },
+  { href: '/dashboard/referral', label: 'Indicações', icon: '🎁' },
   { href: '/dashboard/credits', label: 'Creditos', icon: '💳' },
   { href: '/dashboard/settings', label: 'Configuracoes', icon: '⚙️' },
 ]

@@ -116,6 +116,7 @@ export async function POST(request: NextRequest) {
     case 'customer.subscription.updated': {
       const sub = event.data.object as Stripe.Subscription
       const buyerId = sub.metadata?.buyer_id
+      const interval = (sub.metadata?.interval as 'month' | 'year') || 'month'
       if (buyerId) {
         const status = sub.status === 'active' || sub.status === 'trialing' ? 'active' : 'inactive'
         const expiresAt = sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null
@@ -123,9 +124,31 @@ export async function POST(request: NextRequest) {
           crm_plan: status === 'active' ? 'pro' : 'free',
           crm_subscription_id: sub.id,
           crm_subscription_status: status,
+          crm_billing_interval: interval,
           crm_expires_at: expiresAt,
         }).eq('id', buyerId)
-        console.log(`[Stripe Webhook] CRM subscription ${status} for ${buyerId}`)
+        console.log(`[Stripe Webhook] CRM subscription ${status} (${interval}) for ${buyerId}`)
+
+        // Trigger referral reward on first subscription
+        if (status === 'active' && event.type === 'customer.subscription.created') {
+          const { data: buyer } = await supabase.from('buyers').select('referred_by').eq('id', buyerId).single()
+          if (buyer?.referred_by) {
+            const rewardCents = interval === 'year' ? 10000 : 2500
+            await supabase.from('referral_rewards').insert({
+              referrer_buyer_id: buyer.referred_by,
+              referred_buyer_id: buyerId,
+              trigger_event: 'crm_subscription',
+              reward_cents: rewardCents,
+            }).select().maybeSingle()
+            // Increment referrer credit (idempotent via UNIQUE)
+            const { error } = await supabase.rpc('increment_referral_credit', { p_buyer_id: buyer.referred_by, p_cents: rewardCents })
+            if (error) {
+              // Fallback: manual update
+              const { data: referrer } = await supabase.from('buyers').select('referral_credit_cents').eq('id', buyer.referred_by).single()
+              await supabase.from('buyers').update({ referral_credit_cents: (referrer?.referral_credit_cents || 0) + rewardCents }).eq('id', buyer.referred_by)
+            }
+          }
+        }
       }
       break
     }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { SendMessageModal } from '@/components/send-message-modal'
+import { TagPicker } from '@/components/tag-picker'
 
 interface Props {
   leadId: string
@@ -181,6 +182,11 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
         </div>
 
         <div className="px-7 pb-7">
+          {/* Tags */}
+          <div className="mb-4">
+            <TagPicker leadId={leadId} buyerId={buyerId} />
+          </div>
+
           {/* Tabs */}
           <div className="flex gap-1 mb-6 p-1 rounded-xl" style={{ background: '#f1f5f9' }}>
             {[

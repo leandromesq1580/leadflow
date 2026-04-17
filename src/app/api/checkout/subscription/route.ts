@@ -8,6 +8,11 @@ import { createAdminClient } from '@/lib/supabase/admin'
  */
 export async function POST(request: NextRequest) {
   try {
+    const { interval = 'month' } = await request.json().catch(() => ({}))
+    if (!['month', 'year'].includes(interval)) {
+      return NextResponse.json({ error: 'Invalid interval' }, { status: 400 })
+    }
+
     const supabase = await createServerSupabase()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -35,20 +40,27 @@ export async function POST(request: NextRequest) {
       await db.from('buyers').update({ stripe_customer_id: customerId }).eq('id', buyer.id)
     }
 
+    // Pricing: $99/mo or $950/yr (~20% discount vs $1188 monthly)
+    const isYearly = interval === 'year'
+    const unitAmount = isYearly ? 95000 : 9900
+    const description = isYearly
+      ? 'Pipeline, Gestao de Time, Follow-ups — anual com 20% off'
+      : 'Pipeline, Gestao de Time, Follow-ups, Anexos e mais'
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
       line_items: [{
         price_data: {
           currency: 'usd',
-          product_data: { name: 'Lead4Producers CRM Pro', description: 'Pipeline, Gestao de Time, Follow-ups, Anexos e mais' },
-          unit_amount: 9900,
-          recurring: { interval: 'month' },
+          product_data: { name: `Lead4Producers CRM Pro (${isYearly ? 'Anual' : 'Mensal'})`, description },
+          unit_amount: unitAmount,
+          recurring: { interval: isYearly ? 'year' : 'month' },
         },
         quantity: 1,
       }],
-      metadata: { buyer_id: buyer.id, product_type: 'crm_pro' },
-      subscription_data: { metadata: { buyer_id: buyer.id } },
+      metadata: { buyer_id: buyer.id, product_type: 'crm_pro', interval },
+      subscription_data: { metadata: { buyer_id: buyer.id, interval } },
       success_url: 'https://lead4producers.com/dashboard?crm=activated',
       cancel_url: 'https://lead4producers.com/dashboard/credits?cancelled=true',
     })
