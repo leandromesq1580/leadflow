@@ -46,7 +46,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   const [showSendMsg, setShowSendMsg] = useState(false)
   const [pipelines, setPipelines] = useState<any[]>([])
   const [pipelineLead, setPipelineLead] = useState<any>(null)
-  const [movingStage, setMovingStage] = useState(false)
+  const [pendingStageId, setPendingStageId] = useState<string | null>(null)
 
   useEffect(() => {
     fetch(`/api/leads/${leadId}`).then(r => r.json()).then(d => setLead(d.lead || d))
@@ -63,19 +63,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
     ])
     setPipelines(pipesRes.pipelines || [])
     setPipelineLead(plRes.pipelineLead || null)
-  }
-
-  async function moveToStage(newStageId: string) {
-    if (!pipelineLead) return
-    setMovingStage(true)
-    await fetch(`/api/pipeline-leads/${pipelineLead.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stage_id: newStageId }),
-    })
-    setMovingStage(false)
-    await loadPipelineInfo()
-    onSaved()
+    setPendingStageId(plRes.pipelineLead?.stage_id || null)
   }
 
   async function loadFollowUps() {
@@ -121,6 +109,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
 
   async function saveLead() {
     setSaving(true)
+    // Save lead fields
     await fetch(`/api/leads/${leadId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -134,6 +123,14 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
         closed_at: lead.closed_at || null,
       }),
     })
+    // Se usuario mudou estágio, salva também
+    if (pipelineLead && pendingStageId && pendingStageId !== pipelineLead.stage_id) {
+      await fetch(`/api/pipeline-leads/${pipelineLead.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage_id: pendingStageId }),
+      })
+    }
     setSaving(false)
     onSaved()
   }
@@ -381,11 +378,14 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                     <div>
                       <label className="block text-[10px] font-bold uppercase mb-1" style={{ color: '#94a3b8' }}>Mover para:</label>
                       <select
-                        value={pipelineLead.stage_id || ''}
-                        disabled={movingStage}
-                        onChange={e => moveToStage(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg text-[13px] font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-200 cursor-pointer disabled:opacity-50"
-                        style={{ background: '#fff', border: '1px solid #e8ecf4', color: '#1a1a2e' }}>
+                        value={pendingStageId || pipelineLead.stage_id || ''}
+                        onChange={e => setPendingStageId(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg text-[13px] font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-200 cursor-pointer"
+                        style={{
+                          background: '#fff',
+                          border: `1px solid ${pendingStageId && pendingStageId !== pipelineLead.stage_id ? '#6366f1' : '#e8ecf4'}`,
+                          color: '#1a1a2e',
+                        }}>
                         {(pipelines.find(p => p.id === pipelineLead.pipeline?.id)?.stages || [])
                           .sort((a: any, b: any) => a.position - b.position)
                           .map((s: any) => (
@@ -394,7 +394,11 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                             </option>
                           ))}
                       </select>
-                      {movingStage && <p className="text-[10px] mt-1" style={{ color: '#6366f1' }}>Movendo...</p>}
+                      {pendingStageId && pendingStageId !== pipelineLead.stage_id && (
+                        <p className="text-[10px] mt-1 font-semibold" style={{ color: '#6366f1' }}>
+                          ⚠️ Mudança pendente — será salva ao clicar &ldquo;Salvar Alterações&rdquo;
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
