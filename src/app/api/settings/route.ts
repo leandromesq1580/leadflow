@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function GET(request: NextRequest) {
-  const authId = new URL(request.url).searchParams.get('auth_user_id')
-  if (!authId) return NextResponse.json({ error: 'Missing auth_user_id' }, { status: 400 })
+  const url = new URL(request.url)
+  const authId = url.searchParams.get('auth_user_id')
+  const buyerId = url.searchParams.get('buyer_id')
+  if (!authId && !buyerId) return NextResponse.json({ error: 'Missing auth_user_id or buyer_id' }, { status: 400 })
 
   const db = createAdminClient()
-  const { data: buyer } = await db.from('buyers').select('*').eq('auth_user_id', authId).single()
+  const query = db.from('buyers').select('*')
+  const { data: buyer } = authId
+    ? await query.eq('auth_user_id', authId).single()
+    : await query.eq('id', buyerId!).single()
   if (!buyer) return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
 
   return NextResponse.json(buyer)

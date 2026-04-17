@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { SendMessageModal } from '@/components/send-message-modal'
 
 interface Props {
   leadId: string
@@ -35,6 +36,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   const [showNewFU, setShowNewFU] = useState(false)
   const [fuType, setFuType] = useState('note')
   const [fuDesc, setFuDesc] = useState('')
+  const [showSendMsg, setShowSendMsg] = useState(false)
 
   useEffect(() => {
     fetch(`/api/leads/${leadId}`).then(r => r.json()).then(d => setLead(d.lead || d))
@@ -164,12 +166,17 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               style={{ background: `hsl(${hue}, 55%, 50%)`, boxShadow: `0 4px 12px hsl(${hue}, 55%, 50%, 0.3)` }}>
               {lead.name?.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
             </div>
-            <div>
-              <h2 className="text-[20px] font-extrabold" style={{ color: '#1a1a2e' }}>{lead.name}</h2>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-[20px] font-extrabold truncate" style={{ color: '#1a1a2e' }}>{lead.name}</h2>
               <p className="text-[12px] font-medium" style={{ color: '#94a3b8' }}>
                 {lead.phone} {lead.state && `· ${lead.state}`}
               </p>
             </div>
+            <button onClick={() => setShowSendMsg(true)}
+              className="px-4 py-2.5 rounded-xl text-[12px] font-bold text-white flex items-center gap-1.5 flex-shrink-0"
+              style={{ background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 4px 14px rgba(16,185,129,0.3)' }}>
+              💬 Enviar Msg
+            </button>
           </div>
         </div>
 
@@ -444,6 +451,15 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
           )}
         </div>
       </div>
+
+      {showSendMsg && lead && (
+        <SendMessageModal
+          lead={{ id: leadId, name: lead.name, phone: lead.phone, email: lead.email, state: lead.state, city: lead.city, interest: lead.interest }}
+          agent={{ id: buyerId }}
+          onClose={() => setShowSendMsg(false)}
+          onSent={() => loadFollowUps()}
+        />
+      )}
     </>
   )
 }
