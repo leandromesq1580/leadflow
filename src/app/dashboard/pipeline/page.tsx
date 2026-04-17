@@ -21,6 +21,7 @@ export default function PipelinePage() {
   const [loading, setLoading] = useState(true)
   const [buyerId, setBuyerId] = useState('')
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null)
+  const [directLeadId, setDirectLeadId] = useState<string | null>(null)
   const [activeCard, setActiveCard] = useState<PipelineLead | null>(null)
   const [creating, setCreating] = useState(false)
   const [view, setView] = useState<'mine' | 'team'>('mine')
@@ -39,6 +40,11 @@ export default function PipelinePage() {
   )
 
   useEffect(() => {
+    // Check for ?lead=X in URL — abre o lead direto
+    const params = new URLSearchParams(window.location.search)
+    const urlLead = params.get('lead')
+    if (urlLead) setDirectLeadId(urlLead)
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
     const ref = supabaseUrl.replace('https://', '').split('.')[0]
     const cookie = document.cookie.split('; ').find(c => c.startsWith(`sb-${ref}-auth-token=`))
@@ -413,13 +419,27 @@ export default function PipelinePage() {
 
       </>}
 
-      {/* Lead Modal */}
-      {selectedLead && (
+      {/* Lead Modal — via click no card OU ?lead=X na URL */}
+      {(selectedLead || directLeadId) && buyerId && (
         <LeadModal
-          leadId={selectedLead.lead.id}
+          leadId={selectedLead?.lead.id || directLeadId!}
           buyerId={buyerId}
-          onClose={() => setSelectedLead(null)}
-          onSaved={() => { setSelectedLead(null); if (activePipeline) loadLeads(activePipeline.id); if (isAgency) loadTeamData(buyerId) }}
+          onClose={() => {
+            setSelectedLead(null)
+            setDirectLeadId(null)
+            // Clean URL param
+            if (directLeadId) {
+              const url = new URL(window.location.href)
+              url.searchParams.delete('lead')
+              window.history.replaceState({}, '', url.toString())
+            }
+          }}
+          onSaved={() => {
+            setSelectedLead(null)
+            setDirectLeadId(null)
+            if (activePipeline) loadLeads(activePipeline.id)
+            if (isAgency) loadTeamData(buyerId)
+          }}
         />
       )}
     </div>

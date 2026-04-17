@@ -159,7 +159,13 @@ export default function AppointmentsPage() {
       </div>
 
       {/* Event detail popover */}
-      {selectedEvent && <EventDetail event={selectedEvent} onClose={() => setSelectedEvent(null)} />}
+      {selectedEvent && (
+        <EventDetail
+          event={selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+          onChanged={() => { setSelectedEvent(null); load() }}
+        />
+      )}
     </div>
   )
 }
@@ -316,10 +322,45 @@ function DayView({ anchor, events, onClick }: { anchor: Date; events: CalendarEv
   )
 }
 
-function EventDetail({ event, onClose }: { event: CalendarEvent; onClose: () => void }) {
+function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onClose: () => void; onChanged: () => void }) {
+  const startDate = new Date(event.start)
+  const [editing, setEditing] = useState(false)
+  const [newDate, setNewDate] = useState(startDate.toISOString().slice(0, 10))
+  const [newTime, setNewTime] = useState(startDate.toTimeString().slice(0, 5))
+  const [busy, setBusy] = useState(false)
+
+  async function reschedule() {
+    if (!newDate || !newTime) { alert('Data e hora obrigatórias'); return }
+    setBusy(true)
+    const iso = new Date(`${newDate}T${newTime}:00`).toISOString()
+    const endpoint = event.kind === 'appointment'
+      ? `/api/appointments/${event.raw_id}`
+      : `/api/follow-ups/${event.raw_id}`
+    const r = await fetch(endpoint, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scheduled_at: iso }),
+    })
+    setBusy(false)
+    if (r.ok) onChanged()
+    else alert('Erro ao reagendar')
+  }
+
+  async function del() {
+    if (!confirm('Deletar este evento? Esta ação não pode ser desfeita.')) return
+    setBusy(true)
+    const endpoint = event.kind === 'appointment'
+      ? `/api/appointments/${event.raw_id}`
+      : `/api/follow-ups/${event.raw_id}`
+    const r = await fetch(endpoint, { method: 'DELETE' })
+    setBusy(false)
+    if (r.ok) onChanged()
+    else alert('Erro ao deletar')
+  }
+
   return (
     <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm" onClick={onClose}>
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] rounded-2xl p-6"
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] max-h-[90vh] overflow-y-auto rounded-2xl p-6"
         style={{ background: '#fff' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-start justify-between mb-4">
           <div>
@@ -332,23 +373,57 @@ function EventDetail({ event, onClose }: { event: CalendarEvent; onClose: () => 
           </div>
           <button onClick={onClose} className="text-[20px]" style={{ color: '#94a3b8' }}>×</button>
         </div>
+
         <div className="rounded-xl p-4 mb-4" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
-          <p className="text-[11px] font-bold uppercase mb-1" style={{ color: '#94a3b8' }}>Quando</p>
-          <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>
-            {new Date(event.start).toLocaleString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' })}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-bold uppercase" style={{ color: '#94a3b8' }}>Quando</p>
+            {!editing && (
+              <button onClick={() => setEditing(true)} className="text-[11px] font-bold" style={{ color: '#6366f1' }}>
+                ✎ Reagendar
+              </button>
+            )}
+          </div>
+          {!editing ? (
+            <p className="text-[14px] font-bold mt-1" style={{ color: '#1a1a2e' }}>
+              {startDate.toLocaleString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' })}
+            </p>
+          ) : (
+            <div className="flex gap-2 mt-2">
+              <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
+                className="flex-1 px-3 py-2 rounded-lg text-[12px]"
+                style={{ background: '#fff', border: '1px solid #c7d2fe' }} />
+              <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)}
+                className="w-[120px] px-3 py-2 rounded-lg text-[12px]"
+                style={{ background: '#fff', border: '1px solid #c7d2fe' }} />
+              <button onClick={reschedule} disabled={busy}
+                className="px-3 py-2 rounded-lg text-[11px] font-bold text-white disabled:opacity-50"
+                style={{ background: '#6366f1' }}>
+                Salvar
+              </button>
+              <button onClick={() => setEditing(false)} className="text-[11px] font-bold" style={{ color: '#94a3b8' }}>
+                ×
+              </button>
+            </div>
+          )}
         </div>
+
         {event.title && (
           <div className="rounded-xl p-4 mb-4" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
             <p className="text-[11px] font-bold uppercase mb-1" style={{ color: '#94a3b8' }}>Descrição</p>
             <p className="text-[13px]" style={{ color: '#1a1a2e' }}>{event.title}</p>
           </div>
         )}
+
         <a href={`/dashboard/pipeline?lead=${event.lead_id}`}
-          className="block w-full text-center py-3 rounded-xl text-[13px] font-bold text-white"
+          className="block w-full text-center py-3 rounded-xl text-[13px] font-bold text-white mb-2"
           style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-          Ver lead no Pipeline →
+          Abrir lead no Pipeline →
         </a>
+        <button onClick={del} disabled={busy}
+          className="block w-full text-center py-2.5 rounded-xl text-[12px] font-bold disabled:opacity-50"
+          style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
+          🗑 Deletar evento
+        </button>
       </div>
     </div>
   )
