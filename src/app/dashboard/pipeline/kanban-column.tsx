@@ -11,6 +11,7 @@ interface Stage {
 interface PipelineLead {
   id: string
   stage_id: string
+  moved_at?: string | null
   lead: { id: string; name: string; phone: string; state: string; interest: string; type: string; created_at: string; contract_closed: boolean }
 }
 
@@ -57,6 +58,7 @@ export function KanbanColumn({ stage, items, onLeadClick }: Props) {
               pipelineLeadId={item.id}
               lead={item.lead}
               stageColor={stage.color}
+              movedAt={item.moved_at}
               onClick={() => onLeadClick(item)}
             />
           ))}

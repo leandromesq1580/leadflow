@@ -10,7 +10,7 @@ import Link from 'next/link'
 interface Stage { id: string; name: string; color: string; position: number }
 interface Pipeline { id: string; name: string; is_default: boolean; stages: Stage[] }
 interface PipelineLead {
-  id: string; stage_id: string; position: number
+  id: string; stage_id: string; position: number; moved_at?: string | null
   lead: { id: string; name: string; phone: string; state: string; interest: string; type: string; created_at: string; contract_closed: boolean; email: string }
 }
 
@@ -31,6 +31,7 @@ export default function PipelinePage() {
   const [filterStage, setFilterStage] = useState('')
   const [filterDate, setFilterDate] = useState('')
   const [closedOnly, setClosedOnly] = useState(false)
+  const [staleOnly, setStaleOnly] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
 
   const sensors = useSensors(
@@ -109,6 +110,10 @@ export default function PipelinePage() {
     }
     if (filterStage && l.stage_id !== filterStage) return false
     if (closedOnly && !l.lead.contract_closed) return false
+    if (staleOnly) {
+      const movedAt = l.moved_at ? new Date(l.moved_at).getTime() : 0
+      if (Date.now() - movedAt < 3 * 86400000 || l.lead.contract_closed) return false
+    }
     if (filterDate) {
       const created = new Date(l.lead.created_at).getTime()
       const now = Date.now()
@@ -119,7 +124,12 @@ export default function PipelinePage() {
     return true
   })
 
-  const hasFilters = !!(search || filterStage || filterDate || closedOnly)
+  const hasFilters = !!(search || filterStage || filterDate || closedOnly || staleOnly)
+  const staleCount = leads.filter(l => {
+    if (l.lead.contract_closed) return false
+    const movedAt = l.moved_at ? new Date(l.moved_at).getTime() : 0
+    return Date.now() - movedAt >= 3 * 86400000
+  }).length
 
   const getStageLeads = useCallback((stageId: string) => {
     return filteredLeads.filter(l => l.stage_id === stageId).sort((a, b) => a.position - b.position)
@@ -221,6 +231,13 @@ export default function PipelinePage() {
                 {closedLeads} fechados
               </span>
             )}
+            {staleCount > 0 && (
+              <button onClick={() => { setStaleOnly(true); setShowFilters(true) }}
+                className="text-[12px] font-bold px-2 py-0.5 rounded-md transition-all hover:shadow-sm"
+                style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa' }}>
+                ⚠️ {staleCount} parado{staleCount > 1 ? 's' : ''} 3+ dias
+              </button>
+            )}
           </div>
         </div>
         <Link href="/dashboard/pipeline/settings"
@@ -308,7 +325,7 @@ export default function PipelinePage() {
           </button>
           <div className="flex items-center gap-3">
             {hasFilters && (
-              <button onClick={() => { setSearch(''); setFilterStage(''); setFilterDate(''); setClosedOnly(false) }}
+              <button onClick={() => { setSearch(''); setFilterStage(''); setFilterDate(''); setClosedOnly(false); setStaleOnly(false) }}
                 className="text-[11px] font-semibold flex items-center gap-1" style={{ color: '#ef4444' }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                 Limpar filtros
@@ -354,6 +371,12 @@ export default function PipelinePage() {
                 className="w-3.5 h-3.5 rounded accent-green-500" />
               <span className="text-[11px] font-bold" style={{ color: closedOnly ? '#15803d' : '#94a3b8' }}>Fechados</span>
             </label>
+            <label className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer"
+              style={{ background: staleOnly ? '#fff7ed' : '#f8f9fc', border: `1px solid ${staleOnly ? '#fed7aa' : '#e8ecf4'}` }}>
+              <input type="checkbox" checked={staleOnly} onChange={e => setStaleOnly(e.target.checked)}
+                className="w-3.5 h-3.5 rounded accent-orange-500" />
+              <span className="text-[11px] font-bold" style={{ color: staleOnly ? '#ea580c' : '#94a3b8' }}>⚠️ Parados 3+ dias</span>
+            </label>
           </div>
         )}
       </div>
@@ -381,7 +404,7 @@ export default function PipelinePage() {
           <DragOverlay dropAnimation={null}>
             {activeCard && (
               <div style={{ width: 274, transform: 'rotate(2deg)' }}>
-                <LeadCard pipelineLeadId={activeCard.id} lead={activeCard.lead} onClick={() => {}} />
+                <LeadCard pipelineLeadId={activeCard.id} lead={activeCard.lead} movedAt={activeCard.moved_at} onClick={() => {}} />
               </div>
             )}
           </DragOverlay>

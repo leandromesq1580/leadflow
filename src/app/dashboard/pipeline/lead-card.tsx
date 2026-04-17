@@ -2,6 +2,7 @@
 
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { getStaleness } from '@/lib/stale-leads'
 
 interface Lead {
   id: string; name: string; phone: string; state: string; interest: string
@@ -13,6 +14,7 @@ interface Props {
   lead: Lead
   onClick: () => void
   stageColor?: string
+  movedAt?: string | null
 }
 
 function timeAgo(date: string) {
@@ -23,11 +25,15 @@ function timeAgo(date: string) {
   return `${Math.floor(s / 86400)}d`
 }
 
-export function LeadCard({ pipelineLeadId, lead, onClick, stageColor }: Props) {
+export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: pipelineLeadId,
     data: { lead },
   })
+
+  const stale = getStaleness(movedAt)
+  const showStale = stale.level !== 'fresh' && !lead.contract_closed
+  const borderColor = stale.level === 'critical' ? '#dc2626' : stale.level === 'alert' ? '#ea580c' : (stageColor || '#6366f1')
 
   const cardStyle: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -38,9 +44,11 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor }: Props) {
     padding: '14px 16px',
     marginBottom: 8,
     cursor: 'grab',
-    borderLeft: `3px solid ${stageColor || '#6366f1'}`,
+    borderLeft: `3px solid ${borderColor}`,
     boxShadow: isDragging
       ? '0 12px 28px rgba(99,102,241,0.18), 0 4px 10px rgba(0,0,0,0.06)'
+      : stale.level === 'critical'
+      ? '0 0 0 1px rgba(220,38,38,0.2), 0 1px 3px rgba(0,0,0,0.04)'
       : '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)',
   }
 
@@ -84,6 +92,14 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor }: Props) {
           {lead.contract_closed && (
             <span className="text-[9px] font-bold px-2 py-[3px] rounded-md"
               style={{ background: '#dcfce7', color: '#15803d' }}>FECHADO</span>
+          )}
+          {showStale && (
+            <span className="text-[9px] font-bold px-2 py-[3px] rounded-md flex items-center gap-1"
+              style={{ background: stale.bg, color: stale.color }}>
+              {stale.level === 'critical' && '🔥'}
+              {stale.level === 'alert' && '⚠️'}
+              {stale.label}
+            </span>
           )}
         </div>
         <span className="text-[10px] font-medium" style={{ color: '#c0c8d4' }}>{timeAgo(lead.created_at)}</span>

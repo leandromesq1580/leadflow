@@ -6,6 +6,7 @@ import { timeAgo, getInitials } from '@/lib/utils'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { OnboardingChecklist } from '@/components/onboarding-checklist'
+import { StaleLeadsAlert } from '@/components/stale-leads-alert'
 
 export default async function DashboardPage() {
   const supabase = await createServerSupabase()
@@ -50,6 +51,9 @@ export default async function DashboardPage() {
     <div className="max-w-[1040px] mx-auto">
       {/* Onboarding Checklist */}
       <OnboardingChecklist buyerId={buyer.id} />
+
+      {/* Stale Leads Alert */}
+      <StaleLeadsAlert buyerId={buyer.id} />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-3">
