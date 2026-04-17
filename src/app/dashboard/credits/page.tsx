@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { BuyButton } from './buy-button'
 import { CrmSubscribeButton } from './crm-subscribe-button'
+import { BillingPortalButton } from '@/components/billing-portal-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,7 +56,10 @@ export default async function CreditsPage({
           <CrmSubscribeButton />
         )}
         {buyer?.crm_plan === 'pro' && (
-          <span className="px-4 py-2 rounded-xl text-[12px] font-bold" style={{ background: 'rgba(16,185,129,0.2)', color: '#34d399' }}>Ativo</span>
+          <div className="flex items-center gap-3">
+            <span className="px-4 py-2 rounded-xl text-[12px] font-bold" style={{ background: 'rgba(16,185,129,0.2)', color: '#34d399' }}>Ativo</span>
+            <BillingPortalButton label="Gerenciar" />
+          </div>
         )}
       </div>
 

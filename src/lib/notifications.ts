@@ -55,6 +55,17 @@ interface Lead {
  * Send email notification to buyer when a new lead is assigned.
  */
 export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead) {
+  // Fire-and-forget push
+  try {
+    const { pushToBuyer } = await import('@/lib/push-notify')
+    pushToBuyer((buyer as any).id || '', {
+      title: `🎯 Novo lead — ${lead.name}`,
+      body: `${lead.state} · ${lead.interest}. Ligue nos próximos 5 minutos!`,
+      url: '/dashboard/leads',
+      tag: `lead-${lead.id}`,
+    }).catch(err => console.error('[Push] err', err))
+  } catch (e) {}
+
   try {
     await getResend().emails.send({
       from: 'Lead4Producers <onboarding@resend.dev>',

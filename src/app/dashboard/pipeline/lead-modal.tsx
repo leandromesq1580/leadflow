@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { SendMessageModal } from '@/components/send-message-modal'
 import { TagPicker } from '@/components/tag-picker'
+import { WhatsAppInbox } from '@/components/whatsapp-inbox'
+import { AiScoreBadge } from '@/components/ai-score-badge'
 
 interface Props {
   leadId: string
@@ -28,7 +30,7 @@ interface Attachment {
 }
 
 export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
-  const [tab, setTab] = useState<'details' | 'followups' | 'attachments'>('details')
+  const [tab, setTab] = useState<'details' | 'inbox' | 'followups' | 'attachments'>('details')
   const [lead, setLead] = useState<any>(null)
   const [followUps, setFollowUps] = useState<FollowUp[]>([])
   const [attachments, setAttachments] = useState<Attachment[]>([])
@@ -182,8 +184,14 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
         </div>
 
         <div className="px-7 pb-7">
-          {/* Tags */}
-          <div className="mb-4">
+          {/* AI Score + Tags */}
+          <div className="mb-4 space-y-2">
+            <AiScoreBadge
+              leadId={leadId}
+              score={lead?.ai_score}
+              reason={lead?.ai_score_reason}
+              onScored={(s, r) => setLead((l: any) => l ? { ...l, ai_score: s, ai_score_reason: r } : l)}
+            />
             <TagPicker leadId={leadId} buyerId={buyerId} />
           </div>
 
@@ -191,6 +199,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
           <div className="flex gap-1 mb-6 p-1 rounded-xl" style={{ background: '#f1f5f9' }}>
             {[
               { key: 'details', label: 'Detalhes', icon: '📋' },
+              { key: 'inbox', label: 'Conversa', icon: '💬' },
               { key: 'followups', label: `Follow-ups (${followUps.length})`, icon: '📌' },
               { key: 'attachments', label: `Anexos (${attachments.length})`, icon: '📎' },
             ].map(t => (
@@ -308,6 +317,10 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                 </button>
               </div>
             </div>
+          )}
+
+          {tab === 'inbox' && lead && (
+            <WhatsAppInbox leadId={leadId} buyerId={buyerId} />
           )}
 
           {tab === 'followups' && (

@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Lead4Producers — Leads Exclusivos de Seguro de Vida",
   description: "Receba leads frescos de brasileiros nos EUA interessados em seguro de vida. Exclusivos, em tempo real.",
+  manifest: "/manifest.json",
+  themeColor: "#6366f1",
+  appleWebApp: { capable: true, title: "Lead4Producers", statusBarStyle: "default" },
 };
 
 export default function RootLayout({

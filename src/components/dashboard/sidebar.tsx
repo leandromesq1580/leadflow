@@ -10,6 +10,7 @@ const buyerLinks = [
   { href: '/dashboard/pipeline', label: 'Pipeline', icon: '📋' },
   { href: '/dashboard/templates', label: 'Templates', icon: '💬' },
   { href: '/dashboard/automations', label: 'Automações', icon: '⚡' },
+  { href: '/dashboard/sequences', label: 'Sequences', icon: '🔁' },
   { href: '/dashboard/appointments', label: 'Appointments', icon: '📅' },
   { href: '/dashboard/team', label: 'Meu Time', icon: '👥' },
   { href: '/dashboard/referral', label: 'Indicações', icon: '🎁' },
