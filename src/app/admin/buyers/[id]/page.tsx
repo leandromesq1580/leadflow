@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { formatDate, getInitials } from '@/lib/utils'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { AdminActions } from './admin-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,17 +40,29 @@ export default async function BuyerDetailPage({ params }: { params: Promise<{ id
       <Link href="/admin/buyers" className="text-[13px] font-medium mb-6 inline-block" style={{ color: '#6366f1' }}>← Voltar</Link>
 
       {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
+      <div className="flex items-center gap-4 mb-6">
         <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-[20px] font-bold text-white"
           style={{ background: `hsl(${(buyer.name.charCodeAt(0) * 37) % 360}, 65%, 55%)` }}>
           {getInitials(buyer.name)}
         </div>
         <div className="flex-1">
-          <h1 className="text-[22px] font-extrabold" style={{ color: '#1a1a2e' }}>{buyer.name}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-[22px] font-extrabold" style={{ color: '#1a1a2e' }}>{buyer.name}</h1>
+            {buyer.crm_plan === 'pro' && <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase" style={{ background: 'linear-gradient(135deg, #a78bfa, #6366f1)', color: '#fff' }}>CRM Pro</span>}
+            {buyer.is_agency && <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase" style={{ background: '#fef3c7', color: '#92400e' }}>Agency</span>}
+            {buyer.is_admin && <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase" style={{ background: '#fef2f2', color: '#dc2626' }}>Admin</span>}
+          </div>
           <p className="text-[14px]" style={{ color: '#64748b' }}>{buyer.email} · {buyer.phone}</p>
+          <p className="text-[11px] mt-0.5" style={{ color: '#94a3b8' }}>Criado em {formatDate(buyer.created_at)}</p>
         </div>
-        <Badge status={buyer.is_active ? 'active' : 'pending'} />
+        <span className="text-[11px] font-bold px-3 py-1.5 rounded-md uppercase"
+          style={{ background: buyer.is_active ? '#dcfce7' : '#fef2f2', color: buyer.is_active ? '#15803d' : '#dc2626' }}>
+          {buyer.is_active ? 'Ativo' : 'Inativo'}
+        </span>
       </div>
+
+      {/* Admin Actions */}
+      <AdminActions buyerId={buyer.id} isActive={!!buyer.is_active} crmPro={buyer.crm_plan === 'pro'} />
 
       {/* Credits */}
       <div className="grid grid-cols-2 gap-4 mb-6">
@@ -122,6 +135,50 @@ export default async function BuyerDetailPage({ params }: { params: Promise<{ id
           </div>
         ) : (
           <p className="text-center py-8 text-[13px]" style={{ color: '#94a3b8' }}>Nenhum lead recebido</p>
+        )}
+      </div>
+
+      {/* Credits History */}
+      <div className="rounded-2xl overflow-hidden mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+        <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #e8ecf4' }}>
+          <h2 className="text-[15px] font-bold" style={{ color: '#1a1a2e' }}>Histórico de Compras ({credits?.length || 0})</h2>
+          {credits && credits.length > 0 && (
+            <p className="text-[12px] font-bold" style={{ color: '#10b981' }}>
+              ${credits.reduce((s: number, c: any) => s + (c.total_purchased * (c.price_per_unit || 0)), 0).toFixed(2)} total
+            </p>
+          )}
+        </div>
+        {credits && credits.length > 0 ? (
+          <div>
+            {credits.map((c: any, i: number) => {
+              const isManual = c.stripe_payment_id?.startsWith('manual:')
+              const value = c.total_purchased * (c.price_per_unit || 0)
+              const remaining = c.total_purchased - c.total_used
+              return (
+                <div key={c.id} className="flex items-center gap-3 px-6 py-3" style={{ borderBottom: i < credits.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[14px]"
+                    style={{ background: isManual ? '#fef3c7' : '#eef2ff' }}>
+                    {isManual ? '🎁' : c.type === 'lead' ? '🎯' : c.type === 'appointment' ? '📅' : '❄️'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-semibold" style={{ color: '#1a1a2e' }}>
+                      {c.total_purchased}x {c.type === 'lead' ? 'leads' : c.type === 'appointment' ? 'appointments' : 'leads frios'}
+                      {isManual && <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#fef3c7', color: '#92400e' }}>CORTESIA</span>}
+                    </p>
+                    <p className="text-[11px]" style={{ color: '#94a3b8' }}>
+                      {formatDate(c.purchased_at)} · {c.total_used} usados · {remaining} restantes
+                      {isManual && ` · ${c.stripe_payment_id.replace('manual:', '')}`}
+                    </p>
+                  </div>
+                  <span className="text-[13px] font-bold" style={{ color: isManual ? '#94a3b8' : '#10b981' }}>
+                    {isManual ? '—' : `$${value.toFixed(2)}`}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <p className="text-center py-8 text-[13px]" style={{ color: '#94a3b8' }}>Nenhum pagamento registrado</p>
         )}
       </div>
     </div>
