@@ -22,29 +22,91 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ messages: data || [] })
 }
 
-/** POST /api/whatsapp/messages — send + log */
+function classifyMedia(mime: string): string {
+  if (mime.startsWith('image/')) return 'image'
+  if (mime.startsWith('audio/')) return 'audio'
+  if (mime.startsWith('video/')) return 'video'
+  return 'document'
+}
+
+/** POST /api/whatsapp/messages — envia texto OU mídia */
 export async function POST(request: NextRequest) {
   try {
-    const { lead_id, buyer_id, body } = await request.json()
-    if (!lead_id || !buyer_id || !body?.trim()) {
-      return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+    const db = createAdminClient()
+    const contentType = request.headers.get('content-type') || ''
+
+    let lead_id: string, buyer_id: string, body: string
+    let fileBuffer: ArrayBuffer | null = null
+    let fileName = ''
+    let fileMimetype = ''
+
+    if (contentType.includes('multipart/form-data')) {
+      // Upload com arquivo
+      const form = await request.formData()
+      lead_id = String(form.get('lead_id') || '')
+      buyer_id = String(form.get('buyer_id') || '')
+      body = String(form.get('body') || '')
+      const file = form.get('file') as File | null
+      if (file) {
+        fileBuffer = await file.arrayBuffer()
+        fileName = file.name || 'file'
+        fileMimetype = file.type || 'application/octet-stream'
+      }
+    } else {
+      const json = await request.json()
+      lead_id = json.lead_id
+      buyer_id = json.buyer_id
+      body = json.body || ''
     }
 
-    const db = createAdminClient()
+    if (!lead_id || !buyer_id || (!body.trim() && !fileBuffer)) {
+      return NextResponse.json({ error: 'Missing fields — precisa lead_id, buyer_id, e body OU file' }, { status: 400 })
+    }
+
     const { data: lead } = await db.from('leads').select('phone').eq('id', lead_id).single()
     if (!lead?.phone) return NextResponse.json({ error: 'Lead sem telefone' }, { status: 400 })
 
+    // Upload file to Storage if present
+    let mediaUrl: string | null = null
+    let mediaType: string | null = null
+    if (fileBuffer && fileMimetype) {
+      const timestamp = Date.now()
+      const slug = fileName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 60)
+      const path = `outgoing/${buyer_id}/${lead_id}/${timestamp}-${slug}`
+      const { error: upErr } = await db.storage
+        .from('wa-media')
+        .upload(path, fileBuffer, { contentType: fileMimetype, upsert: true })
+      if (upErr) {
+        console.error('[WA send] Upload error:', upErr.message)
+        return NextResponse.json({ error: `Falha no upload: ${upErr.message}` }, { status: 500 })
+      }
+      const { data: pub } = db.storage.from('wa-media').getPublicUrl(path)
+      mediaUrl = pub.publicUrl
+      mediaType = classifyMedia(fileMimetype)
+    }
+
+    // Send via wa-bridge
     const bridgeUrl = (process.env.WA_BRIDGE_URL || 'http://31.220.97.186:3457').replace(/\/$/, '')
     const bridgeKey = (process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026').trim()
     const cleanPhone = lead.phone.replace(/[\s\-()]/g, '').replace(/^\+/, '')
 
+    const bridgePayload: any = { number: cleanPhone, message: body }
+    if (mediaUrl) {
+      bridgePayload.mediaUrl = mediaUrl
+      bridgePayload.mediaMimetype = fileMimetype
+      bridgePayload.mediaFilename = fileName
+    }
+
     const r = await fetch(`${bridgeUrl}/send`, {
       method: 'POST',
       headers: { apikey: bridgeKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ number: cleanPhone, message: body }),
+      body: JSON.stringify(bridgePayload),
     })
 
-    if (!r.ok) return NextResponse.json({ error: 'wa-bridge falhou' }, { status: 500 })
+    if (!r.ok) {
+      const err = await r.text()
+      return NextResponse.json({ error: `wa-bridge falhou: ${err.slice(0, 200)}` }, { status: 500 })
+    }
     const { id: waId } = await r.json()
 
     const { data: msg } = await db.from('whatsapp_messages').insert({
@@ -53,13 +115,16 @@ export async function POST(request: NextRequest) {
       direction: 'out',
       from_phone: '',
       to_phone: cleanPhone,
-      body,
+      body: body || null,
+      media_url: mediaUrl,
+      media_type: mediaType,
       wa_message_id: waId,
       status: 'sent',
     }).select().single()
 
     return NextResponse.json({ message: msg })
   } catch (err: any) {
+    console.error('[WA send] Exception:', err?.message)
     return NextResponse.json({ error: err?.message || 'Failed' }, { status: 500 })
   }
 }

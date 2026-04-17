@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { wa_message_id, from, to, body, type, has_media } = await request.json()
+    const { wa_message_id, from, to, body, type, has_media, media_url, media_type, media_mimetype } = await request.json()
     if (!wa_message_id || !from) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
     }
@@ -60,7 +60,8 @@ export async function POST(request: NextRequest) {
       from_phone: normalizedFrom,
       to_phone: to || '',
       body: body || '',
-      media_type: has_media ? (type || 'media') : null,
+      media_type: media_type || (has_media ? (type || 'media') : null),
+      media_url: media_url || null,
       wa_message_id,
       status: 'delivered',
     })
