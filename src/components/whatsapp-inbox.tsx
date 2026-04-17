@@ -41,6 +41,11 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
   const [sending, setSending] = useState(false)
   const [loading, setLoading] = useState(true)
   const [showEmoji, setShowEmoji] = useState(false)
+  const [recording, setRecording] = useState(false)
+  const [recordSecs, setRecordSecs] = useState(0)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const recordChunksRef = useRef<Blob[]>([])
+  const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const textRef = useRef<HTMLTextAreaElement>(null)
@@ -109,6 +114,53 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
       alert(d.error || 'Erro ao enviar arquivo')
     }
     if (fileRef.current) fileRef.current.value = ''
+  }
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      // MP4/AAC tem melhor compat com whatsapp-web.js pra voice
+      const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/mp4')
+          ? 'audio/mp4'
+          : 'audio/webm'
+      const rec = new MediaRecorder(stream, { mimeType: mime })
+      recordChunksRef.current = []
+      rec.ondataavailable = e => { if (e.data.size > 0) recordChunksRef.current.push(e.data) }
+      rec.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop())
+        const blob = new Blob(recordChunksRef.current, { type: mime.split(';')[0] })
+        const ext = mime.includes('webm') ? 'webm' : mime.includes('mp4') ? 'm4a' : 'ogg'
+        const file = new File([blob], `audio-${Date.now()}.${ext}`, { type: mime.split(';')[0] })
+        setRecording(false)
+        if (recordTimerRef.current) clearInterval(recordTimerRef.current)
+        setRecordSecs(0)
+        if (file.size > 0) await sendFile(file)
+      }
+      rec.start()
+      mediaRecorderRef.current = rec
+      setRecording(true)
+      setRecordSecs(0)
+      recordTimerRef.current = setInterval(() => setRecordSecs(s => s + 1), 1000)
+    } catch (err: any) {
+      alert('Não foi possível acessar o microfone: ' + (err?.message || 'erro desconhecido'))
+    }
+  }
+
+  function stopRecording(cancel: boolean = false) {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      if (cancel) {
+        recordChunksRef.current = []
+        mediaRecorderRef.current.stop()
+        // onstop ainda roda mas chunks vazios => file.size = 0 => não envia
+      } else {
+        mediaRecorderRef.current.stop()
+      }
+    }
+    if (recordTimerRef.current) clearInterval(recordTimerRef.current)
+    setRecording(false)
+    setRecordSecs(0)
   }
 
   function insertEmoji(emoji: string) {
@@ -207,44 +259,66 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
 
       {/* Composer */}
       <div className="p-3 relative" style={{ background: '#fff', borderTop: '1px solid #e8ecf4' }}>
-        <div className="flex gap-1 items-end">
-          {/* Emoji button */}
-          <button onClick={() => setShowEmoji(v => !v)}
-            className="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] hover:bg-gray-100 transition-colors"
-            title="Emoji">
-            😀
-          </button>
-          {/* Attach button */}
-          <button onClick={() => fileRef.current?.click()} disabled={sending}
-            className="w-9 h-9 rounded-lg flex items-center justify-center text-[16px] hover:bg-gray-100 transition-colors disabled:opacity-50"
-            title="Anexar arquivo">
-            📎
-          </button>
-          <input ref={fileRef} type="file"
-            accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
-            onChange={e => e.target.files?.[0] && sendFile(e.target.files[0])}
-            className="hidden" />
+        {recording ? (
+          <div className="flex items-center gap-3 px-3 py-2 rounded-xl" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
+            <span className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ background: '#ef4444' }} />
+            <span className="text-[13px] font-bold" style={{ color: '#dc2626' }}>
+              Gravando áudio — {Math.floor(recordSecs / 60)}:{String(recordSecs % 60).padStart(2, '0')}
+            </span>
+            <div className="flex-1" />
+            <button onClick={() => stopRecording(true)}
+              className="px-3 py-1.5 rounded-lg text-[12px] font-bold" style={{ color: '#64748b' }}>
+              Cancelar
+            </button>
+            <button onClick={() => stopRecording(false)}
+              className="px-4 py-1.5 rounded-lg text-[12px] font-bold text-white"
+              style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
+              ➤ Enviar
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-1 items-end">
+            <button onClick={() => setShowEmoji(v => !v)}
+              className="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] hover:bg-gray-100 transition-colors"
+              title="Emoji">
+              😀
+            </button>
+            <button onClick={() => fileRef.current?.click()} disabled={sending}
+              className="w-9 h-9 rounded-lg flex items-center justify-center text-[16px] hover:bg-gray-100 transition-colors disabled:opacity-50"
+              title="Anexar arquivo">
+              📎
+            </button>
+            <input ref={fileRef} type="file"
+              accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+              onChange={e => e.target.files?.[0] && sendFile(e.target.files[0])}
+              className="hidden" />
+            <button onClick={startRecording} disabled={sending}
+              className="w-9 h-9 rounded-lg flex items-center justify-center text-[16px] hover:bg-red-50 transition-colors disabled:opacity-50"
+              title="Gravar áudio">
+              🎤
+            </button>
 
-          <textarea ref={textRef}
-            value={text}
-            onChange={e => setText(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                sendText()
-              }
-            }}
-            placeholder="Digite uma mensagem... (Enter envia)"
-            rows={1}
-            className="flex-1 px-3 py-2 rounded-xl text-[13px] resize-none focus:outline-none"
-            style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e', maxHeight: 100 }}
-          />
-          <button onClick={sendText} disabled={!text.trim() || sending}
-            className="px-4 h-9 rounded-xl text-[12px] font-bold text-white disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, #10b981, #059669)', minWidth: 44 }}>
-            {sending ? '...' : '➤'}
-          </button>
-        </div>
+            <textarea ref={textRef}
+              value={text}
+              onChange={e => setText(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  sendText()
+                }
+              }}
+              placeholder="Digite uma mensagem... (Enter envia)"
+              rows={1}
+              className="flex-1 px-3 py-2 rounded-xl text-[13px] resize-none focus:outline-none"
+              style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e', maxHeight: 100 }}
+            />
+            <button onClick={sendText} disabled={!text.trim() || sending}
+              className="px-4 h-9 rounded-xl text-[12px] font-bold text-white disabled:opacity-50"
+              style={{ background: 'linear-gradient(135deg, #10b981, #059669)', minWidth: 44 }}>
+              {sending ? '...' : '➤'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
