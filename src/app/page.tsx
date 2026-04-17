@@ -86,7 +86,7 @@ export default function LandingPage() {
               Superpoderes que fecham negócio sozinho
             </h2>
             <p className="text-[15px] max-w-2xl mx-auto" style={{ color: '#64748b' }}>
-              Seis features novas pra você parar de perder lead, priorizar o que importa e multiplicar fechamentos sem aumentar time.
+              Plataforma completa: marketplace de leads, CRM com IA, agenda unificada, WhatsApp bidirecional e automações. Tudo num lugar só.
             </p>
           </div>
 
@@ -94,44 +94,65 @@ export default function LandingPage() {
             {[
               {
                 icon: '💬',
-                tag: 'NOVO',
-                title: 'WhatsApp Inbox integrado',
-                desc: 'Envie e receba mensagens do lead dentro do sistema. Histórico completo, sem sair do CRM. Todo o time vê a mesma conversa.',
+                tag: 'COMPLETO',
+                title: 'WhatsApp Inbox bidirecional',
+                desc: 'Envie e receba dentro do sistema: texto, emoji, fotos, áudios, PDFs e documentos. Histórico completo por lead, time compartilhado.',
                 color: '#10b981',
               },
               {
                 icon: '🔥',
                 tag: 'AI',
                 title: 'Lead Scoring com IA',
-                desc: 'Inteligência Artificial analisa cada lead e dá um score 0-100 com explicação. Foque só nos mais quentes. Economize horas por semana.',
+                desc: 'Claude analisa cada lead e dá score 0-100 com explicação. Priorize os quentes automaticamente. Rode em lote com 1 clique.',
                 color: '#ef4444',
               },
               {
                 icon: '⚡',
-                tag: 'NOVO',
+                tag: 'AUTOMAÇÃO',
                 title: 'Automações sem código',
-                desc: 'Lead parado 48h? Dispara follow-up automático. Entrou em "Negociação"? Manda proposta. Configure regras e esqueça.',
+                desc: 'Lead parado 48h? Dispara follow-up. Entrou em "Negociação"? Manda proposta. Configure gatilhos visualmente e esqueça.',
                 color: '#f59e0b',
               },
               {
                 icon: '🔁',
-                tag: 'NOVO',
-                title: 'Sequências (Drip)',
-                desc: 'Dia 1 WhatsApp → Dia 3 email → Dia 7 WhatsApp final. Crie sequências de follow-up e enrolle leads com 1 clique.',
+                tag: 'SEQUENCES',
+                title: 'Drip Campaigns (Sequences)',
+                desc: 'Dia 1 WhatsApp → Dia 3 email → Dia 7 ligação. Crie sequências de múltiplos passos e enrolle leads com 1 clique.',
                 color: '#8b5cf6',
               },
               {
-                icon: '📈',
+                icon: '📅',
                 tag: 'NOVO',
-                title: 'Analytics de performance',
-                desc: 'KPIs de contato, conversão, custo por conversão, funil do pipeline, ROI por fonte. Leaderboard do time pra agências.',
+                title: 'Agenda unificada',
+                desc: 'Calendário Dia/Semana/Mês com Eventos, Tarefas, Appointments e Follow-ups num só lugar. Reagende, delete, marque como concluído direto no calendário.',
+                color: '#0ea5e9',
+              },
+              {
+                icon: '📈',
+                tag: 'ANALYTICS',
+                title: 'Performance Dashboard',
+                desc: 'KPIs de contato, conversão, custo por fechamento, funil do pipeline, ROI por fonte. Leaderboard do time pra agências.',
                 color: '#6366f1',
+              },
+              {
+                icon: '📂',
+                tag: 'NOVO',
+                title: 'Import de leads + Manual',
+                desc: 'Adicione leads manualmente ou importe CSV em massa (2000 por vez). Já tem base antiga? Migre em 30 segundos e comece a vender hoje.',
+                color: '#ec4899',
+              },
+              {
+                icon: '🏷️',
+                tag: 'ORGANIZAÇÃO',
+                title: 'Tags + Filtros avançados',
+                desc: 'Categorize leads com tags coloridas. Filtros por data de chegada (hoje, 7d, 30d, custom), estágio, status. Analise cohorts sem Excel.',
+                color: '#14b8a6',
               },
               {
                 icon: '📱',
                 tag: 'MOBILE',
                 title: 'App instalável + Push',
-                desc: 'Adicione o sistema na tela inicial do celular. Receba push quando um lead cair. Contate em 30 segundos. Converta 3x mais.',
+                desc: 'Adicione o sistema na tela inicial do celular. Receba push quando um lead cair. Contate em 30 segundos e converta 3x mais.',
                 color: '#06b6d4',
               },
             ].map((f, i) => (
@@ -214,9 +235,11 @@ export default function LandingPage() {
               { icon: '🔥', label: 'AI Score' },
               { icon: '⚡', label: 'Automações' },
               { icon: '🔁', label: 'Sequences' },
+              { icon: '📅', label: 'Agenda' },
               { icon: '📌', label: 'Follow-ups' },
-              { icon: '📎', label: 'Anexos' },
-              { icon: '🏷️', label: 'Tags' },
+              { icon: '📎', label: 'Anexos/Mídia' },
+              { icon: '🏷️', label: 'Tags + Filtros' },
+              { icon: '📂', label: 'Import CSV' },
               { icon: '👥', label: 'Time + Leaderboard' },
               { icon: '📈', label: 'Performance' },
               { icon: '📱', label: 'App Mobile' },
@@ -393,17 +416,19 @@ export default function LandingPage() {
               <ul className="space-y-2.5 mb-8">
                 {[
                   'Tudo do plano grátis',
-                  '💬 WhatsApp Inbox bidirecional',
-                  '🔥 Lead Scoring com IA',
+                  '💬 WhatsApp Inbox (emoji + fotos + docs)',
+                  '🔥 Lead Scoring com IA (Claude)',
                   '⚡ Automações sem código',
-                  '🔁 Sequências (drip campaigns)',
-                  '📋 Pipeline Kanban',
+                  '🔁 Sequências / Drip Campaigns',
+                  '📅 Agenda (Eventos + Tarefas + Appointments)',
+                  '📋 Pipeline Kanban customizável',
+                  '📂 Import CSV + adição manual de leads',
                   '👥 Gestão de time + Leaderboard',
-                  '📈 Analytics de performance',
-                  '🏷️ Tags customizáveis',
+                  '📈 Analytics + ROI por fonte',
+                  '🏷️ Tags + filtros avançados',
                   '📱 App mobile + notificações push',
                   '💳 Billing portal self-service',
-                  '🎁 Programa de indicação',
+                  '🎁 Programa de indicação ($25-100)',
                 ].map((t, i) => (
                   <li key={i} className="flex items-center gap-2.5">
                     <span className="text-[13px]" style={{ color: '#a78bfa' }}>✓</span>
