@@ -40,6 +40,8 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   const [editingFU, setEditingFU] = useState<{ id: string; text: string } | null>(null)
   const [fuType, setFuType] = useState('note')
   const [fuDesc, setFuDesc] = useState('')
+  const [fuDate, setFuDate] = useState('')
+  const [fuTime, setFuTime] = useState('')
   const [showSendMsg, setShowSendMsg] = useState(false)
 
   useEffect(() => {
@@ -110,12 +112,20 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
 
   async function addFollowUp() {
     if (!fuDesc.trim()) return
+    // Combine date + time into ISO timestamp
+    let scheduled_at: string | null = null
+    if (fuDate) {
+      const time = fuTime || '09:00'
+      scheduled_at = new Date(`${fuDate}T${time}:00`).toISOString()
+    }
     await fetch(`/api/leads/${leadId}/follow-ups`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ buyer_id: buyerId, type: fuType, description: fuDesc }),
+      body: JSON.stringify({ buyer_id: buyerId, type: fuType, description: fuDesc, scheduled_at }),
     })
     setFuDesc('')
+    setFuDate('')
+    setFuTime('')
     setShowNewFU(false)
     loadFollowUps()
   }
@@ -370,6 +380,29 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                   <textarea value={fuDesc} onChange={e => setFuDesc(e.target.value)} placeholder="O que aconteceu ou precisa ser feito..."
                     rows={2} className="w-full px-3.5 py-2.5 rounded-xl text-[13px] resize-none mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                     style={{ background: '#fff', border: '1px solid #e8ecf4' }} />
+
+                  {/* Agendar data/hora (aparece no calendário /dashboard/appointments) */}
+                  <div className="mb-3">
+                    <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: '#94a3b8' }}>
+                      📅 Agendar (opcional — aparece no calendário)
+                    </p>
+                    <div className="flex gap-2">
+                      <input type="date" value={fuDate} onChange={e => setFuDate(e.target.value)}
+                        className="flex-1 px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                        style={{ background: '#fff', border: '1px solid #e8ecf4' }} />
+                      <input type="time" value={fuTime} onChange={e => setFuTime(e.target.value)}
+                        disabled={!fuDate}
+                        className="w-[120px] px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:opacity-50"
+                        style={{ background: '#fff', border: '1px solid #e8ecf4' }} />
+                      {fuDate && (
+                        <button onClick={() => { setFuDate(''); setFuTime('') }}
+                          className="px-2 py-2 text-[11px] font-bold" style={{ color: '#94a3b8' }}>
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="flex gap-2 justify-end">
                     <button onClick={() => setShowNewFU(false)} className="px-4 py-2 text-[12px] font-semibold rounded-lg" style={{ color: '#94a3b8' }}>Cancelar</button>
                     <button onClick={addFollowUp} disabled={!fuDesc.trim()}
