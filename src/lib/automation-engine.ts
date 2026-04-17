@@ -145,6 +145,19 @@ async function executeAction(auto: Automation, target: Target): Promise<void> {
         body: JSON.stringify({ number: cleanPhone, message: body }),
       })
       if (!res.ok) throw new Error(`wa-bridge ${res.status}`)
+      const { id: waId } = await res.json().catch(() => ({ id: null }))
+
+      // Salva na thread de conversa
+      await db.from('whatsapp_messages').insert({
+        buyer_id: auto.buyer_id,
+        lead_id: target.lead_id,
+        direction: 'out',
+        from_phone: '',
+        to_phone: cleanPhone,
+        body,
+        wa_message_id: waId,
+        status: 'sent',
+      })
     } else {
       if (!lead.email) throw new Error('Lead sem email')
       const resendKey = (process.env.RESEND_API_KEY || '').trim()

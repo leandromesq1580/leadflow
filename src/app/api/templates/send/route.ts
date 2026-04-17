@@ -41,6 +41,19 @@ export async function POST(request: NextRequest) {
     })
 
     if (!res.ok) return NextResponse.json({ error: 'Falha ao enviar WhatsApp' }, { status: 500 })
+    const sendRes = await res.json().catch(() => ({ id: null }))
+
+    // Salva na thread de conversa do lead (aparece na aba "Conversa")
+    await db.from('whatsapp_messages').insert({
+      buyer_id,
+      lead_id,
+      direction: 'out',
+      from_phone: '',
+      to_phone: cleanPhone,
+      body,
+      wa_message_id: sendRes?.id || null,
+      status: 'sent',
+    })
   } else if (type === 'email') {
     if (!lead.email) return NextResponse.json({ error: 'Lead sem email' }, { status: 400 })
     const resendKey = (process.env.RESEND_API_KEY || '').trim()
