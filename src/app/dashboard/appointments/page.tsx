@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { TimePicker } from '@/components/time-picker'
 
 type EventKind = 'appointment' | 'followup' | 'event' | 'task'
 
@@ -540,8 +541,8 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
             <div className="flex gap-2 mt-2">
               <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
                 className="flex-1 px-3 py-2 rounded-lg text-[12px]" style={{ background: '#fff', border: '1px solid #c7d2fe' }} />
-              <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)}
-                className="w-[120px] px-3 py-2 rounded-lg text-[12px]" style={{ background: '#fff', border: '1px solid #c7d2fe' }} />
+              <TimePicker value={newTime} onChange={setNewTime}
+                className="px-2 py-2 rounded-lg text-[12px] bg-white border border-[#c7d2fe]" />
               <button onClick={reschedule} disabled={busy}
                 className="px-3 py-2 rounded-lg text-[11px] font-bold text-white disabled:opacity-50" style={{ background: '#6366f1' }}>
                 Salvar
@@ -688,8 +689,9 @@ function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
                 <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>
                   {isEvent ? 'Início' : 'Hora'}
                 </label>
-                <input type="time" value={time} onChange={e => setTime(e.target.value)}
-                  className="w-full mt-1 px-3 py-2 rounded-lg text-[13px]" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+                <div className="mt-1">
+                  <TimePicker value={time} onChange={setTime} />
+                </div>
               </div>
             )}
           </div>
@@ -697,8 +699,9 @@ function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
           {isEvent && !allDay && (
             <div>
               <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>Fim (opcional)</label>
-              <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)}
-                className="w-full mt-1 px-3 py-2 rounded-lg text-[13px]" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+              <div className="mt-1">
+                <TimePicker value={endTime} onChange={setEndTime} />
+              </div>
             </div>
           )}
 

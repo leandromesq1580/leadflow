@@ -5,6 +5,7 @@ import { SendMessageModal } from '@/components/send-message-modal'
 import { TagPicker } from '@/components/tag-picker'
 import { WhatsAppInbox } from '@/components/whatsapp-inbox'
 import { AiScoreBadge } from '@/components/ai-score-badge'
+import { TimePicker } from '@/components/time-picker'
 
 interface Props {
   leadId: string
@@ -404,14 +405,8 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                           background: '#fff',
                           border: fuType === 'meeting' && !fuDate ? '1px solid #f59e0b' : '1px solid #e8ecf4',
                         }} />
-                      <input type="time" value={fuTime} onChange={e => setFuTime(e.target.value)}
-                        disabled={!fuDate}
-                        required={fuType === 'meeting'}
-                        className="w-[120px] px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:opacity-50"
-                        style={{
-                          background: '#fff',
-                          border: fuType === 'meeting' && fuDate && !fuTime ? '1px solid #f59e0b' : '1px solid #e8ecf4',
-                        }} />
+                      <TimePicker value={fuTime} onChange={setFuTime} disabled={!fuDate}
+                        className="px-2 py-2 rounded-lg text-[12px] bg-white disabled:opacity-50" />
                       {fuDate && fuType !== 'meeting' && (
                         <button onClick={() => { setFuDate(''); setFuTime('') }}
                           className="px-2 py-2 text-[11px] font-bold" style={{ color: '#94a3b8' }}>
