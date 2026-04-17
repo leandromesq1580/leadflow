@@ -55,9 +55,26 @@ export default function PipelineSettingsPage() {
   }
 
   async function deletePipeline(id: string) {
-    if (!confirm('Deletar este pipeline? Todos os dados de posicionamento serao perdidos.')) return
-    await fetch(`/api/pipelines/${id}`, { method: 'DELETE' })
+    if (!confirm('Deletar este pipeline?')) return
+    const r = await fetch(`/api/pipelines/${id}`, { method: 'DELETE' })
+    if (!r.ok) {
+      const d = await r.json()
+      alert(d.error || 'Erro ao deletar pipeline')
+      return
+    }
     setSelected(null)
+    loadPipelines(buyerId)
+  }
+
+  async function deleteStage(stageId: string) {
+    if (!selected) return
+    if (!confirm('Deletar este estágio?')) return
+    const r = await fetch(`/api/pipelines/${selected.id}/stages/${stageId}`, { method: 'DELETE' })
+    if (!r.ok) {
+      const d = await r.json()
+      alert(d.error || 'Erro ao deletar estágio')
+      return
+    }
     loadPipelines(buyerId)
   }
 
@@ -160,6 +177,12 @@ export default function PipelineSettingsPage() {
                     className="w-7 h-7 rounded flex items-center justify-center text-[12px] disabled:opacity-20" style={{ background: '#e8ecf4' }}>↓</button>
                 </div>
                 <span className="text-[11px] font-mono" style={{ color: '#94a3b8' }}>#{idx + 1}</span>
+                <button onClick={() => deleteStage(stage.id)}
+                  title="Deletar estágio"
+                  className="w-7 h-7 rounded flex items-center justify-center text-[12px] transition-all hover:bg-red-50"
+                  style={{ background: '#fef2f2', color: '#ef4444' }}>
+                  🗑
+                </button>
               </div>
             ))}
           </div>

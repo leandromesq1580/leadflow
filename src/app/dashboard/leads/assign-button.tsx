@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useLayoutEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface Props {
@@ -12,7 +12,20 @@ interface Props {
 export function AssignButton({ leadId, members, currentMember }: Props) {
   const [open, setOpen] = useState(false)
   const [assigning, setAssigning] = useState(false)
+  const [direction, setDirection] = useState<'up' | 'down'>('down')
+  const buttonRef = useRef<HTMLButtonElement>(null)
   const router = useRouter()
+
+  useLayoutEffect(() => {
+    if (!open || !buttonRef.current) return
+    const rect = buttonRef.current.getBoundingClientRect()
+    const viewportH = window.innerHeight
+    const dropdownHeight = 60 + members.length * 36 + (currentMember ? 40 : 0)
+    const spaceBelow = viewportH - rect.bottom
+    const spaceAbove = rect.top
+    // Prefer down, but flip if not enough space below AND more space above
+    setDirection(spaceBelow < dropdownHeight && spaceAbove > spaceBelow ? 'up' : 'down')
+  }, [open, members.length, currentMember])
 
   async function assign(memberId: string | null) {
     setAssigning(true)
@@ -23,7 +36,6 @@ export function AssignButton({ leadId, members, currentMember }: Props) {
         body: JSON.stringify({ lead_id: leadId, member_id: memberId }),
       })
     } else {
-      // Unassign — remove member, keep with owner
       await fetch(`/api/leads/${leadId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -35,9 +47,12 @@ export function AssignButton({ leadId, members, currentMember }: Props) {
     router.refresh()
   }
 
+  const positionClass = direction === 'up' ? 'bottom-full mb-1' : 'top-full mt-1'
+  const shadowDir = direction === 'up' ? '0 -4px 24px rgba(0,0,0,0.12)' : '0 4px 24px rgba(0,0,0,0.12)'
+
   return (
     <div className="relative">
-      <button onClick={(e) => { e.preventDefault(); setOpen(!open) }}
+      <button ref={buttonRef} onClick={(e) => { e.preventDefault(); setOpen(!open) }}
         className="px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all hover:shadow-sm"
         style={{
           background: currentMember ? '#eef2ff' : '#fef3c7',
@@ -49,13 +64,12 @@ export function AssignButton({ leadId, members, currentMember }: Props) {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={(e) => { e.preventDefault(); setOpen(false) }} />
-          <div className="absolute right-0 bottom-full mb-1 z-50 rounded-xl p-2 min-w-[180px]"
-            style={{ background: '#fff', border: '1px solid #e8ecf4', boxShadow: '0 -4px 24px rgba(0,0,0,0.12)' }}>
+          <div className={`absolute right-0 ${positionClass} z-50 rounded-xl p-2 min-w-[180px]`}
+            style={{ background: '#fff', border: '1px solid #e8ecf4', boxShadow: shadowDir }}>
             <p className="text-[10px] font-bold px-2 py-1 mb-1" style={{ color: '#94a3b8' }}>
               {currentMember ? 'Transferir pra:' : 'Enviar pra:'}
             </p>
 
-            {/* Back to me option */}
             {currentMember && (
               <button onClick={(e) => { e.preventDefault(); assign(null) }}
                 disabled={assigning}
@@ -65,7 +79,6 @@ export function AssignButton({ leadId, members, currentMember }: Props) {
               </button>
             )}
 
-            {/* Team members */}
             {members.map(m => (
               <button key={m.id} onClick={(e) => { e.preventDefault(); assign(m.id) }}
                 disabled={assigning}

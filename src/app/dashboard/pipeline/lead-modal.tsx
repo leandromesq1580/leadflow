@@ -37,6 +37,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [showNewFU, setShowNewFU] = useState(false)
+  const [editingFU, setEditingFU] = useState<{ id: string; text: string } | null>(null)
   const [fuType, setFuType] = useState('note')
   const [fuDesc, setFuDesc] = useState('')
   const [showSendMsg, setShowSendMsg] = useState(false)
@@ -125,6 +126,22 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ completed: true }),
     })
+    loadFollowUps()
+  }
+
+  async function updateFollowUp(fuId: string, newDesc: string) {
+    await fetch(`/api/follow-ups/${fuId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: newDesc }),
+    })
+    setEditingFU(null)
+    loadFollowUps()
+  }
+
+  async function deleteFollowUp(fuId: string) {
+    if (!confirm('Deletar este follow-up?')) return
+    await fetch(`/api/follow-ups/${fuId}`, { method: 'DELETE' })
     loadFollowUps()
   }
 
@@ -385,22 +402,64 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                           <span className="text-[14px]">{typeInfo.icon}</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[13px] font-semibold" style={{ color: '#1a1a2e', textDecoration: done ? 'line-through' : 'none' }}>
-                            {fu.description}
-                          </p>
-                          <p className="text-[11px] mt-0.5" style={{ color: '#94a3b8' }}>
-                            {new Date(fu.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })} · {typeInfo.label}
-                          </p>
+                          {editingFU?.id === fu.id ? (
+                            <div>
+                              <textarea value={editingFU.text}
+                                onChange={e => setEditingFU({ ...editingFU, text: e.target.value })}
+                                rows={2} autoFocus
+                                className="w-full px-2 py-1.5 rounded-lg text-[13px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                                style={{ background: '#fff', border: '1px solid #c7d2fe' }} />
+                              <div className="flex gap-2 mt-1.5">
+                                <button onClick={() => updateFollowUp(fu.id, editingFU.text)}
+                                  disabled={!editingFU.text.trim()}
+                                  className="px-3 py-1 rounded text-[10px] font-bold text-white disabled:opacity-50"
+                                  style={{ background: '#6366f1' }}>
+                                  Salvar
+                                </button>
+                                <button onClick={() => setEditingFU(null)}
+                                  className="px-3 py-1 rounded text-[10px] font-bold"
+                                  style={{ color: '#94a3b8' }}>
+                                  Cancelar
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <p className="text-[13px] font-semibold" style={{ color: '#1a1a2e', textDecoration: done ? 'line-through' : 'none' }}>
+                                {fu.description}
+                              </p>
+                              <p className="text-[11px] mt-0.5" style={{ color: '#94a3b8' }}>
+                                {new Date(fu.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })} · {typeInfo.label}
+                              </p>
+                            </>
+                          )}
                         </div>
-                        {!done && (
-                          <button onClick={() => completeFollowUp(fu.id)}
-                            className="text-[10px] font-bold px-3 py-1.5 rounded-lg self-start transition-all hover:shadow-sm"
-                            style={{ background: '#dcfce7', color: '#166534' }}>
-                            ✓ Concluir
-                          </button>
-                        )}
-                        {done && (
-                          <span className="text-[10px] font-bold px-2 py-1 rounded-lg self-start" style={{ color: '#10b981' }}>✓</span>
+                        {editingFU?.id !== fu.id && (
+                          <div className="flex flex-col gap-1 self-start">
+                            {!done && (
+                              <button onClick={() => completeFollowUp(fu.id)}
+                                title="Concluir"
+                                className="text-[10px] font-bold px-2 py-1 rounded-lg transition-all hover:shadow-sm"
+                                style={{ background: '#dcfce7', color: '#166534' }}>
+                                ✓
+                              </button>
+                            )}
+                            {done && (
+                              <span className="text-[10px] font-bold px-2 py-1" style={{ color: '#10b981' }}>✓</span>
+                            )}
+                            <button onClick={() => setEditingFU({ id: fu.id, text: fu.description })}
+                              title="Editar"
+                              className="text-[10px] font-bold px-2 py-1 rounded-lg hover:bg-indigo-50"
+                              style={{ color: '#6366f1' }}>
+                              ✎
+                            </button>
+                            <button onClick={() => deleteFollowUp(fu.id)}
+                              title="Deletar"
+                              className="text-[10px] font-bold px-2 py-1 rounded-lg hover:bg-red-50"
+                              style={{ color: '#ef4444' }}>
+                              🗑
+                            </button>
+                          </div>
                         )}
                       </div>
                     )

@@ -16,7 +16,23 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const db = createAdminClient()
-  await db.from('pipeline_leads').delete().eq('pipeline_id', id)
+
+  // Validação: não pode deletar pipeline com leads
+  const { count, error: countError } = await db
+    .from('pipeline_leads')
+    .select('id', { count: 'exact', head: true })
+    .eq('pipeline_id', id)
+
+  if (countError) return NextResponse.json({ error: countError.message }, { status: 500 })
+
+  if ((count ?? 0) > 0) {
+    return NextResponse.json({
+      error: `Este pipeline tem ${count} lead${count === 1 ? '' : 's'}. Mova os leads pra outro pipeline antes de deletar.`,
+      leads_count: count,
+    }, { status: 409 })
+  }
+
+  // Seguro: sem leads, pode deletar
   await db.from('pipeline_stages').delete().eq('pipeline_id', id)
   const { error } = await db.from('pipelines').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
