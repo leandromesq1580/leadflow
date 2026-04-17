@@ -332,9 +332,30 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                   📝 Observacao
                 </label>
                 <textarea value={lead.observation || ''} onChange={e => setLead({ ...lead, observation: e.target.value })}
-                  rows={3} placeholder="Notas sobre este lead..."
+                  rows={3} placeholder="Notas sobre este lead. URLs viram clicáveis automaticamente."
                   className="w-full px-3.5 py-2.5 rounded-xl text-[13px] font-medium resize-none transition-all focus:outline-none focus:ring-2 focus:ring-indigo-200"
                   style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
+                {(() => {
+                  const text = lead.observation || ''
+                  const urls = Array.from(text.matchAll(/https?:\/\/[^\s)]+/g)).map(m => m[0])
+                  if (urls.length === 0) return null
+                  return (
+                    <div className="mt-2 space-y-1">
+                      {urls.map((u, i) => {
+                        const display = u.length > 60 ? u.slice(0, 57) + '...' : u
+                        return (
+                          <a key={i} href={u} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-indigo-50 transition-colors text-[12px] font-semibold truncate"
+                            style={{ background: '#f0f4ff', color: '#6366f1', border: '1px solid #e0e7ff', textDecoration: 'none' }}>
+                            <span>🔗</span>
+                            <span className="truncate">{display}</span>
+                            <span className="ml-auto text-[10px]" style={{ color: '#94a3b8' }}>↗</span>
+                          </a>
+                        )
+                      })}
+                    </div>
+                  )
+                })()}
               </div>
 
               {/* Actions */}
