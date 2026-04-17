@@ -44,12 +44,39 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   const [fuDate, setFuDate] = useState('')
   const [fuTime, setFuTime] = useState('')
   const [showSendMsg, setShowSendMsg] = useState(false)
+  const [pipelines, setPipelines] = useState<any[]>([])
+  const [pipelineLead, setPipelineLead] = useState<any>(null)
+  const [movingStage, setMovingStage] = useState(false)
 
   useEffect(() => {
     fetch(`/api/leads/${leadId}`).then(r => r.json()).then(d => setLead(d.lead || d))
     loadFollowUps()
     loadAttachments()
-  }, [leadId])
+    loadPipelineInfo()
+  }, [leadId, buyerId])
+
+  async function loadPipelineInfo() {
+    if (!buyerId) return
+    const [pipesRes, plRes] = await Promise.all([
+      fetch(`/api/pipelines?buyer_id=${buyerId}`).then(r => r.json()),
+      fetch(`/api/leads/${leadId}/pipeline`).then(r => r.ok ? r.json() : { pipelineLead: null }),
+    ])
+    setPipelines(pipesRes.pipelines || [])
+    setPipelineLead(plRes.pipelineLead || null)
+  }
+
+  async function moveToStage(newStageId: string) {
+    if (!pipelineLead) return
+    setMovingStage(true)
+    await fetch(`/api/pipeline-leads/${pipelineLead.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stage_id: newStageId }),
+    })
+    setMovingStage(false)
+    await loadPipelineInfo()
+    onSaved()
+  }
 
   async function loadFollowUps() {
     const r = await fetch(`/api/leads/${leadId}/follow-ups`)
@@ -325,6 +352,53 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                   </div>
                 )}
               </div>
+
+              {/* Pipeline Stage selector */}
+              {pipelineLead && (
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: '#94a3b8' }}>
+                    📋 Estágio no Pipeline
+                  </label>
+                  <div className="rounded-xl p-3" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>Pipeline:</span>
+                      <span className="text-[12px] font-bold" style={{ color: '#1a1a2e' }}>
+                        {pipelineLead.pipeline?.name || 'Default'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>Estágio atual:</span>
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold"
+                        style={{
+                          background: (pipelineLead.stage?.color || '#6366f1') + '22',
+                          color: pipelineLead.stage?.color || '#6366f1',
+                          border: `1px solid ${(pipelineLead.stage?.color || '#6366f1')}44`,
+                        }}>
+                        <span className="w-2 h-2 rounded-full" style={{ background: pipelineLead.stage?.color || '#6366f1' }} />
+                        {pipelineLead.stage?.name || 'Sem estágio'}
+                      </span>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase mb-1" style={{ color: '#94a3b8' }}>Mover para:</label>
+                      <select
+                        value={pipelineLead.stage_id || ''}
+                        disabled={movingStage}
+                        onChange={e => moveToStage(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg text-[13px] font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-200 cursor-pointer disabled:opacity-50"
+                        style={{ background: '#fff', border: '1px solid #e8ecf4', color: '#1a1a2e' }}>
+                        {(pipelines.find(p => p.id === pipelineLead.pipeline?.id)?.stages || [])
+                          .sort((a: any, b: any) => a.position - b.position)
+                          .map((s: any) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}{s.id === pipelineLead.stage_id ? ' (atual)' : ''}
+                            </option>
+                          ))}
+                      </select>
+                      {movingStage && <p className="text-[10px] mt-1" style={{ color: '#6366f1' }}>Movendo...</p>}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Observation */}
               <div>
