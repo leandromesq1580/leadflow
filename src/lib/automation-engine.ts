@@ -109,7 +109,7 @@ async function findTargets(auto: Automation): Promise<Target[]> {
     const { data: leads } = await db
       .from('leads')
       .select('id')
-      .eq('buyer_id', auto.buyer_id)
+      .eq('assigned_to', auto.buyer_id)
       .lte('created_at', cutoff)
     return (leads || []).map(r => ({ lead_id: r.id }))
   }

@@ -38,7 +38,7 @@ CREATE POLICY tags_owner_all ON tags FOR ALL USING (
 
 DROP POLICY IF EXISTS lead_tags_owner_all ON lead_tags;
 CREATE POLICY lead_tags_owner_all ON lead_tags FOR ALL USING (
-  lead_id IN (SELECT id FROM leads WHERE buyer_id IN (SELECT id FROM buyers WHERE auth_user_id = auth.uid()))
+  lead_id IN (SELECT id FROM leads WHERE assigned_to IN (SELECT id FROM buyers WHERE auth_user_id = auth.uid()))
 );
 
 -- ============================================================================
