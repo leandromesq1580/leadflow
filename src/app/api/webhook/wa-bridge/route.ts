@@ -66,8 +66,25 @@ export async function POST(request: NextRequest) {
       status: 'delivered',
     })
 
-    // Bump lead last_contacted_at if column exists; else rely on pipeline activity
+    // Bump lead updated_at
     await db.from('leads').update({ updated_at: new Date().toISOString() }).eq('id', match.id)
+
+    // Push notification pro agente
+    try {
+      const { pushToBuyer } = await import('@/lib/push-notify')
+      const preview = body
+        ? body.slice(0, 80)
+        : media_type === 'audio' ? '🎤 Mensagem de voz'
+        : media_type === 'image' ? '📷 Enviou uma imagem'
+        : media_type === 'video' ? '🎥 Enviou um vídeo'
+        : media_type ? '📎 Enviou um arquivo' : 'Nova mensagem'
+      pushToBuyer(match.assigned_to, {
+        title: `💬 ${match.name || 'Lead'}`,
+        body: preview,
+        url: `/dashboard/pipeline?lead=${match.id}`,
+        tag: `msg-${match.id}`,
+      }).catch(err => console.error('[Push msg] err', err))
+    } catch (e) {}
 
     return NextResponse.json({ success: true, lead_id: match.id })
   } catch (err: any) {

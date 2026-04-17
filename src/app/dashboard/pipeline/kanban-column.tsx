@@ -19,9 +19,10 @@ interface Props {
   stage: Stage
   items: PipelineLead[]
   onLeadClick: (lead: PipelineLead) => void
+  unreadCounts?: Record<string, number>
 }
 
-export function KanbanColumn({ stage, items, onLeadClick }: Props) {
+export function KanbanColumn({ stage, items, onLeadClick, unreadCounts = {} }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id })
 
   return (
@@ -60,6 +61,7 @@ export function KanbanColumn({ stage, items, onLeadClick }: Props) {
               stageColor={stage.color}
               movedAt={item.moved_at}
               onClick={() => onLeadClick(item)}
+              unreadCount={unreadCounts[item.lead.id] || 0}
             />
           ))}
         </SortableContext>

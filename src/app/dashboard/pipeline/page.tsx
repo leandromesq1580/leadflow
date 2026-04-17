@@ -100,6 +100,23 @@ export default function PipelinePage() {
     setLeads(d.leads || [])
   }
 
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({})
+  async function loadUnreadCounts() {
+    if (!buyerId) return
+    const r = await fetch(`/api/whatsapp/unread?buyer_id=${buyerId}`)
+    if (r.ok) {
+      const d = await r.json()
+      setUnreadCounts(d.counts || {})
+    }
+  }
+  useEffect(() => {
+    if (!buyerId) return
+    loadUnreadCounts()
+    // Poll a cada 15s pra atualizar badges em tempo real
+    const interval = setInterval(loadUnreadCounts, 15000)
+    return () => clearInterval(interval)
+  }, [buyerId])
+
   async function createPipeline() {
     setCreating(true)
     await fetch('/api/pipelines', {
@@ -458,6 +475,7 @@ export default function PipelinePage() {
                 stage={stage}
                 items={getStageLeads(stage.id)}
                 onLeadClick={(item) => setSelectedLead(item)}
+                unreadCounts={unreadCounts}
               />
             ))}
           </div>

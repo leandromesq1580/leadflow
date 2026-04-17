@@ -15,6 +15,7 @@ interface Props {
   onClick: () => void
   stageColor?: string
   movedAt?: string | null
+  unreadCount?: number
 }
 
 function timeAgo(date: string) {
@@ -25,7 +26,7 @@ function timeAgo(date: string) {
   return `${Math.floor(s / 86400)}d`
 }
 
-export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt }: Props) {
+export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, unreadCount = 0 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: pipelineLeadId,
     data: { lead },
@@ -55,7 +56,22 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt }:
   const hue = (lead.name.charCodeAt(0) * 47 + (lead.name.charCodeAt(1) || 0) * 23) % 360
 
   return (
-    <div ref={setNodeRef} style={cardStyle} {...attributes} {...listeners} onClick={onClick}>
+    <div ref={setNodeRef} style={{ ...cardStyle, position: 'relative' }} {...attributes} {...listeners} onClick={onClick}>
+      {/* Unread badge */}
+      {unreadCount > 0 && (
+        <div className="absolute flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold text-white"
+          style={{
+            top: -6, right: -6,
+            background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+            boxShadow: '0 2px 8px rgba(239,68,68,0.5)',
+            minWidth: 22, height: 22, justifyContent: 'center',
+            zIndex: 10,
+          }}
+          title={`${unreadCount} mensagem${unreadCount > 1 ? 's' : ''} não lida${unreadCount > 1 ? 's' : ''}`}>
+          💬 {unreadCount > 99 ? '99+' : unreadCount}
+        </div>
+      )}
+
       {/* Name row */}
       <div className="flex items-center gap-2.5 mb-2">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-extrabold text-white flex-shrink-0"
