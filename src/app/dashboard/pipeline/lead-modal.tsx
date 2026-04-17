@@ -112,7 +112,11 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
 
   async function addFollowUp() {
     if (!fuDesc.trim()) return
-    // Combine date + time into ISO timestamp
+    // Reuniao exige data + hora
+    if (fuType === 'meeting' && (!fuDate || !fuTime)) {
+      alert('Reunião precisa de data e hora pra aparecer no calendário.')
+      return
+    }
     let scheduled_at: string | null = null
     if (fuDate) {
       const time = fuTime || '09:00'
@@ -381,31 +385,51 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                     rows={2} className="w-full px-3.5 py-2.5 rounded-xl text-[13px] resize-none mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                     style={{ background: '#fff', border: '1px solid #e8ecf4' }} />
 
-                  {/* Agendar data/hora (aparece no calendário /dashboard/appointments) */}
-                  <div className="mb-3">
-                    <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: '#94a3b8' }}>
-                      📅 Agendar (opcional — aparece no calendário)
+                  {/* Agendar data/hora — obrigatório pra Reunião, opcional p/ resto */}
+                  <div className="mb-3 p-3 rounded-lg" style={{
+                    background: fuType === 'meeting' ? '#fef3c7' : '#f8f9fc',
+                    border: fuType === 'meeting' ? '1px solid #fde68a' : '1px solid #e8ecf4',
+                  }}>
+                    <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: fuType === 'meeting' ? '#92400e' : '#94a3b8' }}>
+                      {fuType === 'meeting'
+                        ? '📅 Data e hora da reunião — OBRIGATÓRIO'
+                        : '📅 Agendar (opcional — aparece no calendário)'}
                     </p>
                     <div className="flex gap-2">
                       <input type="date" value={fuDate} onChange={e => setFuDate(e.target.value)}
+                        min={new Date().toISOString().slice(0, 10)}
+                        required={fuType === 'meeting'}
                         className="flex-1 px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                        style={{ background: '#fff', border: '1px solid #e8ecf4' }} />
+                        style={{
+                          background: '#fff',
+                          border: fuType === 'meeting' && !fuDate ? '1px solid #f59e0b' : '1px solid #e8ecf4',
+                        }} />
                       <input type="time" value={fuTime} onChange={e => setFuTime(e.target.value)}
                         disabled={!fuDate}
+                        required={fuType === 'meeting'}
                         className="w-[120px] px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:opacity-50"
-                        style={{ background: '#fff', border: '1px solid #e8ecf4' }} />
-                      {fuDate && (
+                        style={{
+                          background: '#fff',
+                          border: fuType === 'meeting' && fuDate && !fuTime ? '1px solid #f59e0b' : '1px solid #e8ecf4',
+                        }} />
+                      {fuDate && fuType !== 'meeting' && (
                         <button onClick={() => { setFuDate(''); setFuTime('') }}
                           className="px-2 py-2 text-[11px] font-bold" style={{ color: '#94a3b8' }}>
                           ×
                         </button>
                       )}
                     </div>
+                    {fuType === 'meeting' && (!fuDate || !fuTime) && (
+                      <p className="text-[10px] mt-1.5" style={{ color: '#92400e' }}>
+                        ⚠️ Reunião precisa de data + hora pra ser criada como appointment no calendário.
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex gap-2 justify-end">
                     <button onClick={() => setShowNewFU(false)} className="px-4 py-2 text-[12px] font-semibold rounded-lg" style={{ color: '#94a3b8' }}>Cancelar</button>
-                    <button onClick={addFollowUp} disabled={!fuDesc.trim()}
+                    <button onClick={addFollowUp}
+                      disabled={!fuDesc.trim() || (fuType === 'meeting' && (!fuDate || !fuTime))}
                       className="px-5 py-2 rounded-lg text-[12px] font-bold text-white disabled:opacity-40"
                       style={{ background: '#6366f1' }}>Salvar</button>
                   </div>
