@@ -5,6 +5,7 @@ import { timeAgo, getInitials } from '@/lib/utils'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { AssignButton } from './assign-button'
+import { LeadActions } from './lead-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,9 +39,12 @@ export default async function LeadsPage() {
 
   return (
     <div className="max-w-[1040px]">
-      <div className="mb-6">
-        <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>Meus Leads</h1>
-        <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>{allLeads.length} leads no total</p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>Meus Leads</h1>
+          <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>{allLeads.length} leads no total</p>
+        </div>
+        <LeadActions />
       </div>
 
       {/* Agency manual mode alert */}
