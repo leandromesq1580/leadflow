@@ -31,6 +31,8 @@ export default function PipelinePage() {
   const [search, setSearch] = useState('')
   const [filterStage, setFilterStage] = useState('')
   const [filterDate, setFilterDate] = useState('')
+  const [filterDateFrom, setFilterDateFrom] = useState('')
+  const [filterDateTo, setFilterDateTo] = useState('')
   const [closedOnly, setClosedOnly] = useState(false)
   const [staleOnly, setStaleOnly] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
@@ -120,17 +122,46 @@ export default function PipelinePage() {
       const movedAt = l.moved_at ? new Date(l.moved_at).getTime() : 0
       if (Date.now() - movedAt < 3 * 86400000 || l.lead.contract_closed) return false
     }
-    if (filterDate) {
-      const created = new Date(l.lead.created_at).getTime()
-      const now = Date.now()
-      if (filterDate === '7d' && now - created > 7 * 86400000) return false
-      if (filterDate === '30d' && now - created > 30 * 86400000) return false
-      if (filterDate === '90d' && now - created > 90 * 86400000) return false
+    if (filterDate || filterDateFrom || filterDateTo) {
+      const created = new Date(l.lead.created_at)
+      const createdMs = created.getTime()
+      const now = new Date()
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+      const endOfToday = startOfToday + 86400000 - 1
+
+      if (filterDate === 'today' && (createdMs < startOfToday || createdMs > endOfToday)) return false
+      if (filterDate === 'yesterday') {
+        const yStart = startOfToday - 86400000
+        const yEnd = startOfToday - 1
+        if (createdMs < yStart || createdMs > yEnd) return false
+      }
+      if (filterDate === '7d' && now.getTime() - createdMs > 7 * 86400000) return false
+      if (filterDate === '30d' && now.getTime() - createdMs > 30 * 86400000) return false
+      if (filterDate === '90d' && now.getTime() - createdMs > 90 * 86400000) return false
+      if (filterDate === 'this_month') {
+        const mStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime()
+        if (createdMs < mStart) return false
+      }
+      if (filterDate === 'last_month') {
+        const mStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime()
+        const mEnd = new Date(now.getFullYear(), now.getMonth(), 1).getTime() - 1
+        if (createdMs < mStart || createdMs > mEnd) return false
+      }
+      if (filterDate === 'custom') {
+        if (filterDateFrom) {
+          const from = new Date(filterDateFrom + 'T00:00:00').getTime()
+          if (createdMs < from) return false
+        }
+        if (filterDateTo) {
+          const to = new Date(filterDateTo + 'T23:59:59').getTime()
+          if (createdMs > to) return false
+        }
+      }
     }
     return true
   })
 
-  const hasFilters = !!(search || filterStage || filterDate || closedOnly || staleOnly)
+  const hasFilters = !!(search || filterStage || filterDate || filterDateFrom || filterDateTo || closedOnly || staleOnly)
   const staleCount = leads.filter(l => {
     if (l.lead.contract_closed) return false
     const movedAt = l.moved_at ? new Date(l.moved_at).getTime() : 0
@@ -331,7 +362,7 @@ export default function PipelinePage() {
           </button>
           <div className="flex items-center gap-3">
             {hasFilters && (
-              <button onClick={() => { setSearch(''); setFilterStage(''); setFilterDate(''); setClosedOnly(false); setStaleOnly(false) }}
+              <button onClick={() => { setSearch(''); setFilterStage(''); setFilterDate(''); setFilterDateFrom(''); setFilterDateTo(''); setClosedOnly(false); setStaleOnly(false) }}
                 className="text-[11px] font-semibold flex items-center gap-1" style={{ color: '#ef4444' }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                 Limpar filtros
@@ -360,17 +391,41 @@ export default function PipelinePage() {
                 {activePipeline?.stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
-            <div className="min-w-[120px]">
-              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#c0c8d4' }}>Periodo</label>
-              <select value={filterDate} onChange={e => setFilterDate(e.target.value)}
+            <div className="min-w-[160px]">
+              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#c0c8d4' }}>Lead criado em</label>
+              <select value={filterDate} onChange={e => {
+                setFilterDate(e.target.value)
+                if (e.target.value !== 'custom') { setFilterDateFrom(''); setFilterDateTo('') }
+              }}
                 className="w-full px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200 cursor-pointer"
                 style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }}>
                 <option value="">Qualquer data</option>
-                <option value="7d">Ultimos 7 dias</option>
-                <option value="30d">Ultimos 30 dias</option>
-                <option value="90d">Ultimos 90 dias</option>
+                <option value="today">Hoje</option>
+                <option value="yesterday">Ontem</option>
+                <option value="7d">Últimos 7 dias</option>
+                <option value="30d">Últimos 30 dias</option>
+                <option value="90d">Últimos 90 dias</option>
+                <option value="this_month">Este mês</option>
+                <option value="last_month">Mês passado</option>
+                <option value="custom">📅 Intervalo customizado…</option>
               </select>
             </div>
+            {filterDate === 'custom' && (
+              <div className="flex items-end gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#c0c8d4' }}>De</label>
+                  <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)}
+                    className="px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                    style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#c0c8d4' }}>Até</label>
+                  <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)}
+                    className="px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                    style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
+                </div>
+              </div>
+            )}
             <label className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer"
               style={{ background: closedOnly ? '#f0fdf4' : '#f8f9fc', border: `1px solid ${closedOnly ? '#86efac' : '#e8ecf4'}` }}>
               <input type="checkbox" checked={closedOnly} onChange={e => setClosedOnly(e.target.checked)}
