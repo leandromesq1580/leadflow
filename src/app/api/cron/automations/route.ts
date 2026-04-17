@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runAutomations } from '@/lib/automation-engine'
 
-/** GET /api/cron/automations — scheduled runner, protected by CRON_SECRET */
+/** GET /api/cron/automations — scheduled runner, protected by ?secret= */
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  const expected = `Bearer ${process.env.CRON_SECRET || 'dev'}`
-  if (authHeader !== expected) {
+  const secret = new URL(request.url).searchParams.get('secret')
+  if (secret !== (process.env.POLL_SECRET || 'leadflow-poll-2026')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
