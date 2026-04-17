@@ -182,12 +182,32 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
   }
 
   function renderMedia(m: Message) {
+    // Se media_type foi classificado mas url está faltando (upload falhou no wa-bridge antigo)
+    if (m.media_type && !m.media_url) {
+      return (
+        <div className="flex items-center gap-2 rounded-lg px-2 py-1.5 mb-1"
+          style={{ background: 'rgba(239,68,68,0.1)', border: '1px dashed #fecaca' }}>
+          <span className="text-[16px]">⚠️</span>
+          <p className="text-[11px]" style={{ color: '#dc2626' }}>
+            {m.media_type === 'image' ? 'Imagem' : m.media_type === 'audio' ? 'Áudio' : m.media_type === 'video' ? 'Vídeo' : 'Arquivo'} não foi salvo (falha de upload)
+          </p>
+        </div>
+      )
+    }
     if (!m.media_url) return null
     if (m.media_type === 'image') {
       return <img src={m.media_url} alt="" className="rounded-lg max-w-full max-h-[300px] object-cover mb-1" />
     }
     if (m.media_type === 'audio') {
-      return <audio controls src={m.media_url} className="w-full max-w-[260px] mb-1" />
+      return (
+        <div className="rounded-lg p-2 mb-1" style={{ background: 'rgba(0,0,0,0.04)', minWidth: 240 }}>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[14px]">🎤</span>
+            <span className="text-[11px] font-bold" style={{ color: '#64748b' }}>Mensagem de voz</span>
+          </div>
+          <audio controls src={m.media_url} className="w-full" preload="metadata" style={{ minHeight: 32 }} />
+        </div>
+      )
     }
     if (m.media_type === 'video') {
       return <video controls src={m.media_url} className="rounded-lg max-w-full max-h-[300px] mb-1" />
@@ -222,7 +242,7 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
         )}
         {messages.map(m => (
           <div key={m.id} className={`flex ${m.direction === 'out' ? 'justify-end' : 'justify-start'}`}>
-            <div className="max-w-[80%] px-3 py-2 rounded-2xl"
+            <div className={`${m.media_type === 'audio' ? 'max-w-[320px] min-w-[280px]' : 'max-w-[80%]'} px-3 py-2 rounded-2xl`}
               style={{
                 background: m.direction === 'out' ? '#dcf8c6' : '#fff',
                 border: m.direction === 'in' ? '1px solid #e8ecf4' : 'none',
