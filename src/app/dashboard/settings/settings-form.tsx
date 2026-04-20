@@ -54,6 +54,7 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, allState
   const [avail, setAvail] = useState<string[]>(activeAvailability)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   function toggleState(code: string) {
     setStates(prev => prev.includes(code) ? prev.filter(s => s !== code) : [...prev, code])
@@ -65,25 +66,41 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, allState
 
   async function save() {
     setSaving(true)
+    setError(null)
+    setSaved(false)
 
-    await fetch('/api/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        buyer_id: buyer.id,
-        name, phone, whatsapp, cal_link: calLink,
-        notification_email: notifEmail, notification_sms: notifSms,
-        states,
-        availability: avail.map(a => {
-          const [day_type, period] = a.split('_')
-          return { day_type, period }
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          buyer_id: buyer.id,
+          name, phone, whatsapp, cal_link: calLink,
+          notification_email: notifEmail, notification_sms: notifSms,
+          states,
+          availability: avail.map(a => {
+            const [day_type, period] = a.split('_')
+            return { day_type, period }
+          }),
         }),
-      }),
-    })
+      })
 
-    setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `Erro ${res.status}`)
+      }
+
+      setSaved(true)
+      // Rola pro topo pra aparecer o banner verde
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+      setTimeout(() => setSaved(false), 4000)
+    } catch (err: any) {
+      setError(err?.message || 'Falha ao salvar. Tente novamente.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -91,6 +108,12 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, allState
       {saved && (
         <div className="mb-6 px-5 py-3 rounded-xl text-[13px] font-semibold" style={{ background: '#ecfdf5', color: '#10b981', border: '1px solid #a7f3d0' }}>
           ✅ Configuracoes salvas!
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-6 px-5 py-3 rounded-xl text-[13px] font-semibold" style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
+          ⚠️ {error}
         </div>
       )}
 
@@ -208,11 +231,23 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, allState
       </div>
 
       {/* Save */}
-      <button onClick={save} disabled={saving}
-        className="px-6 py-3 rounded-xl text-[14px] font-bold text-white disabled:opacity-50"
-        style={{ background: '#6366f1', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
-        {saving ? 'Salvando...' : 'Salvar Configuracoes'}
-      </button>
+      <div className="flex items-center gap-3 flex-wrap">
+        <button onClick={save} disabled={saving}
+          className="px-6 py-3 rounded-xl text-[14px] font-bold text-white disabled:opacity-50"
+          style={{ background: '#6366f1', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
+          {saving ? 'Salvando...' : 'Salvar Configuracoes'}
+        </button>
+        {saved && (
+          <span className="text-[13px] font-semibold flex items-center gap-1.5" style={{ color: '#10b981' }}>
+            ✅ Salvo com sucesso
+          </span>
+        )}
+        {error && !saving && (
+          <span className="text-[13px] font-semibold flex items-center gap-1.5" style={{ color: '#dc2626' }}>
+            ⚠️ {error}
+          </span>
+        )}
+      </div>
     </div>
   )
 }
