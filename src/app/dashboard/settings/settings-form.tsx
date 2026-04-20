@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface Buyer {
   id: string
@@ -44,6 +45,7 @@ const STATE_NAMES: Record<string, string> = {
 }
 
 export function SettingsForm({ buyer, activeStates, activeAvailability, allStates }: Props) {
+  const router = useRouter()
   const [name, setName] = useState(buyer.name || '')
   const [phone, setPhone] = useState(buyer.phone || '')
   const [whatsapp, setWhatsapp] = useState(buyer.whatsapp || '')
@@ -91,11 +93,10 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, allState
       }
 
       setSaved(true)
-      // Rola pro topo pra aparecer o banner verde
-      if (typeof window !== 'undefined') {
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-      }
-      setTimeout(() => setSaved(false), 4000)
+      // Mostra o "Salvo" rapidamente e manda pro dashboard
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 800)
     } catch (err: any) {
       setError(err?.message || 'Falha ao salvar. Tente novamente.')
     } finally {
