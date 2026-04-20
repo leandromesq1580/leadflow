@@ -8,8 +8,17 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 backdrop-blur-md" style={{ background: 'rgba(255,255,255,0.92)', borderBottom: '1px solid #e8ecf4' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16 sm:h-[72px]">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-white text-xs sm:text-sm font-black" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>L</div>
-            <span className="text-base sm:text-[17px] font-extrabold" style={{ color: '#1a1a2e' }}>Lead4Producers</span>
+            <svg className="w-7 h-7 sm:w-8 sm:h-8" viewBox="0 0 60 60" aria-label="Lead4Pro">
+              <defs>
+                <linearGradient id="nav-bolt" x1="0" x2="1" y1="0" y2="1">
+                  <stop offset="0" stopColor="#fbbf24" />
+                  <stop offset="1" stopColor="#f59e0b" />
+                </linearGradient>
+              </defs>
+              <rect width="60" height="60" rx="14" fill="#0f172a" />
+              <path d="M30 12 L18 34 L28 34 L24 50 L42 26 L32 26 L36 12 Z" fill="url(#nav-bolt)" />
+            </svg>
+            <span className="text-base sm:text-[17px] font-extrabold" style={{ color: '#0f172a', letterSpacing: '-0.02em' }}>Lead4Pro</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <Link href="#pricing" className="hidden sm:inline text-[13px] font-semibold px-4 py-2" style={{ color: '#64748b' }}>Precos</Link>
@@ -290,14 +299,14 @@ export default function LandingPage() {
                   <div className="px-4 py-3 flex items-center gap-3" style={{ background: '#1f2c34' }}>
                     <div className="w-8 h-8 rounded-full" style={{ background: '#6366f1' }} />
                     <div>
-                      <p className="text-[13px] font-bold text-white">Lead4Producers</p>
+                      <p className="text-[13px] font-bold text-white">Lead4Pro</p>
                       <p className="text-[10px]" style={{ color: '#8696a0' }}>online</p>
                     </div>
                   </div>
                   <div className="p-4 space-y-3">
                     <div className="rounded-xl px-3 py-2.5 max-w-[260px]" style={{ background: '#005c4b' }}>
                       <p className="text-[12px] text-white leading-relaxed">
-                        🎯 <strong>Novo Lead — Lead4Producers!</strong><br/><br/>
+                        🎯 <strong>Novo Lead — Lead4Pro!</strong><br/><br/>
                         📋 <strong>Carlos Mendes</strong><br/>
                         📞 +1 (407) 555-0101<br/>
                         📍 FL<br/>
@@ -308,7 +317,7 @@ export default function LandingPage() {
                     </div>
                     <div className="rounded-xl px-3 py-2.5 max-w-[260px]" style={{ background: '#005c4b' }}>
                       <p className="text-[12px] text-white leading-relaxed">
-                        🎯 <strong>Novo Lead — Lead4Producers!</strong><br/><br/>
+                        🎯 <strong>Novo Lead — Lead4Pro!</strong><br/><br/>
                         📋 <strong>Amanda Silva</strong><br/>
                         📞 +1 (305) 555-0202<br/>
                         📍 MA<br/>
@@ -485,15 +494,18 @@ export default function LandingPage() {
       <footer className="py-10" style={{ background: '#fff', borderTop: '1px solid #e8ecf4' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md flex items-center justify-center text-white text-[10px] font-black" style={{ background: '#6366f1' }}>L</div>
-            <span className="text-[14px] font-bold" style={{ color: '#94a3b8' }}>Lead4Producers</span>
+            <svg className="w-6 h-6" viewBox="0 0 60 60" aria-label="Lead4Pro">
+              <rect width="60" height="60" rx="14" fill="#0f172a" />
+              <path d="M30 12 L18 34 L28 34 L24 50 L42 26 L32 26 L36 12 Z" fill="#f59e0b" />
+            </svg>
+            <span className="text-[14px] font-bold" style={{ color: '#94a3b8' }}>Lead4Pro</span>
           </div>
           <div className="flex items-center gap-6">
             <Link href="/privacy" className="text-[12px]" style={{ color: '#94a3b8' }}>Privacidade</Link>
             <Link href="/login" className="text-[12px]" style={{ color: '#94a3b8' }}>Login</Link>
             <Link href="/register" className="text-[12px]" style={{ color: '#94a3b8' }}>Cadastro</Link>
           </div>
-          <p className="text-[11px]" style={{ color: '#c0c8d4' }}>&copy; 2026 Lead4Producers. Todos os direitos reservados.</p>
+          <p className="text-[11px]" style={{ color: '#c0c8d4' }}>&copy; 2026 Lead4Pro. Todos os direitos reservados.</p>
         </div>
       </footer>
     </div>

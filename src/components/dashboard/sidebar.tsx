@@ -34,6 +34,22 @@ interface SidebarProps {
   isAgency?: boolean
 }
 
+// Lead4Pro brand mark — dark rounded tile + amber gradient bolt
+function BrandMark({ size = 32 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 60 60" aria-label="Lead4Pro">
+      <defs>
+        <linearGradient id={`bolt-${size}`} x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stopColor="#fbbf24" />
+          <stop offset="1" stopColor="#f59e0b" />
+        </linearGradient>
+      </defs>
+      <rect width="60" height="60" rx="14" fill="#0f172a" />
+      <path d="M30 12 L18 34 L28 34 L24 50 L42 26 L32 26 L36 12 Z" fill={`url(#bolt-${size})`} />
+    </svg>
+  )
+}
+
 export function Sidebar({ type, userName, isAgency }: SidebarProps) {
   const pathname = usePathname()
   const links = type === 'admin' ? adminLinks : buyerLinks
@@ -52,11 +68,9 @@ export function Sidebar({ type, userName, isAgency }: SidebarProps) {
       {/* Logo */}
       <div className="px-6 h-[72px] flex items-center" style={{ borderBottom: '1px solid #e8ecf4' }}>
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-black" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-            L
-          </div>
-          <span className="text-[17px] font-extrabold" style={{ color: '#1a1a2e' }}>
-            Lead4Producers
+          <BrandMark size={32} />
+          <span className="text-[17px] font-extrabold" style={{ color: '#0f172a', letterSpacing: '-0.02em' }}>
+            Lead4Pro
           </span>
           {type === 'admin' && (
             <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: '#fef2f2', color: '#ef4444' }}>Admin</span>

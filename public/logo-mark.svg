@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 60 60" role="img" aria-label="Lead4Pro">
+  <defs>
+    <linearGradient id="bolt" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#fbbf24"></stop>
+      <stop offset="1" stop-color="#f59e0b"></stop>
+    </linearGradient>
+  </defs>
+  <rect width="60" height="60" rx="14" fill="#0f172a"></rect>
+  <path d="M30 12 L18 34 L28 34 L24 50 L42 26 L32 26 L36 12 Z" fill="url(#bolt)"></path>
+</svg>
