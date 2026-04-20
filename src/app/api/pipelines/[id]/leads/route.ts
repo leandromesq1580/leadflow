@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-/** GET /api/pipelines/[id]/leads — all leads grouped by stage */
+/** GET /api/pipelines/[id]/leads — all leads grouped by stage + latest follow-up */
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: pipelineId } = await params
   const db = createAdminClient()
@@ -13,7 +13,28 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     .order('position')
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ leads: data || [] })
+
+  // Anexa o último follow-up por lead (scheduled_at DESC, fallback pra created_at)
+  const leadIds = (data || []).map((pl: any) => pl.lead?.id).filter(Boolean)
+  let latestByLead: Record<string, { type: string; scheduled_at: string | null; created_at: string }> = {}
+  if (leadIds.length > 0) {
+    const { data: fus } = await db
+      .from('follow_ups')
+      .select('lead_id, type, scheduled_at, created_at')
+      .in('lead_id', leadIds)
+      .order('scheduled_at', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
+    for (const fu of fus || []) {
+      if (!latestByLead[fu.lead_id]) latestByLead[fu.lead_id] = fu as any
+    }
+  }
+
+  const enriched = (data || []).map((pl: any) => ({
+    ...pl,
+    last_follow_up: pl.lead?.id ? latestByLead[pl.lead.id] || null : null,
+  }))
+
+  return NextResponse.json({ leads: enriched })
 }
 
 /** POST /api/pipelines/[id]/leads — add lead to pipeline */

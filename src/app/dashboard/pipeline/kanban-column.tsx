@@ -13,6 +13,7 @@ interface PipelineLead {
   stage_id: string
   moved_at?: string | null
   lead: { id: string; name: string; phone: string; state: string; interest: string; type: string; created_at: string; contract_closed: boolean }
+  last_follow_up?: { type: string; scheduled_at: string | null; created_at: string } | null
 }
 
 interface Props {
@@ -60,6 +61,7 @@ export function KanbanColumn({ stage, items, onLeadClick, unreadCounts = {} }: P
               lead={item.lead}
               stageColor={stage.color}
               movedAt={item.moved_at}
+              lastFollowUp={item.last_follow_up}
               onClick={() => onLeadClick(item)}
               unreadCount={unreadCounts[item.lead.id] || 0}
             />

@@ -9,6 +9,12 @@ interface Lead {
   type: string; created_at: string; contract_closed: boolean
 }
 
+interface LastFollowUp {
+  type: string
+  scheduled_at: string | null
+  created_at: string
+}
+
 interface Props {
   pipelineLeadId: string
   lead: Lead
@@ -16,6 +22,7 @@ interface Props {
   stageColor?: string
   movedAt?: string | null
   unreadCount?: number
+  lastFollowUp?: LastFollowUp | null
 }
 
 function timeAgo(date: string) {
@@ -26,7 +33,24 @@ function timeAgo(date: string) {
   return `${Math.floor(s / 86400)}d`
 }
 
-export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, unreadCount = 0 }: Props) {
+const FU_META: Record<string, { icon: string; label: string; bg: string; color: string }> = {
+  call:     { icon: '📞', label: 'Ligação',  bg: '#eff6ff', color: '#1d4ed8' },
+  meeting:  { icon: '🤝', label: 'Reunião',  bg: '#fef3c7', color: '#92400e' },
+  whatsapp: { icon: '💬', label: 'WhatsApp', bg: '#dcfce7', color: '#15803d' },
+  email:    { icon: '✉️', label: 'E-mail',   bg: '#f3e8ff', color: '#6b21a8' },
+  note:     { icon: '📝', label: 'Nota',     bg: '#f1f5f9', color: '#475569' },
+}
+
+function formatFuDate(iso: string): string {
+  const d = new Date(iso)
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mi = String(d.getMinutes()).padStart(2, '0')
+  return `${dd}/${mm} ${hh}:${mi}`
+}
+
+export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, unreadCount = 0, lastFollowUp }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: pipelineLeadId,
     data: { lead },
@@ -93,6 +117,24 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
           <span className="text-[12px] font-semibold" style={{ color: '#475569' }}>{lead.phone}</span>
         </div>
       )}
+
+      {/* Último follow-up */}
+      {lastFollowUp && (() => {
+        const meta = FU_META[lastFollowUp.type] || FU_META.note
+        const when = lastFollowUp.scheduled_at || lastFollowUp.created_at
+        return (
+          <div className="flex items-center gap-1.5 mb-2.5 ml-[42px] px-2 py-1 rounded-md"
+            style={{ background: meta.bg }}>
+            <span className="text-[11px]">{meta.icon}</span>
+            <span className="text-[10px] font-extrabold uppercase tracking-wide" style={{ color: meta.color }}>
+              {meta.label}
+            </span>
+            <span className="text-[10px] font-semibold" style={{ color: meta.color, opacity: 0.8 }}>
+              · {formatFuDate(when)}
+            </span>
+          </div>
+        )
+      })()}
 
       {/* Footer */}
       <div className="flex items-center justify-between ml-[42px]">

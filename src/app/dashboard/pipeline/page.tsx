@@ -12,6 +12,7 @@ interface Pipeline { id: string; name: string; is_default: boolean; stages: Stag
 interface PipelineLead {
   id: string; stage_id: string; position: number; moved_at?: string | null
   lead: { id: string; name: string; phone: string; state: string; interest: string; type: string; created_at: string; contract_closed: boolean; email: string }
+  last_follow_up?: { type: string; scheduled_at: string | null; created_at: string } | null
 }
 
 export default function PipelinePage() {
