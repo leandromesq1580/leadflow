@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 
 const buyerLinks = [
   { href: '/dashboard', label: 'Visao Geral', icon: '📊' },
@@ -33,6 +34,27 @@ interface SidebarProps {
   type: 'buyer' | 'admin'
   userName?: string
   isAgency?: boolean
+  buyerId?: string
+}
+
+function useWhatsAppUnread(buyerId?: string): number {
+  const [count, setCount] = useState(0)
+  useEffect(() => {
+    if (!buyerId) return
+    let alive = true
+    const load = async () => {
+      try {
+        const r = await fetch(`/api/whatsapp/unread?buyer_id=${buyerId}`, { cache: 'no-store' })
+        if (!r.ok || !alive) return
+        const d = await r.json()
+        setCount(d.total || 0)
+      } catch {}
+    }
+    load()
+    const t = setInterval(load, 20000)
+    return () => { alive = false; clearInterval(t) }
+  }, [buyerId])
+  return count
 }
 
 // Lead4Pro brand mark — dark rounded tile + amber gradient bolt
@@ -51,9 +73,10 @@ function BrandMark({ size = 32 }: { size?: number }) {
   )
 }
 
-export function Sidebar({ type, userName, isAgency }: SidebarProps) {
+export function Sidebar({ type, userName, isAgency, buyerId }: SidebarProps) {
   const pathname = usePathname()
   const links = type === 'admin' ? adminLinks : buyerLinks
+  const waUnread = useWhatsAppUnread(type === 'buyer' ? buyerId : undefined)
 
   async function handleLogout() {
     const { createBrowserClient } = await import('@supabase/ssr')
@@ -87,6 +110,7 @@ export function Sidebar({ type, userName, isAgency }: SidebarProps) {
             const isActive = pathname === link.href ||
               (link.href !== '/dashboard' && link.href !== '/admin' && pathname.startsWith(link.href))
 
+            const showBadge = link.href === '/dashboard/whatsapp' && waUnread > 0
             return (
               <Link
                 key={link.href}
@@ -98,7 +122,13 @@ export function Sidebar({ type, userName, isAgency }: SidebarProps) {
                 }}
               >
                 <span className="text-[16px]">{link.icon}</span>
-                {link.label}
+                <span className="flex-1">{link.label}</span>
+                {showBadge && (
+                  <span className="text-[10px] font-extrabold text-white rounded-full flex items-center justify-center"
+                    style={{ background: '#ef4444', minWidth: 18, height: 18, padding: '0 5px', boxShadow: '0 1px 3px rgba(239,68,68,0.35)' }}>
+                    {waUnread > 99 ? '99+' : waUnread}
+                  </span>
+                )}
               </Link>
             )
           })}

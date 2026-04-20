@@ -45,6 +45,11 @@ export default function WhatsAppPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Auto-select lead via ?lead=X (vindo de push, card, etc)
+    const params = new URLSearchParams(window.location.search)
+    const urlLead = params.get('lead')
+    if (urlLead) setSelectedId(urlLead)
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
     const ref = supabaseUrl.replace('https://', '').split('.')[0]
     const cookie = document.cookie.split('; ').find(c => c.startsWith(`sb-${ref}-auth-token=`))

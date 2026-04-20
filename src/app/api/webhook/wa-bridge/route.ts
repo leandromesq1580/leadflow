@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       pushToBuyer(match.assigned_to, {
         title: `💬 ${match.name || 'Lead'}`,
         body: preview,
-        url: `/dashboard/pipeline?lead=${match.id}`,
+        url: `/dashboard/whatsapp?lead=${match.id}`,
         tag: `msg-${match.id}`,
       }).catch(err => console.error('[Push msg] err', err))
     } catch (e) {}
