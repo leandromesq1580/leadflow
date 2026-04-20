@@ -49,19 +49,33 @@ export async function POST(request: NextRequest) {
       myCode = genReferralCode()
     }
 
+    // Trial de 7 dias — novos usuários ganham CRM Pro por 7 dias
+    const trialEndsAt = new Date(Date.now() + 7 * 86400_000).toISOString()
+
+    const buyerPayload: Record<string, unknown> = {
+      auth_user_id,
+      email,
+      name,
+      phone: phone || null,
+      referral_code: myCode,
+      referred_by: referredBy,
+      trial_ends_at: trialEndsAt,
+    }
+
     // Create buyer record with service role (bypasses RLS)
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('buyers')
-      .insert({
-        auth_user_id,
-        email,
-        name,
-        phone: phone || null,
-        referral_code: myCode,
-        referred_by: referredBy,
-      })
+      .insert(buyerPayload)
       .select()
       .single()
+
+    // Fallback caso a migration trial_ends_at ainda não tenha sido aplicada em prod
+    if (error && /trial_ends_at/i.test(error.message || '')) {
+      delete buyerPayload.trial_ends_at
+      const retry = await supabase.from('buyers').insert(buyerPayload).select().single()
+      data = retry.data
+      error = retry.error
+    }
 
     if (error) {
       console.error('[Register] Failed to create buyer:', error)
