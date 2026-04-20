@@ -1,11 +1,54 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { distributeLeadToNextBuyer } from '@/lib/distribute'
+import { sendLeadNotificationEmail } from '@/lib/notifications'
 
 const FORM_IDS = [
   '25952858404333766',  // FORMULARIO SEGURO-SEM PERGUNTA (principal)
   '1963007337624994',   // FORMULARIO SEGURO-SEM PERGUNTA-ESPANHOL
 ]
+
+async function forceAssign(supabase: ReturnType<typeof createAdminClient>, lead: any, email: string) {
+  const { data: buyer } = await supabase
+    .from('buyers')
+    .select('id, name, email, phone, notification_email, notification_sms')
+    .ilike('email', email)
+    .maybeSingle()
+
+  if (!buyer) {
+    console.error(`[Poll] FORCE_ASSIGN: buyer ${email} not found — falling back to normal distribution`)
+    return null
+  }
+
+  await supabase
+    .from('leads')
+    .update({ assigned_to: buyer.id, assigned_at: new Date().toISOString(), status: 'assigned' })
+    .eq('id', lead.id)
+
+  await sendLeadNotificationEmail(buyer as any, lead)
+
+  // Auto-add to default pipeline (same behavior as distributeLeadToNextBuyer)
+  const { data: pipe } = await supabase
+    .from('pipelines')
+    .select('id, stages:pipeline_stages(id, position)')
+    .eq('buyer_id', buyer.id)
+    .eq('is_default', true)
+    .maybeSingle()
+
+  if (pipe?.stages?.length) {
+    const firstStage = (pipe.stages as any[]).sort((a: any, b: any) => a.position - b.position)[0]
+    await supabase.from('pipeline_leads').upsert({
+      lead_id: lead.id,
+      pipeline_id: pipe.id,
+      stage_id: firstStage.id,
+      position: 0,
+      moved_at: new Date().toISOString(),
+    }, { onConflict: 'lead_id,pipeline_id' })
+  }
+
+  console.log(`[Poll] FORCE_ASSIGN: lead ${lead.id} → ${buyer.name} (${buyer.email})`)
+  return buyer
+}
 
 /**
  * GET /api/poll-leads — Polls Meta Graph API for new leads not yet in DB.
@@ -89,8 +132,15 @@ export async function GET(request: Request) {
           continue
         }
 
-        // Distribute
-        const buyer = await distributeLeadToNextBuyer(newLead)
+        // Force-assign bypass (temporário enquanto Meta não libera produção)
+        const forceEmail = (process.env.FORCE_ASSIGN_TO_EMAIL || '').trim()
+        let buyer: any = null
+        if (forceEmail) {
+          buyer = await forceAssign(supabase, newLead, forceEmail)
+        }
+        if (!buyer) {
+          buyer = await distributeLeadToNextBuyer(newLead)
+        }
         console.log(`[Poll] Lead ${newLead.id} — ${name} → ${buyer?.name || 'no buyer'}`)
         imported++
       }
