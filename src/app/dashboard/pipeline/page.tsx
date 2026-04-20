@@ -29,6 +29,12 @@ export default function PipelinePage() {
   const [teamLeads, setTeamLeads] = useState<any[]>([])
   const [teamMembers, setTeamMembers] = useState<any[]>([])
   const [isAgency, setIsAgency] = useState(false)
+  // Espelho do pipeline de um membro do time
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
+  const [memberPipeline, setMemberPipeline] = useState<Pipeline | null>(null)
+  const [memberLeads, setMemberLeads] = useState<PipelineLead[]>([])
+  const [memberHasOwn, setMemberHasOwn] = useState(true)
+  const [loadingMember, setLoadingMember] = useState(false)
   const [search, setSearch] = useState('')
   const [filterStage, setFilterStage] = useState('')
   const [filterDate, setFilterDate] = useState('')
@@ -76,8 +82,26 @@ export default function PipelinePage() {
     ])
     const membersData = await membersRes.json()
     const leadsData = await leadsRes.json()
-    setTeamMembers(membersData.members || [])
+    const members = membersData.members || []
+    setTeamMembers(members)
     setTeamLeads(leadsData.leads || [])
+    return { members }
+  }
+
+  async function loadMemberPipeline(memberId: string) {
+    setLoadingMember(true)
+    setSelectedMemberId(memberId)
+    try {
+      const r = await fetch(`/api/team/member-pipeline?member_id=${memberId}`)
+      if (r.ok) {
+        const d = await r.json()
+        setMemberPipeline(d.pipeline || null)
+        setMemberLeads(d.leads || [])
+        setMemberHasOwn(d.member?.has_own_pipeline !== false)
+      }
+    } finally {
+      setLoadingMember(false)
+    }
   }
 
   async function loadPipelines(bid: string) {
@@ -312,59 +336,103 @@ export default function PipelinePage() {
               boxShadow: view === 'mine' ? '0 1px 4px rgba(0,0,0,0.06)' : 'none' }}>
             Meu Pipeline
           </button>
-          <button onClick={() => { setView('team'); if (buyerId) loadTeamData(buyerId) }}
+          <button onClick={async () => {
+              setView('team')
+              const res = buyerId ? await loadTeamData(buyerId) : { members: teamMembers }
+              // Auto-select primeiro membro ativo, se nenhum selecionado
+              if (!selectedMemberId) {
+                const first = (res.members || []).find((m: any) => m.is_active)
+                if (first) loadMemberPipeline(first.id)
+              }
+            }}
             className="px-5 py-2 rounded-lg text-[12px] font-bold transition-all"
             style={{ background: view === 'team' ? '#fff' : 'transparent', color: view === 'team' ? '#6366f1' : '#94a3b8',
               boxShadow: view === 'team' ? '0 1px 4px rgba(0,0,0,0.06)' : 'none' }}>
-            Meu Time ({teamLeads.length})
+            Meu Time ({teamMembers.filter(m => m.is_active).length})
           </button>
         </div>
       )}
 
-      {/* Team view */}
+      {/* Team view — espelho do pipeline do membro selecionado */}
       {view === 'team' && isAgency && (
-        <div className="space-y-4 mb-6">
-          {teamMembers.filter(m => m.is_active).map(member => {
-            const mLeads = teamLeads.filter((l: any) => l.assigned_to_member === member.id)
-            return (
-              <div key={member.id} className="rounded-xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-                <div className="flex items-center gap-3 px-5 py-3" style={{ background: '#f8f9fc', borderBottom: '1px solid #e8ecf4' }}>
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white"
-                    style={{ background: '#6366f1' }}>
+        <div className="mb-6">
+          {/* Tabs dos membros */}
+          <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2">
+            {teamMembers.filter(m => m.is_active).map(member => {
+              const mLeadsCount = teamLeads.filter((l: any) => l.assigned_to_member === member.id).length
+              const isSelected = selectedMemberId === member.id
+              return (
+                <button
+                  key={member.id}
+                  onClick={() => loadMemberPipeline(member.id)}
+                  className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl transition-all flex-shrink-0"
+                  style={{
+                    background: isSelected ? '#fff' : 'transparent',
+                    border: isSelected ? '1px solid #6366f1' : '1px solid #e8ecf4',
+                    boxShadow: isSelected ? '0 2px 8px rgba(99,102,241,0.15)' : 'none',
+                  }}>
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                    style={{ background: isSelected ? '#6366f1' : '#94a3b8' }}>
                     {member.name.charAt(0).toUpperCase()}
                   </div>
-                  <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>{member.name}</p>
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-md" style={{ background: '#eef2ff', color: '#6366f1' }}>
-                    {mLeads.length} leads
-                  </span>
-                </div>
-                {mLeads.length === 0 ? (
-                  <p className="text-center py-6 text-[12px]" style={{ color: '#c0c8d4' }}>Nenhum lead atribuido</p>
-                ) : (
-                  <div>
-                    {mLeads.map((l: any, i: number) => (
-                      <div key={l.id} className="flex items-center gap-4 px-5 py-3 cursor-pointer hover:bg-gray-50"
-                        style={{ borderBottom: i < mLeads.length - 1 ? '1px solid #f1f5f9' : 'none' }}
-                        onClick={() => setSelectedLead({ id: '', stage_id: '', position: 0, lead: l })}>
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold text-white"
-                          style={{ background: `hsl(${(l.name.charCodeAt(0) * 47) % 360}, 55%, 50%)` }}>
-                          {l.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[13px] font-semibold" style={{ color: '#1a1a2e' }}>{l.name}</p>
-                          <p className="text-[11px]" style={{ color: '#94a3b8' }}>{l.interest}</p>
-                        </div>
-                        <span className="text-[12px] font-semibold" style={{ color: '#6366f1' }}>{l.phone}</span>
-                        {l.contract_closed && (
-                          <span className="text-[9px] font-bold px-2 py-1 rounded-md" style={{ background: '#dcfce7', color: '#15803d' }}>FECHADO</span>
-                        )}
-                      </div>
-                    ))}
+                  <div className="text-left">
+                    <p className="text-[12px] font-bold" style={{ color: isSelected ? '#1a1a2e' : '#64748b' }}>
+                      {member.name}
+                    </p>
+                    <p className="text-[10px]" style={{ color: '#94a3b8' }}>{mLeadsCount} leads</p>
                   </div>
-                )}
+                </button>
+              )
+            })}
+            {teamMembers.filter(m => m.is_active).length === 0 && (
+              <p className="text-[12px] px-4 py-3" style={{ color: '#94a3b8' }}>
+                Nenhum membro ativo. <Link href="/dashboard/team" className="font-bold" style={{ color: '#6366f1' }}>Adicionar membro →</Link>
+              </p>
+            )}
+          </div>
+
+          {/* Pipeline espelhado do membro */}
+          {!selectedMemberId ? (
+            <div className="rounded-xl py-16 text-center" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+              <p className="text-[32px] mb-2">👥</p>
+              <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>Selecione um membro do time</p>
+              <p className="text-[12px] mt-1" style={{ color: '#94a3b8' }}>Você verá o pipeline completo dele — mesmas colunas, mesmos leads.</p>
+            </div>
+          ) : loadingMember ? (
+            <div className="rounded-xl py-16 text-center" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+              <p className="text-[12px]" style={{ color: '#94a3b8' }}>Carregando pipeline...</p>
+            </div>
+          ) : !memberPipeline ? (
+            <div className="rounded-xl py-16 text-center" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+              <p className="text-[12px]" style={{ color: '#94a3b8' }}>Esse membro ainda não tem pipeline.</p>
+            </div>
+          ) : (
+            <>
+              {!memberHasOwn && (
+                <div className="mb-3 rounded-xl px-4 py-2.5 flex items-center gap-2"
+                  style={{ background: '#fef3c7', border: '1px solid #fde68a' }}>
+                  <span className="text-[14px]">ℹ️</span>
+                  <p className="text-[12px]" style={{ color: '#92400e' }}>
+                    Esse membro ainda não tem conta própria — você está vendo os leads atribuídos a ele.
+                    Quando ele se cadastrar em lead4producers.com com o email <strong>{teamMembers.find(m => m.id === selectedMemberId)?.email}</strong>, o pipeline dele aparecerá aqui.
+                  </p>
+                </div>
+              )}
+              <div className="overflow-x-auto pb-4">
+                <div className="flex gap-4" style={{ minWidth: (memberPipeline.stages.length || 1) * 306 }}>
+                  {memberPipeline.stages.map(stage => (
+                    <KanbanColumn
+                      key={stage.id}
+                      stage={stage}
+                      items={memberLeads.filter(l => l.stage_id === stage.id) as any}
+                      onLeadClick={(item) => setSelectedLead(item as any)}
+                      unreadCounts={unreadCounts}
+                    />
+                  ))}
+                </div>
               </div>
-            )
-          })}
+            </>
+          )}
         </div>
       )}
 
