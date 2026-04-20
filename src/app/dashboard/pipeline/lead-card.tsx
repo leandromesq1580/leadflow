@@ -3,11 +3,15 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { getStaleness } from '@/lib/stale-leads'
+import { CardAssignMenu } from './card-assign-menu'
 
 interface Lead {
   id: string; name: string; phone: string; state: string; interest: string
   type: string; created_at: string; contract_closed: boolean
+  assigned_to_member?: string | null
 }
+
+interface TeamMember { id: string; name: string }
 
 interface LastFollowUp {
   type: string
@@ -23,6 +27,8 @@ interface Props {
   movedAt?: string | null
   unreadCount?: number
   lastFollowUp?: LastFollowUp | null
+  teamMembers?: TeamMember[]
+  onAssigned?: () => void
 }
 
 function timeAgo(date: string) {
@@ -50,7 +56,7 @@ function formatFuDate(iso: string): string {
   return `${dd}/${mm} ${hh}:${mi}`
 }
 
-export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, unreadCount = 0, lastFollowUp }: Props) {
+export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, unreadCount = 0, lastFollowUp, teamMembers, onAssigned }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: pipelineLeadId,
     data: { lead },
@@ -108,6 +114,14 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
             <p className="text-[10px] truncate" style={{ color: '#94a3b8' }}>{lead.interest}</p>
           )}
         </div>
+        {teamMembers && teamMembers.length > 0 && (
+          <CardAssignMenu
+            leadId={lead.id}
+            members={teamMembers}
+            currentMemberId={lead.assigned_to_member}
+            onAssigned={onAssigned}
+          />
+        )}
       </div>
 
       {/* Phone */}

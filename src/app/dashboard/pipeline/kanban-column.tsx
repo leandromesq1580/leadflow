@@ -12,18 +12,22 @@ interface PipelineLead {
   id: string
   stage_id: string
   moved_at?: string | null
-  lead: { id: string; name: string; phone: string; state: string; interest: string; type: string; created_at: string; contract_closed: boolean }
+  lead: { id: string; name: string; phone: string; state: string; interest: string; type: string; created_at: string; contract_closed: boolean; assigned_to_member?: string | null }
   last_follow_up?: { type: string; scheduled_at: string | null; created_at: string } | null
 }
+
+interface TeamMember { id: string; name: string }
 
 interface Props {
   stage: Stage
   items: PipelineLead[]
   onLeadClick: (lead: PipelineLead) => void
   unreadCounts?: Record<string, number>
+  teamMembers?: TeamMember[]
+  onAssigned?: () => void
 }
 
-export function KanbanColumn({ stage, items, onLeadClick, unreadCounts = {} }: Props) {
+export function KanbanColumn({ stage, items, onLeadClick, unreadCounts = {}, teamMembers, onAssigned }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id })
 
   return (
@@ -62,6 +66,8 @@ export function KanbanColumn({ stage, items, onLeadClick, unreadCounts = {} }: P
               stageColor={stage.color}
               movedAt={item.moved_at}
               lastFollowUp={item.last_follow_up}
+              teamMembers={teamMembers}
+              onAssigned={onAssigned}
               onClick={() => onLeadClick(item)}
               unreadCount={unreadCounts[item.lead.id] || 0}
             />

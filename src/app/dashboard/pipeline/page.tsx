@@ -11,7 +11,7 @@ interface Stage { id: string; name: string; color: string; position: number }
 interface Pipeline { id: string; name: string; is_default: boolean; stages: Stage[] }
 interface PipelineLead {
   id: string; stage_id: string; position: number; moved_at?: string | null
-  lead: { id: string; name: string; phone: string; state: string; interest: string; type: string; created_at: string; contract_closed: boolean; email: string }
+  lead: { id: string; name: string; phone: string; state: string; interest: string; type: string; created_at: string; contract_closed: boolean; email: string; assigned_to_member?: string | null }
   last_follow_up?: { type: string; scheduled_at: string | null; created_at: string } | null
 }
 
@@ -477,6 +477,8 @@ export default function PipelinePage() {
                 items={getStageLeads(stage.id)}
                 onLeadClick={(item) => setSelectedLead(item)}
                 unreadCounts={unreadCounts}
+                teamMembers={isAgency ? teamMembers : undefined}
+                onAssigned={() => activePipeline && loadLeads(activePipeline.id)}
               />
             ))}
           </div>
