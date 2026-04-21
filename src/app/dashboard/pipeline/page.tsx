@@ -222,7 +222,14 @@ export default function PipelinePage() {
   }).length
 
   const getStageLeads = useCallback((stageId: string) => {
-    return filteredLeads.filter(l => l.stage_id === stageId).sort((a, b) => a.position - b.position)
+    // Mais recente no topo (por moved_at DESC). Novo lead ou lead arrastado sobe pra cima.
+    return filteredLeads
+      .filter(l => l.stage_id === stageId)
+      .sort((a, b) => {
+        const am = a.moved_at ? new Date(a.moved_at).getTime() : 0
+        const bm = b.moved_at ? new Date(b.moved_at).getTime() : 0
+        return bm - am
+      })
   }, [filteredLeads])
 
   function handleDragStart(event: DragStartEvent) {
