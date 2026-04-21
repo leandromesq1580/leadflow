@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { migrateWhatsAppOwnership } from '@/lib/lead-ownership'
 
 /**
  * GET /api/leads/[id]
@@ -69,6 +70,16 @@ export async function PATCH(
 
   // Use admin client to bypass RLS for updates
   const adminDb = createAdminClient()
+
+  // Se estiver removendo o membro atribuido (voltar pra mim), prepara pra migrar WA de volta
+  let movingBackToOwner: string | null = null
+  if ('assigned_to_member' in body && body.assigned_to_member === null) {
+    const { data: leadBefore } = await adminDb.from('leads').select('assigned_to, assigned_to_member').eq('id', id).maybeSingle()
+    if (leadBefore?.assigned_to && leadBefore.assigned_to_member) {
+      movingBackToOwner = leadBefore.assigned_to as string
+    }
+  }
+
   const { data, error } = await adminDb
     .from('leads')
     .update(updates)
@@ -78,6 +89,12 @@ export async function PATCH(
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  // 🔒 Privacidade: se o lead voltou pro owner original, move a thread WA de volta
+  if (movingBackToOwner) {
+    const migrated = await migrateWhatsAppOwnership(adminDb, id, movingBackToOwner)
+    if (migrated > 0) console.log(`[Lead] Unassign: migrated ${migrated} WA messages back to ${movingBackToOwner}`)
   }
 
   return NextResponse.json({ lead: data })

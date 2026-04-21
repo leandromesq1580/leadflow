@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     const { data: candidates } = await db
       .from('leads')
-      .select('id, assigned_to, phone, name')
+      .select('id, assigned_to, assigned_to_member, phone, name')
       .or(`phone.ilike.%${last10},phone.ilike.%${last11},phone.eq.${normalizedFrom},phone.eq.+${normalizedFrom}`)
       .limit(10)
 
@@ -53,8 +53,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ skipped: 'no_lead' })
     }
 
+    // 🔒 PRIVACIDADE: se o lead foi transferido pra um team_member (member_id !== null),
+    // a mensagem pertence ao buyer DESSE membro, nao ao owner original. O owner nao
+    // deve ver mensagens de leads que ele ja nao tem no pipeline.
+    let inboxBuyerId = match.assigned_to as string
+    let notifyBuyerId = match.assigned_to as string
+    if (match.assigned_to_member) {
+      const { data: member } = await db
+        .from('team_members')
+        .select('auth_user_id')
+        .eq('id', match.assigned_to_member)
+        .maybeSingle()
+      if (member?.auth_user_id) {
+        const { data: memberBuyer } = await db
+          .from('buyers')
+          .select('id')
+          .eq('auth_user_id', member.auth_user_id)
+          .maybeSingle()
+        if (memberBuyer?.id) {
+          inboxBuyerId = memberBuyer.id
+          notifyBuyerId = memberBuyer.id
+        }
+      }
+    }
+
     await db.from('whatsapp_messages').insert({
-      buyer_id: match.assigned_to,
+      buyer_id: inboxBuyerId,
       lead_id: match.id,
       direction: 'in',
       from_phone: normalizedFrom,
@@ -69,7 +93,7 @@ export async function POST(request: NextRequest) {
     // Bump lead updated_at
     await db.from('leads').update({ updated_at: new Date().toISOString() }).eq('id', match.id)
 
-    // Push notification pro agente
+    // Push notification pro agente (dono atual do lead)
     try {
       const { pushToBuyer } = await import('@/lib/push-notify')
       const preview = body
@@ -78,7 +102,7 @@ export async function POST(request: NextRequest) {
         : media_type === 'image' ? '📷 Enviou uma imagem'
         : media_type === 'video' ? '🎥 Enviou um vídeo'
         : media_type ? '📎 Enviou um arquivo' : 'Nova mensagem'
-      pushToBuyer(match.assigned_to, {
+      pushToBuyer(notifyBuyerId, {
         title: `💬 ${match.name || 'Lead'}`,
         body: preview,
         url: `/dashboard/whatsapp?lead=${match.id}`,

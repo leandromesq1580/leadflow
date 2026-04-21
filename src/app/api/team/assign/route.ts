@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendTeamMemberNotification } from '@/lib/notifications'
+import { migrateWhatsAppOwnership } from '@/lib/lead-ownership'
 
 /** POST /api/team/assign — Manually assign a lead to a team member */
 export async function POST(request: NextRequest) {
@@ -34,6 +35,7 @@ export async function POST(request: NextRequest) {
   await db.from('pipeline_leads').delete().eq('lead_id', lead_id)
 
   // If member has auth_user_id → they're a buyer too → add to THEIR pipeline
+  // + migrate WhatsApp thread ownership (privacy: owner antigo nao deve ver msgs futuras)
   if (member.auth_user_id) {
     const { data: memberBuyer } = await db.from('buyers').select('id').eq('auth_user_id', member.auth_user_id).single()
     if (memberBuyer) {
@@ -51,6 +53,10 @@ export async function POST(request: NextRequest) {
           position: 0, moved_at: new Date().toISOString(),
         }, { onConflict: 'lead_id,pipeline_id' })
       }
+
+      // 🔒 Privacidade: thread WhatsApp agora pertence ao novo dono
+      const migrated = await migrateWhatsAppOwnership(db, lead_id, memberBuyer.id)
+      if (migrated > 0) console.log(`[Assign] Migrated ${migrated} WA messages for lead ${lead_id} -> buyer ${memberBuyer.id}`)
     }
   }
 

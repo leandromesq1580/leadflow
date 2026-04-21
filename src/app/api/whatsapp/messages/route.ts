@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { assertBuyerOwnsLead } from '@/lib/lead-ownership'
 
-/** GET /api/whatsapp/messages?lead_id=X — thread pra lead */
+/** GET /api/whatsapp/messages?lead_id=X&buyer_id=Y — thread pra lead (com validacao de ownership) */
 export async function GET(request: NextRequest) {
   const url = new URL(request.url)
   const leadId = url.searchParams.get('lead_id')
@@ -12,6 +13,13 @@ export async function GET(request: NextRequest) {
   }
 
   const db = createAdminClient()
+
+  // 🔒 Se esta pedindo thread especifica de um lead, buyer_id e dono atual precisam bater
+  if (leadId && buyerId) {
+    const own = await assertBuyerOwnsLead(db, buyerId, leadId)
+    if (!own.ok) return NextResponse.json({ error: own.reason || 'Acesso negado' }, { status: 403 })
+  }
+
   let query = db.from('whatsapp_messages').select('*').order('sent_at', { ascending: true })
   if (leadId) query = query.eq('lead_id', leadId)
   if (buyerId && !leadId) query = query.eq('buyer_id', buyerId).is('read_at', null).eq('direction', 'in')
@@ -62,6 +70,10 @@ export async function POST(request: NextRequest) {
     if (!lead_id || !buyer_id || (!body.trim() && !fileBuffer)) {
       return NextResponse.json({ error: 'Missing fields — precisa lead_id, buyer_id, e body OU file' }, { status: 400 })
     }
+
+    // 🔒 Bloqueia envio por quem nao e mais dono do lead
+    const own = await assertBuyerOwnsLead(db, buyer_id, lead_id)
+    if (!own.ok) return NextResponse.json({ error: own.reason || 'Acesso negado' }, { status: 403 })
 
     const { data: lead } = await db.from('leads').select('phone').eq('id', lead_id).single()
     if (!lead?.phone) return NextResponse.json({ error: 'Lead sem telefone' }, { status: 400 })
