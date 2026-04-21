@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { distributeLeadToNextBuyer } from '@/lib/distribute'
+import { stateFromPhone } from '@/lib/us-area-codes'
 
 const FORM_IDS = [
   '25952858404333766',  // FORMULARIO SEGURO-SEM PERGUNTA (principal)
@@ -62,6 +63,9 @@ export async function GET(request: Request) {
         const email = fields.email || ''
         const phone = fields.phone || fields.phone_number || ''
 
+        // Estado baseado no DDD do telefone (fallback FL se nao US)
+        const inferredState = stateFromPhone(phone) || 'FL'
+
         // Save lead
         const { data: newLead, error } = await supabase
           .from('leads')
@@ -71,7 +75,7 @@ export async function GET(request: Request) {
             email,
             phone,
             city: '',
-            state: 'FL',
+            state: inferredState,
             interest: 'Seguro de vida',
             campaign_name: 'Meta Lead Ads',
             form_name: formId,

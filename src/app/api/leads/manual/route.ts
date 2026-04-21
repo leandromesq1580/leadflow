@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { stateFromPhone } from '@/lib/us-area-codes'
 
 /**
  * POST /api/leads/manual
@@ -27,6 +28,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Nome e (telefone ou email) obrigatórios' }, { status: 400 })
   }
 
+  // Se nao veio estado, tenta inferir pelo DDD do telefone
+  const finalState = (state || '').trim() || stateFromPhone(phone) || ''
+
   // Insert lead
   const { data: lead, error } = await db
     .from('leads')
@@ -34,7 +38,7 @@ export async function POST(request: NextRequest) {
       name: name.trim(),
       phone: (phone || '').trim(),
       email: (email || '').trim(),
-      state: (state || '').trim(),
+      state: finalState,
       city: (city || '').trim(),
       interest: (interest || 'Seguro de vida').trim(),
       campaign_name: 'Manual',

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { stateFromPhone } from '@/lib/us-area-codes'
 
 interface CsvLead {
   name?: string
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
       name,
       phone,
       email,
-      state: (lead.state || '').trim(),
+      state: (lead.state || '').trim() || stateFromPhone(phone) || '',
       city: (lead.city || '').trim(),
       interest: (lead.interest || 'Seguro de vida').trim(),
       campaign_name: 'Import CSV',
