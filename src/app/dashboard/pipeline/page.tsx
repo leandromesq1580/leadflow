@@ -222,13 +222,13 @@ export default function PipelinePage() {
   }).length
 
   const getStageLeads = useCallback((stageId: string) => {
-    // Mais recente no topo (por moved_at DESC). Novo lead ou lead arrastado sobe pra cima.
+    // Ordem por IDADE DO LEAD — mais recente (lead.created_at) no topo.
     return filteredLeads
       .filter(l => l.stage_id === stageId)
       .sort((a, b) => {
-        const am = a.moved_at ? new Date(a.moved_at).getTime() : 0
-        const bm = b.moved_at ? new Date(b.moved_at).getTime() : 0
-        return bm - am
+        const ac = a.lead?.created_at ? new Date(a.lead.created_at).getTime() : 0
+        const bc = b.lead?.created_at ? new Date(b.lead.created_at).getTime() : 0
+        return bc - ac
       })
   }, [filteredLeads])
 
