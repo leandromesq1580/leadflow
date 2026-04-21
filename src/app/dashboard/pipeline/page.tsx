@@ -374,12 +374,24 @@ export default function PipelinePage() {
             )}
           </div>
         </div>
-        <Link href="/dashboard/pipeline/settings"
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-bold transition-all hover:shadow-sm"
-          style={{ background: '#fff', color: '#64748b', border: '1px solid #e8ecf4' }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3v18M3 12h18"/></svg>
-          {t.pipeline.manage}
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard/pipeline/archived"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-bold transition-all hover:shadow-sm"
+            style={{ background: '#fff', color: '#64748b', border: '1px solid #e8ecf4' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="4" width="20" height="5" rx="1" />
+              <path d="M4 9v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9" />
+              <path d="M10 13h4" />
+            </svg>
+            Arquivados
+          </Link>
+          <Link href="/dashboard/pipeline/settings"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-bold transition-all hover:shadow-sm"
+            style={{ background: '#fff', color: '#64748b', border: '1px solid #e8ecf4' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3v18M3 12h18"/></svg>
+            {t.pipeline.manage}
+          </Link>
+        </div>
       </div>
 
       {/* View toggle (agency only) */}
@@ -482,6 +494,8 @@ export default function PipelinePage() {
                       items={memberLeads.filter(l => l.stage_id === stage.id) as any}
                       onLeadClick={(item) => setSelectedLead(item as any)}
                       unreadCounts={unreadCounts}
+                      teamMembers={isAgency ? teamMembers : undefined}
+                      onArchived={() => activePipeline && loadLeads(activePipeline.id)}
                     />
                   ))}
                 </div>
@@ -602,6 +616,7 @@ export default function PipelinePage() {
                 unreadCounts={unreadCounts}
                 teamMembers={isAgency ? teamMembers : undefined}
                 onAssigned={() => activePipeline && loadLeads(activePipeline.id)}
+                onArchived={() => activePipeline && loadLeads(activePipeline.id)}
               />
             ))}
           </div>

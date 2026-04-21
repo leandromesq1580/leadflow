@@ -26,9 +26,10 @@ interface Props {
   unreadCounts?: Record<string, number>
   teamMembers?: TeamMember[]
   onAssigned?: () => void
+  onArchived?: () => void
 }
 
-export function KanbanColumn({ stage, items, onLeadClick, unreadCounts = {}, teamMembers, onAssigned }: Props) {
+export function KanbanColumn({ stage, items, onLeadClick, unreadCounts = {}, teamMembers, onAssigned, onArchived }: Props) {
   const t = useT()
   const { setNodeRef, isOver } = useDroppable({ id: stage.id })
 
@@ -72,6 +73,7 @@ export function KanbanColumn({ stage, items, onLeadClick, unreadCounts = {}, tea
               lastFollowUp={item.last_follow_up}
               teamMembers={teamMembers}
               onAssigned={onAssigned}
+              onArchived={onArchived}
               onClick={() => onLeadClick(item)}
               unreadCount={unreadCounts[item.lead.id] || 0}
             />
