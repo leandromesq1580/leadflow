@@ -47,13 +47,13 @@ const FU_META: Record<string, { icon: string; label: string; bg: string; color: 
   note:     { icon: '📝', label: 'Nota',     bg: '#f1f5f9', color: '#475569' },
 }
 
+// Horario Eastern (EUA) em AM/PM — o lead mora nos EUA, nao no Brasil
+const LEAD_TZ = 'America/New_York'
 function formatFuDate(iso: string): string {
   const d = new Date(iso)
-  const dd = String(d.getDate()).padStart(2, '0')
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const hh = String(d.getHours()).padStart(2, '0')
-  const mi = String(d.getMinutes()).padStart(2, '0')
-  return `${dd}/${mm} ${hh}:${mi}`
+  const dateStr = d.toLocaleDateString('en-GB', { timeZone: LEAD_TZ, day: '2-digit', month: '2-digit' }) // 21/04
+  const timeStr = d.toLocaleTimeString('en-US', { timeZone: LEAD_TZ, hour: 'numeric', minute: '2-digit', hour12: true }) // 6:00 PM
+  return `${dateStr} ${timeStr}`
 }
 
 export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, unreadCount = 0, lastFollowUp, teamMembers, onAssigned }: Props) {
