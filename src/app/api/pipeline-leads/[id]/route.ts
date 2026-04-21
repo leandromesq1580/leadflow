@@ -22,3 +22,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   return NextResponse.json({ entry: data })
 }
+
+/** DELETE /api/pipeline-leads/[id] — remove lead from current pipeline (caller usually insere de novo em outra pipeline) */
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const db = createAdminClient()
+  const { error } = await db.from('pipeline_leads').delete().eq('id', id)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ success: true })
+}

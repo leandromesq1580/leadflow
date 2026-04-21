@@ -47,6 +47,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   const [pipelines, setPipelines] = useState<any[]>([])
   const [pipelineLead, setPipelineLead] = useState<any>(null)
   const [pendingStageId, setPendingStageId] = useState<string | null>(null)
+  const [pendingPipelineId, setPendingPipelineId] = useState<string | null>(null)
 
   useEffect(() => {
     fetch(`/api/leads/${leadId}`).then(r => r.json()).then(d => setLead(d.lead || d))
@@ -64,6 +65,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
     setPipelines(pipesRes.pipelines || [])
     setPipelineLead(plRes.pipelineLead || null)
     setPendingStageId(plRes.pipelineLead?.stage_id || null)
+    setPendingPipelineId(plRes.pipelineLead?.pipeline?.id || null)
   }
 
   async function loadFollowUps() {
@@ -123,13 +125,25 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
         closed_at: lead.closed_at || null,
       }),
     })
-    // Se usuario mudou estágio, salva também
-    if (pipelineLead && pendingStageId && pendingStageId !== pipelineLead.stage_id) {
-      await fetch(`/api/pipeline-leads/${pipelineLead.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stage_id: pendingStageId }),
-      })
+    // Mudanca de pipeline/stage
+    if (pipelineLead && pendingStageId) {
+      const pipeChanged = pendingPipelineId && pendingPipelineId !== pipelineLead.pipeline?.id
+      const stageChanged = pendingStageId !== pipelineLead.stage_id
+      if (pipeChanged) {
+        // Muda de pipeline: deleta entry antiga + cria nova
+        await fetch(`/api/pipeline-leads/${pipelineLead.id}`, { method: 'DELETE' })
+        await fetch(`/api/pipelines/${pendingPipelineId}/leads`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lead_id: leadId, stage_id: pendingStageId }),
+        })
+      } else if (stageChanged) {
+        await fetch(`/api/pipeline-leads/${pipelineLead.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ stage_id: pendingStageId }),
+        })
+      }
     }
     setSaving(false)
     onSaved()
@@ -358,12 +372,12 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                   </label>
                   <div className="rounded-xl p-3" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>Pipeline:</span>
+                      <span className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>Pipeline atual:</span>
                       <span className="text-[12px] font-bold" style={{ color: '#1a1a2e' }}>
                         {pipelineLead.pipeline?.name || 'Default'}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-3">
                       <span className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>Estágio atual:</span>
                       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold"
                         style={{
@@ -375,26 +389,59 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                         {pipelineLead.stage?.name || 'Sem estágio'}
                       </span>
                     </div>
+
+                    {pipelines.length > 1 && (
+                      <div className="mb-2">
+                        <label className="block text-[10px] font-bold uppercase mb-1" style={{ color: '#94a3b8' }}>Mover para pipeline:</label>
+                        <select
+                          value={pendingPipelineId || pipelineLead.pipeline?.id || ''}
+                          onChange={e => {
+                            const newPipeId = e.target.value
+                            setPendingPipelineId(newPipeId)
+                            // Se mudou pipeline, reseta o stage pro primeiro da nova pipeline
+                            if (newPipeId !== pipelineLead.pipeline?.id) {
+                              const newPipe = pipelines.find(p => p.id === newPipeId)
+                              const firstStage = (newPipe?.stages || []).sort((a: any, b: any) => a.position - b.position)[0]
+                              if (firstStage) setPendingStageId(firstStage.id)
+                            } else {
+                              setPendingStageId(pipelineLead.stage_id)
+                            }
+                          }}
+                          className="w-full px-3 py-2 rounded-lg text-[13px] font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-200 cursor-pointer"
+                          style={{
+                            background: '#fff',
+                            border: `1px solid ${pendingPipelineId && pendingPipelineId !== pipelineLead.pipeline?.id ? '#6366f1' : '#e8ecf4'}`,
+                            color: '#1a1a2e',
+                          }}>
+                          {pipelines.map((p: any) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name}{p.id === pipelineLead.pipeline?.id ? ' (atual)' : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
                     <div>
-                      <label className="block text-[10px] font-bold uppercase mb-1" style={{ color: '#94a3b8' }}>Mover para:</label>
+                      <label className="block text-[10px] font-bold uppercase mb-1" style={{ color: '#94a3b8' }}>Mover para estágio:</label>
                       <select
                         value={pendingStageId || pipelineLead.stage_id || ''}
                         onChange={e => setPendingStageId(e.target.value)}
                         className="w-full px-3 py-2 rounded-lg text-[13px] font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-200 cursor-pointer"
                         style={{
                           background: '#fff',
-                          border: `1px solid ${pendingStageId && pendingStageId !== pipelineLead.stage_id ? '#6366f1' : '#e8ecf4'}`,
+                          border: `1px solid ${(pendingStageId && pendingStageId !== pipelineLead.stage_id) || (pendingPipelineId && pendingPipelineId !== pipelineLead.pipeline?.id) ? '#6366f1' : '#e8ecf4'}`,
                           color: '#1a1a2e',
                         }}>
-                        {(pipelines.find(p => p.id === pipelineLead.pipeline?.id)?.stages || [])
+                        {(pipelines.find(p => p.id === (pendingPipelineId || pipelineLead.pipeline?.id))?.stages || [])
                           .sort((a: any, b: any) => a.position - b.position)
                           .map((s: any) => (
                             <option key={s.id} value={s.id}>
-                              {s.name}{s.id === pipelineLead.stage_id ? ' (atual)' : ''}
+                              {s.name}{s.id === pipelineLead.stage_id && (pendingPipelineId || pipelineLead.pipeline?.id) === pipelineLead.pipeline?.id ? ' (atual)' : ''}
                             </option>
                           ))}
                       </select>
-                      {pendingStageId && pendingStageId !== pipelineLead.stage_id && (
+                      {((pendingStageId && pendingStageId !== pipelineLead.stage_id) || (pendingPipelineId && pendingPipelineId !== pipelineLead.pipeline?.id)) && (
                         <p className="text-[10px] mt-1 font-semibold" style={{ color: '#6366f1' }}>
                           ⚠️ Mudança pendente — será salva ao clicar &ldquo;Salvar Alterações&rdquo;
                         </p>
