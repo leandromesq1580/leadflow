@@ -80,6 +80,15 @@ export async function PATCH(
     }
   }
 
+  // DEBUG temporario pra rastrear policy_value/closed_at
+  if ('policy_value' in body || 'closed_at' in body || 'contract_closed' in body) {
+    console.log(`[Lead PATCH ${id}] body:`, JSON.stringify({
+      policy_value: body.policy_value,
+      closed_at: body.closed_at,
+      contract_closed: body.contract_closed,
+    }), 'updates keys:', Object.keys(updates))
+  }
+
   const { data, error } = await adminDb
     .from('leads')
     .update(updates)
@@ -88,6 +97,7 @@ export async function PATCH(
     .single()
 
   if (error) {
+    console.error(`[Lead PATCH ${id}] DB error:`, error.message)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 

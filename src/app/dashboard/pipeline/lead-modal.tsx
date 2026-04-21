@@ -112,19 +112,24 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   async function saveLead() {
     setSaving(true)
     // Save lead fields
-    await fetch(`/api/leads/${leadId}`, {
+    const payload = {
+      name: lead.name, email: lead.email, phone: lead.phone,
+      state: lead.state, city: lead.city, interest: lead.interest,
+      platform: lead.platform, reason: lead.reason,
+      age_range: lead.age_range, attendant: lead.attendant,
+      is_organic: lead.is_organic, contract_closed: lead.contract_closed,
+      policy_value: typeof lead.policy_value === 'number' ? lead.policy_value : (lead.policy_value ? parseFloat(lead.policy_value) || 0 : 0),
+      observation: lead.observation,
+      closed_at: lead.closed_at || null,
+    }
+    console.log('[saveLead] payload:', payload)
+    const res = await fetch(`/api/leads/${leadId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: lead.name, email: lead.email, phone: lead.phone,
-        state: lead.state, city: lead.city, interest: lead.interest,
-        platform: lead.platform, reason: lead.reason,
-        age_range: lead.age_range, attendant: lead.attendant,
-        is_organic: lead.is_organic, contract_closed: lead.contract_closed,
-        policy_value: lead.policy_value, observation: lead.observation,
-        closed_at: lead.closed_at || null,
-      }),
+      body: JSON.stringify(payload),
     })
+    const resBody = await res.json().catch(() => null)
+    console.log('[saveLead] response:', res.status, resBody)
     // Mudanca de pipeline/stage
     if (pipelineLead && pendingStageId) {
       const pipeChanged = pendingPipelineId && pendingPipelineId !== pipelineLead.pipeline?.id
