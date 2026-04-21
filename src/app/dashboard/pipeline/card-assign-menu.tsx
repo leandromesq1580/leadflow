@@ -12,6 +12,7 @@ interface Props {
   members: Member[]
   currentMemberId?: string | null
   onAssigned?: () => void
+  onArchived?: () => void
 }
 
 /**
@@ -19,9 +20,10 @@ interface Props {
  * Abre dropdown com lista de team members e botão "voltar pra mim".
  * Usa o mesmo endpoint e padrão visual do AssignButton de /dashboard/leads.
  */
-export function CardAssignMenu({ leadId, members, currentMemberId, onAssigned }: Props) {
+export function CardAssignMenu({ leadId, members, currentMemberId, onAssigned, onArchived }: Props) {
   const [open, setOpen] = useState(false)
   const [assigning, setAssigning] = useState(false)
+  const [archiving, setArchiving] = useState(false)
   const [direction, setDirection] = useState<'up' | 'down'>('down')
   const buttonRef = useRef<HTMLButtonElement>(null)
 
@@ -29,11 +31,23 @@ export function CardAssignMenu({ leadId, members, currentMemberId, onAssigned }:
     if (!open || !buttonRef.current) return
     const rect = buttonRef.current.getBoundingClientRect()
     const viewportH = window.innerHeight
-    const dropdownHeight = 60 + members.length * 36 + (currentMemberId ? 40 : 0)
+    // height: header(26) + back(40 if member) + members*36 + separator(8) + archive(36) + cancel(30) + padding(16)
+    const dropdownHeight = 120 + members.length * 36 + (currentMemberId ? 40 : 0)
     const spaceBelow = viewportH - rect.bottom
     const spaceAbove = rect.top
     setDirection(spaceBelow < dropdownHeight && spaceAbove > spaceBelow ? 'up' : 'down')
   }, [open, members.length, currentMemberId])
+
+  async function archive() {
+    setArchiving(true)
+    try {
+      await fetch(`/api/leads/${leadId}/archive`, { method: 'POST' })
+    } finally {
+      setArchiving(false)
+      setOpen(false)
+      onArchived?.()
+    }
+  }
 
   async function assign(memberId: string | null) {
     setAssigning(true)
@@ -107,6 +121,22 @@ export function CardAssignMenu({ leadId, members, currentMemberId, onAssigned }:
                 {m.name} {m.id === currentMemberId && '✓'}
               </button>
             ))}
+
+            {/* Separator + Archive action */}
+            <div className="my-1" style={{ borderTop: '1px solid #f1f5f9' }} />
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); archive() }}
+              disabled={archiving}
+              className="w-full text-left px-3 py-2 rounded-lg text-[12px] font-semibold hover:bg-slate-100 disabled:opacity-50 flex items-center gap-2"
+              style={{ color: '#64748b' }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="4" width="20" height="5" rx="1" />
+                <path d="M4 9v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9" />
+                <path d="M10 13h4" />
+              </svg>
+              {archiving ? 'Arquivando...' : 'Arquivar lead'}
+            </button>
 
             <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(false) }}
               className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] mt-1"

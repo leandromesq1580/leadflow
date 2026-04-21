@@ -29,6 +29,7 @@ interface Props {
   lastFollowUp?: LastFollowUp | null
   teamMembers?: TeamMember[]
   onAssigned?: () => void
+  onArchived?: () => void
 }
 
 function timeAgo(date: string) {
@@ -56,7 +57,7 @@ function formatFuDate(iso: string): string {
   return `${dateStr} ${timeStr}`
 }
 
-export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, unreadCount = 0, lastFollowUp, teamMembers, onAssigned }: Props) {
+export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, unreadCount = 0, lastFollowUp, teamMembers, onAssigned, onArchived }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: pipelineLeadId,
     data: { lead },
@@ -114,14 +115,13 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
             <p className="text-[10px] truncate" style={{ color: '#94a3b8' }}>{lead.interest}</p>
           )}
         </div>
-        {teamMembers && teamMembers.length > 0 && (
-          <CardAssignMenu
-            leadId={lead.id}
-            members={teamMembers}
-            currentMemberId={lead.assigned_to_member}
-            onAssigned={onAssigned}
-          />
-        )}
+        <CardAssignMenu
+          leadId={lead.id}
+          members={teamMembers || []}
+          currentMemberId={lead.assigned_to_member}
+          onAssigned={onAssigned}
+          onArchived={onArchived}
+        />
       </div>
 
       {/* Phone */}
