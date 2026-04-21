@@ -17,17 +17,25 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   // Anexa o último follow-up por lead (scheduled_at DESC, fallback pra created_at)
+  // Pagina em chunks de 1000 pra driblar o limit padrao do PostgREST —
+  // pipelines com muitos follow_ups (3k+) estavam cortando antes dos mais recentes.
   const leadIds = (data || []).map((pl: any) => pl.lead?.id).filter(Boolean)
-  let latestByLead: Record<string, { type: string; scheduled_at: string | null; created_at: string }> = {}
+  const latestByLead: Record<string, { type: string; scheduled_at: string | null; created_at: string }> = {}
   if (leadIds.length > 0) {
-    const { data: fus } = await db
-      .from('follow_ups')
-      .select('lead_id, type, scheduled_at, created_at')
-      .in('lead_id', leadIds)
-      .order('scheduled_at', { ascending: false, nullsFirst: false })
-      .order('created_at', { ascending: false })
-    for (const fu of fus || []) {
-      if (!latestByLead[fu.lead_id]) latestByLead[fu.lead_id] = fu as any
+    const PAGE = 1000
+    for (let offset = 0; offset < 20000; offset += PAGE) {
+      const { data: fus, error: fuErr } = await db
+        .from('follow_ups')
+        .select('lead_id, type, scheduled_at, created_at')
+        .in('lead_id', leadIds)
+        .order('scheduled_at', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false })
+        .range(offset, offset + PAGE - 1)
+      if (fuErr || !fus || fus.length === 0) break
+      for (const fu of fus) {
+        if (!latestByLead[fu.lead_id]) latestByLead[fu.lead_id] = fu as any
+      }
+      if (fus.length < PAGE) break
     }
   }
 

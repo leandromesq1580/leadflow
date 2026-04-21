@@ -50,18 +50,24 @@ export async function GET(request: NextRequest) {
         .eq('pipeline_id', pipe.id)
         .order('position')
 
-      // Anexa último follow-up (mesmo padrão da rota /pipelines/[id]/leads)
+      // Anexa último follow-up (pagina pra driblar limit 1000 do PostgREST)
       const leadIds = (plRaw || []).map((pl: any) => pl.lead?.id).filter(Boolean)
-      let latestByLead: Record<string, any> = {}
+      const latestByLead: Record<string, any> = {}
       if (leadIds.length > 0) {
-        const { data: fus } = await db
-          .from('follow_ups')
-          .select('lead_id, type, scheduled_at, created_at')
-          .in('lead_id', leadIds)
-          .order('scheduled_at', { ascending: false, nullsFirst: false })
-          .order('created_at', { ascending: false })
-        for (const fu of fus || []) {
-          if (!latestByLead[fu.lead_id]) latestByLead[fu.lead_id] = fu
+        const PAGE = 1000
+        for (let offset = 0; offset < 20000; offset += PAGE) {
+          const { data: fus } = await db
+            .from('follow_ups')
+            .select('lead_id, type, scheduled_at, created_at')
+            .in('lead_id', leadIds)
+            .order('scheduled_at', { ascending: false, nullsFirst: false })
+            .order('created_at', { ascending: false })
+            .range(offset, offset + PAGE - 1)
+          if (!fus || fus.length === 0) break
+          for (const fu of fus) {
+            if (!latestByLead[fu.lead_id]) latestByLead[fu.lead_id] = fu
+          }
+          if (fus.length < PAGE) break
         }
       }
 
