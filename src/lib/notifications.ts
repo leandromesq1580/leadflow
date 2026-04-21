@@ -44,6 +44,7 @@ interface Buyer {
 }
 
 interface Lead {
+  id?: string
   name: string
   phone: string
   city: string
@@ -144,12 +145,31 @@ interface TeamMember {
   email: string | null
   phone: string | null
   whatsapp: string | null
+  auth_user_id?: string | null
 }
 
 /**
  * Send notification to a team member when a lead is assigned to them.
  */
 export async function sendTeamMemberNotification(member: TeamMember, lead: Lead) {
+  // Push: se o membro tem conta propria (auth_user_id), manda push pro buyer dele
+  if (member.auth_user_id) {
+    try {
+      const { pushToBuyer } = await import('@/lib/push-notify')
+      const { createAdminClient } = await import('@/lib/supabase/admin')
+      const db = createAdminClient()
+      const { data: memberBuyer } = await db.from('buyers').select('id').eq('auth_user_id', member.auth_user_id).single()
+      if (memberBuyer?.id) {
+        pushToBuyer(memberBuyer.id, {
+          title: `🎯 Novo lead — ${lead.name}`,
+          body: `${lead.state} · ${lead.interest}. Ligue nos próximos 5 minutos!`,
+          url: `/dashboard/pipeline?lead=${(lead as any).id || ''}`,
+          tag: `lead-team-${(lead as any).id || member.id}`,
+        }).catch(err => console.error('[Push team] err', err))
+      }
+    } catch (e) { console.error('[Push team] setup failed', e) }
+  }
+
   // Email
   if (member.email) {
     try {

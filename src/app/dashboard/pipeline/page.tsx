@@ -142,6 +142,17 @@ export default function PipelinePage() {
     return () => clearInterval(interval)
   }, [buyerId])
 
+  // Auto-refresh dos leads: a cada 30s, se não houver drag em andamento
+  // nem modal aberto — garante que leads atribuídos por agência apareçam sem F5.
+  useEffect(() => {
+    if (!activePipeline || view !== 'mine') return
+    const iv = setInterval(() => {
+      if (activeCard || selectedLead) return
+      loadLeads(activePipeline.id)
+    }, 30000)
+    return () => clearInterval(iv)
+  }, [activePipeline, view, activeCard, selectedLead])
+
   async function createPipeline() {
     setCreating(true)
     await fetch('/api/pipelines', {
