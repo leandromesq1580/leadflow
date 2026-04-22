@@ -198,6 +198,7 @@ export default function AppointmentsPage() {
         <LegendItem color="#0ea5e9" kind="task" label="Tarefa" />
         <LegendItem color="#8b5cf6" kind="followup" label="Reunião (follow-up)" />
         <LegendItem color="#f59e0b" kind="followup" label="Ligação (follow-up)" />
+        <LegendItem color="#ef4444" kind="followup" label="Não compareceu" />
       </div>
 
       {selectedEvent && (
@@ -491,6 +492,20 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
     onChanged()
   }
 
+  async function toggleNoShow() {
+    setBusy(true)
+    const isNoShow = event.status === 'no_show'
+    const nextStatus = isNoShow
+      ? (event.kind === 'appointment' ? 'scheduled' : 'pending')
+      : 'no_show'
+    await fetch(endpointBase, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: nextStatus }),
+    })
+    setBusy(false)
+    onChanged()
+  }
+
   async function del() {
     if (!confirm('Deletar este item? Ação não pode ser desfeita.')) return
     setBusy(true)
@@ -586,6 +601,18 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
             }}>
             {event.completed ? '↺ Marcar pendente' : '✓ Marcar concluído'}
           </button>
+
+          {(event.kind === 'appointment' || event.kind === 'followup') && (
+            <button onClick={toggleNoShow} disabled={busy}
+              className="block w-full text-center py-2.5 rounded-xl text-[12px] font-bold"
+              style={{
+                background: '#fef2f2',
+                color: '#dc2626',
+                border: '1px solid #fecaca',
+              }}>
+              {event.status === 'no_show' ? '↺ Desfazer "Não compareceu"' : '✗ Marcar como Não Compareceu'}
+            </button>
+          )}
 
           {event.lead_id && (
             <a href={`/dashboard/pipeline?lead=${event.lead_id}`}

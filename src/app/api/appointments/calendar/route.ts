@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       .order('scheduled_at'),
 
     db.from('follow_ups')
-      .select('id, type, description, scheduled_at, completed_at, lead:leads(id, name, phone, state)')
+      .select('id, type, description, scheduled_at, completed_at, status, lead:leads(id, name, phone, state)')
       .eq('buyer_id', buyerId)
       .not('scheduled_at', 'is', null)
       .gte('scheduled_at', from)
@@ -67,21 +67,26 @@ export async function GET(request: NextRequest) {
     })),
 
     // Follow-ups
-    ...fus.map((f: any) => ({
-      id: `fu-${f.id}`,
-      kind: 'followup' as const,
-      title: `${f.lead?.name || 'Lead'}: ${f.description?.slice(0, 40) || ''}`,
-      subtitle: f.type || '',
-      start: f.scheduled_at,
-      end: null,
-      status: f.completed_at ? 'completed' : 'pending',
-      lead_id: f.lead?.id,
-      lead_name: f.lead?.name,
-      lead_phone: f.lead?.phone,
-      color: f.completed_at ? '#10b981' : (f.type === 'call' ? '#f59e0b' : f.type === 'meeting' ? '#8b5cf6' : '#06b6d4'),
-      raw_id: f.id,
-      completed: !!f.completed_at,
-    })),
+    ...fus.map((f: any) => {
+      const st = f.status || (f.completed_at ? 'completed' : 'pending')
+      return {
+        id: `fu-${f.id}`,
+        kind: 'followup' as const,
+        title: `${f.lead?.name || 'Lead'}: ${f.description?.slice(0, 40) || ''}`,
+        subtitle: f.type || '',
+        start: f.scheduled_at,
+        end: null,
+        status: st,
+        lead_id: f.lead?.id,
+        lead_name: f.lead?.name,
+        lead_phone: f.lead?.phone,
+        color: st === 'no_show' ? '#ef4444'
+          : st === 'completed' ? '#10b981'
+          : (f.type === 'call' ? '#f59e0b' : f.type === 'meeting' ? '#8b5cf6' : '#06b6d4'),
+        raw_id: f.id,
+        completed: st === 'completed',
+      }
+    }),
 
     // Calendar items (events + tasks)
     ...items.map((i: any) => ({
