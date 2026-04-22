@@ -6,13 +6,11 @@ export async function createServerSupabase() {
   const ref = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace('https://', '').split('.')[0]
   const baseName = `sb-${ref}-auth-token`
 
-  // Supabase-js armazena JWT grande chunked em cookies .0, .1, .2...
-  // Concatena se existirem; senao usa o cookie unico.
-  let rawValue: string | null = null
-  const single = cookieStore.get(baseName)
-  if (single?.value) {
-    rawValue = single.value
-  } else {
+  // Tenta cookie unico primeiro (formato que o login.tsx escreve manualmente).
+  // Se nao, tenta cookies chunked (.0, .1, ...) que o supabase-js auto-persiste.
+  const authCookie = cookieStore.get(baseName)
+  let rawValue: string | null = authCookie?.value || null
+  if (!rawValue) {
     const chunks: string[] = []
     for (let i = 0; i < 10; i++) {
       const c = cookieStore.get(`${baseName}.${i}`)
@@ -23,34 +21,24 @@ export async function createServerSupabase() {
   }
 
   let accessToken: string | null = null
-  let parseError: string | null = null
   if (rawValue) {
-    // Supabase prefixa com 'base64-' quando e o valor codificado
-    const normalized = rawValue.startsWith('base64-') ? rawValue.slice(7) : rawValue
-    // Tentativa 1: JSON puro (formato antigo)
+    // Tenta base64 -> JSON (formato padrao do login.tsx)
     try {
-      const parsed = JSON.parse(rawValue)
-      if (parsed?.access_token) accessToken = parsed.access_token
-    } catch {}
-    // Tentativa 2: base64 -> JSON
-    if (!accessToken) {
+      const decoded = JSON.parse(Buffer.from(rawValue, 'base64').toString())
+      accessToken = decoded.access_token
+    } catch {
+      // Tenta JSON direto (caso seja valor nao-encoded)
       try {
-        const decoded = JSON.parse(Buffer.from(normalized, 'base64').toString())
-        if (decoded?.access_token) accessToken = decoded.access_token
-      } catch (e: unknown) { parseError = (e as Error)?.message || 'decode err' }
+        const parsed = JSON.parse(rawValue)
+        accessToken = parsed.access_token
+      } catch {}
     }
-    if (!accessToken) {
-      console.warn('[auth] cookie presente mas access_token nao extraido.',
-        'rawValue.length=', rawValue.length,
-        'hasBase64Prefix=', rawValue.startsWith('base64-'),
-        'err=', parseError,
-        'preview=', rawValue.slice(0, 40))
-    }
-  } else {
-    // Debug: lista cookies sb-* visiveis pro server
-    const all = cookieStore.getAll().filter(c => c.name.startsWith('sb-')).map(c => `${c.name}(${c.value.length}b)`)
-    if (all.length > 0) {
-      console.warn('[auth] sem authCookie principal. Cookies sb-*:', all.join(', '))
+    // Se nao conseguiu e tem prefixo 'base64-' (novo formato supabase-js)
+    if (!accessToken && rawValue.startsWith('base64-')) {
+      try {
+        const decoded = JSON.parse(Buffer.from(rawValue.slice(7), 'base64').toString())
+        accessToken = decoded.access_token
+      } catch {}
     }
   }
 
