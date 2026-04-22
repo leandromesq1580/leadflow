@@ -4,6 +4,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { getStaleness } from '@/lib/stale-leads'
 import { CardAssignMenu } from './card-assign-menu'
+import { useT } from '@/lib/i18n-client'
 
 interface Lead {
   id: string; name: string; phone: string; state: string; interest: string
@@ -33,18 +34,42 @@ interface Props {
 
 function timeAgo(date: string) {
   const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000)
-  if (s < 60) return 'agora'
-  if (s < 3600) return `${Math.floor(s / 60)}min`
+  if (s < 60) return ''
+  if (s < 3600) return `${Math.floor(s / 60)}m`
   if (s < 86400) return `${Math.floor(s / 3600)}h`
   return `${Math.floor(s / 86400)}d`
 }
 
-const FU_META: Record<string, { icon: string; label: string; bg: string; color: string }> = {
-  call:     { icon: '📞', label: 'Ligação',  bg: '#eff6ff', color: '#1d4ed8' },
-  meeting:  { icon: '🤝', label: 'Reunião',  bg: '#fef3c7', color: '#92400e' },
-  whatsapp: { icon: '💬', label: 'WhatsApp', bg: '#dcfce7', color: '#15803d' },
-  email:    { icon: '✉️', label: 'E-mail',   bg: '#f3e8ff', color: '#6b21a8' },
-  note:     { icon: '📝', label: 'Nota',     bg: '#f1f5f9', color: '#475569' },
+const FU_META_BY_LOCALE = {
+  pt: {
+    call:     { label: 'Ligação' },
+    meeting:  { label: 'Reunião' },
+    whatsapp: { label: 'WhatsApp' },
+    email:    { label: 'E-mail' },
+    note:     { label: 'Nota' },
+  },
+  en: {
+    call:     { label: 'Call' },
+    meeting:  { label: 'Meeting' },
+    whatsapp: { label: 'WhatsApp' },
+    email:    { label: 'Email' },
+    note:     { label: 'Note' },
+  },
+  es: {
+    call:     { label: 'Llamada' },
+    meeting:  { label: 'Reunión' },
+    whatsapp: { label: 'WhatsApp' },
+    email:    { label: 'Email' },
+    note:     { label: 'Nota' },
+  },
+}
+
+const FU_COLOR: Record<string, { icon: string; bg: string; color: string }> = {
+  call:     { icon: '📞', bg: '#eff6ff', color: '#1d4ed8' },
+  meeting:  { icon: '🤝', bg: '#fef3c7', color: '#92400e' },
+  whatsapp: { icon: '💬', bg: '#dcfce7', color: '#15803d' },
+  email:    { icon: '✉️', bg: '#f3e8ff', color: '#6b21a8' },
+  note:     { icon: '📝', bg: '#f1f5f9', color: '#475569' },
 }
 
 // Horario Eastern (EUA) em AM/PM — o lead mora nos EUA, nao no Brasil
@@ -57,6 +82,7 @@ function formatFuDate(iso: string): string {
 }
 
 export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, unreadCount = 0, lastFollowUp, teamMembers, onAssigned }: Props) {
+  const t = useT()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: pipelineLeadId,
     data: { lead },
@@ -134,16 +160,18 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
 
       {/* Último follow-up */}
       {lastFollowUp && (() => {
-        const meta = FU_META[lastFollowUp.type] || FU_META.note
+        const color = FU_COLOR[lastFollowUp.type] || FU_COLOR.note
+        const labels = FU_META_BY_LOCALE[t._locale as keyof typeof FU_META_BY_LOCALE] || FU_META_BY_LOCALE.pt
+        const label = (labels as any)[lastFollowUp.type]?.label || (labels as any).note.label
         const when = lastFollowUp.scheduled_at || lastFollowUp.created_at
         return (
           <div className="flex items-center gap-1.5 mb-2.5 ml-[42px] px-2 py-1 rounded-md"
-            style={{ background: meta.bg }}>
-            <span className="text-[11px]">{meta.icon}</span>
-            <span className="text-[10px] font-extrabold uppercase tracking-wide" style={{ color: meta.color }}>
-              {meta.label}
+            style={{ background: color.bg }}>
+            <span className="text-[11px]">{color.icon}</span>
+            <span className="text-[10px] font-extrabold uppercase tracking-wide" style={{ color: color.color }}>
+              {label}
             </span>
-            <span className="text-[10px] font-semibold" style={{ color: meta.color, opacity: 0.8 }}>
+            <span className="text-[10px] font-semibold" style={{ color: color.color, opacity: 0.8 }}>
               · {formatFuDate(when)}
             </span>
           </div>
@@ -159,18 +187,18 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
           )}
           {lead.type === 'hot' && (
             <span className="text-[9px] font-bold px-2 py-[3px] rounded-md"
-              style={{ background: '#fef3c7', color: '#b45309' }}>HOT</span>
+              style={{ background: '#fef3c7', color: '#b45309' }}>{t.card.hot}</span>
           )}
           {lead.contract_closed && (
             <span className="text-[9px] font-bold px-2 py-[3px] rounded-md"
-              style={{ background: '#dcfce7', color: '#15803d' }}>FECHADO</span>
+              style={{ background: '#dcfce7', color: '#15803d' }}>{t.card.closed}</span>
           )}
           {showStale && (
             <span className="text-[9px] font-bold px-2 py-[3px] rounded-md flex items-center gap-1"
               style={{ background: stale.bg, color: stale.color }}>
               {stale.level === 'critical' && '🔥'}
               {stale.level === 'alert' && '⚠️'}
-              {stale.label}
+              {stale.level === 'warning' ? `${stale.days}d` : t.card.staleDays(stale.days)}
             </span>
           )}
         </div>

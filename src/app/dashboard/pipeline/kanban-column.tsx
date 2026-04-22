@@ -3,6 +3,7 @@
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { LeadCard } from './lead-card'
+import { useT } from '@/lib/i18n-client'
 
 interface Stage {
   id: string; name: string; color: string; position: number
@@ -28,6 +29,7 @@ interface Props {
 }
 
 export function KanbanColumn({ stage, items, onLeadClick, unreadCounts = {}, teamMembers, onAssigned }: Props) {
+  const t = useT()
   const { setNodeRef, isOver } = useDroppable({ id: stage.id })
 
   return (
@@ -79,7 +81,7 @@ export function KanbanColumn({ stage, items, onLeadClick, unreadCounts = {}, tea
             <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-2" style={{ background: `${stage.color}10` }}>
               <span className="text-[16px]" style={{ opacity: 0.4 }}>📋</span>
             </div>
-            <p className="text-[11px] font-medium" style={{ color: '#c0c8d4' }}>Arraste leads aqui</p>
+            <p className="text-[11px] font-medium" style={{ color: '#c0c8d4' }}>{t.pipeline.dragHere}</p>
           </div>
         )}
       </div>

@@ -5,6 +5,7 @@ import { DndContext, DragEndEvent, DragOverEvent, PointerSensor, useSensor, useS
 import { KanbanColumn } from './kanban-column'
 import { LeadCard } from './lead-card'
 import { LeadModal } from './lead-modal'
+import { useT } from '@/lib/i18n-client'
 import Link from 'next/link'
 
 interface Stage { id: string; name: string; color: string; position: number }
@@ -16,6 +17,7 @@ interface PipelineLead {
 }
 
 export default function PipelinePage() {
+  const t = useT()
   const [pipelines, setPipelines] = useState<Pipeline[]>([])
   const [activePipeline, setActivePipeline] = useState<Pipeline | null>(null)
   const [leads, setLeads] = useState<PipelineLead[]>([])
@@ -354,7 +356,7 @@ export default function PipelinePage() {
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-bold transition-all hover:shadow-sm"
           style={{ background: '#fff', color: '#64748b', border: '1px solid #e8ecf4' }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3v18M3 12h18"/></svg>
-          Gerenciar
+          {t.pipeline.manage}
         </Link>
       </div>
 
@@ -365,7 +367,7 @@ export default function PipelinePage() {
             className="px-5 py-2 rounded-lg text-[12px] font-bold transition-all"
             style={{ background: view === 'mine' ? '#fff' : 'transparent', color: view === 'mine' ? '#6366f1' : '#94a3b8',
               boxShadow: view === 'mine' ? '0 1px 4px rgba(0,0,0,0.06)' : 'none' }}>
-            Meu Pipeline
+            {t.pipeline.viewMine}
           </button>
           <button onClick={async () => {
               setView('team')
@@ -379,7 +381,7 @@ export default function PipelinePage() {
             className="px-5 py-2 rounded-lg text-[12px] font-bold transition-all"
             style={{ background: view === 'team' ? '#fff' : 'transparent', color: view === 'team' ? '#6366f1' : '#94a3b8',
               boxShadow: view === 'team' ? '0 1px 4px rgba(0,0,0,0.06)' : 'none' }}>
-            Meu Time ({teamMembers.filter(m => m.is_active).length})
+            {t.pipeline.viewTeam} ({teamMembers.filter(m => m.is_active).length})
           </button>
         </div>
       )}
@@ -474,7 +476,7 @@ export default function PipelinePage() {
           <button onClick={() => setShowFilters(!showFilters)}
             className="flex items-center gap-2 text-[12px] font-bold" style={{ color: showFilters ? '#6366f1' : '#94a3b8' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
-            Filtros
+            {t.pipeline.filters}
             {hasFilters && <span className="w-2 h-2 rounded-full" style={{ background: '#6366f1' }} />}
           </button>
           <div className="flex items-center gap-3">
@@ -482,11 +484,11 @@ export default function PipelinePage() {
               <button onClick={() => { setSearch(''); setFilterStage(''); setFilterDate(''); setFilterDateFrom(''); setFilterDateTo(''); setClosedOnly(false); setStaleOnly(false) }}
                 className="text-[11px] font-semibold flex items-center gap-1" style={{ color: '#ef4444' }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                Limpar filtros
+                {t.pipeline.clearFilters}
               </button>
             )}
             <span className="text-[11px] font-semibold" style={{ color: '#94a3b8' }}>
-              {filteredLeads.length}/{leads.length} leads
+              {filteredLeads.length}/{leads.length} {t.pipeline.leadsCount}
             </span>
           </div>
         </div>
@@ -494,37 +496,37 @@ export default function PipelinePage() {
         {showFilters && (
           <div className="px-4 pb-4 pt-1 flex flex-wrap gap-3 items-end" style={{ borderTop: '1px solid #f1f5f9' }}>
             <div className="flex-1 min-w-[180px]">
-              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#c0c8d4' }}>Buscar</label>
-              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome, email ou telefone..."
+              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#c0c8d4' }}>{t.common.search}</label>
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={t.pipeline.searchPlaceholder}
                 className="w-full px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
                 style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
             </div>
             <div className="min-w-[140px]">
-              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#c0c8d4' }}>Estagio</label>
+              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#c0c8d4' }}>{t.pipeline.stage}</label>
               <select value={filterStage} onChange={e => setFilterStage(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200 cursor-pointer"
                 style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }}>
-                <option value="">Todos</option>
+                <option value="">{t.pipeline.all}</option>
                 {activePipeline?.stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
             <div className="min-w-[160px]">
-              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#c0c8d4' }}>Lead criado em</label>
+              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#c0c8d4' }}>{t.pipeline.arrivalDate}</label>
               <select value={filterDate} onChange={e => {
                 setFilterDate(e.target.value)
                 if (e.target.value !== 'custom') { setFilterDateFrom(''); setFilterDateTo('') }
               }}
                 className="w-full px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200 cursor-pointer"
                 style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }}>
-                <option value="">Qualquer data</option>
-                <option value="today">Hoje</option>
-                <option value="yesterday">Ontem</option>
-                <option value="7d">Últimos 7 dias</option>
-                <option value="30d">Últimos 30 dias</option>
-                <option value="90d">Últimos 90 dias</option>
-                <option value="this_month">Este mês</option>
-                <option value="last_month">Mês passado</option>
-                <option value="custom">📅 Intervalo customizado…</option>
+                <option value="">{t.pipeline.all}</option>
+                <option value="today">{t.pipeline.today}</option>
+                <option value="yesterday">{t.pipeline.yesterday}</option>
+                <option value="7d">{t.pipeline.last7days}</option>
+                <option value="30d">{t.pipeline.last30days}</option>
+                <option value="90d">{t.pipeline.last90days}</option>
+                <option value="this_month">{t.pipeline.thisMonth}</option>
+                <option value="last_month">{t.pipeline.lastMonth}</option>
+                <option value="custom">📅 {t.pipeline.custom}</option>
               </select>
             </div>
             {filterDate === 'custom' && (
