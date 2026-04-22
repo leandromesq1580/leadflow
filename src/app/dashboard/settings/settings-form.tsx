@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { WaConnectCard } from '@/components/wa-connect-card'
 
 interface Buyer {
   id: string
@@ -117,6 +118,9 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, allState
           ⚠️ {error}
         </div>
       )}
+
+      {/* WhatsApp connect */}
+      <WaConnectCard />
 
       {/* Profile */}
       <div className="rounded-2xl p-6 mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>

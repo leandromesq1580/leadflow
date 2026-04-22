@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { assertBuyerOwnsLead } from '@/lib/lead-ownership'
+import { getBridgeForBuyer } from '@/lib/wa-bridge'
 
 /** GET /api/whatsapp/messages?lead_id=X&buyer_id=Y — thread pra lead (com validacao de ownership) */
 export async function GET(request: NextRequest) {
@@ -75,13 +76,13 @@ export async function POST(request: NextRequest) {
     const own = await assertBuyerOwnsLead(db, buyer_id, lead_id)
     if (!own.ok) return NextResponse.json({ error: own.reason || 'Acesso negado' }, { status: 403 })
 
-    // 🔒🔒 CRITICO: a bridge atual eh UMA so (WhatsApp de um unico buyer).
-    // Se quem esta enviando nao for o dono da bridge, BLOQUEIA — senao mensagem
-    // sai do WhatsApp errado e vaza privacidade entre agentes do time.
-    const bridgeOwnerBuyerId = (process.env.WA_BRIDGE_OWNER_BUYER_ID || '').trim()
-    if (bridgeOwnerBuyerId && buyer_id !== bridgeOwnerBuyerId) {
+    // 🔒 Multi-bridge: msg sai do WhatsApp DO DONO DO LEAD (assigned_to_member > assigned_to).
+    // buyer_id do request tem que bater com o dono (ja garantido pelo assertBuyerOwnsLead acima).
+    // Buscar bridge conectada desse buyer; se nao tiver, bloqueia com mensagem clara.
+    const bridge = await getBridgeForBuyer(db, buyer_id)
+    if (!bridge || bridge.status !== 'connected') {
       return NextResponse.json({
-        error: 'Voce ainda nao tem um numero de WhatsApp conectado. Cada usuario precisa ter a propria conexao pra enviar mensagens. Contate o admin pra configurar.',
+        error: 'Seu WhatsApp ainda nao esta conectado. Abra Configuracoes > Conectar WhatsApp e escaneie o QR code.',
       }, { status: 403 })
     }
 
@@ -107,9 +108,9 @@ export async function POST(request: NextRequest) {
       mediaType = classifyMedia(fileMimetype)
     }
 
-    // Send via wa-bridge
-    const bridgeUrl = (process.env.WA_BRIDGE_URL || 'http://31.220.97.186:3457').replace(/\/$/, '')
-    const bridgeKey = (process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026').trim()
+    // Send via a bridge do PROPRIO buyer (multi-tenant)
+    const bridgeUrl = bridge.url
+    const bridgeKey = bridge.key
     const cleanPhone = lead.phone.replace(/[\s\-()]/g, '').replace(/^\+/, '')
 
     const bridgePayload: any = { number: cleanPhone, message: body }
