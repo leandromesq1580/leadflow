@@ -75,6 +75,16 @@ export async function POST(request: NextRequest) {
     const own = await assertBuyerOwnsLead(db, buyer_id, lead_id)
     if (!own.ok) return NextResponse.json({ error: own.reason || 'Acesso negado' }, { status: 403 })
 
+    // 🔒🔒 CRITICO: a bridge atual eh UMA so (WhatsApp de um unico buyer).
+    // Se quem esta enviando nao for o dono da bridge, BLOQUEIA — senao mensagem
+    // sai do WhatsApp errado e vaza privacidade entre agentes do time.
+    const bridgeOwnerBuyerId = (process.env.WA_BRIDGE_OWNER_BUYER_ID || '').trim()
+    if (bridgeOwnerBuyerId && buyer_id !== bridgeOwnerBuyerId) {
+      return NextResponse.json({
+        error: 'Voce ainda nao tem um numero de WhatsApp conectado. Cada usuario precisa ter a propria conexao pra enviar mensagens. Contate o admin pra configurar.',
+      }, { status: 403 })
+    }
+
     const { data: lead } = await db.from('leads').select('phone').eq('id', lead_id).single()
     if (!lead?.phone) return NextResponse.json({ error: 'Lead sem telefone' }, { status: 400 })
 
