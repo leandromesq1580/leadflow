@@ -135,7 +135,7 @@ export default function SequencesPage() {
                   <div key={i} className="flex items-center gap-1 flex-shrink-0">
                     <div className="p-2 rounded-lg min-w-[140px]" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
                       <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>
-                        Passo {i + 1} · +{step.delay_hours}h
+                        Passo {i + 1} · {step.delay_hours === 0 ? '⚡ imediato' : step.delay_hours >= 24 ? `+${Math.round(step.delay_hours / 24)}d` : `+${step.delay_hours}h`}
                       </p>
                       <p className="text-[12px] font-bold mt-0.5" style={{ color: '#1a1a2e' }}>
                         {step.step_type === 'wait' ? '⏳ Esperar' : step.step_type === 'notify_agent' ? '🔔 Notificar' : (tpl ? `${tpl.type === 'whatsapp' ? '💬' : '📧'} ${tpl.name}` : '💬 Custom')}
@@ -236,10 +236,43 @@ function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>Delay (horas)</label>
-                  <input type="number" value={step.delay_hours} onChange={e => updateStep(i, { delay_hours: Number(e.target.value) })}
-                    min={0}
-                    className="w-full mt-1 px-2 py-1 rounded text-[12px]" style={{ background: '#fff', border: '1px solid #e8ecf4' }} />
+                  <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>Quando</label>
+                  <div className="flex gap-1 mt-1">
+                    <select
+                      value={
+                        step.delay_hours === 0 ? '0'
+                        : step.delay_hours === 1 ? '1'
+                        : step.delay_hours === 6 ? '6'
+                        : step.delay_hours === 24 ? '24'
+                        : step.delay_hours === 48 ? '48'
+                        : step.delay_hours === 72 ? '72'
+                        : step.delay_hours === 168 ? '168'
+                        : 'custom'
+                      }
+                      onChange={e => {
+                        const v = e.target.value
+                        if (v === 'custom') updateStep(i, { delay_hours: step.delay_hours || 12 })
+                        else updateStep(i, { delay_hours: Number(v) })
+                      }}
+                      className="flex-1 px-2 py-1 rounded text-[12px] cursor-pointer"
+                      style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+                      <option value="0">⚡ Imediatamente</option>
+                      <option value="1">+1 hora</option>
+                      <option value="6">+6 horas</option>
+                      <option value="24">+1 dia</option>
+                      <option value="48">+2 dias</option>
+                      <option value="72">+3 dias</option>
+                      <option value="168">+7 dias</option>
+                      <option value="custom">Custom (horas)</option>
+                    </select>
+                    {![0, 1, 6, 24, 48, 72, 168].includes(step.delay_hours) && (
+                      <input type="number" value={step.delay_hours}
+                        onChange={e => updateStep(i, { delay_hours: Number(e.target.value) })}
+                        min={0} placeholder="h"
+                        className="w-16 px-2 py-1 rounded text-[12px]"
+                        style={{ background: '#fff', border: '1px solid #e8ecf4' }} />
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>Tipo</label>
