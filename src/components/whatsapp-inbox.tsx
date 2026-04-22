@@ -43,6 +43,7 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
   const [showEmoji, setShowEmoji] = useState(false)
   const [recording, setRecording] = useState(false)
   const [recordSecs, setRecordSecs] = useState(0)
+  const [micError, setMicError] = useState<string | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const recordChunksRef = useRef<Blob[]>([])
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -100,15 +101,16 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
   }
 
   async function sendFile(file: File) {
+    setMicError(null)
     if (file.size > MAX_FILE_SIZE) {
-      alert(`Arquivo muito grande. Máximo ${MAX_FILE_SIZE / 1024 / 1024}MB.`)
+      setMicError(`Arquivo muito grande. Máximo ${MAX_FILE_SIZE / 1024 / 1024}MB.`)
       return
     }
     setSending(true)
     const form = new FormData()
     form.append('lead_id', leadId)
     form.append('buyer_id', buyerId)
-    form.append('body', text.trim()) // caption
+    form.append('body', text.trim())
     form.append('file', file)
 
     const r = await fetch('/api/whatsapp/messages', { method: 'POST', body: form })
@@ -117,13 +119,27 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
       setText('')
       await load()
     } else {
-      const d = await r.json()
-      alert(d.error || 'Erro ao enviar arquivo')
+      const d = await r.json().catch(() => ({}))
+      setMicError(d.error || `Erro ao enviar ${file.type.startsWith('audio/') ? 'audio' : 'arquivo'}. Tente de novo.`)
     }
     if (fileRef.current) fileRef.current.value = ''
   }
 
   async function startRecording() {
+    setMicError(null)
+    // 1) Sanity checks antes de pedir permissao
+    if (typeof window === 'undefined' || !window.isSecureContext) {
+      setMicError('Gravar audio precisa de HTTPS (ou localhost). Acesse pelo lead4producers.com.')
+      return
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setMicError('Seu navegador nao suporta gravacao de audio. Use Chrome, Edge ou Safari atualizado.')
+      return
+    }
+    if (typeof MediaRecorder === 'undefined') {
+      setMicError('MediaRecorder indisponivel nesse navegador.')
+      return
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       // MP4/AAC tem melhor compat com whatsapp-web.js pra voice
@@ -151,7 +167,16 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
       setRecordSecs(0)
       recordTimerRef.current = setInterval(() => setRecordSecs(s => s + 1), 1000)
     } catch (err: any) {
-      alert('Não foi possível acessar o microfone: ' + (err?.message || 'erro desconhecido'))
+      console.error('[mic] startRecording err:', err?.name, err?.message)
+      if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
+        setMicError('Microfone bloqueado. Clique no cadeado da barra de endereco -> Permissoes do site -> Microfone -> Permitir. Depois F5.')
+      } else if (err?.name === 'NotFoundError') {
+        setMicError('Nenhum microfone encontrado nesse dispositivo.')
+      } else if (err?.name === 'NotReadableError') {
+        setMicError('Microfone em uso por outro app. Feche Zoom/Meet/etc e tente de novo.')
+      } else {
+        setMicError('Falha no microfone: ' + (err?.message || err?.name || 'erro desconhecido'))
+      }
     }
   }
 
@@ -281,6 +306,16 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Mic error banner */}
+      {micError && (
+        <div className="mx-3 mb-2 px-3 py-2 rounded-lg flex items-start gap-2"
+          style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
+          <span className="text-[14px]">🎤</span>
+          <p className="flex-1 text-[12px] font-semibold" style={{ color: '#991b1b' }}>{micError}</p>
+          <button onClick={() => setMicError(null)} className="text-[14px] leading-none" style={{ color: '#991b1b' }}>×</button>
         </div>
       )}
 
