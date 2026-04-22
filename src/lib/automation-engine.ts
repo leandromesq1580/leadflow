@@ -79,7 +79,7 @@ interface Target {
   lead_id: string
   pipeline_lead_id?: string | null
   meeting_id?: string | null
-  meeting_source?: 'appointment' | 'calendar_item' | null
+  meeting_source?: 'appointment' | 'calendar_item' | 'follow_up' | null
 }
 
 async function findTargets(auto: Automation): Promise<Target[]> {
@@ -131,7 +131,7 @@ async function findTargets(auto: Automation): Promise<Target[]> {
     const lower = new Date(targetMs - 35 * 60 * 1000).toISOString()
     const upper = new Date(targetMs + 5 * 60 * 1000).toISOString()
 
-    const [apptRes, itemRes] = await Promise.all([
+    const [apptRes, itemRes, fuRes] = await Promise.all([
       db.from('appointments')
         .select('id, lead_id')
         .eq('buyer_id', auto.buyer_id)
@@ -146,6 +146,15 @@ async function findTargets(auto: Automation): Promise<Target[]> {
         .gte('start_at', lower)
         .lte('start_at', upper)
         .is('completed_at', null),
+      // Follow-ups type='meeting' — reunioes criadas no modal do lead
+      // caem aqui (nao em appointments/calendar_items)
+      db.from('follow_ups')
+        .select('id, lead_id')
+        .eq('buyer_id', auto.buyer_id)
+        .eq('type', 'meeting')
+        .gte('scheduled_at', lower)
+        .lte('scheduled_at', upper)
+        .is('completed_at', null),
     ])
 
     const targets: Target[] = []
@@ -154,6 +163,9 @@ async function findTargets(auto: Automation): Promise<Target[]> {
     }
     for (const c of itemRes.data || []) {
       if (c.lead_id) targets.push({ lead_id: c.lead_id, meeting_id: c.id, meeting_source: 'calendar_item' })
+    }
+    for (const f of fuRes.data || []) {
+      if (f.lead_id) targets.push({ lead_id: f.lead_id, meeting_id: f.id, meeting_source: 'follow_up' })
     }
     return targets
   }
