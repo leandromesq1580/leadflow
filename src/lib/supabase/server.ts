@@ -23,17 +23,34 @@ export async function createServerSupabase() {
   }
 
   let accessToken: string | null = null
+  let parseError: string | null = null
   if (rawValue) {
     // Supabase prefixa com 'base64-' quando e o valor codificado
     const normalized = rawValue.startsWith('base64-') ? rawValue.slice(7) : rawValue
+    // Tentativa 1: JSON puro (formato antigo)
     try {
-      const decoded = JSON.parse(Buffer.from(normalized, 'base64').toString())
-      accessToken = decoded.access_token
-    } catch {
+      const parsed = JSON.parse(rawValue)
+      if (parsed?.access_token) accessToken = parsed.access_token
+    } catch {}
+    // Tentativa 2: base64 -> JSON
+    if (!accessToken) {
       try {
-        const parsed = JSON.parse(rawValue)
-        accessToken = parsed.access_token
-      } catch {}
+        const decoded = JSON.parse(Buffer.from(normalized, 'base64').toString())
+        if (decoded?.access_token) accessToken = decoded.access_token
+      } catch (e: unknown) { parseError = (e as Error)?.message || 'decode err' }
+    }
+    if (!accessToken) {
+      console.warn('[auth] cookie presente mas access_token nao extraido.',
+        'rawValue.length=', rawValue.length,
+        'hasBase64Prefix=', rawValue.startsWith('base64-'),
+        'err=', parseError,
+        'preview=', rawValue.slice(0, 40))
+    }
+  } else {
+    // Debug: lista cookies sb-* visiveis pro server
+    const all = cookieStore.getAll().filter(c => c.name.startsWith('sb-')).map(c => `${c.name}(${c.value.length}b)`)
+    if (all.length > 0) {
+      console.warn('[auth] sem authCookie principal. Cookies sb-*:', all.join(', '))
     }
   }
 
