@@ -4,6 +4,8 @@ import { Sidebar } from '@/components/dashboard/sidebar'
 import { PwaRegister } from '@/components/pwa-register'
 import { TrialBanner } from '@/components/trial-banner'
 import { isTrialActive, trialDaysRemaining } from '@/lib/crm-access'
+import { getLocale } from '@/lib/locale'
+import { I18nProvider } from '@/lib/i18n-client'
 import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
@@ -32,17 +34,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const showTrial = isTrialActive(buyer)
   const daysLeft = trialDaysRemaining(buyer)
+  const locale = await getLocale()
 
   return (
-    <div className="flex min-h-screen" style={{ background: '#f8f9fc' }}>
-      <div className="hidden md:block">
-        <Sidebar type="buyer" userName={buyer?.name || user!.email || ''} isAgency={buyer?.is_agency || false} buyerId={buyer?.id} />
+    <I18nProvider locale={locale}>
+      <div className="flex min-h-screen" style={{ background: '#f8f9fc' }}>
+        <div className="hidden md:block">
+          <Sidebar type="buyer" userName={buyer?.name || user!.email || ''} isAgency={buyer?.is_agency || false} buyerId={buyer?.id} />
+        </div>
+        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-auto" data-crm-plan={buyer?.crm_plan || 'free'}>
+          {showTrial && <TrialBanner daysLeft={daysLeft} />}
+          {children}
+        </main>
+        {buyer?.id && <PwaRegister buyerId={buyer.id} />}
       </div>
-      <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-auto" data-crm-plan={buyer?.crm_plan || 'free'}>
-        {showTrial && <TrialBanner daysLeft={daysLeft} />}
-        {children}
-      </main>
-      {buyer?.id && <PwaRegister buyerId={buyer.id} />}
-    </div>
+    </I18nProvider>
   )
 }

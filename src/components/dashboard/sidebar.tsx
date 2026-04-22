@@ -3,32 +3,8 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-
-const buyerLinks = [
-  { href: '/dashboard', label: 'Visao Geral', icon: '📊' },
-  { href: '/dashboard/performance', label: 'Performance', icon: '📈' },
-  { href: '/dashboard/leads', label: 'Meus Leads', icon: '🎯' },
-  { href: '/dashboard/pipeline', label: 'Pipeline', icon: '📋' },
-  { href: '/dashboard/whatsapp', label: 'WhatsApp', icon: '💬' },
-  { href: '/dashboard/templates', label: 'Templates', icon: '📝' },
-  { href: '/dashboard/automations', label: 'Automações', icon: '⚡' },
-  { href: '/dashboard/sequences', label: 'Sequences', icon: '🔁' },
-  { href: '/dashboard/appointments', label: 'Appointments', icon: '📅' },
-  { href: '/dashboard/team', label: 'Meu Time', icon: '👥' },
-  { href: '/dashboard/referral', label: 'Indicações', icon: '🎁' },
-  { href: '/dashboard/credits', label: 'Creditos', icon: '💳' },
-  { href: '/dashboard/settings', label: 'Configuracoes', icon: '⚙️' },
-]
-
-const adminLinks = [
-  { href: '/admin', label: 'Dashboard', icon: '📊' },
-  { href: '/admin/buyers', label: 'Compradores', icon: '👥' },
-  { href: '/admin/leads', label: 'Todos os Leads', icon: '📋' },
-  { href: '/admin/appointments', label: 'Fila Appointments', icon: '📅' },
-  { href: '/admin/ads', label: 'Meta Ads', icon: '📈' },
-  { href: '/admin/revenue', label: 'Receita', icon: '💰' },
-  { href: '/admin/settings', label: 'Configuracoes', icon: '⚙️' },
-]
+import { useT } from '@/lib/i18n-client'
+import { LocaleSwitcher } from '@/components/locale-switcher'
 
 interface SidebarProps {
   type: 'buyer' | 'admin'
@@ -81,8 +57,36 @@ function BrandMark({ size = 32 }: { size?: number }) {
 
 export function Sidebar({ type, userName, isAgency, buyerId }: SidebarProps) {
   const pathname = usePathname()
-  const links = type === 'admin' ? adminLinks : buyerLinks
+  const t = useT()
   const waUnread = useWhatsAppUnread(type === 'buyer' ? buyerId : undefined)
+
+  const buyerLinks = [
+    { href: '/dashboard', label: t.sidebar.overview, icon: '📊' },
+    { href: '/dashboard/performance', label: t.sidebar.performance, icon: '📈' },
+    { href: '/dashboard/leads', label: t.sidebar.leads, icon: '🎯' },
+    { href: '/dashboard/pipeline', label: t.sidebar.pipeline, icon: '📋' },
+    { href: '/dashboard/whatsapp', label: t.sidebar.whatsapp, icon: '💬' },
+    { href: '/dashboard/templates', label: t.sidebar.templates, icon: '📝' },
+    { href: '/dashboard/automations', label: t.sidebar.automations, icon: '⚡' },
+    { href: '/dashboard/sequences', label: t.sidebar.sequences, icon: '🔁' },
+    { href: '/dashboard/appointments', label: t.sidebar.appointments, icon: '📅' },
+    { href: '/dashboard/team', label: t.sidebar.team, icon: '👥' },
+    { href: '/dashboard/referral', label: t.sidebar.referral, icon: '🎁' },
+    { href: '/dashboard/credits', label: t.sidebar.credits, icon: '💳' },
+    { href: '/dashboard/settings', label: t.sidebar.settings, icon: '⚙️' },
+  ]
+
+  const adminLinks = [
+    { href: '/admin', label: 'Dashboard', icon: '📊' },
+    { href: '/admin/buyers', label: 'Compradores', icon: '👥' },
+    { href: '/admin/leads', label: 'Todos os Leads', icon: '📋' },
+    { href: '/admin/appointments', label: 'Fila Appointments', icon: '📅' },
+    { href: '/admin/ads', label: 'Meta Ads', icon: '📈' },
+    { href: '/admin/revenue', label: 'Receita', icon: '💰' },
+    { href: '/admin/settings', label: t.sidebar.settings, icon: '⚙️' },
+  ]
+
+  const links = type === 'admin' ? adminLinks : buyerLinks
 
   async function handleLogout() {
     const { createBrowserClient } = await import('@supabase/ssr')
@@ -110,7 +114,7 @@ export function Sidebar({ type, userName, isAgency, buyerId }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4">
-        <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest" style={{ color: '#94a3b8' }}>Menu</p>
+        <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest" style={{ color: '#94a3b8' }}>{t.sidebar.menu}</p>
         <div className="space-y-0.5">
           {links.map((link) => {
             const isActive = pathname === link.href ||
@@ -149,11 +153,12 @@ export function Sidebar({ type, userName, isAgency, buyerId }: SidebarProps) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[13px] font-semibold truncate" style={{ color: '#1a1a2e' }}>{userName}</p>
-            <p className="text-[11px]" style={{ color: '#94a3b8' }}>{type === 'admin' ? 'Administrador' : 'Comprador'}</p>
+            <p className="text-[11px]" style={{ color: '#94a3b8' }}>{type === 'admin' ? t.sidebar.admin : t.sidebar.buyer}</p>
           </div>
+          <LocaleSwitcher current={t._locale} />
         </div>
         <button onClick={handleLogout} className="mt-3 text-[11px] font-medium hover:text-red-500" style={{ color: '#94a3b8' }}>
-          Sair da conta
+          {t.sidebar.logout}
         </button>
       </div>
     </aside>

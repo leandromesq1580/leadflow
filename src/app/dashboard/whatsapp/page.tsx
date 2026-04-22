@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { WhatsAppInbox } from '@/components/whatsapp-inbox'
+import { useT } from '@/lib/i18n-client'
 
 interface Conversation {
   lead_id: string
@@ -43,6 +44,7 @@ export default function WhatsAppPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const t = useT()
 
   useEffect(() => {
     // Auto-select lead via ?lead=X (vindo de push, card, etc)
@@ -109,10 +111,9 @@ export default function WhatsAppPage() {
   return (
     <div>
       <div className="mb-4">
-        <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>WhatsApp Inbox</h1>
+        <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>{t.whatsapp.title}</h1>
         <p className="text-[13px]" style={{ color: '#94a3b8' }}>
-          {activeCount} conversa{activeCount !== 1 ? 's' : ''} ativa{activeCount !== 1 ? 's' : ''}
-          {totalUnread > 0 && <> · <span className="font-bold" style={{ color: '#6366f1' }}>{totalUnread} não lida{totalUnread !== 1 ? 's' : ''}</span></>}
+          {t.whatsapp.conversationsCount(activeCount, totalUnread)}
         </p>
       </div>
 
@@ -120,12 +121,12 @@ export default function WhatsAppPage() {
         {/* Lista de conversas */}
         <div className="w-[320px] flex flex-col" style={{ borderRight: '1px solid #e8ecf4' }}>
           <div className="px-4 py-3" style={{ borderBottom: '1px solid #e8ecf4' }}>
-            <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: '#94a3b8' }}>Conversas</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: '#94a3b8' }}>{t.whatsapp.conversations}</p>
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Buscar..."
+              placeholder={t.whatsapp.search}
               className="w-full px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
               style={{ background: '#f8fafc', border: '1px solid #e8ecf4' }}
             />
@@ -133,16 +134,14 @@ export default function WhatsAppPage() {
 
           <div className="flex-1 overflow-y-auto">
             {loading ? (
-              <p className="text-[12px] text-center py-8" style={{ color: '#94a3b8' }}>Carregando...</p>
+              <p className="text-[12px] text-center py-8" style={{ color: '#94a3b8' }}>{t.common.loading}</p>
             ) : filtered.length === 0 ? (
               <div className="text-center py-12 px-4">
                 <p className="text-[32px] mb-2">💬</p>
                 <p className="text-[13px] font-semibold" style={{ color: '#64748b' }}>
-                  {search ? 'Nenhuma conversa encontrada' : 'Nenhuma conversa ainda'}
+                  {search ? t.whatsapp.searchEmpty : t.whatsapp.empty}
                 </p>
-                <p className="text-[11px] mt-1" style={{ color: '#94a3b8' }}>
-                  Envie ou receba uma mensagem de um lead para começar.
-                </p>
+                <p className="text-[11px] mt-1" style={{ color: '#94a3b8' }}>{t.whatsapp.emptyHelp}</p>
               </div>
             ) : (
               filtered.map(c => {
@@ -214,7 +213,7 @@ export default function WhatsAppPage() {
                   className="px-3 py-1.5 rounded-lg text-[11px] font-bold"
                   style={{ background: '#f1f5f9', color: '#475569' }}
                 >
-                  Abrir no Pipeline
+                  {t.whatsapp.openInPipeline}
                 </a>
               </div>
               <div className="flex-1 overflow-hidden">
@@ -224,10 +223,8 @@ export default function WhatsAppPage() {
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
               <p className="text-[42px] mb-3">💬</p>
-              <p className="text-[15px] font-bold" style={{ color: '#1a1a2e' }}>Selecione uma conversa</p>
-              <p className="text-[12px] mt-1 max-w-xs" style={{ color: '#94a3b8' }}>
-                Escolha um lead na lista à esquerda para ver a thread completa e responder direto daqui.
-              </p>
+              <p className="text-[15px] font-bold" style={{ color: '#1a1a2e' }}>{t.whatsapp.selectChat}</p>
+              <p className="text-[12px] mt-1 max-w-xs" style={{ color: '#94a3b8' }}>{t.whatsapp.selectChatHelp}</p>
             </div>
           )}
         </div>

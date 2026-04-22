@@ -2,10 +2,12 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import { useT } from '@/lib/i18n-client'
 
 export function TrialBanner({ daysLeft }: { daysLeft: number }) {
   const [loading, setLoading] = useState(false)
   const urgent = daysLeft <= 2
+  const t = useT()
 
   async function subscribe() {
     setLoading(true)
@@ -29,12 +31,10 @@ export function TrialBanner({ daysLeft }: { daysLeft: number }) {
         <span className="text-[24px]">{urgent ? '⏰' : '🎁'}</span>
         <div>
           <p className="text-[14px] font-bold" style={{ color: urgent ? '#92400e' : '#3730a3' }}>
-            {urgent ? 'Seu trial acaba em breve!' : 'Você está no trial CRM Pro'}
+            {urgent ? t.trialBanner.urgentTitle : t.trialBanner.activeTitle}
           </p>
           <p className="text-[12px]" style={{ color: urgent ? '#b45309' : '#4f46e5' }}>
-            {daysLeft === 1
-              ? 'Último dia — todas as features liberadas'
-              : `Faltam ${daysLeft} dias — Pipeline, Time, Sequences e Automations ativos`}
+            {daysLeft === 1 ? t.trialBanner.lastDay : t.trialBanner.daysLeftMany(daysLeft)}
           </p>
         </div>
       </div>
@@ -44,7 +44,7 @@ export function TrialBanner({ daysLeft }: { daysLeft: number }) {
           className="px-4 py-2 rounded-lg text-[12px] font-bold"
           style={{ background: '#fff', color: urgent ? '#92400e' : '#3730a3', border: '1px solid rgba(0,0,0,0.1)' }}
         >
-          Ver planos
+          {t.trialBanner.seePlans}
         </Link>
         <button
           onClick={subscribe}
@@ -52,7 +52,7 @@ export function TrialBanner({ daysLeft }: { daysLeft: number }) {
           className="px-4 py-2 rounded-lg text-[12px] font-bold text-white disabled:opacity-50"
           style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
         >
-          {loading ? '...' : 'Assinar agora'}
+          {loading ? '...' : t.trialBanner.subscribe}
         </button>
       </div>
     </div>
