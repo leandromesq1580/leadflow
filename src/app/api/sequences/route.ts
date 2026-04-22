@@ -23,14 +23,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { buyer_id, name, description, steps } = await request.json()
+    const { buyer_id, name, description, trigger_stage_id, steps } = await request.json()
     if (!buyer_id || !name || !Array.isArray(steps) || steps.length === 0) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
     }
 
     const db = createAdminClient()
     const { data: seq, error } = await db.from('sequences').insert({
-      buyer_id, name, description: description || null, enabled: true,
+      buyer_id, name, description: description || null, trigger_stage_id: trigger_stage_id || null, enabled: true,
     }).select().single()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

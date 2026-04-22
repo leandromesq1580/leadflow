@@ -6,7 +6,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const body = await request.json()
   const db = createAdminClient()
   const update: Record<string, unknown> = {}
-  for (const f of ['name', 'description', 'enabled']) {
+  for (const f of ['name', 'description', 'enabled', 'trigger_stage_id']) {
     if (body[f] !== undefined) update[f] = body[f]
   }
   update.updated_at = new Date().toISOString()

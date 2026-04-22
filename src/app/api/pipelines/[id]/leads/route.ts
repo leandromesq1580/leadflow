@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { autoEnrollByStage } from '@/lib/sequence-engine'
 
 /** GET /api/pipelines/[id]/leads — all leads grouped by stage + latest follow-up */
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -56,8 +57,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { data, error } = await db
     .from('pipeline_leads')
     .upsert({ lead_id, pipeline_id: pipelineId, stage_id, position: 0, moved_at: new Date().toISOString() }, { onConflict: 'lead_id,pipeline_id' })
-    .select().single()
+    .select('*, pipelines(buyer_id)').single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Auto-enroll em sequences com trigger_stage_id = stage_id
+  const buyerId = (data as any).buyer_id || (data as any).pipelines?.buyer_id
+  if (stage_id && buyerId && lead_id) {
+    autoEnrollByStage(lead_id, stage_id, buyerId).catch(err => console.error('[Seq autoEnroll POST] err:', err))
+  }
+
   return NextResponse.json({ entry: data })
 }

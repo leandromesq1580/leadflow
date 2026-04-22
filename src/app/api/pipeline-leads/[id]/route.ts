@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { runAutomations } from '@/lib/automation-engine'
+import { autoEnrollByStage } from '@/lib/sequence-engine'
 
 /** PATCH /api/pipeline-leads/[id] — move lead to different stage */
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -18,6 +19,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   // Fire-and-forget: run automations (stage_entered triggers) for this buyer
   if (stage_id && data?.buyer_id) {
     runAutomations([data.buyer_id]).catch(err => console.error('[Automation trigger] Error:', err))
+    // Auto-enroll em sequences com trigger_stage_id = stage_id
+    if (data.lead_id) {
+      autoEnrollByStage(data.lead_id, stage_id, data.buyer_id)
+        .catch(err => console.error('[Sequence autoEnroll] Error:', err))
+    }
   }
 
   return NextResponse.json({ entry: data })

@@ -15,6 +15,7 @@ interface Sequence {
   name: string
   description: string | null
   enabled: boolean
+  trigger_stage_id?: string | null
   sequence_steps: Step[]
 }
 
@@ -22,10 +23,18 @@ interface Template {
   id: string; name: string; type: 'whatsapp' | 'email'
 }
 
+interface Stage {
+  id: string; name: string; pipeline_id: string; position: number
+}
+interface Pipeline {
+  id: string; name: string; is_default: boolean; stages: Stage[]
+}
+
 export default function SequencesPage() {
   const [buyerId, setBuyerId] = useState('')
   const [sequences, setSequences] = useState<Sequence[]>([])
   const [templates, setTemplates] = useState<Template[]>([])
+  const [pipelines, setPipelines] = useState<Pipeline[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<Sequence | null>(null)
   const [showNew, setShowNew] = useState(false)
@@ -54,12 +63,14 @@ export default function SequencesPage() {
   }
 
   async function reload(bid: string) {
-    const [seqRes, tmplRes] = await Promise.all([
+    const [seqRes, tmplRes, pipeRes] = await Promise.all([
       fetch(`/api/sequences?buyer_id=${bid}`).then(r => r.json()),
       fetch(`/api/templates?buyer_id=${bid}`).then(r => r.json()),
+      fetch(`/api/pipelines?buyer_id=${bid}`).then(r => r.json()),
     ])
     setSequences(seqRes.sequences || [])
     setTemplates(tmplRes.templates || [])
+    setPipelines(pipeRes.pipelines || [])
   }
 
   async function toggle(s: Sequence) {
@@ -142,6 +153,7 @@ export default function SequencesPage() {
       {showNew && <SequenceForm
         buyerId={buyerId}
         templates={templates}
+        pipelines={pipelines}
         editing={editing}
         onClose={() => { setShowNew(false); setEditing(null) }}
         onSaved={() => { setShowNew(false); setEditing(null); reload(buyerId) }}
@@ -150,12 +162,13 @@ export default function SequencesPage() {
   )
 }
 
-function SequenceForm({ buyerId, templates, editing, onClose, onSaved }: {
-  buyerId: string; templates: Template[]; editing: Sequence | null
+function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved }: {
+  buyerId: string; templates: Template[]; pipelines: Pipeline[]; editing: Sequence | null
   onClose: () => void; onSaved: () => void
 }) {
   const [name, setName] = useState(editing?.name || '')
   const [description, setDescription] = useState(editing?.description || '')
+  const [triggerStageId, setTriggerStageId] = useState<string>(editing?.trigger_stage_id || '')
   const [steps, setSteps] = useState<Step[]>(editing?.sequence_steps || [
     { delay_hours: 0, template_id: null, custom_body: null, step_type: 'send_template' },
   ])
@@ -174,7 +187,7 @@ function SequenceForm({ buyerId, templates, editing, onClose, onSaved }: {
   async function save() {
     if (!name.trim() || steps.length === 0) return
     setSaving(true)
-    const payload = { buyer_id: buyerId, name: name.trim(), description: description.trim(), steps }
+    const payload = { buyer_id: buyerId, name: name.trim(), description: description.trim(), trigger_stage_id: triggerStageId || null, steps }
     const url = editing ? `/api/sequences/${editing.id}` : '/api/sequences'
     const method = editing ? 'PATCH' : 'POST'
     const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
@@ -193,6 +206,24 @@ function SequenceForm({ buyerId, templates, editing, onClose, onSaved }: {
             className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
           <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Descrição (opcional)" rows={2}
             className="w-full px-3 py-2 rounded-lg text-[13px] resize-none" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>
+              Estágio gatilho <span style={{ color: '#c0c8d4', fontWeight: 400 }}>(enrolla lead automaticamente ao entrar nesse stage)</span>
+            </label>
+            <select value={triggerStageId} onChange={e => setTriggerStageId(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg text-[13px] cursor-pointer"
+              style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }}>
+              <option value="">— Sem gatilho (só enrolla manualmente) —</option>
+              {pipelines.map(p => (
+                <optgroup key={p.id} label={p.name}>
+                  {(p.stages || []).sort((a, b) => a.position - b.position).map(s => (
+                    <option key={s.id} value={s.id}>{s.name.trim()}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
         </div>
 
         <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: '#94a3b8' }}>Passos</p>

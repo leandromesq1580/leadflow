@@ -3,6 +3,44 @@ import { renderTemplate } from '@/lib/template-render'
 import { Resend } from 'resend'
 
 /**
+ * Enrolla o lead em todas as sequences ativas cujo trigger_stage_id bate com o stage
+ * que ele acabou de entrar. Idempotente (unique constraint sequence+lead).
+ */
+export async function autoEnrollByStage(
+  leadId: string,
+  stageId: string,
+  buyerId: string,
+): Promise<number> {
+  const db = createAdminClient()
+  const { data: matches } = await db
+    .from('sequences')
+    .select('id')
+    .eq('buyer_id', buyerId)
+    .eq('enabled', true)
+    .eq('trigger_stage_id', stageId)
+  if (!matches || matches.length === 0) return 0
+
+  let enrolled = 0
+  for (const s of matches) {
+    const { data: firstStep } = await db
+      .from('sequence_steps')
+      .select('delay_hours')
+      .eq('sequence_id', s.id)
+      .order('step_order')
+      .limit(1)
+      .maybeSingle()
+    const nextAt = new Date(Date.now() + ((firstStep?.delay_hours || 0) * 3600_000)).toISOString()
+    const { error } = await db.from('sequence_enrollments').insert({
+      sequence_id: s.id, lead_id: leadId, buyer_id: buyerId,
+      current_step: 0, next_run_at: nextAt, status: 'active',
+    })
+    if (!error || (error as any).code === '23505') enrolled++
+    else console.error('[autoEnroll] insert err:', error.message)
+  }
+  return enrolled
+}
+
+/**
  * Process all due sequence enrollments.
  * Runs every 30min via cron (or on enrollment).
  */
