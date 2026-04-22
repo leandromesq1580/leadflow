@@ -49,7 +49,7 @@ export default function LandingPage() {
             <p className="text-[15px] sm:text-[18px] leading-relaxed mb-10 max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.55)' }}>
               Compre leads quentes de brasileiros nos EUA, distribua pro seu time automaticamente, acompanhe cada deal no pipeline e feche mais apolices.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
               <Link href="/register" className="px-8 py-4 rounded-xl text-[15px] font-bold text-center inline-block" style={{ background: 'linear-gradient(135deg, #f59e0b, #eab308)', color: '#1a1a2e', boxShadow: '0 4px 20px rgba(245,158,11,0.35)' }}>
                 Comecar Gratis — Sem Cartao
               </Link>
@@ -57,11 +57,16 @@ export default function LandingPage() {
                 Ver Features
               </Link>
             </div>
+            <p className="text-[13px] mb-6 flex items-center justify-center gap-2 flex-wrap" style={{ color: 'rgba(255,255,255,0.7)' }}>
+              <span>🎁</span>
+              <strong style={{ color: '#fbbf24' }}>7 dias grátis de CRM Pro</strong>
+              <span>· todas as features liberadas · sem cartão</span>
+            </p>
           </div>
 
           {/* Pipeline screenshot */}
           <div className="mt-8 sm:mt-12 rounded-xl sm:rounded-2xl overflow-hidden mx-auto max-w-5xl" style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <Image src="/ss-pipeline.png" alt="Pipeline Kanban Lead4Producers" width={1200} height={700} className="w-full h-auto" priority />
+            <Image src="/ss-pipeline.png" alt="Pipeline Kanban Lead4Pro" width={1200} height={700} className="w-full h-auto" priority />
           </div>
         </div>
       </section>
@@ -102,10 +107,31 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
               {
+                icon: '🎁',
+                tag: 'GRÁTIS',
+                title: '7 dias de CRM Pro grátis',
+                desc: 'Ao cadastrar, todas as features premium ficam liberadas por 7 dias. Sem cartão de crédito. Se gostar, $99/mês. Se não, continua no plano grátis.',
+                color: '#f59e0b',
+              },
+              {
+                icon: '📱',
+                tag: 'PRIVACIDADE',
+                title: 'WhatsApp próprio por agente',
+                desc: 'Cada vendedor conecta o próprio WhatsApp no sistema escaneando um QR. Mensagens saem do número DELE, não de um número genérico da agência. Thread independente por agente.',
+                color: '#16a34a',
+              },
+              {
+                icon: '👥',
+                tag: 'AGÊNCIAS',
+                title: 'Espelho do pipeline do time',
+                desc: 'Dono da agência vê, em tempo real, o kanban completo de cada vendedor. Mesmas colunas, mesmos cards, mesmos follow-ups. Zero relatório Excel — acompanhe deals do time direto.',
+                color: '#8b5cf6',
+              },
+              {
                 icon: '💬',
                 tag: 'COMPLETO',
                 title: 'WhatsApp Inbox bidirecional',
-                desc: 'Envie e receba dentro do sistema: texto, emoji, fotos, áudios, PDFs e documentos. Histórico completo por lead, time compartilhado.',
+                desc: 'Envie e receba dentro do sistema: texto, emoji, fotos, áudios, PDFs e documentos. Histórico completo por lead, badge de não-lidas, push automático.',
                 color: '#10b981',
               },
               {
@@ -116,22 +142,22 @@ export default function LandingPage() {
                 color: '#ef4444',
               },
               {
-                icon: '⚡',
-                tag: 'AUTOMAÇÃO',
-                title: 'Automações sem código',
-                desc: 'Lead parado 48h? Dispara follow-up. Entrou em "Negociação"? Manda proposta. Configure gatilhos visualmente e esqueça.',
-                color: '#f59e0b',
+                icon: '🔁',
+                tag: 'AUTOMÁTICO',
+                title: 'Sequences com gatilho por stage',
+                desc: 'Configure: "quando lead cair em Reunião, enrolla ele numa cadência de 7 dias". Dia 1 WhatsApp, dia 3 email, dia 7 ligação. Automático, sem clicar em nada.',
+                color: '#6366f1',
               },
               {
-                icon: '🔁',
-                tag: 'SEQUENCES',
-                title: 'Drip Campaigns (Sequences)',
-                desc: 'Dia 1 WhatsApp → Dia 3 email → Dia 7 ligação. Crie sequências de múltiplos passos e enrolle leads com 1 clique.',
-                color: '#8b5cf6',
+                icon: '⚡',
+                tag: 'NO-CODE',
+                title: 'Automações sem código',
+                desc: 'Lead parado 48h? Dispara follow-up. Entrou em "Negociação"? Manda proposta. Configure gatilhos visualmente e esqueça.',
+                color: '#ea580c',
               },
               {
                 icon: '📅',
-                tag: 'NOVO',
+                tag: 'AGENDA',
                 title: 'Agenda unificada',
                 desc: 'Calendário Dia/Semana/Mês com Eventos, Tarefas, Appointments e Follow-ups num só lugar. Reagende, delete, marque como concluído direto no calendário.',
                 color: '#0ea5e9',
@@ -139,30 +165,9 @@ export default function LandingPage() {
               {
                 icon: '📈',
                 tag: 'ANALYTICS',
-                title: 'Performance Dashboard',
-                desc: 'KPIs de contato, conversão, custo por fechamento, funil do pipeline, ROI por fonte. Leaderboard do time pra agências.',
-                color: '#6366f1',
-              },
-              {
-                icon: '📂',
-                tag: 'NOVO',
-                title: 'Import de leads + Manual',
-                desc: 'Adicione leads manualmente ou importe CSV em massa (2000 por vez). Já tem base antiga? Migre em 30 segundos e comece a vender hoje.',
+                title: 'Performance + Leaderboard',
+                desc: 'KPIs de contato, conversão, custo por fechamento, funil do pipeline, ROI por fonte. Leaderboard do time pra agências compararem agentes.',
                 color: '#ec4899',
-              },
-              {
-                icon: '🏷️',
-                tag: 'ORGANIZAÇÃO',
-                title: 'Tags + Filtros avançados',
-                desc: 'Categorize leads com tags coloridas. Filtros por data de chegada (hoje, 7d, 30d, custom), estágio, status. Analise cohorts sem Excel.',
-                color: '#14b8a6',
-              },
-              {
-                icon: '📱',
-                tag: 'MOBILE',
-                title: 'App instalável + Push',
-                desc: 'Adicione o sistema na tela inicial do celular. Receba push quando um lead cair. Contate em 30 segundos e converta 3x mais.',
-                color: '#06b6d4',
               },
             ].map((f, i) => (
               <div key={i} className="rounded-2xl p-6 relative transition-all hover:-translate-y-1" style={{ background: '#fff', border: '1px solid #e8ecf4', boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}>
@@ -188,6 +193,55 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ==================== PRA AGENCIAS ==================== */}
+      <section className="py-16 sm:py-24" style={{ background: 'linear-gradient(135deg, #0f172a, #1e293b)' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+            <div>
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold mb-5" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>
+                <span>🏢</span> Pra agências de seguros
+              </span>
+              <h2 className="text-[28px] sm:text-[36px] font-extrabold mb-4 text-white leading-tight">
+                Escala seu time sem perder o controle
+              </h2>
+              <p className="text-[15px] mb-8" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                Agências de seguros tem necessidades diferentes de producer solo. Construímos features específicas pra quem gerencia 3, 5, 20 vendedores — sem planilha do Excel e sem WhatsApp compartilhado caótico.
+              </p>
+
+              <div className="space-y-4">
+                {[
+                  { icon: '⚡', title: 'Distribuição automática de leads', desc: 'Compre leads em volume, sistema distribui round-robin pro time, respeitando estado e disponibilidade.' },
+                  { icon: '👥', title: 'Espelho do pipeline de cada agente', desc: 'Veja o kanban completo de cada vendedor em tempo real. Quem tem lead parado? Quem fechou hoje?' },
+                  { icon: '📱', title: 'Cada vendedor com próprio WhatsApp', desc: 'Escaneie QR uma vez e as mensagens saem do número DELE. Zero vazamento de conversas entre agentes.' },
+                  { icon: '🎯', title: 'Atribuir lead em 1 clique', desc: 'Menu kebab no card do kanban: transfere pra outro agente e ele recebe push + WhatsApp + email.' },
+                  { icon: '📊', title: 'Leaderboard + KPIs individuais', desc: 'Compare performance: contatos, conversão, deals fechados, tempo médio de resposta. Mostre os melhores.' },
+                ].map((f, i) => (
+                  <div key={i} className="flex gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.3)' }}>
+                      <span className="text-[18px]">{f.icon}</span>
+                    </div>
+                    <div>
+                      <p className="text-[14px] font-bold text-white mb-0.5">{f.title}</p>
+                      <p className="text-[12px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>{f.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-8">
+                <Link href="/register" className="inline-block px-7 py-3 rounded-xl text-[14px] font-bold" style={{ background: 'linear-gradient(135deg, #f59e0b, #eab308)', color: '#1a1a2e', boxShadow: '0 4px 14px rgba(245,158,11,0.3)' }}>
+                  Testar com minha agência — 7 dias grátis →
+                </Link>
+              </div>
+            </div>
+
+            <div className="rounded-2xl overflow-hidden" style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <Image src="/ss-team.png" alt="Pipeline do time no Lead4Pro" width={1200} height={650} className="w-full h-auto" />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ==================== AGENCY OWNER SECTION ==================== */}
       <section id="features" className="py-16 sm:py-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -198,7 +252,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             {/* Screenshot Meu Time */}
             <div className="rounded-2xl overflow-hidden" style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.08)', border: '1px solid #e8ecf4' }}>
-              <Image src="/ss-team.png" alt="Gestao de Time Lead4Producers" width={1200} height={650} className="w-full h-auto" />
+              <Image src="/ss-team.png" alt="Gestao de Time Lead4Pro" width={1200} height={650} className="w-full h-auto" />
             </div>
 
             {/* Benefits */}
@@ -233,7 +287,7 @@ export default function LandingPage() {
 
           {/* Pipeline screenshot full width */}
           <div className="rounded-2xl overflow-hidden mb-12" style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.08)', border: '1px solid #e8ecf4' }}>
-            <Image src="/ss-pipeline.png" alt="Pipeline CRM Lead4Producers" width={1200} height={700} className="w-full h-auto" />
+            <Image src="/ss-pipeline.png" alt="Pipeline CRM Lead4Pro" width={1200} height={700} className="w-full h-auto" />
           </div>
 
           {/* CRM features grid — todas as features do CRM Pro */}
