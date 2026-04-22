@@ -82,6 +82,9 @@ function LoginForm() {
                   )}
                 </button>
               </div>
+              <div className="mt-2 text-right">
+                <Link href="/reset-password" className="text-[12px] font-semibold" style={{ color: '#6366f1' }}>Esqueci a senha</Link>
+              </div>
             </div>
             {error && <div className="text-[13px] font-semibold px-4 py-3 rounded-xl" style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca' }}>{error}</div>}
             <button type="submit" disabled={loading} className="w-full py-4 rounded-xl font-bold text-[14px] text-white disabled:opacity-50"
