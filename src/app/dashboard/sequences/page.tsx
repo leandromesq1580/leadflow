@@ -251,8 +251,15 @@ function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved
                       }
                       onChange={e => {
                         const v = e.target.value
-                        if (v === 'custom') updateStep(i, { delay_hours: step.delay_hours || 12 })
-                        else updateStep(i, { delay_hours: Number(v) })
+                        if (v === 'custom') {
+                          // Se o valor atual e um preset, sobe pra 12 (nao-preset).
+                          // Senao ja eh custom, mantem o valor.
+                          const PRESETS = [0, 1, 6, 24, 48, 72, 168]
+                          const newVal = PRESETS.includes(step.delay_hours) ? 12 : step.delay_hours
+                          updateStep(i, { delay_hours: newVal })
+                        } else {
+                          updateStep(i, { delay_hours: Number(v) })
+                        }
                       }}
                       className="flex-1 px-2 py-1 rounded text-[12px] cursor-pointer"
                       style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
