@@ -368,7 +368,7 @@ function WeekView({ anchor, events, onClick }: { anchor: Date; events: CalendarE
 
   return (
     <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-      <div className="grid" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
+      <div className="grid" style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}>
         <div className="p-2" style={{ background: '#f8f9fc' }} />
         {days.map((d, i) => {
           const isToday = d.toDateString() === today.toDateString()
@@ -383,7 +383,7 @@ function WeekView({ anchor, events, onClick }: { anchor: Date; events: CalendarE
       </div>
       <div className="overflow-y-auto max-h-[600px]">
         {hours.map(h => (
-          <div key={h} className="grid" style={{ gridTemplateColumns: '60px repeat(7, 1fr)', borderTop: '1px solid #f1f5f9' }}>
+          <div key={h} className="grid" style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))', borderTop: '1px solid #f1f5f9' }}>
             <div className="px-2 py-3 text-[10px]" style={{ color: '#94a3b8' }}>
               {hourLabel(h)}
             </div>
@@ -423,7 +423,7 @@ function DayView({ anchor, events, onClick }: { anchor: Date; events: CalendarEv
             return t >= cell && t < cellEnd
           })
           return (
-            <div key={h} className="grid" style={{ gridTemplateColumns: '80px 1fr', borderTop: '1px solid #f1f5f9', minHeight: 70 }}>
+            <div key={h} className="grid" style={{ gridTemplateColumns: '80px minmax(0, 1fr)', borderTop: '1px solid #f1f5f9', minHeight: 70 }}>
               <div className="px-3 py-3 text-[11px]" style={{ color: '#94a3b8' }}>
                 {hourLabel(h)}
               </div>
