@@ -210,7 +210,9 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
 
   function fmtTime(iso: string) {
     const d = new Date(iso)
-    return d.toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })
+    const date = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+    const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+    return `${date} ${time}`
   }
 
   function renderMedia(m: Message) {
