@@ -79,6 +79,7 @@ export function Sidebar({ type, userName, isAgency, buyerId }: SidebarProps) {
     { href: '/dashboard/leads', label: t.sidebar.leads, icon: '🎯' },
     { href: '/dashboard/pipeline', label: t.sidebar.pipeline, icon: '📋' },
     { href: '/dashboard/whatsapp', label: t.sidebar.whatsapp, icon: '💬' },
+    { href: '/dashboard/ai-consult', label: t._locale === 'en' ? 'AI Specialist' : t._locale === 'es' ? 'Especialista IA' : 'Especialista AI', icon: '🤖' },
     { href: '/dashboard/templates', label: t.sidebar.templates, icon: '📝' },
     { href: '/dashboard/automations', label: t.sidebar.automations, icon: '⚡' },
     { href: '/dashboard/sequences', label: t.sidebar.sequences, icon: '🔁' },
