@@ -206,8 +206,8 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   if (!lead) return (
     <>
       <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed inset-y-0 right-0 z-50 w-full max-w-[540px]" style={{ background: '#fff' }}>
-        <div className="flex items-center justify-center h-full">
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[92vw] max-w-[540px] max-h-[90vh] rounded-2xl" style={{ background: '#fff', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
+        <div className="flex items-center justify-center h-[200px]">
           <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
         </div>
       </div>
@@ -230,8 +230,8 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed inset-y-0 right-0 z-50 w-full max-w-[540px] overflow-y-auto"
-        style={{ background: '#fff', boxShadow: '-8px 0 40px rgba(0,0,0,0.12)' }}>
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[92vw] max-w-[540px] max-h-[90vh] overflow-y-auto rounded-2xl"
+        style={{ background: '#fff', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
 
         {/* Header with gradient */}
         <div className="relative px-7 pt-7 pb-5" style={{ background: `linear-gradient(135deg, hsl(${hue}, 55%, 96%), #fff)` }}>
