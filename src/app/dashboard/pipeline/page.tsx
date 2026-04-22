@@ -137,10 +137,23 @@ export default function PipelinePage() {
   useEffect(() => {
     if (!buyerId) return
     loadUnreadCounts()
-    // Poll a cada 15s pra atualizar badges em tempo real
-    const interval = setInterval(loadUnreadCounts, 15000)
-    return () => clearInterval(interval)
+    // Poll a cada 5s pra atualizar badges em tempo real
+    const interval = setInterval(loadUnreadCounts, 5000)
+    // Reage quando user marca msg como lida (evento global)
+    const onWaChanged = () => loadUnreadCounts()
+    if (typeof window !== 'undefined') window.addEventListener('wa-unread-changed', onWaChanged)
+    return () => {
+      clearInterval(interval)
+      if (typeof window !== 'undefined') window.removeEventListener('wa-unread-changed', onWaChanged)
+    }
   }, [buyerId])
+
+  // Quando fecha modal, refresh imediato das badges (caso user leu msgs)
+  useEffect(() => {
+    if (!selectedLead && buyerId) {
+      loadUnreadCounts()
+    }
+  }, [selectedLead, buyerId])
 
   // Auto-refresh dos leads: a cada 30s, se não houver drag em andamento
   // nem modal aberto — garante que leads atribuídos por agência apareçam sem F5.

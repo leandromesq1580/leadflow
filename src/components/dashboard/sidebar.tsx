@@ -51,8 +51,14 @@ function useWhatsAppUnread(buyerId?: string): number {
       } catch {}
     }
     load()
-    const t = setInterval(load, 20000)
-    return () => { alive = false; clearInterval(t) }
+    const t = setInterval(load, 5000)
+    const onChange = () => load()
+    if (typeof window !== 'undefined') window.addEventListener('wa-unread-changed', onChange)
+    return () => {
+      alive = false
+      clearInterval(t)
+      if (typeof window !== 'undefined') window.removeEventListener('wa-unread-changed', onChange)
+    }
   }, [buyerId])
   return count
 }

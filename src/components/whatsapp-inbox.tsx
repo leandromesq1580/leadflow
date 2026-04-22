@@ -52,11 +52,18 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
 
   useEffect(() => {
     load()
+    // Marca como lido e dispara evento global pras sidebars/cards reagirem ja
     fetch('/api/whatsapp/messages', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ lead_id: leadId }),
-    }).catch(() => {})
+    })
+      .then(() => {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('wa-unread-changed', { detail: { leadId } }))
+        }
+      })
+      .catch(() => {})
     const interval = setInterval(load, 10000)
     return () => clearInterval(interval)
   }, [leadId])
