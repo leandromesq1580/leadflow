@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useRealtime } from '@/lib/use-realtime'
 
 interface Message {
   id: string
@@ -65,9 +66,18 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
         }
       })
       .catch(() => {})
-    const interval = setInterval(load, 10000)
+    // Fallback poll lento
+    const interval = setInterval(load, 30000)
     return () => clearInterval(interval)
   }, [leadId])
+
+  // Realtime: msg nova pro lead -> recarrega thread
+  useRealtime(
+    'whatsapp_messages',
+    'INSERT',
+    leadId ? `lead_id=eq.${leadId}` : null,
+    () => load(),
+  )
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })

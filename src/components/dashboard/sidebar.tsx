@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n-client'
 import { LocaleSwitcher } from '@/components/locale-switcher'
+import { useRealtime } from '@/lib/use-realtime'
 
 interface SidebarProps {
   type: 'buyer' | 'admin'
@@ -15,27 +16,39 @@ interface SidebarProps {
 
 function useWhatsAppUnread(buyerId?: string): number {
   const [count, setCount] = useState(0)
+
+  const load = async () => {
+    if (!buyerId) return
+    try {
+      const r = await fetch(`/api/whatsapp/unread?buyer_id=${buyerId}`, { cache: 'no-store' })
+      if (!r.ok) return
+      const d = await r.json()
+      setCount(d.total || 0)
+    } catch {}
+  }
+
   useEffect(() => {
     if (!buyerId) return
-    let alive = true
-    const load = async () => {
-      try {
-        const r = await fetch(`/api/whatsapp/unread?buyer_id=${buyerId}`, { cache: 'no-store' })
-        if (!r.ok || !alive) return
-        const d = await r.json()
-        setCount(d.total || 0)
-      } catch {}
-    }
     load()
-    const t = setInterval(load, 5000)
+    // Fallback poll lento (30s) pra caso Realtime dê problema
+    const t = setInterval(load, 30000)
     const onChange = () => load()
     if (typeof window !== 'undefined') window.addEventListener('wa-unread-changed', onChange)
     return () => {
-      alive = false
       clearInterval(t)
       if (typeof window !== 'undefined') window.removeEventListener('wa-unread-changed', onChange)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buyerId])
+
+  // Realtime: sempre que chega msg INSERT no buyer, recarrega contador.
+  useRealtime(
+    'whatsapp_messages',
+    'INSERT',
+    buyerId ? `buyer_id=eq.${buyerId}` : null,
+    () => load(),
+  )
+
   return count
 }
 

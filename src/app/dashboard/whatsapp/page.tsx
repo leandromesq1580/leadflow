@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { WhatsAppInbox } from '@/components/whatsapp-inbox'
 import { useT } from '@/lib/i18n-client'
+import { useRealtime } from '@/lib/use-realtime'
 
 interface Conversation {
   lead_id: string
@@ -87,12 +88,20 @@ export default function WhatsAppPage() {
     setLoading(false)
   }
 
-  // Poll 20s pra refrescar conversas
+  // Fallback poll lento caso Realtime nao funcione
   useEffect(() => {
     if (!buyerId) return
-    const t = setInterval(() => loadConversations(buyerId), 20000)
+    const t = setInterval(() => loadConversations(buyerId), 60000)
     return () => clearInterval(t)
   }, [buyerId])
+
+  // Realtime: recarrega conversas quando chega nova msg
+  useRealtime(
+    'whatsapp_messages',
+    'INSERT',
+    buyerId ? `buyer_id=eq.${buyerId}` : null,
+    () => { if (buyerId) loadConversations(buyerId) },
+  )
 
   const filtered = useMemo(() => {
     if (!search.trim()) return conversations

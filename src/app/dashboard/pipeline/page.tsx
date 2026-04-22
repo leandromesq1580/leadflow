@@ -6,6 +6,7 @@ import { KanbanColumn } from './kanban-column'
 import { LeadCard } from './lead-card'
 import { LeadModal } from './lead-modal'
 import { useT } from '@/lib/i18n-client'
+import { useRealtime } from '@/lib/use-realtime'
 import Link from 'next/link'
 
 interface Stage { id: string; name: string; color: string; position: number }
@@ -157,16 +158,37 @@ export default function PipelinePage() {
     }
   }, [selectedLead, buyerId])
 
-  // Auto-refresh dos leads: a cada 30s, se não houver drag em andamento
-  // nem modal aberto — garante que leads atribuídos por agência apareçam sem F5.
+  // Fallback poll longo (60s) caso Realtime nao esteja ativo
   useEffect(() => {
     if (!activePipeline || view !== 'mine') return
     const iv = setInterval(() => {
       if (activeCard || selectedLead) return
       loadLeads(activePipeline.id)
-    }, 30000)
+    }, 60000)
     return () => clearInterval(iv)
   }, [activePipeline, view, activeCard, selectedLead])
+
+  // Realtime: quando entra lead novo NA pipeline (INSERT em pipeline_leads),
+  // recarrega imediatamente — nao precisa F5
+  useRealtime(
+    'pipeline_leads',
+    'INSERT',
+    activePipeline?.id && view === 'mine' ? `pipeline_id=eq.${activePipeline.id}` : null,
+    () => {
+      if (!activeCard && !selectedLead && activePipeline) loadLeads(activePipeline.id)
+    },
+  )
+
+  // Realtime: quando um pipeline_lead existente muda stage (drag-drop de OUTRO agente),
+  // recarrega tambem
+  useRealtime(
+    'pipeline_leads',
+    'UPDATE',
+    activePipeline?.id && view === 'mine' ? `pipeline_id=eq.${activePipeline.id}` : null,
+    () => {
+      if (!activeCard && !selectedLead && activePipeline) loadLeads(activePipeline.id)
+    },
+  )
 
   async function createPipeline() {
     setCreating(true)
