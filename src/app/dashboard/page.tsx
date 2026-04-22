@@ -7,11 +7,16 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { OnboardingChecklist } from '@/components/onboarding-checklist'
 import { StaleLeadsAlert } from '@/components/stale-leads-alert'
+import { getLocale } from '@/lib/locale'
+import { getMessages } from '@/lib/i18n'
 
 export default async function DashboardPage() {
   const supabase = await createServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const locale = await getLocale()
+  const t = getMessages(locale)
 
   const db = createAdminClient()
   const { data: buyer } = await db.from('buyers').select('id, name').eq('auth_user_id', user.id).single()
@@ -23,9 +28,9 @@ export default async function DashboardPage() {
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: '#eef2ff' }}>
             <span className="text-2xl">⏳</span>
           </div>
-          <h2 className="text-lg font-bold" style={{ color: '#1a1a2e' }}>Configurando sua conta</h2>
-          <p className="text-sm mt-1 mb-5" style={{ color: '#94a3b8' }}>Estamos preparando tudo. Recarregue em alguns segundos.</p>
-          <a href="/dashboard" className="inline-block px-5 py-2.5 rounded-xl text-sm font-bold text-white" style={{ background: '#6366f1' }}>Recarregar</a>
+          <h2 className="text-lg font-bold" style={{ color: '#1a1a2e' }}>{t.dashboardHome.setupAccount}</h2>
+          <p className="text-sm mt-1 mb-5" style={{ color: '#94a3b8' }}>{t.dashboardHome.setupHelp}</p>
+          <a href="/dashboard" className="inline-block px-5 py-2.5 rounded-xl text-sm font-bold text-white" style={{ background: '#6366f1' }}>{t.dashboardHome.reload}</a>
         </div>
       </div>
     )
@@ -59,16 +64,16 @@ export default async function DashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-3">
         <div>
           <h1 className="text-[22px] sm:text-[26px] font-extrabold tracking-tight" style={{ color: '#1a1a2e' }}>
-            Bom dia, {firstName} 👋
+            {t.dashboardHome.helloGreeting(firstName)}
           </h1>
           <p className="text-[13px] sm:text-[14px] mt-1" style={{ color: '#64748b' }}>
-            Acompanhe seus leads, creditos e conversoes.
+            {t.dashboardHome.subtitle}
           </p>
         </div>
         <Link href="/dashboard/credits"
           className="flex items-center gap-2 px-5 py-3 rounded-xl text-[13px] font-bold text-white hover:opacity-90"
           style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
-          <span>✦</span> Comprar Creditos
+          <span>✦</span> {t.dashboardHome.buyCredits}
         </Link>
       </div>
 
@@ -79,20 +84,20 @@ export default async function DashboardPage() {
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.5)' }}>Saldo de Creditos</p>
+              <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.5)' }}>{t.dashboardHome.creditsBalance}</p>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-[42px] font-extrabold text-white leading-none">{remaining}</span>
-                <span className="text-[15px] font-medium" style={{ color: 'rgba(255,255,255,0.4)' }}>de {totalPurchased} leads</span>
+                <span className="text-[15px] font-medium" style={{ color: 'rgba(255,255,255,0.4)' }}>{t.dashboardHome.outOfLeads(totalPurchased)}</span>
               </div>
             </div>
             {totalPurchased > 0 ? (
               <div className="text-right px-4 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)' }}>
                 <p className="text-[22px] font-extrabold text-white">{Math.round((remaining / totalPurchased) * 100)}%</p>
-                <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.5)' }}>Restante</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.5)' }}>{t.dashboardHome.remainingPct}</p>
               </div>
             ) : (
               <Link href="/dashboard/credits" className="px-5 py-2.5 rounded-xl text-[12px] font-bold text-white" style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
-                Comprar agora →
+                {t.dashboardHome.buyNow}
               </Link>
             )}
           </div>
@@ -106,21 +111,21 @@ export default async function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-        <StatCard label="Total de Leads" value={totalLeads} icon="👥" />
-        <StatCard label="Aguardando Contato" value={newLeads} icon="📞" accent={newLeads > 0} change={newLeads > 0 ? 'Ligar agora!' : undefined} trend="up" />
-        <StatCard label="Convertidos" value={converted} icon="🏆" change={totalLeads > 0 ? `${Math.round((converted / totalLeads) * 100)}% taxa` : undefined} trend="up" />
-        <StatCard label="Creditos" value={remaining} icon="💳" />
+        <StatCard label={t.dashboardHome.kpiTotal} value={totalLeads} icon="👥" />
+        <StatCard label={t.dashboardHome.kpiAwaiting} value={newLeads} icon="📞" accent={newLeads > 0} change={newLeads > 0 ? t.dashboardHome.kpiAwaitingCta : undefined} trend="up" />
+        <StatCard label={t.dashboardHome.kpiConverted} value={converted} icon="🏆" change={totalLeads > 0 ? t.dashboardHome.kpiRate(Math.round((converted / totalLeads) * 100)) : undefined} trend="up" />
+        <StatCard label={t.dashboardHome.kpiCredits} value={remaining} icon="💳" />
       </div>
 
       {/* Leads Table */}
       <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e8ecf4', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: '1px solid #e8ecf4' }}>
           <div>
-            <h2 className="text-[16px] font-bold" style={{ color: '#1a1a2e' }}>Leads Recentes</h2>
-            <p className="text-[12px] mt-0.5" style={{ color: '#94a3b8' }}>Seus ultimos leads recebidos</p>
+            <h2 className="text-[16px] font-bold" style={{ color: '#1a1a2e' }}>{t.dashboardHome.recentLeads}</h2>
+            <p className="text-[12px] mt-0.5" style={{ color: '#94a3b8' }}>{t.dashboardHome.recentLeadsSub}</p>
           </div>
           <Link href="/dashboard/leads" className="text-[13px] font-semibold flex items-center gap-1" style={{ color: '#6366f1' }}>
-            Ver todos <span>→</span>
+            {t.dashboardHome.seeAll} <span>→</span>
           </Link>
         </div>
 
@@ -157,14 +162,12 @@ export default async function DashboardPage() {
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ background: '#f1f5f9' }}>
               <span className="text-3xl">📭</span>
             </div>
-            <h3 className="text-[18px] font-bold mb-1" style={{ color: '#1a1a2e' }}>Nenhum lead ainda</h3>
-            <p className="text-[14px] max-w-sm mx-auto mb-6" style={{ color: '#94a3b8' }}>
-              Compre creditos para comecar a receber leads exclusivos de brasileiros nos EUA interessados em seguro de vida.
-            </p>
+            <h3 className="text-[18px] font-bold mb-1" style={{ color: '#1a1a2e' }}>{t.dashboardHome.empty}</h3>
+            <p className="text-[14px] max-w-sm mx-auto mb-6" style={{ color: '#94a3b8' }}>{t.dashboardHome.emptyHelp}</p>
             <Link href="/dashboard/credits"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-[14px] font-bold text-white"
               style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
-              <span>✦</span> Comprar Creditos
+              <span>✦</span> {t.dashboardHome.buyCredits}
             </Link>
           </div>
         )}
@@ -174,14 +177,14 @@ export default async function DashboardPage() {
       {totalLeads === 0 && (
         <div className="grid grid-cols-3 gap-4 mt-6">
           {[
-            { step: '01', icon: '💳', title: 'Compre creditos', desc: 'Escolha um pacote de leads ou appointments no menu Creditos' },
-            { step: '02', icon: '⚡', title: 'Receba leads', desc: 'Leads chegam em tempo real no seu painel e por email/SMS' },
-            { step: '03', icon: '🏆', title: 'Feche vendas', desc: 'Ligue nos primeiros 5 minutos — 3x mais chance de conversao' },
+            { step: '01', icon: '💳', title: t.dashboardHome.tip1Title, desc: t.dashboardHome.tip1Desc },
+            { step: '02', icon: '⚡', title: t.dashboardHome.tip2Title, desc: t.dashboardHome.tip2Desc },
+            { step: '03', icon: '🏆', title: t.dashboardHome.tip3Title, desc: t.dashboardHome.tip3Desc },
           ].map((tip) => (
             <div key={tip.step} className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-2xl">{tip.icon}</span>
-                <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#94a3b8' }}>Passo {tip.step}</span>
+                <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#94a3b8' }}>{t.dashboardHome.step} {tip.step}</span>
               </div>
               <h3 className="text-[14px] font-bold mb-1" style={{ color: '#1a1a2e' }}>{tip.title}</h3>
               <p className="text-[12px] leading-relaxed" style={{ color: '#64748b' }}>{tip.desc}</p>
