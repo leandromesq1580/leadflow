@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { WaConnectCard } from '@/components/wa-connect-card'
+import { useT } from '@/lib/i18n-client'
 
 interface Buyer {
   id: string
@@ -21,18 +22,8 @@ interface Props {
   allStates: string[]
 }
 
-const DAY_TYPES = [
-  { key: 'weekday', label: 'Seg-Sex' },
-  { key: 'saturday', label: 'Sabado' },
-  { key: 'sunday', label: 'Domingo' },
-  { key: 'holiday', label: 'Feriados' },
-]
-
-const PERIODS = [
-  { key: 'morning', label: 'Manha (8h-12h)' },
-  { key: 'afternoon', label: 'Tarde (12h-18h)' },
-  { key: 'evening', label: 'Noite (18h-21h)' },
-]
+const DAY_KEYS = ['weekday', 'saturday', 'sunday', 'holiday'] as const
+const PERIOD_KEYS = ['morning', 'afternoon', 'evening'] as const
 
 const STATE_NAMES: Record<string, string> = {
   AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California',CO:'Colorado',CT:'Connecticut',
@@ -47,6 +38,7 @@ const STATE_NAMES: Record<string, string> = {
 
 export function SettingsForm({ buyer, activeStates, activeAvailability, allStates }: Props) {
   const router = useRouter()
+  const t = useT()
   const [name, setName] = useState(buyer.name || '')
   const [phone, setPhone] = useState(buyer.phone || '')
   const [whatsapp, setWhatsapp] = useState(buyer.whatsapp || '')
@@ -109,7 +101,7 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, allState
     <div>
       {saved && (
         <div className="mb-6 px-5 py-3 rounded-xl text-[13px] font-semibold" style={{ background: '#ecfdf5', color: '#10b981', border: '1px solid #a7f3d0' }}>
-          ✅ Configuracoes salvas!
+          {t.settings.savedOk}
         </div>
       )}
 
@@ -124,20 +116,20 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, allState
 
       {/* Profile */}
       <div className="rounded-2xl p-6 mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-        <h2 className="text-[15px] font-bold mb-4" style={{ color: '#1a1a2e' }}>Perfil</h2>
+        <h2 className="text-[15px] font-bold mb-4" style={{ color: '#1a1a2e' }}>{t.settings.profile}</h2>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-[12px] font-bold mb-1" style={{ color: '#64748b' }}>Nome</label>
+            <label className="block text-[12px] font-bold mb-1" style={{ color: '#64748b' }}>{t.settings.name}</label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)}
               className="w-full px-4 py-3 rounded-xl text-[14px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
           </div>
           <div>
-            <label className="block text-[12px] font-bold mb-1" style={{ color: '#64748b' }}>Telefone</label>
+            <label className="block text-[12px] font-bold mb-1" style={{ color: '#64748b' }}>{t.settings.phone}</label>
             <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
               className="w-full px-4 py-3 rounded-xl text-[14px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
           </div>
           <div>
-            <label className="block text-[12px] font-bold mb-1" style={{ color: '#64748b' }}>WhatsApp</label>
+            <label className="block text-[12px] font-bold mb-1" style={{ color: '#64748b' }}>{t.settings.whatsapp}</label>
             <input type="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)}
               className="w-full px-4 py-3 rounded-xl text-[14px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
           </div>
@@ -151,8 +143,8 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, allState
 
       {/* States / Licenses */}
       <div className="rounded-2xl p-6 mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-        <h2 className="text-[15px] font-bold mb-2" style={{ color: '#1a1a2e' }}>📍 Estados com Licenca</h2>
-        <p className="text-[13px] mb-4" style={{ color: '#94a3b8' }}>Selecione os estados onde voce tem licenca pra vender seguro. Voce so recebera leads desses estados.</p>
+        <h2 className="text-[15px] font-bold mb-2" style={{ color: '#1a1a2e' }}>{t.settings.statesTitle}</h2>
+        <p className="text-[13px] mb-4" style={{ color: '#94a3b8' }}>{t.settings.statesHelp}</p>
         <div className="flex flex-wrap gap-2">
           {allStates.map(code => (
             <button
@@ -171,51 +163,62 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, allState
         </div>
         {states.length > 0 && (
           <p className="text-[12px] mt-3" style={{ color: '#6366f1' }}>
-            {states.length} estado{states.length > 1 ? 's' : ''} selecionado{states.length > 1 ? 's' : ''}: {states.map(s => STATE_NAMES[s] || s).join(', ')}
+            {t.settings.statesSelected(states.length)}: {states.map(s => STATE_NAMES[s] || s).join(', ')}
           </p>
         )}
       </div>
 
       {/* Availability (for appointments) */}
       <div className="rounded-2xl p-6 mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-        <h2 className="text-[15px] font-bold mb-2" style={{ color: '#1a1a2e' }}>📅 Disponibilidade para Appointments</h2>
-        <p className="text-[13px] mb-4" style={{ color: '#94a3b8' }}>Selecione quando voce pode receber appointments agendados.</p>
+        <h2 className="text-[15px] font-bold mb-2" style={{ color: '#1a1a2e' }}>{t.settings.availTitle}</h2>
+        <p className="text-[13px] mb-4" style={{ color: '#94a3b8' }}>{t.settings.availHelp}</p>
         <div className="space-y-3">
-          {DAY_TYPES.map(day => (
-            <div key={day.key}>
-              <p className="text-[13px] font-bold mb-2" style={{ color: '#1a1a2e' }}>{day.label}</p>
-              <div className="flex gap-2">
-                {PERIODS.map(period => {
-                  const key = `${day.key}_${period.key}`
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => toggleAvail(key)}
-                      className="px-4 py-2 rounded-xl text-[12px] font-semibold transition-all"
-                      style={{
-                        background: avail.includes(key) ? '#6366f1' : '#f8f9fc',
-                        color: avail.includes(key) ? '#fff' : '#64748b',
-                        border: `1px solid ${avail.includes(key) ? '#6366f1' : '#e8ecf4'}`,
-                      }}
-                    >
-                      {period.label}
-                    </button>
-                  )
-                })}
+          {DAY_KEYS.map(dayKey => {
+            const dayLabel =
+              dayKey === 'weekday' ? t.settings.weekdays
+              : dayKey === 'saturday' ? t.settings.saturday
+              : dayKey === 'sunday' ? t.settings.sunday
+              : t.settings.holidays
+            return (
+              <div key={dayKey}>
+                <p className="text-[13px] font-bold mb-2" style={{ color: '#1a1a2e' }}>{dayLabel}</p>
+                <div className="flex gap-2">
+                  {PERIOD_KEYS.map(periodKey => {
+                    const periodLabel =
+                      periodKey === 'morning' ? t.settings.morning
+                      : periodKey === 'afternoon' ? t.settings.afternoon
+                      : t.settings.evening
+                    const key = `${dayKey}_${periodKey}`
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => toggleAvail(key)}
+                        className="px-4 py-2 rounded-xl text-[12px] font-semibold transition-all"
+                        style={{
+                          background: avail.includes(key) ? '#6366f1' : '#f8f9fc',
+                          color: avail.includes(key) ? '#fff' : '#64748b',
+                          border: `1px solid ${avail.includes(key) ? '#6366f1' : '#e8ecf4'}`,
+                        }}
+                      >
+                        {periodLabel}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
       {/* Notifications */}
       <div className="rounded-2xl p-6 mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-        <h2 className="text-[15px] font-bold mb-4" style={{ color: '#1a1a2e' }}>🔔 Notificacoes</h2>
+        <h2 className="text-[15px] font-bold mb-4" style={{ color: '#1a1a2e' }}>{t.settings.notifTitle}</h2>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[13px] font-semibold" style={{ color: '#1a1a2e' }}>Email</p>
-              <p className="text-[11px]" style={{ color: '#94a3b8' }}>Receber leads por email</p>
+              <p className="text-[13px] font-semibold" style={{ color: '#1a1a2e' }}>{t.settings.email}</p>
+              <p className="text-[11px]" style={{ color: '#94a3b8' }}>{t.settings.emailHelp}</p>
             </div>
             <button onClick={() => setNotifEmail(!notifEmail)}
               className="w-11 h-6 rounded-full relative" style={{ background: notifEmail ? '#10b981' : '#d1d5db' }}>
@@ -224,8 +227,8 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, allState
           </div>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[13px] font-semibold" style={{ color: '#1a1a2e' }}>SMS</p>
-              <p className="text-[11px]" style={{ color: '#94a3b8' }}>Receber leads por SMS</p>
+              <p className="text-[13px] font-semibold" style={{ color: '#1a1a2e' }}>{t.settings.sms}</p>
+              <p className="text-[11px]" style={{ color: '#94a3b8' }}>{t.settings.smsHelp}</p>
             </div>
             <button onClick={() => setNotifSms(!notifSms)}
               className="w-11 h-6 rounded-full relative" style={{ background: notifSms ? '#10b981' : '#d1d5db' }}>
@@ -240,7 +243,7 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, allState
         <button onClick={save} disabled={saving}
           className="px-6 py-3 rounded-xl text-[14px] font-bold text-white disabled:opacity-50"
           style={{ background: '#6366f1', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
-          {saving ? 'Salvando...' : 'Salvar Configuracoes'}
+          {saving ? t.common.saving : t.settings.saveBtn}
         </button>
         {saved && (
           <span className="text-[13px] font-semibold flex items-center gap-1.5" style={{ color: '#10b981' }}>
