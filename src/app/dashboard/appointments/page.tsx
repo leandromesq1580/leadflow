@@ -29,6 +29,12 @@ type View = 'month' | 'week' | 'day'
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const MONTHS_PT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
+function hourLabel(h: number) {
+  const period = h >= 12 ? 'PM' : 'AM'
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return `${h12} ${period}`
+}
+
 export default function AppointmentsPage() {
   const [buyerId, setBuyerId] = useState('')
   const [events, setEvents] = useState<CalendarEvent[]>([])
@@ -230,7 +236,7 @@ function LegendItem({ color, kind, label }: { color: string; kind: EventKind; la
 
 // Unified event pill with visual distinction by kind
 function EventPill({ event, onClick, compact }: { event: CalendarEvent; onClick: () => void; compact?: boolean }) {
-  const time = new Date(event.start).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  const time = new Date(event.start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
   const kind = event.kind
 
   // Task: checkbox style
@@ -379,7 +385,7 @@ function WeekView({ anchor, events, onClick }: { anchor: Date; events: CalendarE
         {hours.map(h => (
           <div key={h} className="grid" style={{ gridTemplateColumns: '60px repeat(7, 1fr)', borderTop: '1px solid #f1f5f9' }}>
             <div className="px-2 py-3 text-[10px]" style={{ color: '#94a3b8' }}>
-              {String(h).padStart(2, '0')}:00
+              {hourLabel(h)}
             </div>
             {days.map((d, di) => {
               const cell = new Date(d); cell.setHours(h)
@@ -419,7 +425,7 @@ function DayView({ anchor, events, onClick }: { anchor: Date; events: CalendarEv
           return (
             <div key={h} className="grid" style={{ gridTemplateColumns: '80px 1fr', borderTop: '1px solid #f1f5f9', minHeight: 70 }}>
               <div className="px-3 py-3 text-[11px]" style={{ color: '#94a3b8' }}>
-                {String(h).padStart(2, '0')}:00
+                {hourLabel(h)}
               </div>
               <div className="p-2 space-y-1" style={{ borderLeft: '1px solid #f1f5f9' }}>
                 {cellEvents.map(e => (
@@ -530,10 +536,12 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
           </div>
           {!editing ? (
             <p className="text-[14px] font-bold mt-1" style={{ color: '#1a1a2e' }}>
-              {startDate.toLocaleString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' })}
+              {startDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+              {' às '}
+              {startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
               {event.end && (
                 <span className="text-[12px] font-medium ml-1" style={{ color: '#64748b' }}>
-                  até {new Date(event.end).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  até {new Date(event.end).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                 </span>
               )}
             </p>
