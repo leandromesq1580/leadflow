@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { distributeLeadToNextBuyer } from '@/lib/distribute'
+import { distributeLeadToNextBuyer, forceAssignRoundRobin } from '@/lib/distribute'
 import { stateFromPhone } from '@/lib/us-area-codes'
 
 const FORM_IDS = [
@@ -93,8 +93,21 @@ export async function GET(request: Request) {
           continue
         }
 
-        // Distribute (force-assign bypass now handled inside distributeLeadToNextBuyer)
-        const buyer = await distributeLeadToNextBuyer(newLead)
+        // Distribute:
+        // - Se FORCE_ASSIGN_TO_EMAILS (CSV) estiver setado → round-robin SOMENTE entre esses emails (Meta leads)
+        // - Caso contrario → distribuicao normal por creditos/estado
+        const forceEmails = (process.env.FORCE_ASSIGN_TO_EMAILS || '')
+          .split(',')
+          .map(e => e.trim())
+          .filter(Boolean)
+
+        let buyer = null
+        if (forceEmails.length > 0) {
+          buyer = await forceAssignRoundRobin(newLead, forceEmails)
+        }
+        if (!buyer) {
+          buyer = await distributeLeadToNextBuyer(newLead)
+        }
         console.log(`[Poll] Lead ${newLead.id} — ${name} → ${buyer?.name || 'no buyer'}`)
         imported++
       }

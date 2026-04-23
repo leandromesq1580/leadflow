@@ -1,22 +1,11 @@
 import { createAdminClient } from './supabase/admin'
 import { sendLeadNotificationEmail, sendTeamMemberNotification } from './notifications'
 
-async function forceAssignToEmail(
+async function assignLeadToBuyer(
   supabase: ReturnType<typeof createAdminClient>,
   lead: Lead,
-  email: string
-): Promise<EligibleBuyer | null> {
-  const { data: buyer } = await supabase
-    .from('buyers')
-    .select('id, name, email, phone, notification_email, notification_sms')
-    .ilike('email', email)
-    .maybeSingle()
-
-  if (!buyer) {
-    console.error(`[Distribute] FORCE_ASSIGN: buyer ${email} not found`)
-    return null
-  }
-
+  buyer: { id: string; name: string; email: string; phone?: string; notification_email?: boolean; notification_sms?: boolean }
+): Promise<EligibleBuyer> {
   await supabase
     .from('leads')
     .update({
@@ -46,8 +35,69 @@ async function forceAssignToEmail(
     }, { onConflict: 'lead_id,pipeline_id' })
   }
 
-  console.log(`[Distribute] FORCE_ASSIGN: lead ${lead.id} → ${buyer.name}`)
   return buyer as unknown as EligibleBuyer
+}
+
+/**
+ * Round-robin assignment entre N emails. Usado APENAS para leads do Meta
+ * (chamado no /api/poll-leads), nao afeta imports manuais/CSV.
+ *
+ * Logica: busca o ULTIMO lead Meta (meta_lead_id NOT NULL) atribuido a qualquer
+ * um desses emails. Se o ultimo foi pro email A, o proximo vai pro B (e vice-versa).
+ * Se nunca teve nenhum, comeca pelo primeiro da lista.
+ */
+export async function forceAssignRoundRobin(
+  lead: Lead & { meta_lead_id?: string | null },
+  emails: string[]
+): Promise<EligibleBuyer | null> {
+  if (emails.length === 0) return null
+  const supabase = createAdminClient()
+
+  // Pega buyers dos emails, na ordem que veio
+  const { data: buyers } = await supabase
+    .from('buyers')
+    .select('id, name, email, phone, notification_email, notification_sms')
+    .in('email', emails)
+
+  if (!buyers || buyers.length === 0) {
+    console.error(`[Distribute] ROUND_ROBIN: nenhum buyer encontrado para ${emails.join(',')}`)
+    return null
+  }
+
+  // Ordena buyers na mesma ordem dos emails recebidos (case-insensitive)
+  const ordered = emails
+    .map(e => buyers.find(b => b.email.toLowerCase() === e.toLowerCase().trim()))
+    .filter((b): b is NonNullable<typeof b> => !!b)
+
+  if (ordered.length === 0) {
+    console.error(`[Distribute] ROUND_ROBIN: emails nao casaram com buyers`)
+    return null
+  }
+
+  // Busca ULTIMO lead Meta atribuido a qualquer buyer da lista
+  const buyerIds = ordered.map(b => b.id)
+  const { data: lastLead } = await supabase
+    .from('leads')
+    .select('assigned_to, assigned_at')
+    .in('assigned_to', buyerIds)
+    .not('meta_lead_id', 'is', null)
+    .neq('id', lead.id)
+    .order('assigned_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  // Escolhe o PROXIMO buyer (alternando)
+  let nextBuyer = ordered[0]
+  if (lastLead?.assigned_to) {
+    const lastIdx = ordered.findIndex(b => b.id === lastLead.assigned_to)
+    if (lastIdx >= 0) {
+      nextBuyer = ordered[(lastIdx + 1) % ordered.length]
+    }
+  }
+
+  const assigned = await assignLeadToBuyer(supabase, lead, nextBuyer)
+  console.log(`[Distribute] ROUND_ROBIN: lead ${lead.id} → ${nextBuyer.name} (anterior: ${lastLead?.assigned_to || 'nenhum'})`)
+  return assigned
 }
 
 interface Lead {
@@ -90,14 +140,6 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
   }
 
   const supabase = createAdminClient()
-
-  // Temporary bypass: force all leads to a specific buyer (enquanto Meta nao libera producao)
-  const forceEmail = (process.env.FORCE_ASSIGN_TO_EMAIL || '').trim()
-  if (forceEmail) {
-    const forced = await forceAssignToEmail(supabase, lead, forceEmail)
-    if (forced) return forced
-    // Buyer nao encontrado → cai no fluxo normal abaixo
-  }
 
   // Get eligible buyers filtered by state + sorted by remaining credits (weighted)
   const { data: buyers, error } = await supabase.rpc('get_eligible_buyers', {
