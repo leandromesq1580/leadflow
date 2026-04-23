@@ -61,45 +61,15 @@ export async function GET(request: NextRequest) {
   }
 
   if (memberBuyerId) {
-    // Pipeline default do buyer proprio
-    let { data: pipe } = await db
+    // Pipeline default do buyer proprio (so le — nao cria se nao existir,
+    // porque criar aqui quebra o espelho: o pipe novo fica vazio e o usuario
+    // ve colunas default em vez dos leads que a agencia atribuiu).
+    const { data: pipe } = await db
       .from('pipelines')
       .select('id, name, is_default, stages:pipeline_stages(id, name, color, position)')
       .eq('buyer_id', memberBuyerId)
       .eq('is_default', true)
       .maybeSingle()
-
-    // Fallback: buyer sem pipeline default ainda → cria na hora com stages padrao
-    if (!pipe?.id) {
-      const { data: newPipe } = await db
-        .from('pipelines')
-        .insert({ buyer_id: memberBuyerId, name: 'Vendas', is_default: true })
-        .select('id')
-        .single()
-
-      if (newPipe?.id) {
-        const DEFAULT_STAGES = [
-          { name: 'Novo Lead', color: '#3b82f6', position: 0 },
-          { name: 'Atendido', color: '#f59e0b', position: 1 },
-          { name: 'Qualificado', color: '#10b981', position: 2 },
-          { name: 'Envio Proposta', color: '#8b5cf6', position: 3 },
-          { name: 'Negociação', color: '#f97316', position: 4 },
-          { name: 'Fechado/Ganho', color: '#059669', position: 5 },
-          { name: 'Perdido', color: '#ef4444', position: 6 },
-        ]
-        await db
-          .from('pipeline_stages')
-          .insert(DEFAULT_STAGES.map(s => ({ ...s, pipeline_id: newPipe.id })))
-
-        // Re-busca com stages populados
-        const { data: reloaded } = await db
-          .from('pipelines')
-          .select('id, name, is_default, stages:pipeline_stages(id, name, color, position)')
-          .eq('id', newPipe.id)
-          .maybeSingle()
-        pipe = reloaded || null
-      }
-    }
 
     if (pipe?.id) {
       const pipeline = {
@@ -192,8 +162,10 @@ export async function GET(request: NextRequest) {
     last_follow_up: latestPseudo[L.id] || null,
   }))
 
+  // Se o membro TEM conta (memberBuyerId existe) mas ainda nao tem pipeline,
+  // nao mostra o banner "sem conta" — ele tem conta, so nao configurou pipeline.
   return NextResponse.json({
-    member: { id: member.id, name: member.name, email: member.email, has_own_pipeline: false },
+    member: { id: member.id, name: member.name, email: member.email, has_own_pipeline: !!memberBuyerId },
     pipeline: pseudoPipeline,
     leads,
   })
