@@ -1,13 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { runAutomations } from '@/lib/automation-engine'
-import { autoEnrollByStage } from '@/lib/sequence-engine'
+import { autoEnrollByStage, cancelEnrollmentsForStage } from '@/lib/sequence-engine'
 
 /** PATCH /api/pipeline-leads/[id] — move lead to different stage */
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const { stage_id, position } = await request.json()
   const db = createAdminClient()
+
+  // Pega o stage ANTIGO antes de atualizar — usado pra cancelar sequences
+  // cujo trigger era esse stage (lead saiu dele → sequence nao faz mais sentido)
+  let prevStageId: string | null = null
+  if (stage_id !== undefined) {
+    const { data: prev } = await db
+      .from('pipeline_leads')
+      .select('stage_id')
+      .eq('id', id)
+      .maybeSingle()
+    prevStageId = prev?.stage_id || null
+  }
 
   const update: Record<string, unknown> = { moved_at: new Date().toISOString() }
   if (stage_id !== undefined) update.stage_id = stage_id
@@ -17,13 +29,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   // Fire-and-forget: run automations (stage_entered triggers) for this buyer
-  if (stage_id && data?.buyer_id) {
+  if (stage_id && data?.buyer_id && data?.lead_id) {
     runAutomations([data.buyer_id]).catch(err => console.error('[Automation trigger] Error:', err))
-    // Auto-enroll em sequences com trigger_stage_id = stage_id
-    if (data.lead_id) {
-      autoEnrollByStage(data.lead_id, stage_id, data.buyer_id)
-        .catch(err => console.error('[Sequence autoEnroll] Error:', err))
+
+    // Cancela sequences ATIVAS que tinham como trigger o stage de ONDE o lead saiu
+    if (prevStageId && prevStageId !== stage_id) {
+      cancelEnrollmentsForStage(data.lead_id, prevStageId, data.buyer_id)
+        .catch(err => console.error('[Sequence cancel] Error:', err))
     }
+
+    // Auto-enroll em sequences com trigger_stage_id = stage_id novo
+    autoEnrollByStage(data.lead_id, stage_id, data.buyer_id)
+      .catch(err => console.error('[Sequence autoEnroll] Error:', err))
   }
 
   return NextResponse.json({ entry: data })

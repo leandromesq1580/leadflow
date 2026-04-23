@@ -41,6 +41,43 @@ export async function autoEnrollByStage(
 }
 
 /**
+ * Cancela enrollments ativos de um lead em sequences cujo trigger_stage_id
+ * era o stage do qual o lead acabou de sair. Usa status 'stopped'.
+ *
+ * Cenario: lead estava em "Nao Atendeu" com sequence ativa. Agente atende
+ * e move pra "Em Atendimento" → a sequence de "Nao Atendeu" deve parar
+ * (nao faz sentido continuar cobrando "te liguei e nao atendeu").
+ */
+export async function cancelEnrollmentsForStage(
+  leadId: string,
+  fromStageId: string,
+  buyerId: string,
+): Promise<number> {
+  const db = createAdminClient()
+  const { data: seqs } = await db
+    .from('sequences')
+    .select('id')
+    .eq('buyer_id', buyerId)
+    .eq('trigger_stage_id', fromStageId)
+  if (!seqs || seqs.length === 0) return 0
+  const ids = seqs.map(s => s.id)
+
+  const { data: updated, error } = await db
+    .from('sequence_enrollments')
+    .update({ status: 'stopped' })
+    .eq('lead_id', leadId)
+    .eq('status', 'active')
+    .in('sequence_id', ids)
+    .select('id')
+
+  if (error) {
+    console.error('[cancelEnrollmentsForStage] err:', error.message)
+    return 0
+  }
+  return updated?.length || 0
+}
+
+/**
  * Process all due sequence enrollments.
  * Runs every 30min via cron (or on enrollment).
  */
