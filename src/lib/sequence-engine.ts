@@ -81,13 +81,19 @@ export async function processSequences(): Promise<{ processed: number; failed: n
 
       await executeStep(step, enr)
 
-      // Move to next step
+      // Move to next step.
+      // IMPORTANTE: `nextAt` e calculado a partir do `enr.next_run_at` ANTERIOR
+      // (horario que ESTE step estava agendado), NAO de Date.now(). Assim cada
+      // lead mantem sua propria linha do tempo baseada em quando entrou no stage,
+      // mesmo que o cron processe varios leads no mesmo run. Antes usava
+      // Date.now() e sincronizava todos os leads no mesmo horario.
       const nextIdx = enr.current_step + 1
       if (nextIdx >= steps.length) {
         await db.from('sequence_enrollments').update({ status: 'completed', completed_at: now }).eq('id', enr.id)
       } else {
         const nextStep = steps[nextIdx]
-        const nextAt = new Date(Date.now() + nextStep.delay_hours * 3600_000).toISOString()
+        const prevScheduled = new Date(enr.next_run_at).getTime()
+        const nextAt = new Date(prevScheduled + nextStep.delay_hours * 3600_000).toISOString()
         await db.from('sequence_enrollments').update({ current_step: nextIdx, next_run_at: nextAt }).eq('id', enr.id)
       }
       processed++
