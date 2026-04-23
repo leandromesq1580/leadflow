@@ -28,19 +28,30 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const { data, error } = await db.from('pipeline_leads').update(update).eq('id', id).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Fire-and-forget: run automations (stage_entered triggers) for this buyer
-  if (stage_id && data?.buyer_id && data?.lead_id) {
-    runAutomations([data.buyer_id]).catch(err => console.error('[Automation trigger] Error:', err))
+  // pipeline_leads NAO tem buyer_id — precisa buscar via pipelines.buyer_id.
+  // Antes o codigo usava data.buyer_id (undefined) → automations e sequences
+  // NUNCA disparavam. Bug silencioso.
+  if (stage_id && data?.lead_id && data?.pipeline_id) {
+    const { data: pipe } = await db
+      .from('pipelines')
+      .select('buyer_id')
+      .eq('id', data.pipeline_id)
+      .maybeSingle()
+    const buyerId = pipe?.buyer_id
 
-    // Cancela sequences ATIVAS que tinham como trigger o stage de ONDE o lead saiu
-    if (prevStageId && prevStageId !== stage_id) {
-      cancelEnrollmentsForStage(data.lead_id, prevStageId, data.buyer_id)
-        .catch(err => console.error('[Sequence cancel] Error:', err))
+    if (buyerId) {
+      runAutomations([buyerId]).catch(err => console.error('[Automation trigger] Error:', err))
+
+      // Cancela sequences ATIVAS cujo trigger era o stage de ONDE o lead saiu
+      if (prevStageId && prevStageId !== stage_id) {
+        cancelEnrollmentsForStage(data.lead_id, prevStageId, buyerId)
+          .catch(err => console.error('[Sequence cancel] Error:', err))
+      }
+
+      // Auto-enroll em sequences com trigger_stage_id = stage_id novo
+      autoEnrollByStage(data.lead_id, stage_id, buyerId)
+        .catch(err => console.error('[Sequence autoEnroll] Error:', err))
     }
-
-    // Auto-enroll em sequences com trigger_stage_id = stage_id novo
-    autoEnrollByStage(data.lead_id, stage_id, data.buyer_id)
-      .catch(err => console.error('[Sequence autoEnroll] Error:', err))
   }
 
   return NextResponse.json({ entry: data })
