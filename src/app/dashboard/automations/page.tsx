@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 interface Automation {
   id: string
   name: string
-  trigger_type: 'stage_entered' | 'stage_stale' | 'no_response'
+  trigger_type: 'stage_entered' | 'stage_stale' | 'no_response' | 'meeting_before'
   trigger_config: { stage_id?: string; hours?: number }
   action_type: 'send_template' | 'move_stage' | 'notify_agent'
   action_config: { template_id?: string; target_stage_id?: string }
@@ -24,6 +24,7 @@ const TRIGGER_LABELS: Record<string, string> = {
   stage_entered: 'Lead entrou em estágio',
   stage_stale: 'Lead parado em estágio',
   no_response: 'Sem resposta há N horas',
+  meeting_before: 'Antes de uma reunião',
 }
 
 const ACTION_LABELS: Record<string, string> = {
@@ -103,6 +104,7 @@ export default function AutomationsPage() {
     if (a.trigger_type === 'stage_entered' && stage) trigger = `Ao entrar em "${stage.name}"`
     if (a.trigger_type === 'stage_stale' && stage) trigger = `Parado em "${stage.name}" há ${a.trigger_config.hours || 24}h`
     if (a.trigger_type === 'no_response') trigger = `Sem resposta há ${a.trigger_config.hours || 48}h`
+    if (a.trigger_type === 'meeting_before') trigger = `${a.trigger_config.hours || 1}h antes da reunião`
 
     let action = ACTION_LABELS[a.action_type]
     if (a.action_type === 'send_template' && tpl) action = `Enviar ${tpl.type === 'whatsapp' ? '💬' : '📧'} "${tpl.name}"`
@@ -240,6 +242,7 @@ function AutomationForm({ buyerId, templates, stages, editing, onClose, onSaved 
             <option value="stage_entered">Lead entrou em estágio</option>
             <option value="stage_stale">Lead parado em estágio há N horas</option>
             <option value="no_response">Lead sem resposta há N horas</option>
+            <option value="meeting_before">N horas antes de uma reunião</option>
           </select>
 
           {(triggerType === 'stage_entered' || triggerType === 'stage_stale') && (
@@ -250,9 +253,9 @@ function AutomationForm({ buyerId, templates, stages, editing, onClose, onSaved 
             </select>
           )}
 
-          {(triggerType === 'stage_stale' || triggerType === 'no_response') && (
+          {(triggerType === 'stage_stale' || triggerType === 'no_response' || triggerType === 'meeting_before') && (
             <input type="number" value={triggerHours} onChange={e => setTriggerHours(Number(e.target.value))}
-              placeholder="Horas" min={1}
+              placeholder={triggerType === 'meeting_before' ? 'Horas antes da reunião (ex: 1)' : 'Horas'} min={1}
               className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ background: '#fff', border: '1px solid #c7d2fe' }} />
           )}
         </div>

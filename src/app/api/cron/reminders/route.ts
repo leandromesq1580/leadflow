@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
   for (const fu of fus || []) {
     const lead = (fu as any).lead
-    const when = new Date(fu.scheduled_at!).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    const when = new Date(fu.scheduled_at!).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
     await pushToBuyer(fu.buyer_id, {
       title: `⏰ Reunião às ${when}`,
       body: lead?.name ? `${lead.name}: ${fu.description?.slice(0, 60) || ''}` : fu.description?.slice(0, 80) || 'Follow-up',
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     .limit(100)
 
   for (const item of items || []) {
-    const when = new Date(item.start_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    const when = new Date(item.start_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
     const icon = item.kind === 'event' ? '📆' : '☐'
     await pushToBuyer(item.buyer_id, {
       title: `⏰ ${icon} ${when} — ${item.title.slice(0, 40)}`,
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
 
   for (const appt of appts || []) {
     const lead = (appt as any).lead
-    const when = new Date(appt.scheduled_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    const when = new Date(appt.scheduled_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
     await pushToBuyer(appt.buyer_id, {
       title: `⏰ Appointment às ${when}`,
       body: lead?.name ? `Com ${lead.name}` : 'Appointment em 15min',

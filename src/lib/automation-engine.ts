@@ -6,7 +6,7 @@ interface Automation {
   id: string
   buyer_id: string
   name: string
-  trigger_type: 'stage_entered' | 'stage_stale' | 'no_response'
+  trigger_type: 'stage_entered' | 'stage_stale' | 'no_response' | 'meeting_before'
   trigger_config: { stage_id?: string; hours?: number }
   action_type: 'send_template' | 'move_stage' | 'notify_agent'
   action_config: { template_id?: string; target_stage_id?: string }
@@ -31,13 +31,16 @@ export async function runAutomations(buyerIds?: string[]): Promise<{ ran: number
     try {
       const targets = await findTargets(auto)
       for (const target of targets) {
-        // Idempotency check
-        const { data: existing } = await db
+        // Idempotency: (automation_id, lead_id, meeting_id) — meeting_id NULL para triggers sem reunião
+        let existingQuery = db
           .from('automation_runs')
           .select('id')
           .eq('automation_id', auto.id)
           .eq('lead_id', target.lead_id)
-          .maybeSingle()
+        existingQuery = target.meeting_id
+          ? existingQuery.eq('meeting_id', target.meeting_id)
+          : existingQuery.is('meeting_id', null)
+        const { data: existing } = await existingQuery.maybeSingle()
         if (existing) continue
 
         try {
@@ -46,6 +49,8 @@ export async function runAutomations(buyerIds?: string[]): Promise<{ ran: number
             automation_id: auto.id,
             lead_id: target.lead_id,
             pipeline_lead_id: target.pipeline_lead_id || null,
+            meeting_id: target.meeting_id || null,
+            meeting_source: target.meeting_source || null,
             status: 'success',
           })
           ran++
@@ -54,6 +59,8 @@ export async function runAutomations(buyerIds?: string[]): Promise<{ ran: number
             automation_id: auto.id,
             lead_id: target.lead_id,
             pipeline_lead_id: target.pipeline_lead_id || null,
+            meeting_id: target.meeting_id || null,
+            meeting_source: target.meeting_source || null,
             status: 'failed',
             error: err?.message?.slice(0, 500) || 'Unknown error',
           })
@@ -71,6 +78,8 @@ export async function runAutomations(buyerIds?: string[]): Promise<{ ran: number
 interface Target {
   lead_id: string
   pipeline_lead_id?: string | null
+  meeting_id?: string | null
+  meeting_source?: 'appointment' | 'calendar_item' | 'follow_up' | null
 }
 
 async function findTargets(auto: Automation): Promise<Target[]> {
@@ -112,6 +121,53 @@ async function findTargets(auto: Automation): Promise<Target[]> {
       .eq('assigned_to', auto.buyer_id)
       .lte('created_at', cutoff)
     return (leads || []).map(r => ({ lead_id: r.id }))
+  }
+
+  if (auto.trigger_type === 'meeting_before') {
+    // Dispara quando uma reunião está a ~hours horas de acontecer.
+    // Cron roda a cada 30min → janela de 35min antes do alvo + 5min de folga.
+    const hours = auto.trigger_config.hours || 1
+    const targetMs = Date.now() + hours * 60 * 60 * 1000
+    const lower = new Date(targetMs - 35 * 60 * 1000).toISOString()
+    const upper = new Date(targetMs + 5 * 60 * 1000).toISOString()
+
+    const [apptRes, itemRes, fuRes] = await Promise.all([
+      db.from('appointments')
+        .select('id, lead_id')
+        .eq('buyer_id', auto.buyer_id)
+        .gte('scheduled_at', lower)
+        .lte('scheduled_at', upper)
+        .in('status', ['scheduled', 'confirmed']),
+      db.from('calendar_items')
+        .select('id, lead_id')
+        .eq('buyer_id', auto.buyer_id)
+        .eq('kind', 'event')
+        .not('lead_id', 'is', null)
+        .gte('start_at', lower)
+        .lte('start_at', upper)
+        .is('completed_at', null),
+      // Follow-ups type='meeting' — reunioes criadas no modal do lead
+      // caem aqui (nao em appointments/calendar_items)
+      db.from('follow_ups')
+        .select('id, lead_id')
+        .eq('buyer_id', auto.buyer_id)
+        .eq('type', 'meeting')
+        .gte('scheduled_at', lower)
+        .lte('scheduled_at', upper)
+        .is('completed_at', null),
+    ])
+
+    const targets: Target[] = []
+    for (const a of apptRes.data || []) {
+      if (a.lead_id) targets.push({ lead_id: a.lead_id, meeting_id: a.id, meeting_source: 'appointment' })
+    }
+    for (const c of itemRes.data || []) {
+      if (c.lead_id) targets.push({ lead_id: c.lead_id, meeting_id: c.id, meeting_source: 'calendar_item' })
+    }
+    for (const f of fuRes.data || []) {
+      if (f.lead_id) targets.push({ lead_id: f.lead_id, meeting_id: f.id, meeting_source: 'follow_up' })
+    }
+    return targets
   }
 
   return []

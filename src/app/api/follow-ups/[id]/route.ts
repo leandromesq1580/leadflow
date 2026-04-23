@@ -9,7 +9,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (body.description !== undefined) update.description = body.description
   if (body.type !== undefined) update.type = body.type
   if (body.scheduled_at !== undefined) update.scheduled_at = body.scheduled_at
-  if (body.completed) update.completed_at = new Date().toISOString()
+  if (body.completed !== undefined) {
+    update.completed_at = body.completed ? new Date().toISOString() : null
+    update.status = body.completed ? 'completed' : 'pending'
+  }
+  if (body.status !== undefined) {
+    update.status = body.status
+    update.completed_at = body.status === 'completed' ? new Date().toISOString() : null
+  }
 
   const { data, error } = await db.from('follow_ups').update(update).eq('id', id).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

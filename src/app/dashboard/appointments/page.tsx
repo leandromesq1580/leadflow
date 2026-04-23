@@ -29,6 +29,12 @@ type View = 'month' | 'week' | 'day'
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const MONTHS_PT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
+function hourLabel(h: number) {
+  const period = h >= 12 ? 'PM' : 'AM'
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return `${h12} ${period}`
+}
+
 export default function AppointmentsPage() {
   const [buyerId, setBuyerId] = useState('')
   const [events, setEvents] = useState<CalendarEvent[]>([])
@@ -192,6 +198,7 @@ export default function AppointmentsPage() {
         <LegendItem color="#0ea5e9" kind="task" label="Tarefa" />
         <LegendItem color="#8b5cf6" kind="followup" label="Reunião (follow-up)" />
         <LegendItem color="#f59e0b" kind="followup" label="Ligação (follow-up)" />
+        <LegendItem color="#ef4444" kind="followup" label="Não compareceu" />
       </div>
 
       {selectedEvent && (
@@ -230,7 +237,7 @@ function LegendItem({ color, kind, label }: { color: string; kind: EventKind; la
 
 // Unified event pill with visual distinction by kind
 function EventPill({ event, onClick, compact }: { event: CalendarEvent; onClick: () => void; compact?: boolean }) {
-  const time = new Date(event.start).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  const time = new Date(event.start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
   const kind = event.kind
 
   // Task: checkbox style
@@ -362,7 +369,7 @@ function WeekView({ anchor, events, onClick }: { anchor: Date; events: CalendarE
 
   return (
     <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-      <div className="grid" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
+      <div className="grid" style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}>
         <div className="p-2" style={{ background: '#f8f9fc' }} />
         {days.map((d, i) => {
           const isToday = d.toDateString() === today.toDateString()
@@ -377,9 +384,9 @@ function WeekView({ anchor, events, onClick }: { anchor: Date; events: CalendarE
       </div>
       <div className="overflow-y-auto max-h-[600px]">
         {hours.map(h => (
-          <div key={h} className="grid" style={{ gridTemplateColumns: '60px repeat(7, 1fr)', borderTop: '1px solid #f1f5f9' }}>
+          <div key={h} className="grid" style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))', borderTop: '1px solid #f1f5f9' }}>
             <div className="px-2 py-3 text-[10px]" style={{ color: '#94a3b8' }}>
-              {String(h).padStart(2, '0')}:00
+              {hourLabel(h)}
             </div>
             {days.map((d, di) => {
               const cell = new Date(d); cell.setHours(h)
@@ -417,9 +424,9 @@ function DayView({ anchor, events, onClick }: { anchor: Date; events: CalendarEv
             return t >= cell && t < cellEnd
           })
           return (
-            <div key={h} className="grid" style={{ gridTemplateColumns: '80px 1fr', borderTop: '1px solid #f1f5f9', minHeight: 70 }}>
+            <div key={h} className="grid" style={{ gridTemplateColumns: '80px minmax(0, 1fr)', borderTop: '1px solid #f1f5f9', minHeight: 70 }}>
               <div className="px-3 py-3 text-[11px]" style={{ color: '#94a3b8' }}>
-                {String(h).padStart(2, '0')}:00
+                {hourLabel(h)}
               </div>
               <div className="p-2 space-y-1" style={{ borderLeft: '1px solid #f1f5f9' }}>
                 {cellEvents.map(e => (
@@ -485,6 +492,20 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
     onChanged()
   }
 
+  async function toggleNoShow() {
+    setBusy(true)
+    const isNoShow = event.status === 'no_show'
+    const nextStatus = isNoShow
+      ? (event.kind === 'appointment' ? 'scheduled' : 'pending')
+      : 'no_show'
+    await fetch(endpointBase, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: nextStatus }),
+    })
+    setBusy(false)
+    onChanged()
+  }
+
   async function del() {
     if (!confirm('Deletar este item? Ação não pode ser desfeita.')) return
     setBusy(true)
@@ -530,10 +551,12 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
           </div>
           {!editing ? (
             <p className="text-[14px] font-bold mt-1" style={{ color: '#1a1a2e' }}>
-              {startDate.toLocaleString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' })}
+              {startDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+              {' às '}
+              {startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
               {event.end && (
                 <span className="text-[12px] font-medium ml-1" style={{ color: '#64748b' }}>
-                  até {new Date(event.end).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  até {new Date(event.end).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                 </span>
               )}
             </p>
@@ -578,6 +601,18 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
             }}>
             {event.completed ? '↺ Marcar pendente' : '✓ Marcar concluído'}
           </button>
+
+          {(event.kind === 'appointment' || event.kind === 'followup') && (
+            <button onClick={toggleNoShow} disabled={busy}
+              className="block w-full text-center py-2.5 rounded-xl text-[12px] font-bold"
+              style={{
+                background: '#fef2f2',
+                color: '#dc2626',
+                border: '1px solid #fecaca',
+              }}>
+              {event.status === 'no_show' ? '↺ Desfazer "Não compareceu"' : '✗ Marcar como Não Compareceu'}
+            </button>
+          )}
 
           {event.lead_id && (
             <a href={`/dashboard/pipeline?lead=${event.lead_id}`}
