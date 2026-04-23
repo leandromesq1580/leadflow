@@ -24,10 +24,33 @@ export async function GET(request: NextRequest) {
   if (!member) return NextResponse.json({ error: 'Member not found' }, { status: 404 })
 
   // 1) Se o membro tem conta propria, espelha o pipeline dele
+  // Match por 2 caminhos (nessa ordem):
+  //   a) team_members.auth_user_id → buyers.auth_user_id (link direto, rapido)
+  //   b) team_members.email → buyers.email (case insensitive) — cobre casos
+  //      em que o user criou team_member ANTES de a pessoa ter conta, e ela
+  //      se cadastrou depois sem auto-link
   let memberBuyerId: string | null = null
   if (member.auth_user_id) {
-    const { data: buyer } = await db.from('buyers').select('id').eq('auth_user_id', member.auth_user_id).single()
+    const { data: buyer } = await db.from('buyers').select('id').eq('auth_user_id', member.auth_user_id).maybeSingle()
     memberBuyerId = buyer?.id || null
+  }
+  if (!memberBuyerId && member.email) {
+    const { data: buyerByEmail } = await db
+      .from('buyers')
+      .select('id, auth_user_id')
+      .ilike('email', member.email)
+      .maybeSingle()
+    if (buyerByEmail?.id) {
+      memberBuyerId = buyerByEmail.id
+      // Backfill: linka o team_member ao auth_user_id encontrado pra evitar
+      // essa busca da proxima vez.
+      if (buyerByEmail.auth_user_id && !member.auth_user_id) {
+        await db
+          .from('team_members')
+          .update({ auth_user_id: buyerByEmail.auth_user_id })
+          .eq('id', member.id)
+      }
+    }
   }
 
   if (memberBuyerId) {
@@ -92,6 +115,27 @@ export async function GET(request: NextRequest) {
     .order('created_at', { ascending: false })
     .limit(500)
 
+  // Popula last_follow_up pra cada lead (mesma logica do caso com conta propria)
+  const leadIdsPseudo = (leadsRaw || []).map((L: any) => L.id).filter(Boolean)
+  const latestPseudo: Record<string, any> = {}
+  if (leadIdsPseudo.length > 0) {
+    const PAGE = 1000
+    for (let offset = 0; offset < 20000; offset += PAGE) {
+      const { data: fus } = await db
+        .from('follow_ups')
+        .select('lead_id, type, scheduled_at, created_at')
+        .in('lead_id', leadIdsPseudo)
+        .order('scheduled_at', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false })
+        .range(offset, offset + PAGE - 1)
+      if (!fus || fus.length === 0) break
+      for (const fu of fus) {
+        if (!latestPseudo[fu.lead_id]) latestPseudo[fu.lead_id] = fu
+      }
+      if (fus.length < PAGE) break
+    }
+  }
+
   const pseudoStageId = `pseudo-${memberId}`
   const pseudoPipeline = {
     id: `pseudo-pipe-${memberId}`,
@@ -105,7 +149,7 @@ export async function GET(request: NextRequest) {
     position: i,
     moved_at: L.created_at,
     lead: L,
-    last_follow_up: null,
+    last_follow_up: latestPseudo[L.id] || null,
   }))
 
   return NextResponse.json({
