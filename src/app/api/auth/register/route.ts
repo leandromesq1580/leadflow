@@ -99,6 +99,31 @@ export async function POST(request: NextRequest) {
       .eq('email', email)
       .is('auth_user_id', null)
 
+    // Cria pipeline default + stages pro novo buyer. Sem isso, leads
+    // atribuidos a ele (direto ou via team_member) nao aparecem no kanban.
+    if (data?.id) {
+      const { data: pipe } = await supabase
+        .from('pipelines')
+        .insert({ buyer_id: data.id, name: 'Vendas', is_default: true })
+        .select('id')
+        .single()
+
+      if (pipe?.id) {
+        const DEFAULT_STAGES = [
+          { name: 'Novo Lead', color: '#3b82f6', position: 0 },
+          { name: 'Atendido', color: '#f59e0b', position: 1 },
+          { name: 'Qualificado', color: '#10b981', position: 2 },
+          { name: 'Envio Proposta', color: '#8b5cf6', position: 3 },
+          { name: 'Negociação', color: '#f97316', position: 4 },
+          { name: 'Fechado/Ganho', color: '#059669', position: 5 },
+          { name: 'Perdido', color: '#ef4444', position: 6 },
+        ]
+        await supabase
+          .from('pipeline_stages')
+          .insert(DEFAULT_STAGES.map(s => ({ ...s, pipeline_id: pipe.id })))
+      }
+    }
+
     return NextResponse.json({ buyer: data })
   } catch (error) {
     console.error('[Register] Error:', error)
