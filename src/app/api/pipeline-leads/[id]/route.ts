@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { runAutomations } from '@/lib/automation-engine'
-import { autoEnrollByStage, cancelEnrollmentsForStage } from '@/lib/sequence-engine'
+import { autoEnrollByStage, cancelEnrollmentsForStage, processSequencesForLead } from '@/lib/sequence-engine'
 
 /** PATCH /api/pipeline-leads/[id] — move lead to different stage */
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -48,9 +48,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           .catch(err => console.error('[Sequence cancel] Error:', err))
       }
 
-      // Auto-enroll em sequences com trigger_stage_id = stage_id novo
-      autoEnrollByStage(data.lead_id, stage_id, buyerId)
-        .catch(err => console.error('[Sequence autoEnroll] Error:', err))
+      // Auto-enroll em sequences com trigger_stage_id = stage_id novo.
+      // Apos o enroll, processa imediato pra steps com delay=0 ('Imediatamente')
+      // dispararem sem esperar o cron de 5min.
+      const leadIdForEnroll = data.lead_id
+      autoEnrollByStage(leadIdForEnroll, stage_id, buyerId)
+        .then(() => processSequencesForLead(leadIdForEnroll))
+        .catch(err => console.error('[Sequence autoEnroll/process] Error:', err))
     }
   }
 

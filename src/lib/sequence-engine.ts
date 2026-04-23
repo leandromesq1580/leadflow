@@ -41,6 +41,62 @@ export async function autoEnrollByStage(
 }
 
 /**
+ * Processa enrollments due de um lead especifico (usado inline apos um
+ * autoEnroll pra disparar imediatamente steps com delay=0, sem esperar
+ * o cron de 5min). Equivalente a processSequences() mas escopado ao lead.
+ */
+export async function processSequencesForLead(leadId: string): Promise<number> {
+  const db = createAdminClient()
+  const now = new Date().toISOString()
+
+  const { data: due } = await db
+    .from('sequence_enrollments')
+    .select('*, sequences(*)')
+    .eq('status', 'active')
+    .eq('lead_id', leadId)
+    .lte('next_run_at', now)
+    .limit(50)
+
+  if (!due || due.length === 0) return 0
+
+  let processed = 0
+  for (const enr of due) {
+    try {
+      const { data: steps } = await db
+        .from('sequence_steps')
+        .select('*')
+        .eq('sequence_id', enr.sequence_id)
+        .order('step_order')
+      if (!steps || steps.length === 0) {
+        await db.from('sequence_enrollments').update({ status: 'completed', completed_at: now }).eq('id', enr.id)
+        continue
+      }
+      const step = steps[enr.current_step]
+      if (!step) {
+        await db.from('sequence_enrollments').update({ status: 'completed', completed_at: now }).eq('id', enr.id)
+        continue
+      }
+      await executeStep(step, enr)
+      const nextIdx = enr.current_step + 1
+      if (nextIdx >= steps.length) {
+        await db.from('sequence_enrollments').update({ status: 'completed', completed_at: now }).eq('id', enr.id)
+      } else {
+        const nextStep = steps[nextIdx]
+        const prevScheduled = new Date(enr.next_run_at).getTime()
+        const nextAt = new Date(prevScheduled + nextStep.delay_hours * 3600_000).toISOString()
+        await db.from('sequence_enrollments').update({ current_step: nextIdx, next_run_at: nextAt }).eq('id', enr.id)
+      }
+      processed++
+    } catch (err: any) {
+      console.error(`[processSequencesForLead ${enr.id}] err:`, err?.message)
+      const retry = new Date(Date.now() + 3600_000).toISOString()
+      await db.from('sequence_enrollments').update({ next_run_at: retry }).eq('id', enr.id)
+    }
+  }
+  return processed
+}
+
+/**
  * Cancela enrollments ativos de um lead em sequences cujo trigger_stage_id
  * era o stage do qual o lead acabou de sair. Usa status 'stopped'.
  *

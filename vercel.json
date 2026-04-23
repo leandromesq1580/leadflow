@@ -3,6 +3,18 @@
     {
       "path": "/api/cron/stale-leads",
       "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/sequences?secret=leadflow-poll-2026",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/automations?secret=leadflow-poll-2026",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/reminders?secret=leadflow-poll-2026",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
