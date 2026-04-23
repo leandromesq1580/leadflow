@@ -4,7 +4,13 @@ import { Resend } from 'resend'
 
 /**
  * Enrolla o lead em todas as sequences ativas cujo trigger_stage_id bate com o stage
- * que ele acabou de entrar. Idempotente (unique constraint sequence+lead).
+ * que ele acabou de entrar.
+ *
+ * IMPORTANTE: tabela tem UNIQUE (sequence_id, lead_id). Se o lead ja foi enrolled
+ * nessa sequence antes (mesmo que status 'stopped' ou 'completed'), INSERT falha.
+ * Nesse caso, REATIVAMOS o enrollment existente (current_step=0, status=active,
+ * next_run_at=agora+delay). Isso garante que quando o user tira um lead da coluna
+ * e bota de volta, a sequence re-dispara do zero.
  */
 export async function autoEnrollByStage(
   leadId: string,
@@ -29,13 +35,39 @@ export async function autoEnrollByStage(
       .order('step_order')
       .limit(1)
       .maybeSingle()
-    const nextAt = new Date(Date.now() + ((firstStep?.delay_hours || 0) * 3600_000)).toISOString()
-    const { error } = await db.from('sequence_enrollments').insert({
-      sequence_id: s.id, lead_id: leadId, buyer_id: buyerId,
-      current_step: 0, next_run_at: nextAt, status: 'active',
-    })
-    if (!error || (error as any).code === '23505') enrolled++
-    else console.error('[autoEnroll] insert err:', error.message)
+    const nowMs = Date.now()
+    const nextAt = new Date(nowMs + ((firstStep?.delay_hours || 0) * 3600_000)).toISOString()
+
+    // Checa se ja existe enrollment pra esse (sequence, lead)
+    const { data: existing } = await db
+      .from('sequence_enrollments')
+      .select('id, status')
+      .eq('sequence_id', s.id)
+      .eq('lead_id', leadId)
+      .maybeSingle()
+
+    if (existing) {
+      // Reativa (independente de status anterior — active/completed/stopped/paused)
+      const { error: updErr } = await db
+        .from('sequence_enrollments')
+        .update({
+          current_step: 0,
+          status: 'active',
+          next_run_at: nextAt,
+          enrolled_at: new Date(nowMs).toISOString(),
+          completed_at: null,
+        })
+        .eq('id', existing.id)
+      if (updErr) console.error('[autoEnroll] reactivate err:', updErr.message)
+      else enrolled++
+    } else {
+      const { error } = await db.from('sequence_enrollments').insert({
+        sequence_id: s.id, lead_id: leadId, buyer_id: buyerId,
+        current_step: 0, next_run_at: nextAt, status: 'active',
+      })
+      if (!error || (error as any).code === '23505') enrolled++
+      else console.error('[autoEnroll] insert err:', error.message)
+    }
   }
   return enrolled
 }
