@@ -61,15 +61,73 @@ export async function GET(request: NextRequest) {
   }
 
   if (memberBuyerId) {
-    // Pipeline default do buyer proprio (so le — nao cria se nao existir,
-    // porque criar aqui quebra o espelho: o pipe novo fica vazio e o usuario
-    // ve colunas default em vez dos leads que a agencia atribuiu).
-    const { data: pipe } = await db
+    // Pipeline default do buyer proprio. Se nao existir, cria na hora com
+    // stages padrao E TAMBEM inseri em pipeline_leads todos os leads que a
+    // agencia atribuiu ao membro (assigned_to_member = memberId), no primeiro
+    // stage "Novo Lead". Assim o dono ve o pipeline completo com os leads ja
+    // distribuidos (em vez de colunas vazias).
+    let { data: pipe } = await db
       .from('pipelines')
       .select('id, name, is_default, stages:pipeline_stages(id, name, color, position)')
       .eq('buyer_id', memberBuyerId)
       .eq('is_default', true)
       .maybeSingle()
+
+    if (!pipe?.id) {
+      const { data: newPipe } = await db
+        .from('pipelines')
+        .insert({ buyer_id: memberBuyerId, name: 'Vendas', is_default: true })
+        .select('id')
+        .single()
+
+      if (newPipe?.id) {
+        const DEFAULT_STAGES = [
+          { name: 'Novo Lead', color: '#3b82f6', position: 0 },
+          { name: 'Atendido', color: '#f59e0b', position: 1 },
+          { name: 'Qualificado', color: '#10b981', position: 2 },
+          { name: 'Envio Proposta', color: '#8b5cf6', position: 3 },
+          { name: 'Negociação', color: '#f97316', position: 4 },
+          { name: 'Fechado/Ganho', color: '#059669', position: 5 },
+          { name: 'Perdido', color: '#ef4444', position: 6 },
+        ]
+        const { data: createdStages } = await db
+          .from('pipeline_stages')
+          .insert(DEFAULT_STAGES.map(s => ({ ...s, pipeline_id: newPipe.id })))
+          .select('id, position')
+
+        const firstStage = (createdStages || []).find((s: any) => s.position === 0)
+        if (firstStage) {
+          // Bootstrap: todos os leads assigned_to_member do membro caem no Novo Lead
+          const { data: memberLeads } = await db
+            .from('leads')
+            .select('id, created_at')
+            .eq('assigned_to_member', memberId)
+            .order('created_at', { ascending: false })
+            .limit(2000)
+
+          if (memberLeads && memberLeads.length > 0) {
+            const entries = memberLeads.map((l: any, i: number) => ({
+              lead_id: l.id,
+              pipeline_id: newPipe.id,
+              stage_id: firstStage.id,
+              position: i,
+              moved_at: l.created_at,
+            }))
+            await db
+              .from('pipeline_leads')
+              .upsert(entries, { onConflict: 'lead_id,pipeline_id' })
+          }
+        }
+
+        // Re-busca pipe com stages populados
+        const { data: reloaded } = await db
+          .from('pipelines')
+          .select('id, name, is_default, stages:pipeline_stages(id, name, color, position)')
+          .eq('id', newPipe.id)
+          .maybeSingle()
+        pipe = reloaded || null
+      }
+    }
 
     if (pipe?.id) {
       const pipeline = {
