@@ -584,7 +584,7 @@ export default function PipelinePage() {
       </div>
 
       {/* Kanban Board */}
-      <div className="overflow-x-auto pb-6 -mx-4 px-4" style={{ scrollbarWidth: 'thin' }}>
+      <div className="overflow-auto pb-2 -mx-4 px-4" style={{ scrollbarWidth: 'thin', height: 'calc(100vh - 260px)', minHeight: 500 }}>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}

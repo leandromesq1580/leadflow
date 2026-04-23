@@ -34,25 +34,27 @@ export function KanbanColumn({ stage, items, onLeadClick, unreadCounts = {}, tea
 
   return (
     <div className="flex-shrink-0 w-[290px]">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3 px-1">
-        <div className="flex items-center gap-2.5">
-          <div className="w-2.5 h-2.5 rounded-full" style={{ background: stage.color, boxShadow: `0 0 8px ${stage.color}40` }} />
-          <h3 className="text-[13px] font-bold tracking-tight" style={{ color: '#1a1a2e' }}>{stage.name}</h3>
+      {/* Sticky header (title + accent bar) */}
+      <div className="sticky top-0 z-20 pt-1 pb-0" style={{ background: '#f8f9fc' }}>
+        <div className="flex items-center justify-between mb-3 px-1">
+          <div className="flex items-center gap-2.5">
+            <div className="w-2.5 h-2.5 rounded-full" style={{ background: stage.color, boxShadow: `0 0 8px ${stage.color}40` }} />
+            <h3 className="text-[13px] font-bold tracking-tight" style={{ color: '#1a1a2e' }}>{stage.name}</h3>
+          </div>
+          <span className="text-[11px] font-extrabold w-6 h-6 rounded-lg flex items-center justify-center"
+            style={{ background: `${stage.color}15`, color: stage.color }}>
+            {items.length}
+          </span>
         </div>
-        <span className="text-[11px] font-extrabold w-6 h-6 rounded-lg flex items-center justify-center"
-          style={{ background: `${stage.color}15`, color: stage.color }}>
-          {items.length}
-        </span>
-      </div>
 
-      {/* Top accent bar */}
-      <div className="h-[3px] rounded-t-xl mb-0" style={{ background: `linear-gradient(90deg, ${stage.color}, ${stage.color}60)` }} />
+        {/* Top accent bar */}
+        <div className="h-[3px] rounded-t-xl" style={{ background: `linear-gradient(90deg, ${stage.color}, ${stage.color}60)` }} />
+      </div>
 
       {/* Column body */}
       <div
         ref={setNodeRef}
-        className="rounded-b-xl p-2.5 min-h-[calc(100vh-220px)] transition-all duration-200"
+        className="rounded-b-xl p-2.5 min-h-[calc(100vh-320px)] transition-all duration-200"
         style={{
           background: isOver ? `${stage.color}08` : '#f4f6f9',
           border: isOver ? `2px dashed ${stage.color}50` : '2px solid transparent',
