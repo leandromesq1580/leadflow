@@ -39,7 +39,10 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   const [uploading, setUploading] = useState(false)
   const [showNewFU, setShowNewFU] = useState(false)
   const [editingFU, setEditingFU] = useState<{ id: string; text: string } | null>(null)
-  const [fuType, setFuType] = useState('note')
+  // Default 'call' porque ~96% dos follow-ups da plataforma sao ligacao.
+  // Antes era 'note' e users esqueciam de clicar no botao 'Ligacao' antes
+  // de salvar, gerando ligacoes salvas como nota (sem badge LIGAÇÃO no card).
+  const [fuType, setFuType] = useState('call')
   const [fuDesc, setFuDesc] = useState('')
   const [fuDate, setFuDate] = useState('')
   const [fuTime, setFuTime] = useState('')
@@ -174,6 +177,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
     setFuDesc('')
     setFuDate('')
     setFuTime('')
+    setFuType('call') // reseta pra ligacao (padrao mais comum) — pra proxima vez
     setShowNewFU(false)
     loadFollowUps()
   }
@@ -518,7 +522,14 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               {/* New follow-up form */}
               {showNewFU && (
                 <div className="rounded-xl p-5 mb-5" style={{ background: '#fafbff', border: '1px solid #e0e7ff' }}>
-                  <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: '#94a3b8' }}>Tipo</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: '#94a3b8' }}>
+                    Tipo · <span style={{ color: '#6366f1' }}>
+                      {(() => {
+                        const cur = FOLLOW_UP_TYPES.find(t => t.key === fuType)
+                        return cur ? `${cur.icon} ${cur.label} selecionado` : 'selecione'
+                      })()}
+                    </span>
+                  </p>
                   <div className="flex gap-1.5 mb-4 flex-wrap">
                     {FOLLOW_UP_TYPES.map(t => (
                       <button key={t.key} onClick={() => setFuType(t.key)}
