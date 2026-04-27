@@ -84,12 +84,21 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
   }, [messages.length])
 
   async function load() {
-    const r = await fetch(`/api/whatsapp/messages?lead_id=${leadId}`)
-    if (r.ok) {
-      const d = await r.json()
-      setMessages(d.messages || [])
+    // try/finally garante que setLoading(false) sempre roda, mesmo se a fetch
+    // rejeitar (network glitch, extension do browser bloqueando, etc).
+    // Sem isso, qualquer falha temporaria deixa o modal travado em
+    // 'Carregando conversa...' pra sempre — ate o user fechar e abrir de novo.
+    try {
+      const r = await fetch(`/api/whatsapp/messages?lead_id=${leadId}`)
+      if (r.ok) {
+        const d = await r.json()
+        setMessages(d.messages || [])
+      }
+    } catch (err) {
+      console.error('[WaInbox] Falha ao carregar mensagens:', err)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   async function sendText() {
