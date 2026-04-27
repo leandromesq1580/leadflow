@@ -32,7 +32,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         .from('follow_ups')
         .select('lead_id, type, scheduled_at, created_at')
         .in('lead_id', leadIds)
-        .order('scheduled_at', { ascending: false, nullsFirst: false })
+        // Ordena SOMENTE por created_at DESC. Antes ordenava por scheduled_at
+        // primeiro, mas isso fazia um follow-up antigo COM scheduled_at vencer
+        // um follow-up RECENTE sem scheduled_at — badge no card mostrava data
+        // antiga em vez da ultima atividade.
         .order('created_at', { ascending: false })
         .range(offset, offset + PAGE - 1)
       if (fuErr || !fus || fus.length === 0) break

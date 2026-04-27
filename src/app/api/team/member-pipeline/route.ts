@@ -162,7 +162,8 @@ export async function GET(request: NextRequest) {
             .from('follow_ups')
             .select('lead_id, type, scheduled_at, created_at')
             .in('lead_id', leadIds)
-            .order('scheduled_at', { ascending: false, nullsFirst: false })
+            // Ordena SOMENTE por created_at DESC (data do registro). Ver
+            // /api/pipelines/[id]/leads pro motivo.
             .order('created_at', { ascending: false })
             .range(offset, offset + PAGE - 1)
           if (!fus || fus.length === 0) break
