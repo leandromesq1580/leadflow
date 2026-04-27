@@ -39,6 +39,29 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       .maybeSingle()
     const buyerId = pipe?.buyer_id
 
+    // Se o lead foi movido pra um stage do tipo "No Show" (cliente faltou),
+    // cancela follow_ups type=meeting com scheduled_at futuro. Sem isso, a
+    // automacao 'meeting_before' continua disparando 'Aviso de Reuniao' pra
+    // reuniao que ja nao vai acontecer (ex: Rodrigo Teixeira em No Show
+    // recebendo aviso de reuniao agendada faz 1 mes).
+    const { data: newStage } = await db
+      .from('pipeline_stages')
+      .select('name')
+      .eq('id', stage_id)
+      .maybeSingle()
+    const stageName = (newStage?.name || '').toLowerCase().trim()
+    const isNoShow = stageName.includes('no show') || stageName.includes('noshow') || stageName.includes('no-show')
+    if (isNoShow) {
+      const nowIso = new Date().toISOString()
+      await db
+        .from('follow_ups')
+        .update({ status: 'no_show', completed_at: nowIso })
+        .eq('lead_id', data.lead_id)
+        .eq('type', 'meeting')
+        .gt('scheduled_at', nowIso)
+        .is('completed_at', null)
+    }
+
     if (buyerId) {
       runAutomations([buyerId]).catch(err => console.error('[Automation trigger] Error:', err))
 
