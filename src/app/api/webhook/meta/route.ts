@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { distributeLeadToNextBuyer } from '@/lib/distribute'
+import { distributeLeadToNextBuyer, forceAssignRoundRobin } from '@/lib/distribute'
+import { stateFromPhone } from '@/lib/us-area-codes'
 
 /**
  * GET /api/webhook/meta — Verification
@@ -127,7 +128,9 @@ export async function POST(request: NextRequest) {
     const finalEmail = leadData?.email || getField('email') || ''
     const finalPhone = leadData?.phone || getField('phone') || getField('phone_number') || ''
     const finalCity = leadData?.city || getField('city') || ''
-    const finalState = leadData?.state || getField('state') || ''
+    // Estado: prefere o que veio do form, senao infere pelo DDD do telefone (US),
+    // fallback FL. Igual ao /api/poll-leads pra manter consistencia.
+    const finalState = leadData?.state || getField('state') || stateFromPhone(finalPhone) || 'FL'
     const finalInterest = leadData?.interest || getField('interest') || 'Seguro de vida'
 
     // Save lead
@@ -156,10 +159,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Save failed' }, { status: 500 })
     }
 
-    console.log(`[Meta Webhook] Lead saved: ${newLead.id} - ${leadData?.name}`)
+    console.log(`[Meta Webhook] Lead saved: ${newLead.id} - ${finalName}`)
 
-    // Distribute
-    const buyer = await distributeLeadToNextBuyer(newLead)
+    // Distribuicao:
+    // - Se FORCE_ASSIGN_TO_EMAILS (CSV) estiver setado → round-robin SOMENTE entre
+    //   esses emails. Mesma logica do /api/poll-leads pra manter Regiane/Fernanda
+    //   recebendo alternado tambem via webhook quando o app sair de Dev mode.
+    // - Caso contrario → distribuicao normal por creditos/estado.
+    const forceEmails = (process.env.FORCE_ASSIGN_TO_EMAILS || '')
+      .split(',').map(e => e.trim()).filter(Boolean)
+
+    let buyer = null
+    if (forceEmails.length > 0) {
+      buyer = await forceAssignRoundRobin(newLead, forceEmails)
+    }
+    if (!buyer) {
+      buyer = await distributeLeadToNextBuyer(newLead)
+    }
     if (buyer) {
       console.log(`[Meta Webhook] Distributed to ${buyer.name}`)
     }
