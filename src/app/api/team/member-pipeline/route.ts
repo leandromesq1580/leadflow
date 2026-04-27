@@ -135,11 +135,22 @@ export async function GET(request: NextRequest) {
         stages: (pipe.stages || []).sort((a: any, b: any) => a.position - b.position),
       }
 
-      const { data: plRaw } = await db
+      const { data: plRawAll } = await db
         .from('pipeline_leads')
-        .select('id, stage_id, position, moved_at, lead:leads(id, name, email, phone, city, state, interest, type, status, created_at, contract_closed, policy_value, assigned_to_member)')
+        .select('id, stage_id, position, moved_at, lead:leads(id, name, email, phone, city, state, interest, type, status, created_at, contract_closed, policy_value, assigned_to, assigned_to_member)')
         .eq('pipeline_id', pipe.id)
         .order('position')
+
+      // Filtra: so leads que AINDA pertencem ao member.
+      // - lead.assigned_to_member = memberId (atribuido como team_member da agencia)
+      // - OU lead.assigned_to = memberBuyerId (lead proprio dele)
+      // Sem isso, pipeline_leads orfaos (ex: lead foi desatribuido e voltou
+      // pra agencia) continuariam aparecendo fantasma no espelho.
+      const plRaw = (plRawAll || []).filter((pl: any) => {
+        const L = pl.lead
+        if (!L) return false
+        return L.assigned_to_member === memberId || L.assigned_to === memberBuyerId
+      })
 
       // Anexa ultimo follow-up (pagina pra driblar limit 1000 do PostgREST)
       const leadIds = (plRaw || []).map((pl: any) => pl.lead?.id).filter(Boolean)

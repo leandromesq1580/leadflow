@@ -71,12 +71,17 @@ export async function PATCH(
   // Use admin client to bypass RLS for updates
   const adminDb = createAdminClient()
 
-  // Se estiver removendo o membro atribuido (voltar pra mim), prepara pra migrar WA de volta
+  // Se estiver removendo o membro atribuido (voltar pra mim), prepara pra:
+  //  - migrar WA de volta pro owner
+  //  - REMOVER o pipeline_lead do pipe do member (espelho fica zerado)
+  //  - RESTAURAR pipeline_lead no pipe default do owner (lead volta pro kanban dele)
   let movingBackToOwner: string | null = null
+  let prevMemberId: string | null = null
   if ('assigned_to_member' in body && body.assigned_to_member === null) {
     const { data: leadBefore } = await adminDb.from('leads').select('assigned_to, assigned_to_member').eq('id', id).maybeSingle()
     if (leadBefore?.assigned_to && leadBefore.assigned_to_member) {
       movingBackToOwner = leadBefore.assigned_to as string
+      prevMemberId = leadBefore.assigned_to_member as string
     }
   }
 
@@ -105,6 +110,58 @@ export async function PATCH(
   if (movingBackToOwner) {
     const migrated = await migrateWhatsAppOwnership(adminDb, id, movingBackToOwner)
     if (migrated > 0) console.log(`[Lead] Unassign: migrated ${migrated} WA messages back to ${movingBackToOwner}`)
+
+    // Remove o lead do pipeline do team_member antigo (se ele tem conta propria
+    // e tinha o lead no kanban dele). Espelha o que /api/team/assign faz no
+    // sentido contrario.
+    if (prevMemberId) {
+      const { data: prevMember } = await adminDb
+        .from('team_members')
+        .select('auth_user_id, email')
+        .eq('id', prevMemberId)
+        .maybeSingle()
+
+      let prevMemberBuyerId: string | null = null
+      if (prevMember?.auth_user_id) {
+        const { data: b } = await adminDb.from('buyers').select('id').eq('auth_user_id', prevMember.auth_user_id).maybeSingle()
+        prevMemberBuyerId = b?.id || null
+      }
+      if (!prevMemberBuyerId && prevMember?.email) {
+        const { data: b } = await adminDb.from('buyers').select('id').ilike('email', prevMember.email).maybeSingle()
+        prevMemberBuyerId = b?.id || null
+      }
+
+      if (prevMemberBuyerId) {
+        const { data: prevPipes } = await adminDb
+          .from('pipelines')
+          .select('id')
+          .eq('buyer_id', prevMemberBuyerId)
+        const prevPipeIds = (prevPipes || []).map(p => p.id)
+        if (prevPipeIds.length > 0) {
+          await adminDb.from('pipeline_leads').delete()
+            .eq('lead_id', id)
+            .in('pipeline_id', prevPipeIds)
+        }
+      }
+    }
+
+    // Restaura o lead no pipe default do owner (se nao estiver la), Novo Lead.
+    const { data: ownerPipe } = await adminDb
+      .from('pipelines')
+      .select('id, stages:pipeline_stages(id, position)')
+      .eq('buyer_id', movingBackToOwner)
+      .eq('is_default', true)
+      .maybeSingle()
+    if (ownerPipe?.id && ownerPipe.stages?.length) {
+      const firstStage = (ownerPipe.stages as any[]).sort((a: any, b: any) => a.position - b.position)[0]
+      await adminDb.from('pipeline_leads').upsert({
+        lead_id: id,
+        pipeline_id: ownerPipe.id,
+        stage_id: firstStage.id,
+        position: 0,
+        moved_at: new Date().toISOString(),
+      }, { onConflict: 'lead_id,pipeline_id' })
+    }
   }
 
   return NextResponse.json({ lead: data })
