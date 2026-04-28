@@ -52,6 +52,28 @@ function useWhatsAppUnread(buyerId?: string): number {
   return count
 }
 
+function useUpcomingMeetings(buyerId?: string): number {
+  const [count, setCount] = useState(0)
+
+  useEffect(() => {
+    if (!buyerId) return
+    let cancelled = false
+    const load = async () => {
+      try {
+        const r = await fetch(`/api/appointments/upcoming?buyer_id=${buyerId}&minutes=90`, { cache: 'no-store' })
+        if (!r.ok) return
+        const d = await r.json()
+        if (!cancelled) setCount(Array.isArray(d.events) ? d.events.length : 0)
+      } catch {}
+    }
+    load()
+    const t = setInterval(load, 30000)
+    return () => { cancelled = true; clearInterval(t) }
+  }, [buyerId])
+
+  return count
+}
+
 // Lead4Pro brand mark — dark rounded tile + amber gradient bolt
 function BrandMark({ size = 32 }: { size?: number }) {
   return (
@@ -72,6 +94,7 @@ export function Sidebar({ type, userName, isAgency, buyerId }: SidebarProps) {
   const pathname = usePathname()
   const t = useT()
   const waUnread = useWhatsAppUnread(type === 'buyer' ? buyerId : undefined)
+  const upcomingMeetings = useUpcomingMeetings(type === 'buyer' ? buyerId : undefined)
 
   const buyerLinks = [
     { href: '/dashboard', label: t.sidebar.overview, icon: '📊' },
@@ -136,6 +159,7 @@ export function Sidebar({ type, userName, isAgency, buyerId }: SidebarProps) {
               (link.href !== '/dashboard' && link.href !== '/admin' && pathname.startsWith(link.href))
 
             const showBadge = link.href === '/dashboard/whatsapp' && waUnread > 0
+            const showApptBadge = link.href === '/dashboard/appointments' && upcomingMeetings > 0
             return (
               <Link
                 key={link.href}
@@ -152,6 +176,12 @@ export function Sidebar({ type, userName, isAgency, buyerId }: SidebarProps) {
                   <span className="text-[10px] font-extrabold text-white rounded-full flex items-center justify-center"
                     style={{ background: '#ef4444', minWidth: 18, height: 18, padding: '0 5px', boxShadow: '0 1px 3px rgba(239,68,68,0.35)' }}>
                     {waUnread > 99 ? '99+' : waUnread}
+                  </span>
+                )}
+                {showApptBadge && (
+                  <span className="text-[10px] font-extrabold text-white rounded-full flex items-center justify-center"
+                    style={{ background: '#6366f1', minWidth: 18, height: 18, padding: '0 5px', boxShadow: '0 1px 3px rgba(99,102,241,0.35)' }}>
+                    {upcomingMeetings > 99 ? '99+' : upcomingMeetings}
                   </span>
                 )}
               </Link>
