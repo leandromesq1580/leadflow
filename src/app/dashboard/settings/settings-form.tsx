@@ -235,6 +235,15 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, allState
               <span className="absolute w-5 h-5 bg-white rounded-full top-0.5 shadow" style={{ left: notifSms ? '22px' : '2px', transition: 'left .2s' }} />
             </button>
           </div>
+
+          <a href="/dashboard/settings/notifications"
+            className="flex items-center justify-between p-3 rounded-xl mt-2 transition-all hover:opacity-90"
+            style={{ background: 'linear-gradient(135deg, #eef2ff, #f5f3ff)', border: '1px solid #c7d2fe', textDecoration: 'none' }}>
+            <div>
+              <p className="text-[13px] font-bold" style={{ color: '#4338ca' }}>🔔 Gestão de avisos de reunião →</p>
+              <p className="text-[11px] mt-0.5" style={{ color: '#6366f1' }}>Banner ao vivo, alerta sonoro, push do navegador, WhatsApp lembrete</p>
+            </div>
+          </a>
         </div>
       </div>
 

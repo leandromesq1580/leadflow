@@ -84,6 +84,7 @@ export function Sidebar({ type, userName, isAgency, buyerId }: SidebarProps) {
     { href: '/dashboard/automations', label: t.sidebar.automations, icon: '⚡' },
     { href: '/dashboard/sequences', label: t.sidebar.sequences, icon: '🔁' },
     { href: '/dashboard/appointments', label: t.sidebar.appointments, icon: '📅' },
+    { href: '/dashboard/settings/notifications', label: t._locale === 'en' ? 'Reminders' : t._locale === 'es' ? 'Avisos' : 'Avisos', icon: '🔔' },
     { href: '/dashboard/team', label: t.sidebar.team, icon: '👥' },
     { href: '/dashboard/referral', label: t.sidebar.referral, icon: '🎁' },
     { href: '/dashboard/credits', label: t.sidebar.credits, icon: '💳' },
