@@ -65,10 +65,28 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
       fetch(`/api/pipelines?buyer_id=${buyerId}`).then(r => r.json()),
       fetch(`/api/leads/${leadId}/pipeline`).then(r => r.ok ? r.json() : { pipelineLead: null }),
     ])
-    setPipelines(pipesRes.pipelines || [])
-    setPipelineLead(plRes.pipelineLead || null)
-    setPendingStageId(plRes.pipelineLead?.stage_id || null)
-    setPendingPipelineId(plRes.pipelineLead?.pipeline?.id || null)
+    let pipes: any[] = pipesRes.pipelines || []
+    const pl = plRes.pipelineLead || null
+
+    // Cross-buyer fix: lead pode estar em pipeline de outro buyer (ex: team member
+    // vendo lead que ainda está na pipeline da agência). Se a pipeline atual do
+    // lead não estiver na lista do buyer logado, busca ela diretamente pra que
+    // os stages apareçam no dropdown.
+    const currentPipeId = pl?.pipeline?.id
+    if (currentPipeId && !pipes.some((p: any) => p.id === currentPipeId)) {
+      try {
+        const extraRes = await fetch(`/api/pipelines/${currentPipeId}`)
+        if (extraRes.ok) {
+          const extra = await extraRes.json()
+          if (extra?.pipeline) pipes = [...pipes, extra.pipeline]
+        }
+      } catch {}
+    }
+
+    setPipelines(pipes)
+    setPipelineLead(pl)
+    setPendingStageId(pl?.stage_id || null)
+    setPendingPipelineId(pl?.pipeline?.id || null)
   }
 
   async function loadFollowUps() {

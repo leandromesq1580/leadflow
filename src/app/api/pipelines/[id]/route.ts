@@ -1,6 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+/**
+ * GET /api/pipelines/[id] — retorna 1 pipeline com stages (pra cross-buyer access:
+ * team member vendo lead na pipeline da agência).
+ */
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const db = createAdminClient()
+  const { data } = await db
+    .from('pipelines')
+    .select('id, name, is_default, buyer_id, stages:pipeline_stages(id, name, color, position)')
+    .eq('id', id)
+    .maybeSingle()
+  if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  const pipeline = {
+    ...data,
+    stages: (data.stages || []).sort((a: any, b: any) => a.position - b.position),
+  }
+  return NextResponse.json({ pipeline })
+}
+
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const { name, is_default } = await request.json()
