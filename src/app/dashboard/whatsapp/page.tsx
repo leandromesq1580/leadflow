@@ -88,10 +88,11 @@ export default function WhatsAppPage() {
     setLoading(false)
   }
 
-  // Fallback poll lento caso Realtime nao funcione
+  // Fallback poll caso Realtime nao funcione — 10s pra ter responsividade
+  // razoavel sem depender so do WebSocket
   useEffect(() => {
     if (!buyerId) return
-    const t = setInterval(() => loadConversations(buyerId), 60000)
+    const t = setInterval(() => loadConversations(buyerId), 10000)
     return () => clearInterval(t)
   }, [buyerId])
 
