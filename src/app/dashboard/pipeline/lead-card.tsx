@@ -89,7 +89,9 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
     data: { lead },
   })
 
-  const stale = getStaleness(movedAt)
+  // Stale considera atividade mais recente: stage move OR último follow-up.
+  // Sem isso, lead com follow-up de hoje mas movido há 6 dias mostrava "6d parado".
+  const stale = getStaleness(movedAt, lastFollowUp?.scheduled_at, lastFollowUp?.created_at)
   const showStale = stale.level !== 'fresh' && !lead.contract_closed
   const borderColor = stale.level === 'critical' ? '#dc2626' : stale.level === 'alert' ? '#ea580c' : (stageColor || '#6366f1')
 
