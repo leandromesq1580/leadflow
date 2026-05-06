@@ -104,14 +104,61 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   async function uploadFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+
+    const MAX = 30 * 1024 * 1024
+    if (file.size > MAX) {
+      alert(`Arquivo muito grande (${(file.size / 1024 / 1024).toFixed(1)}MB). Máximo ${MAX / 1024 / 1024}MB.`)
+      e.target.value = ''
+      return
+    }
+
     setUploading(true)
-    const form = new FormData()
-    form.append('file', file)
-    form.append('buyer_id', buyerId)
-    await fetch(`/api/leads/${leadId}/attachments`, { method: 'POST', body: form })
-    setUploading(false)
-    loadAttachments()
-    e.target.value = ''
+    try {
+      // 1) Pede signed URL pro server (bypassa o limit de 4.5MB do Vercel)
+      const urlRes = await fetch(`/api/leads/${leadId}/attachments/upload-url`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file_name: file.name, file_size: file.size, buyer_id: buyerId }),
+      })
+      if (!urlRes.ok) {
+        const d = await urlRes.json().catch(() => ({}))
+        throw new Error(d.error || `Falha ao gerar upload URL (HTTP ${urlRes.status})`)
+      }
+      const { signedUrl, path } = await urlRes.json()
+
+      // 2) PUT direto no Supabase Storage
+      const upRes = await fetch(signedUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        body: file,
+      })
+      if (!upRes.ok) throw new Error(`Falha no upload (HTTP ${upRes.status})`)
+
+      // 3) Registra metadados no DB
+      const regRes = await fetch(`/api/leads/${leadId}/attachments/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          buyer_id: buyerId,
+          file_name: file.name,
+          file_path: path,
+          file_size: file.size,
+          file_type: file.type,
+        }),
+      })
+      if (!regRes.ok) {
+        const d = await regRes.json().catch(() => ({}))
+        throw new Error(d.error || `Falha ao registrar arquivo (HTTP ${regRes.status})`)
+      }
+
+      await loadAttachments()
+    } catch (err: any) {
+      console.error('[uploadFile] erro:', err)
+      alert(`Não foi possível anexar: ${err?.message || 'erro desconhecido'}`)
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
   }
 
   async function deleteAttachment(attId: string) {
