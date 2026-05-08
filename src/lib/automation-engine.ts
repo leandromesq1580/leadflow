@@ -85,17 +85,25 @@ interface Target {
 async function findTargets(auto: Automation): Promise<Target[]> {
   const db = createAdminClient()
 
+  // pipeline_leads NAO tem buyer_id. Pegamos os pipelines do buyer
+  // primeiro, depois filtramos pipeline_leads por pipeline_id.
+  // Bug historico: usar .eq('buyer_id', X) em pipeline_leads retorna 0
+  // sempre (coluna nao existe) -> automacao nunca disparava.
+  async function pipelineIdsOfBuyer(buyerId: string): Promise<string[]> {
+    const { data } = await db.from('pipelines').select('id').eq('buyer_id', buyerId)
+    return (data || []).map(p => p.id)
+  }
+
   if (auto.trigger_type === 'stage_entered') {
     const stageId = auto.trigger_config.stage_id
     if (!stageId) return []
-    // pipeline_leads NAO tem buyer_id (so o stage_id e pipeline_id).
-    // Filtrar por buyer_id direto retornava ZERO sempre — automacao nunca
-    // disparava. Filtra via pipeline.buyer_id usando inner join.
+    const pipelineIds = await pipelineIdsOfBuyer(auto.buyer_id)
+    if (pipelineIds.length === 0) return []
     const { data } = await db
       .from('pipeline_leads')
-      .select('id, lead_id, pipeline:pipelines!inner(buyer_id)')
+      .select('id, lead_id')
       .eq('stage_id', stageId)
-      .eq('pipeline.buyer_id', auto.buyer_id)
+      .in('pipeline_id', pipelineIds)
     return (data || []).map(r => ({ lead_id: r.lead_id, pipeline_lead_id: r.id }))
   }
 
@@ -103,12 +111,14 @@ async function findTargets(auto: Automation): Promise<Target[]> {
     const stageId = auto.trigger_config.stage_id
     const hours = auto.trigger_config.hours || 24
     if (!stageId) return []
+    const pipelineIds = await pipelineIdsOfBuyer(auto.buyer_id)
+    if (pipelineIds.length === 0) return []
     const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
     const { data } = await db
       .from('pipeline_leads')
-      .select('id, lead_id, pipeline:pipelines!inner(buyer_id)')
+      .select('id, lead_id')
       .eq('stage_id', stageId)
-      .eq('pipeline.buyer_id', auto.buyer_id)
+      .in('pipeline_id', pipelineIds)
       .lte('moved_at', cutoff)
     return (data || []).map(r => ({ lead_id: r.lead_id, pipeline_lead_id: r.id }))
   }
