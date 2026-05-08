@@ -30,18 +30,22 @@ export async function POST(request: NextRequest) {
 
   const db = createAdminClient()
 
-  let q = db.from('automation_runs').select('id, status, lead_id, created_at').eq('automation_id', automationId)
-  if (onlyNullStatus) q = q.is('status', null)
+  // Conta antes
+  const beforeQuery = db.from('automation_runs').select('id', { count: 'exact', head: true }).eq('automation_id', automationId)
+  if (onlyNullStatus) beforeQuery.is('status', null)
+  const { count: beforeCount } = await beforeQuery
 
-  const { data: runs } = await q
-  const ids = (runs || []).map(r => r.id)
+  if (dry) return NextResponse.json({ would_delete: beforeCount ?? 0, dry: true })
 
-  if (ids.length === 0) return NextResponse.json({ deleted: 0, runs: [] })
+  // Delete direto pelo automation_id (sem select prévio)
+  let delQuery = db.from('automation_runs').delete().eq('automation_id', automationId)
+  if (onlyNullStatus) delQuery = delQuery.is('status', null)
+  const { error, count: deletedCount } = await delQuery
 
-  if (dry) return NextResponse.json({ would_delete: ids.length, runs: runs?.slice(0, 5) })
+  if (error) return NextResponse.json({ error: error.message, before: beforeCount }, { status: 500 })
 
-  const { error } = await db.from('automation_runs').delete().in('id', ids)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  // Conta depois pra confirmar
+  const { count: afterCount } = await db.from('automation_runs').select('id', { count: 'exact', head: true }).eq('automation_id', automationId)
 
-  return NextResponse.json({ deleted: ids.length })
+  return NextResponse.json({ before: beforeCount ?? 0, after: afterCount ?? 0, deleted: (beforeCount ?? 0) - (afterCount ?? 0), reportedCount: deletedCount })
 }
