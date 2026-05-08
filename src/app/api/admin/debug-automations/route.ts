@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
           const leadIds = leads.map(l => l.lead_id)
           const { data: runs } = await db
             .from('automation_runs')
-            .select('lead_id, status, error, created_at')
+            .select('*')
             .eq('automation_id', auto.id)
             .in('lead_id', leadIds)
             .order('created_at', { ascending: false })
