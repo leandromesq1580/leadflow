@@ -50,16 +50,22 @@ export async function GET(request: NextRequest) {
         info.leads_in_stage = leads?.length || 0
         info.sample_leads = (leads || []).slice(0, 3)
 
-        // Quantos ja tem automation_run
+        // Quantos ja tem automation_run + status
         if (leads && leads.length > 0) {
           const leadIds = leads.map(l => l.lead_id)
           const { data: runs } = await db
             .from('automation_runs')
-            .select('lead_id')
+            .select('lead_id, status, error, created_at')
             .eq('automation_id', auto.id)
             .in('lead_id', leadIds)
+            .order('created_at', { ascending: false })
           info.already_ran = runs?.length || 0
           info.pending = (leads.length - (runs?.length || 0))
+          info.runs_breakdown = {
+            success: (runs || []).filter(r => r.status === 'success').length,
+            failed: (runs || []).filter(r => r.status === 'failed').length,
+          }
+          info.runs_sample = (runs || []).slice(0, 3)
         }
       }
     }
