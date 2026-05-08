@@ -88,12 +88,14 @@ async function findTargets(auto: Automation): Promise<Target[]> {
   if (auto.trigger_type === 'stage_entered') {
     const stageId = auto.trigger_config.stage_id
     if (!stageId) return []
-    // Leads currently in that stage, buyer owns them
+    // pipeline_leads NAO tem buyer_id (so o stage_id e pipeline_id).
+    // Filtrar por buyer_id direto retornava ZERO sempre — automacao nunca
+    // disparava. Filtra via pipeline.buyer_id usando inner join.
     const { data } = await db
       .from('pipeline_leads')
-      .select('id, lead_id, buyer_id')
+      .select('id, lead_id, pipeline:pipelines!inner(buyer_id)')
       .eq('stage_id', stageId)
-      .eq('buyer_id', auto.buyer_id)
+      .eq('pipeline.buyer_id', auto.buyer_id)
     return (data || []).map(r => ({ lead_id: r.lead_id, pipeline_lead_id: r.id }))
   }
 
@@ -104,9 +106,9 @@ async function findTargets(auto: Automation): Promise<Target[]> {
     const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
     const { data } = await db
       .from('pipeline_leads')
-      .select('id, lead_id, buyer_id')
+      .select('id, lead_id, pipeline:pipelines!inner(buyer_id)')
       .eq('stage_id', stageId)
-      .eq('buyer_id', auto.buyer_id)
+      .eq('pipeline.buyer_id', auto.buyer_id)
       .lte('moved_at', cutoff)
     return (data || []).map(r => ({ lead_id: r.lead_id, pipeline_lead_id: r.id }))
   }
