@@ -19,12 +19,16 @@ export async function GET(request: NextRequest) {
   const db = createAdminClient()
   const now = new Date().toISOString()
 
-  const { data: due } = await db
+  const includeAll = url.searchParams.get('all') === '1'
+  const leadIdFilter = url.searchParams.get('lead_id')
+
+  let q = db
     .from('sequence_enrollments')
     .select('*, sequences(*)')
     .eq('status', 'active')
-    .lte('next_run_at', now)
-    .limit(50)
+  if (!includeAll && !leadIdFilter) q = q.lte('next_run_at', now)
+  if (leadIdFilter) q = q.eq('lead_id', leadIdFilter)
+  const { data: due } = await q.limit(50)
 
   const trace: any[] = []
 
