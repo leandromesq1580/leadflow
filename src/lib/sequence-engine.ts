@@ -120,9 +120,18 @@ export async function processSequencesForLead(leadId: string): Promise<number> {
       }
       processed++
     } catch (err: any) {
-      console.error(`[processSequencesForLead ${enr.id}] err:`, err?.message)
-      const retry = new Date(Date.now() + 3600_000).toISOString()
-      await db.from('sequence_enrollments').update({ next_run_at: retry }).eq('id', enr.id)
+      const msg = err?.message || ''
+      console.error(`[processSequencesForLead ${enr.id}] err:`, msg)
+      // Mesma regra do processSequences: erro permanente -> stop, transitorio -> retry
+      if (/no\s*lid|nao\s*tem\s*whatsapp/i.test(msg)) {
+        await db.from('sequence_enrollments').update({
+          status: 'stopped',
+          completed_at: new Date().toISOString(),
+        }).eq('id', enr.id)
+      } else {
+        const retry = new Date(Date.now() + 3600_000).toISOString()
+        await db.from('sequence_enrollments').update({ next_run_at: retry }).eq('id', enr.id)
+      }
     }
   }
   return processed
@@ -223,10 +232,23 @@ export async function processSequences(): Promise<{ processed: number; failed: n
       }
       processed++
     } catch (err: any) {
-      console.error(`[Sequence ${enr.id}] Error:`, err?.message)
-      // Pause on error, retry in 1h
-      const retry = new Date(Date.now() + 3600_000).toISOString()
-      await db.from('sequence_enrollments').update({ next_run_at: retry }).eq('id', enr.id)
+      const msg = err?.message || ''
+      console.error(`[Sequence ${enr.id}] Error:`, msg)
+      // Erro PERMANENTE do wa-bridge (numero sem WhatsApp) -> stop, nao retry
+      // infinito. Sem esse check, lead sem WhatsApp gera retry +1h forever
+      // toda vez que o cron roda -> log poluido de failed:1 + carga no
+      // wa-bridge. Aplicado a 'No LID' e 'nao tem WhatsApp' (que e o que
+      // o wa-bridge retorna como 404 quando o numero nao esta no WhatsApp).
+      if (/no\s*lid|nao\s*tem\s*whatsapp/i.test(msg)) {
+        await db.from('sequence_enrollments').update({
+          status: 'stopped',
+          completed_at: now,
+        }).eq('id', enr.id)
+      } else {
+        // Erro transitório (timeout, bridge offline, etc) -> retry em 1h
+        const retry = new Date(Date.now() + 3600_000).toISOString()
+        await db.from('sequence_enrollments').update({ next_run_at: retry }).eq('id', enr.id)
+      }
       failed++
     }
   }
