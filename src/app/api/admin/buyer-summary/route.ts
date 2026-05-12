@@ -77,6 +77,34 @@ export async function GET(request: NextRequest) {
   // Total contracts closed
   const closed = (assignedLeads || []).filter((l: any) => l.contract_closed).length
 
+  // Procura tambem leads delegados via team_members (esse email pode estar
+  // em team_members de outras agencies)
+  const { data: memberRecords } = await db
+    .from('team_members')
+    .select('id, name, email, buyer_id, is_active, buyer:buyers(id, name, email)')
+    .ilike('email', email)
+
+  const asMember: any[] = []
+  for (const m of memberRecords || []) {
+    const { count: leadsCount } = await db
+      .from('leads')
+      .select('id', { count: 'exact', head: true })
+      .eq('assigned_to_member', m.id)
+    const { count: closedCount } = await db
+      .from('leads')
+      .select('id', { count: 'exact', head: true })
+      .eq('assigned_to_member', m.id)
+      .eq('contract_closed', true)
+    asMember.push({
+      member_id: m.id,
+      member_name: m.name,
+      agency: (m as any).buyer,
+      total_leads: leadsCount ?? 0,
+      closed: closedCount ?? 0,
+      is_active: m.is_active,
+    })
+  }
+
   return NextResponse.json({
     buyer: {
       id: buyer.id,
@@ -102,6 +130,7 @@ export async function GET(request: NextRequest) {
     },
     pipeline_leads_by_stage: byStage,
     team_members: teamMembers,
+    as_team_member_of: asMember,
     recent_leads_sample: (assignedLeads || []).slice(0, 5).map((l: any) => ({
       id: l.id, name: l.name, phone: l.phone, state: l.state, status: l.status,
       contract_closed: l.contract_closed, assigned_at: l.assigned_at,
