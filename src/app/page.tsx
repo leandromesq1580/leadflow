@@ -4,6 +4,7 @@ import { getLocale } from '@/lib/locale'
 import { getMessages } from '@/lib/i18n'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { WhatsAppFab } from '@/components/whatsapp-fab'
+import { MetaPixel } from '@/components/meta-pixel'
 
 export default async function LandingPage() {
   const locale = await getLocale()
@@ -369,6 +370,7 @@ export default async function LandingPage() {
       </footer>
 
       <WhatsAppFab phone="17867442126" label="Fale Conosco!" />
+      <MetaPixel />
     </div>
   )
 }

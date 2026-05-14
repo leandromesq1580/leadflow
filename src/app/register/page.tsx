@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { MetaPixel } from '@/components/meta-pixel'
 
 export default function RegisterPage() {
   const [name, setName] = useState('')
@@ -136,6 +137,7 @@ export default function RegisterPage() {
         </div>
         <p className="text-center text-[11px] mt-6" style={{ color: '#94a3b8' }}>🔒 Seus dados estao protegidos.</p>
       </div>
+      <MetaPixel />
     </div>
   )
 }

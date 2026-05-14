@@ -4,6 +4,7 @@ import { Sidebar } from '@/components/dashboard/sidebar'
 import { PwaRegister } from '@/components/pwa-register'
 import { TrialBanner } from '@/components/trial-banner'
 import { MeetingBanner } from '@/components/dashboard/meeting-banner'
+import { MetaPixel } from '@/components/meta-pixel'
 import { isTrialActive, trialDaysRemaining } from '@/lib/crm-access'
 import { getLocale } from '@/lib/locale'
 import { I18nProvider } from '@/lib/i18n-client'
@@ -49,6 +50,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           {children}
         </main>
         {buyer?.id && <PwaRegister buyerId={buyer.id} />}
+        <MetaPixel />
       </div>
     </I18nProvider>
   )
