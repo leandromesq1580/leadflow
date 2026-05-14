@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { getLocale } from '@/lib/locale'
 import { getMessages } from '@/lib/i18n'
 import { LocaleSwitcher } from '@/components/locale-switcher'
+import { WhatsAppFab } from '@/components/whatsapp-fab'
 
 export default async function LandingPage() {
   const locale = await getLocale()
@@ -366,6 +367,8 @@ export default async function LandingPage() {
           <p className="text-[11px]" style={{ color: '#c0c8d4' }}>{t.footer.copyright}</p>
         </div>
       </footer>
+
+      <WhatsAppFab phone="17867442126" label="Fale Conosco!" />
     </div>
   )
 }
