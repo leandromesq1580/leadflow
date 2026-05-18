@@ -16,11 +16,23 @@ export async function GET(request: NextRequest) {
   const db = createAdminClient()
   const since = new Date(Date.now() - days * 86400_000).toISOString()
 
-  const { data } = await db.from('whatsapp_messages')
-    .select('sent_at, direction, buyer_id')
-    .gte('sent_at', since)
-    .order('sent_at')
-    .limit(50000)
+  // Paginar pra contornar PostgREST 1000 row hard limit
+  const all: any[] = []
+  let from = 0
+  const PAGE = 1000
+  while (true) {
+    const { data } = await db.from('whatsapp_messages')
+      .select('sent_at, direction, buyer_id')
+      .gte('sent_at', since)
+      .order('sent_at', { ascending: false })
+      .range(from, from + PAGE - 1)
+    if (!data || data.length === 0) break
+    all.push(...data)
+    if (data.length < PAGE) break
+    from += PAGE
+    if (all.length >= 50000) break
+  }
+  const data = all
 
   const { data: buyers } = await db.from('buyers').select('id, name')
   const buyerName = new Map((buyers || []).map(b => [b.id, b.name]))
