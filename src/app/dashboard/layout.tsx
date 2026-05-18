@@ -8,6 +8,7 @@ import { MetaPixel } from '@/components/meta-pixel'
 import { isTrialActive, trialDaysRemaining } from '@/lib/crm-access'
 import { getLocale } from '@/lib/locale'
 import { I18nProvider } from '@/lib/i18n-client'
+import { PrivacyProvider } from '@/lib/privacy-mode'
 import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
@@ -40,6 +41,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <I18nProvider locale={locale}>
+      <PrivacyProvider>
       <div className="flex min-h-screen" style={{ background: '#f8f9fc' }}>
         <div className="hidden md:block">
           <Sidebar type="buyer" userName={buyer?.name || user!.email || ''} isAgency={buyer?.is_agency || false} buyerId={buyer?.id} />
@@ -52,6 +54,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {buyer?.id && <PwaRegister buyerId={buyer.id} />}
         <MetaPixel />
       </div>
+      </PrivacyProvider>
     </I18nProvider>
   )
 }

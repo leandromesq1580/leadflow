@@ -5,6 +5,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { getStaleness } from '@/lib/stale-leads'
 import { CardAssignMenu } from './card-assign-menu'
 import { useT } from '@/lib/i18n-client'
+import { usePrivacy } from '@/lib/privacy-mode'
 
 interface Lead {
   id: string; name: string; phone: string; state: string; interest: string
@@ -84,6 +85,7 @@ function formatFuDate(iso: string): string {
 
 export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, unreadCount = 0, lastFollowUp, teamMembers, onAssigned, onArchived }: Props) {
   const t = useT()
+  const privacy = usePrivacy()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: pipelineLeadId,
     data: { lead },
@@ -156,7 +158,7 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
       {lead.phone && (
         <div className="flex items-center gap-1.5 mb-2.5 ml-[42px]">
           <span className="text-[10px]">📞</span>
-          <span className="text-[12px] font-semibold" style={{ color: '#475569' }}>{lead.phone}</span>
+          <span className="text-[12px] font-semibold" style={{ color: '#475569' }}>{privacy.mask(lead.phone, 'phone')}</span>
         </div>
       )}
 

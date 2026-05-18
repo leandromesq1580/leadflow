@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n-client'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { useRealtime } from '@/lib/use-realtime'
+import { PrivacyToggle } from '@/components/dashboard/privacy-toggle'
 
 interface SidebarProps {
   type: 'buyer' | 'admin'
@@ -201,6 +202,9 @@ export function Sidebar({ type, userName, isAgency, buyerId }: SidebarProps) {
             <p className="text-[11px]" style={{ color: '#94a3b8' }}>{type === 'admin' ? t.sidebar.admin : t.sidebar.buyer}</p>
           </div>
           <LocaleSwitcher current={t._locale} />
+        </div>
+        <div className="mt-3">
+          <PrivacyToggle />
         </div>
         <button onClick={handleLogout} className="mt-3 text-[11px] font-medium hover:text-red-500" style={{ color: '#94a3b8' }}>
           {t.sidebar.logout}

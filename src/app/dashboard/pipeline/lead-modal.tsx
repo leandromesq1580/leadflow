@@ -6,6 +6,7 @@ import { TagPicker } from '@/components/tag-picker'
 import { WhatsAppInbox } from '@/components/whatsapp-inbox'
 import { AiScoreBadge } from '@/components/ai-score-badge'
 import { TimePicker } from '@/components/time-picker'
+import { usePrivacy } from '@/lib/privacy-mode'
 
 interface Props {
   leadId: string
@@ -31,6 +32,7 @@ interface Attachment {
 }
 
 export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
+  const privacy = usePrivacy()
   const [tab, setTab] = useState<'details' | 'inbox' | 'followups' | 'attachments'>('details')
   const [lead, setLead] = useState<any>(null)
   const [followUps, setFollowUps] = useState<FollowUp[]>([])
@@ -316,7 +318,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
             <div className="flex-1 min-w-0">
               <h2 className="text-[20px] font-extrabold truncate" style={{ color: '#1a1a2e' }}>{lead.name}</h2>
               <p className="text-[12px] font-medium" style={{ color: '#94a3b8' }}>
-                {lead.phone} {lead.state && `· ${lead.state}`}
+                {privacy.mask(lead.phone, 'phone')} {lead.state && `· ${lead.state}`}
               </p>
             </div>
             <button onClick={() => setShowSendMsg(true)}
