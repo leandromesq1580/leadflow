@@ -287,16 +287,28 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
 
   const hue = (lead.name?.charCodeAt(0) * 47 + (lead.name?.charCodeAt(1) || 0) * 23) % 360
 
-  const input = (label: string, field: string, type = 'text', icon = '') => (
-    <div>
-      <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: '#94a3b8' }}>
-        {icon && <span className="mr-1">{icon}</span>}{label}
-      </label>
-      <input type={type} value={lead[field] || ''} onChange={e => setLead({ ...lead, [field]: type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value })}
-        className="w-full px-3.5 py-2.5 rounded-xl text-[13px] font-medium transition-all focus:outline-none focus:ring-2 focus:ring-indigo-200"
-        style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
-    </div>
-  )
+  const input = (label: string, field: string, type = 'text', icon = '') => {
+    const sensitive = field === 'phone' || field === 'email'
+    const masked = privacy.enabled && sensitive
+    const displayValue = masked
+      ? privacy.mask(lead[field] || '', field === 'email' ? 'email' : 'phone')
+      : (lead[field] || '')
+    return (
+      <div>
+        <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: '#94a3b8' }}>
+          {icon && <span className="mr-1">{icon}</span>}{label}
+        </label>
+        <input
+          type={masked ? 'text' : type}
+          value={displayValue}
+          readOnly={masked}
+          onChange={masked ? undefined : (e => setLead({ ...lead, [field]: type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value }))}
+          className="w-full px-3.5 py-2.5 rounded-xl text-[13px] font-medium transition-all focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          style={{ background: masked ? '#f1f5f9' : '#f8f9fc', border: '1px solid #e8ecf4', color: masked ? '#94a3b8' : '#1a1a2e' }}
+        />
+      </div>
+    )
+  }
 
   return (
     <>
