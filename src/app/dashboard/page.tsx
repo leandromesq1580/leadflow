@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { OnboardingChecklist } from '@/components/onboarding-checklist'
 import { StaleLeadsAlert } from '@/components/stale-leads-alert'
+import { PrivatePhone } from '@/components/private-field'
 import { getLocale } from '@/lib/locale'
 import { getMessages } from '@/lib/i18n'
 
@@ -147,9 +148,7 @@ export default async function DashboardPage() {
                   <p className="text-[12px]" style={{ color: '#94a3b8' }}>{lead.city}, {lead.state} · {lead.interest}</p>
                 </div>
                 <div className="hidden sm:block">
-                  <span className="text-[13px] font-semibold" style={{ color: '#6366f1' }}>
-                    {lead.phone}
-                  </span>
+                  <PrivatePhone value={lead.phone} className="text-[13px] font-semibold" style={{ color: '#6366f1' }} />
                 </div>
                 <Badge status={lead.status} />
                 <span className="text-[12px] whitespace-nowrap" style={{ color: '#94a3b8' }}>{timeAgo(lead.created_at)}</span>
