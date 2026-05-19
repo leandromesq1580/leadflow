@@ -366,13 +366,6 @@ export default function PipelinePage() {
                 {closedLeads} fechados
               </span>
             )}
-            {staleCount > 0 && (
-              <button onClick={() => { setStaleOnly(true); setShowFilters(true) }}
-                className="text-[12px] font-bold px-2 py-0.5 rounded-md transition-all hover:shadow-sm"
-                style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa' }}>
-                ⚠️ {staleCount} parado{staleCount > 1 ? 's' : ''} 3+ dias
-              </button>
-            )}
           </div>
         </div>
         <div className="flex items-center gap-2">
