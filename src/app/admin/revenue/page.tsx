@@ -17,7 +17,7 @@ export default async function RevenuePage() {
   const [paymentsRes, creditsRes, buyersRes] = await Promise.all([
     db.from('payments').select('*, buyer:buyers(name, email)').order('created_at', { ascending: false }),
     db.from('credits').select('buyer_id, type, total_purchased, total_used, price_per_unit, purchased_at, stripe_payment_id'),
-    db.from('buyers').select('id, name, email, crm_plan, crm_subscription_status'),
+    db.from('buyers').select('id, name, email, crm_plan, crm_subscription_status, crm_subscription_id'),
   ])
 
   const payments = paymentsRes.data || []
@@ -27,9 +27,13 @@ export default async function RevenuePage() {
   const completed = payments.filter(p => p.status === 'completed')
   const totalStripeRevenue = completed.reduce((s, p) => s + Number(p.amount), 0)
 
-  // MRR: active CRM Pro subscriptions × $99
-  const activeProSubs = buyers.filter(b => b.crm_plan === 'pro' && b.crm_subscription_status === 'active').length
-  const mrr = activeProSubs * CRM_PRICE
+  // MRR: SO assinaturas pagas reais. O webhook do Stripe grava crm_subscription_id
+  // quando ha assinatura paga; contas Pro de cortesia (setadas na mao) tem id null
+  // → entram como "cortesia" e NAO contam no MRR.
+  const activePro = buyers.filter(b => b.crm_plan === 'pro' && b.crm_subscription_status === 'active')
+  const payingProSubs = activePro.filter(b => !!b.crm_subscription_id).length
+  const compProSubs = activePro.filter(b => !b.crm_subscription_id).length
+  const mrr = payingProSubs * CRM_PRICE
 
   // This month revenue (stripe)
   const now = new Date()
@@ -79,7 +83,7 @@ export default async function RevenuePage() {
         <div className="rounded-2xl p-5" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
           <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.7)' }}>MRR (CRM Pro)</p>
           <p className="text-[28px] font-extrabold mt-1 text-white">${mrr.toLocaleString()}</p>
-          <p className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,0.6)' }}>{activeProSubs} assinantes × $99</p>
+          <p className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,0.6)' }}>{payingProSubs} pagante{payingProSubs === 1 ? '' : 's'} × $99{compProSubs > 0 ? ` · ${compProSubs} cortesia` : ''}</p>
         </div>
         <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
           <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Receita este mês</p>
