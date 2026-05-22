@@ -78,12 +78,36 @@ export async function POST(request: NextRequest) {
 
     // 🔒 Multi-bridge: msg sai do WhatsApp DO DONO DO LEAD (assigned_to_member > assigned_to).
     // buyer_id do request tem que bater com o dono (ja garantido pelo assertBuyerOwnsLead acima).
-    // Buscar bridge conectada desse buyer; se nao tiver, bloqueia com mensagem clara.
     const bridge = await getBridgeForBuyer(db, buyer_id)
-    if (!bridge || bridge.status !== 'connected') {
-      return NextResponse.json({
-        error: 'Seu WhatsApp ainda nao esta conectado. Abra Configuracoes > Conectar WhatsApp e escaneie o QR code.',
-      }, { status: 403 })
+    const naoConectado = NextResponse.json({
+      error: 'Seu WhatsApp ainda nao esta conectado. Abra Configuracoes > Conectar WhatsApp e escaneie o QR code.',
+    }, { status: 403 })
+    // Sem bridge configurada (sem url/key) = nada a fazer.
+    if (!bridge) return naoConectado
+
+    // wa_bridge_status no banco e um cache que so atualiza quando a tela de QR e aberta.
+    // Se o cache nao diz 'connected', NAO bloqueia de cara: confirma AO VIVO no bridge
+    // (evita falso-negativo logo apos uma reconexao) e faz self-heal do banco.
+    if (bridge.status !== 'connected') {
+      let liveReady = false
+      try {
+        const sres = await fetch(`${bridge.url}/status`, {
+          headers: { apikey: bridge.key },
+          signal: AbortSignal.timeout(5000),
+        })
+        if (sres.ok) {
+          const s = await sres.json()
+          liveReady = !!s.ready
+          if (liveReady) {
+            const upd: Record<string, unknown> = { wa_bridge_status: 'connected' }
+            if (s.number) upd.wa_bridge_phone = String(s.number)
+            await db.from('buyers').update(upd).eq('id', buyer_id)
+          }
+        }
+      } catch {
+        // bridge inalcançavel = trata como desconectado
+      }
+      if (!liveReady) return naoConectado
     }
 
     const { data: lead } = await db.from('leads').select('phone').eq('id', lead_id).single()
