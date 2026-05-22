@@ -6,10 +6,16 @@ import { useRouter } from 'next/navigation'
 interface Props {
   buyerId: string
   isActive: boolean
-  crmPro: boolean
+  plan: string
 }
 
-export function AdminActions({ buyerId, isActive, crmPro }: Props) {
+const TIERS = [
+  { v: 'free', label: 'Free' },
+  { v: 'appointment', label: '📅 Appointment' },
+  { v: 'pro', label: '⚡ CRM Pro' },
+]
+
+export function AdminActions({ buyerId, isActive, plan }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
   const [showGrant, setShowGrant] = useState(false)
@@ -28,6 +34,11 @@ export function AdminActions({ buyerId, isActive, crmPro }: Props) {
     router.refresh()
   }
 
+  async function setPlan(p: string) {
+    if (p === plan) return
+    await call('set-plan', { plan: p })
+  }
+
   async function grant() {
     if (grantQty < 1) return
     await call('grant-credits', { type: grantType, quantity: grantQty, note: grantNote || 'cortesia admin' })
@@ -40,16 +51,28 @@ export function AdminActions({ buyerId, isActive, crmPro }: Props) {
     <div className="rounded-2xl p-5 mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
       <h2 className="text-[13px] font-bold uppercase tracking-wider mb-4" style={{ color: '#94a3b8' }}>Ações Admin</h2>
 
-      <div className="flex flex-wrap gap-2 mb-4">
-        <button onClick={() => call('toggle-crm', { active: !crmPro })} disabled={loading !== null}
-          className="px-4 py-2 rounded-lg text-[12px] font-bold disabled:opacity-50"
-          style={{
-            background: crmPro ? '#fef2f2' : 'linear-gradient(135deg, #a78bfa, #6366f1)',
-            color: crmPro ? '#dc2626' : '#fff',
-          }}>
-          {loading === 'toggle-crm' ? '...' : crmPro ? 'Desativar CRM Pro' : '⚡ Ativar CRM Pro'}
-        </button>
+      {/* Tier do comprador: free / appointment-only / CRM Pro */}
+      <div className="mb-4">
+        <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: '#94a3b8' }}>Plano</p>
+        <div className="inline-flex rounded-lg p-1 gap-1" style={{ background: '#f1f5f9' }}>
+          {TIERS.map(opt => {
+            const current = plan === opt.v
+            return (
+              <button key={opt.v} onClick={() => setPlan(opt.v)} disabled={loading !== null || current}
+                className="px-3 py-1.5 rounded-md text-[12px] font-bold transition-all disabled:cursor-default"
+                style={{
+                  background: current ? '#fff' : 'transparent',
+                  color: current ? '#6366f1' : '#94a3b8',
+                  boxShadow: current ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                }}>
+                {loading === 'set-plan' && !current ? '...' : opt.label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
 
+      <div className="flex flex-wrap gap-2 mb-4">
         <button onClick={() => call('toggle-active', { active: !isActive })} disabled={loading !== null}
           className="px-4 py-2 rounded-lg text-[12px] font-bold disabled:opacity-50"
           style={{

@@ -5,7 +5,8 @@ import { PwaRegister } from '@/components/pwa-register'
 import { TrialBanner } from '@/components/trial-banner'
 import { MeetingBanner } from '@/components/dashboard/meeting-banner'
 import { MetaPixel } from '@/components/meta-pixel'
-import { isTrialActive, trialDaysRemaining } from '@/lib/crm-access'
+import { isTrialActive, trialDaysRemaining, isAppointmentOnly } from '@/lib/crm-access'
+import { AppointmentGate } from '@/components/dashboard/appointment-gate'
 import { getLocale } from '@/lib/locale'
 import { I18nProvider } from '@/lib/i18n-client'
 import { PrivacyProvider } from '@/lib/privacy-mode'
@@ -37,6 +38,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const showTrial = isTrialActive(buyer)
   const daysLeft = trialDaysRemaining(buyer)
+  const apptOnly = isAppointmentOnly(buyer)
   const locale = await getLocale()
 
   return (
@@ -44,12 +46,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <PrivacyProvider>
       <div className="flex min-h-screen" style={{ background: '#f8f9fc' }}>
         <div className="hidden md:block">
-          <Sidebar type="buyer" userName={buyer?.name || user!.email || ''} isAgency={buyer?.is_agency || false} buyerId={buyer?.id} />
+          <Sidebar type="buyer" userName={buyer?.name || user!.email || ''} isAgency={buyer?.is_agency || false} buyerId={buyer?.id} crmPlan={buyer?.crm_plan || 'free'} />
         </div>
         <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-auto" data-crm-plan={buyer?.crm_plan || 'free'}>
           {buyer?.id && <MeetingBanner buyerId={buyer.id} />}
           {showTrial && <TrialBanner daysLeft={daysLeft} />}
-          {children}
+          <AppointmentGate active={apptOnly}>
+            {children}
+          </AppointmentGate>
         </main>
         {buyer?.id && <PwaRegister buyerId={buyer.id} />}
         <MetaPixel />

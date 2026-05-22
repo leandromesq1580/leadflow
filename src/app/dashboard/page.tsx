@@ -10,6 +10,7 @@ import { StaleLeadsAlert } from '@/components/stale-leads-alert'
 import { PrivatePhone } from '@/components/private-field'
 import { getLocale } from '@/lib/locale'
 import { getMessages } from '@/lib/i18n'
+import { isAppointmentOnly } from '@/lib/crm-access'
 
 export default async function DashboardPage() {
   const supabase = await createServerSupabase()
@@ -20,7 +21,10 @@ export default async function DashboardPage() {
   const t = getMessages(locale)
 
   const db = createAdminClient()
-  const { data: buyer } = await db.from('buyers').select('id, name').eq('auth_user_id', user.id).single()
+  const { data: buyer } = await db.from('buyers').select('id, name, crm_plan, is_admin, trial_ends_at').eq('auth_user_id', user.id).single()
+
+  // Appointment-only: a "home" dele é a agenda (o overview fica atrás do upsell).
+  if (isAppointmentOnly(buyer)) redirect('/dashboard/appointments')
 
   if (!buyer) {
     return (

@@ -62,7 +62,7 @@ export default async function BuyerDetailPage({ params }: { params: Promise<{ id
       </div>
 
       {/* Admin Actions */}
-      <AdminActions buyerId={buyer.id} isActive={!!buyer.is_active} crmPro={buyer.crm_plan === 'pro'} />
+      <AdminActions buyerId={buyer.id} isActive={!!buyer.is_active} plan={buyer.crm_plan || 'free'} />
 
       {/* Credits */}
       <div className="grid grid-cols-2 gap-4 mb-6">

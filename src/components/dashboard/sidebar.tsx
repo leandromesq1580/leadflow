@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n-client'
+import { appointmentCanAccess } from '@/lib/crm-access'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { useRealtime } from '@/lib/use-realtime'
 import { PrivacyToggle } from '@/components/dashboard/privacy-toggle'
@@ -13,6 +14,7 @@ interface SidebarProps {
   userName?: string
   isAgency?: boolean
   buyerId?: string
+  crmPlan?: string
 }
 
 function useWhatsAppUnread(buyerId?: string): number {
@@ -91,9 +93,10 @@ function BrandMark({ size = 32 }: { size?: number }) {
   )
 }
 
-export function Sidebar({ type, userName, isAgency, buyerId }: SidebarProps) {
+export function Sidebar({ type, userName, isAgency, buyerId, crmPlan }: SidebarProps) {
   const pathname = usePathname()
   const t = useT()
+  const apptOnly = type === 'buyer' && crmPlan === 'appointment'
   const waUnread = useWhatsAppUnread(type === 'buyer' ? buyerId : undefined)
   const upcomingMeetings = useUpcomingMeetings(type === 'buyer' ? buyerId : undefined)
 
@@ -159,20 +162,24 @@ export function Sidebar({ type, userName, isAgency, buyerId }: SidebarProps) {
             const isActive = pathname === link.href ||
               (link.href !== '/dashboard' && link.href !== '/admin' && pathname.startsWith(link.href))
 
-            const showBadge = link.href === '/dashboard/whatsapp' && waUnread > 0
-            const showApptBadge = link.href === '/dashboard/appointments' && upcomingMeetings > 0
+            const locked = apptOnly && !appointmentCanAccess(link.href)
+            const showBadge = !locked && link.href === '/dashboard/whatsapp' && waUnread > 0
+            const showApptBadge = !locked && link.href === '/dashboard/appointments' && upcomingMeetings > 0
             return (
               <Link
                 key={link.href}
                 href={link.href}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-semibold"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-opacity"
                 style={{
                   color: isActive ? '#6366f1' : '#64748b',
                   background: isActive ? '#eef2ff' : 'transparent',
+                  opacity: locked ? 0.5 : 1,
                 }}
+                title={locked ? 'Disponível no plano completo' : undefined}
               >
                 <span className="text-[16px]">{link.icon}</span>
                 <span className="flex-1">{link.label}</span>
+                {locked && <span className="text-[12px]" aria-label="bloqueado">🔒</span>}
                 {showBadge && (
                   <span className="text-[10px] font-extrabold text-white rounded-full flex items-center justify-center"
                     style={{ background: '#ef4444', minWidth: 18, height: 18, padding: '0 5px', boxShadow: '0 1px 3px rgba(239,68,68,0.35)' }}>

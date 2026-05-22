@@ -14,6 +14,30 @@ export function hasCrmAccess(buyer: CrmAccessBuyer | null | undefined): boolean 
   return false
 }
 
+/**
+ * Tier "appointment-only": comprou appointment mas nao assinou o CRM.
+ * Ve SO a agenda + comprar + configuracoes; o resto fica atras do upsell.
+ * Admin e quem tem trial/pro NUNCA sao appointment-only.
+ */
+export function isAppointmentOnly(buyer: CrmAccessBuyer | null | undefined): boolean {
+  if (!buyer) return false
+  if (buyer.is_admin === true) return false
+  if (hasCrmAccess(buyer)) return false
+  return buyer.crm_plan === 'appointment'
+}
+
+/** Rotas liberadas pro perfil appointment-only. Todo o resto = UpsellGate. */
+export const APPOINTMENT_ALLOWED_ROUTES = [
+  '/dashboard/appointments',
+  '/dashboard/credits',
+  '/dashboard/settings',
+]
+
+/** True se a rota e acessivel pelo perfil appointment-only. */
+export function appointmentCanAccess(pathname: string): boolean {
+  return APPOINTMENT_ALLOWED_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))
+}
+
 export function trialDaysRemaining(buyer: CrmAccessBuyer | null | undefined): number {
   if (!buyer?.trial_ends_at) return 0
   const ms = new Date(buyer.trial_ends_at).getTime() - Date.now()
