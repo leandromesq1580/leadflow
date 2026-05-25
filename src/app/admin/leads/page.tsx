@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { getInitials } from '@/lib/utils'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { ReassignControl } from './reassign-control'
 
 export const dynamic = 'force-dynamic'
 
@@ -232,8 +233,8 @@ export default async function AdminLeadsPage({ searchParams }: { searchParams: P
                       <span className="text-[11px] font-bold" style={{ color: '#ef4444' }}>🔥</span>
                     )}
                   </span>
-                  <span className="text-[12px] font-medium min-w-[100px]" style={{ color: '#64748b' }}>
-                    {lead.buyer?.name || <span style={{ color: '#f59e0b' }}>Na fila</span>}
+                  <span className="min-w-[100px]">
+                    <ReassignControl leadId={lead.id} currentName={lead.buyer?.name || null} agents={buyers || []} />
                   </span>
                   <span className="w-[70px]">
                     <Badge status={lead.status} />
