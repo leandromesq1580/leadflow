@@ -29,6 +29,22 @@ export async function GET(request: Request) {
   let imported = 0
   let skipped = 0
 
+  // Force-assign: o BANCO manda (settings.force_assign.emails). Se a key nao existir,
+  // cai pro env FORCE_ASSIGN_TO_EMAILS (legado). Permite redirecionar leads pra um buyer
+  // especifico SEM redeploy — e reverter automaticamente via watchdog (que so toca o banco).
+  let forceEmails: string[] = []
+  try {
+    const { data: fa } = await supabase.from('settings').select('value').eq('key', 'force_assign').maybeSingle()
+    if (fa) {
+      const fromDb = (fa.value as any)?.emails
+      forceEmails = Array.isArray(fromDb) ? fromDb.map((e: string) => String(e).trim()).filter(Boolean) : []
+    } else {
+      forceEmails = (process.env.FORCE_ASSIGN_TO_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean)
+    }
+  } catch {
+    forceEmails = (process.env.FORCE_ASSIGN_TO_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean)
+  }
+
   for (const formId of FORM_IDS) {
     try {
       const res = await fetch(
@@ -93,14 +109,8 @@ export async function GET(request: Request) {
           continue
         }
 
-        // Distribute:
-        // - Se FORCE_ASSIGN_TO_EMAILS (CSV) estiver setado → round-robin SOMENTE entre esses emails (Meta leads)
-        // - Caso contrario → distribuicao normal por creditos/estado
-        const forceEmails = (process.env.FORCE_ASSIGN_TO_EMAILS || '')
-          .split(',')
-          .map(e => e.trim())
-          .filter(Boolean)
-
+        // Distribute: se houver force-assign (lido acima do banco/env) → round-robin
+        // SOMENTE entre esses emails; senao → distribuicao normal por creditos/estado.
         let buyer = null
         if (forceEmails.length > 0) {
           buyer = await forceAssignRoundRobin(newLead, forceEmails)
