@@ -8,6 +8,40 @@ const FORM_IDS = [
   '1963007337624994',   // FORMULARIO SEGURO-SEM PERGUNTA-ESPANHOL
 ]
 
+interface RoutingStep { email: string; limit: number; delivered: number }
+interface LeadRouting {
+  mode: 'normal' | 'exclusive' | 'random' | 'roundrobin' | 'sequential'
+  exclusive_email?: string | null
+  pool_emails?: string[]
+  steps?: RoutingStep[]
+  fallback_mode?: 'normal' | 'exclusive'
+  fallback_email?: string | null
+}
+
+/**
+ * Decide o(s) email(s) alvo pra um lead conforme o modo de roteamento.
+ * Retorna null = usar distribuicao normal (creditos/estado).
+ * stepIndex (sequential) indica qual etapa contar como entregue.
+ */
+function resolveRoutingTarget(r: LeadRouting | null): { emails: string[]; stepIndex?: number } | null {
+  if (!r || !r.mode || r.mode === 'normal') return null
+  if (r.mode === 'exclusive') return r.exclusive_email ? { emails: [r.exclusive_email] } : null
+  if (r.mode === 'roundrobin') return (r.pool_emails || []).filter(Boolean).length ? { emails: (r.pool_emails || []).filter(Boolean) } : null
+  if (r.mode === 'random') {
+    const pool = (r.pool_emails || []).filter(Boolean)
+    return pool.length ? { emails: [pool[Math.floor(Math.random() * pool.length)]] } : null
+  }
+  if (r.mode === 'sequential') {
+    const steps = r.steps || []
+    const idx = steps.findIndex(s => (s.delivered || 0) < (s.limit || 0))
+    if (idx >= 0) return { emails: [steps[idx].email], stepIndex: idx }
+    // fila esgotada → fallback (exclusive p/ um email, ou normal)
+    if (r.fallback_mode === 'exclusive' && r.fallback_email) return { emails: [r.fallback_email] }
+    return null
+  }
+  return null
+}
+
 /**
  * GET /api/poll-leads — Polls Meta Graph API for new leads not yet in DB.
  * Workaround while app is in Development mode (webhooks don't fire for real users).
@@ -29,21 +63,13 @@ export async function GET(request: Request) {
   let imported = 0
   let skipped = 0
 
-  // Force-assign: o BANCO manda (settings.force_assign.emails). Se a key nao existir,
-  // cai pro env FORCE_ASSIGN_TO_EMAILS (legado). Permite redirecionar leads pra um buyer
-  // especifico SEM redeploy — e reverter automaticamente via watchdog (que so toca o banco).
-  let forceEmails: string[] = []
+  // Roteamento de leads (admin → Configuracoes → Roteamento de Leads). Lido do banco.
+  // Modos: normal | exclusive | random | roundrobin | sequential. Sem config = normal.
+  let routing: LeadRouting | null = null
   try {
-    const { data: fa } = await supabase.from('settings').select('value').eq('key', 'force_assign').maybeSingle()
-    if (fa) {
-      const fromDb = (fa.value as any)?.emails
-      forceEmails = Array.isArray(fromDb) ? fromDb.map((e: string) => String(e).trim()).filter(Boolean) : []
-    } else {
-      forceEmails = (process.env.FORCE_ASSIGN_TO_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean)
-    }
-  } catch {
-    forceEmails = (process.env.FORCE_ASSIGN_TO_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean)
-  }
+    const { data: lr } = await supabase.from('settings').select('value').eq('key', 'lead_routing').maybeSingle()
+    routing = (lr?.value as LeadRouting) || null
+  } catch {}
 
   for (const formId of FORM_IDS) {
     try {
@@ -109,11 +135,17 @@ export async function GET(request: Request) {
           continue
         }
 
-        // Distribute: se houver force-assign (lido acima do banco/env) → round-robin
-        // SOMENTE entre esses emails; senao → distribuicao normal por creditos/estado.
+        // Aplica o modo de roteamento. Sem alvo (modo normal ou fila sequencial
+        // esgotada com fallback normal) → distribuicao padrao por creditos/estado.
         let buyer = null
-        if (forceEmails.length > 0) {
-          buyer = await forceAssignRoundRobin(newLead, forceEmails)
+        const target = resolveRoutingTarget(routing)
+        if (target && target.emails.length > 0) {
+          buyer = await forceAssignRoundRobin(newLead, target.emails)
+          // Sequential: conta o lead entregue nessa etapa e persiste no banco
+          if (buyer && routing?.mode === 'sequential' && target.stepIndex != null && routing.steps?.[target.stepIndex]) {
+            routing.steps[target.stepIndex].delivered = (routing.steps[target.stepIndex].delivered || 0) + 1
+            await supabase.from('settings').upsert({ key: 'lead_routing', value: routing as any, updated_at: new Date().toISOString() })
+          }
         }
         if (!buyer) {
           buyer = await distributeLeadToNextBuyer(newLead)
