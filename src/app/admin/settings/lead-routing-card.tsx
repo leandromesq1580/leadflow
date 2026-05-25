@@ -47,8 +47,22 @@ export function LeadRoutingCard() {
   async function save() {
     setSaving(true)
     const sb = createClient()
-    await sb.from('settings').upsert({ key: 'lead_routing', value: routing as any, updated_at: new Date().toISOString() })
-    setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 3000)
+    // Protege contra lost-update: o poll pode ter incrementado o "delivered" enquanto
+    // o card estava aberto. Re-lê do banco e mantém o MAIOR valor por etapa (nunca reverte a contagem).
+    let toSave = routing
+    if (routing.mode === 'sequential' && routing.steps?.length) {
+      const { data: fresh } = await sb.from('settings').select('value').eq('key', 'lead_routing').maybeSingle()
+      const freshSteps = ((fresh?.value as Routing)?.steps) || []
+      toSave = {
+        ...routing,
+        steps: routing.steps.map((s, i) => ({ ...s, delivered: Math.max(s.delivered || 0, freshSteps[i]?.delivered || 0) })),
+      }
+    }
+    const { error } = await sb.from('settings').upsert({ key: 'lead_routing', value: toSave as any, updated_at: new Date().toISOString() })
+    setSaving(false)
+    if (error) { alert('Falha ao salvar o roteamento: ' + error.message); return }
+    setRouting(toSave)
+    setSaved(true); setTimeout(() => setSaved(false), 3000)
   }
 
   const nameOf = (email: string) => buyers.find(b => b.email === email)?.name || email

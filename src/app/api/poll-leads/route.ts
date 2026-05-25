@@ -144,7 +144,12 @@ export async function GET(request: Request) {
           // Sequential: conta o lead entregue nessa etapa e persiste no banco
           if (buyer && routing?.mode === 'sequential' && target.stepIndex != null && routing.steps?.[target.stepIndex]) {
             routing.steps[target.stepIndex].delivered = (routing.steps[target.stepIndex].delivered || 0) + 1
-            await supabase.from('settings').upsert({ key: 'lead_routing', value: routing as any, updated_at: new Date().toISOString() })
+            // try/catch: falha ao persistir a contagem NUNCA pode interromper a distribuição
+            try {
+              await supabase.from('settings').upsert({ key: 'lead_routing', value: routing as any, updated_at: new Date().toISOString() })
+            } catch (e) {
+              console.error('[Poll] falha ao persistir delivered (lead já atribuído ok):', (e as any)?.message)
+            }
           }
         }
         if (!buyer) {
