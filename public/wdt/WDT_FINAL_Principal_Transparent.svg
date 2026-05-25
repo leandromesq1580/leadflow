@@ -1,0 +1,7 @@
+<svg width="2400" height="1600" viewBox="0 0 2400 1600" xmlns="http://www.w3.org/2000/svg">
+  <text x="1200" y="720" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="390" font-weight="700" letter-spacing="12" fill="#0D0D0D">WDT</text>
+  <polygon points="1512,462 1770,462 1735,498 1512,498" fill="#C8A96B"/>
+  <text x="1200" y="930" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="400" letter-spacing="35" fill="#C8A96B">USA GROUP</text>
+  <line x1="555" y1="1010" x2="1845" y2="1010" stroke="#C8A96B" stroke-width="5"/>
+  <text x="1200" y="1170" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="400" letter-spacing="20" fill="#0D0D0D">TECHNOLOGY INTO CAPITAL</text>
+</svg>
