@@ -16,7 +16,7 @@ interface Routing {
 
 const MODES: { v: Routing['mode']; label: string; desc: string }[] = [
   { v: 'normal', label: '🔄 Normal', desc: 'Por créditos + estado (padrão do sistema)' },
-  { v: 'exclusive', label: '🎯 Exclusivo', desc: 'Todos os leads pra 1 corretor' },
+  { v: 'exclusive', label: '🎯 Exclusivo', desc: 'Todos os leads pra 1 agente' },
   { v: 'sequential', label: '📊 Sequencial', desc: 'Próximos X pro A, depois Y pro B…' },
   { v: 'random', label: '🎲 Aleatório', desc: 'Sorteia entre os escolhidos' },
   { v: 'roundrobin', label: '♻️ Round-robin', desc: 'Alterna 1 a 1 entre os escolhidos' },
@@ -33,11 +33,13 @@ export function LeadRoutingCard() {
 
   async function load() {
     const sb = createClient()
-    const [bs, lr] = await Promise.all([
-      sb.from('buyers').select('id, name, email').eq('is_active', true).order('name'),
+    // Agentes vêm de um endpoint server-side (bypassa o RLS de buyers, que só deixa
+    // cada usuário ler o próprio registro). Settings é legível via client normalmente.
+    const [agentsRes, lr] = await Promise.all([
+      fetch('/api/admin/agents').then(r => r.json()).catch(() => ({ agents: [] })),
       sb.from('settings').select('value').eq('key', 'lead_routing').maybeSingle(),
     ])
-    setBuyers(bs.data || [])
+    setBuyers(agentsRes.agents || [])
     if (lr.data?.value) setRouting(lr.data.value as Routing)
     setLoaded(true)
   }
@@ -93,13 +95,13 @@ export function LeadRoutingCard() {
       {/* Config por modo */}
       {routing.mode === 'normal' && (
         <p className="text-sm text-gray-500 bg-gray-50 rounded-xl p-4">
-          Distribuição padrão: cada lead vai pro corretor elegível (licença no estado) com mais créditos.
+          Distribuição padrão: cada lead vai pro agente elegível (licença no estado) com mais créditos.
         </p>
       )}
 
       {routing.mode === 'exclusive' && (
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Corretor que recebe tudo</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">Agente que recebe tudo</label>
           <select value={routing.exclusive_email || ''} onChange={e => set({ exclusive_email: e.target.value })} className={`w-full ${inputCls}`}>
             <option value="">— escolha —</option>
             {buyers.map(b => <option key={b.id} value={b.email}>{b.name} ({b.email})</option>)}
@@ -109,7 +111,7 @@ export function LeadRoutingCard() {
 
       {(routing.mode === 'random' || routing.mode === 'roundrobin') && (
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Corretores no rodízio</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Agentes no rodízio</label>
           <div className="space-y-1.5 max-h-56 overflow-auto">
             {buyers.map(b => (
               <label key={b.id} className="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50">
@@ -152,7 +154,7 @@ export function LeadRoutingCard() {
             <div className="flex flex-col sm:flex-row gap-2">
               <select value={routing.fallback_mode || 'normal'} onChange={e => set({ fallback_mode: e.target.value as any })} className={inputCls}>
                 <option value="normal">Voltar ao Normal (créditos/estado)</option>
-                <option value="exclusive">Exclusivo pra um corretor</option>
+                <option value="exclusive">Exclusivo pra um agente</option>
               </select>
               {routing.fallback_mode === 'exclusive' && (
                 <select value={routing.fallback_email || ''} onChange={e => set({ fallback_email: e.target.value })} className={inputCls} style={{ flex: 1 }}>
