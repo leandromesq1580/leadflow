@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { renderTemplate } from '@/lib/template-render'
+import { resolveSendBridge } from '@/lib/wa-bridge'
 import { Resend } from 'resend'
 
 interface Automation {
@@ -204,12 +205,12 @@ async function executeAction(auto: Automation, target: Target): Promise<void> {
 
     if (template.type === 'whatsapp') {
       if (!lead.phone) throw new Error('Lead sem telefone')
-      const bridgeUrl = (process.env.WA_BRIDGE_URL || 'http://31.220.97.186:3457').replace(/\/$/, '')
-      const bridgeKey = (process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026').trim()
+      // Envia pela bridge do DONO do lead (não pela global/Regiane)
+      const sb = await resolveSendBridge(db, auto.buyer_id)
       const cleanPhone = lead.phone.replace(/[\s\-()]/g, '').replace(/^\+/, '')
-      const res = await fetch(`${bridgeUrl}/send`, {
+      const res = await fetch(`${sb.url}/send`, {
         method: 'POST',
-        headers: { apikey: bridgeKey, 'Content-Type': 'application/json' },
+        headers: { apikey: sb.key, 'Content-Type': 'application/json' },
         body: JSON.stringify({ number: cleanPhone, message: body }),
       })
       if (!res.ok) throw new Error(`wa-bridge ${res.status}`)
@@ -220,7 +221,7 @@ async function executeAction(auto: Automation, target: Target): Promise<void> {
         buyer_id: auto.buyer_id,
         lead_id: target.lead_id,
         direction: 'out',
-        from_phone: '',
+        from_phone: sb.phone,
         to_phone: cleanPhone,
         body,
         wa_message_id: waId,
