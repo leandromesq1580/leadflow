@@ -20,7 +20,9 @@ export async function POST(request: NextRequest) {
   const res = NextResponse.json({ ok: true, restored: !!backup })
 
   if (backup) {
-    res.cookies.set(authName, backup, { path: '/', sameSite: 'lax', maxAge: 60 * 60 * 24 })
+    // CRU (sem URL-encode) pra bater com o formato do login.tsx — senão o parse
+    // client-side (atob) quebra ao voltar pro admin.
+    res.headers.append('Set-Cookie', `${authName}=${backup}; Path=/; Max-Age=${60 * 60 * 24}; SameSite=Lax`)
   } else {
     res.cookies.set(authName, '', { path: '/', maxAge: 0 })
   }
