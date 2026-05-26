@@ -48,7 +48,7 @@ export default function AutomationsPage() {
     const cookie = document.cookie.split('; ').find(c => c.startsWith(`sb-${ref}-auth-token=`))
     if (cookie) {
       try {
-        const token = JSON.parse(atob(cookie.split('=')[1]))
+        const token = JSON.parse(atob(decodeURIComponent(cookie.substring(cookie.indexOf('=') + 1))))
         const payload = JSON.parse(atob(token.access_token.split('.')[1]))
         fetchBuyer(payload.sub)
       } catch {}

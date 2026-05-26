@@ -86,12 +86,10 @@ export async function POST(request: NextRequest) {
   }
   // Marca quem está sendo visto (pro banner) — lido server-side no layout
   res.cookies.set('l4p-imp-as', encodeURIComponent(target.name || target.email), { path: '/', httpOnly: true, sameSite: 'lax', maxAge: 60 * 60 * 4 })
-  // Troca a sessão ativa pela do usuário alvo.
-  // IMPORTANTE: Set-Cookie CRU (sem URL-encode) pra bater com o formato que o
-  // login.tsx grava. O parse client-side (atob no inbox/agenda) NÃO faz
-  // decodeURIComponent — cookie URL-encoded quebra a resolução do buyerId
-  // (era por isso que o inbox aparecia vazio no "Ver como").
-  res.headers.append('Set-Cookie', `${authName}=${cookieValue}; Path=/; Max-Age=${60 * 60 * 24}; SameSite=Lax`)
+  // Troca a sessão ativa pela do usuário alvo. O cookie sai URL-encoded
+  // (NextResponse encoda o base64) — o parser client-side decodifica
+  // (decodeURIComponent) pra resolver o buyerId no inbox/agenda.
+  res.cookies.set(authName, cookieValue, { path: '/', sameSite: 'lax', maxAge: 60 * 60 * 24 })
 
   return res
 }
