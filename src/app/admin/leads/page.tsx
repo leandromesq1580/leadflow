@@ -5,6 +5,7 @@ import { getInitials } from '@/lib/utils'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ReassignControl } from './reassign-control'
+import { AppointmentModal } from './appointment-modal'
 
 export const dynamic = 'force-dynamic'
 
@@ -217,7 +218,7 @@ export default async function AdminLeadsPage({ searchParams }: { searchParams: P
                     {getInitials(lead.name)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold" style={{ color: '#1a1a2e' }}>{lead.name}</p>
+                    <AppointmentModal leadId={lead.id} leadName={lead.name} agents={buyers || []} />
                     <p className="text-[11px]" style={{ color: '#94a3b8' }}>{lead.phone}{lead.city ? ` · ${lead.city}` : ''}</p>
                   </div>
                   <span className="w-[40px] text-center px-2 py-0.5 rounded text-[10px] font-bold" style={{ background: '#eef2ff', color: '#6366f1' }}>
