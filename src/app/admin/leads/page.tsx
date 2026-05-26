@@ -79,8 +79,21 @@ export default async function AdminLeadsPage({ searchParams }: { searchParams: P
     db.from('leads').select('id', { count: 'exact', head: true }).eq('type', 'cold').eq('status', 'new'),
   ])
 
-  // Buyers pra dropdown
+  // Buyers pra dropdown (repasse)
   const { data: buyers } = await db.from('buyers').select('id, name').eq('is_active', true).order('name')
+
+  // Clientes com saldo de APPOINTMENT (pro modal "Gerar Appointment")
+  const { data: apptCredits } = await db.from('credits')
+    .select('buyer_id, total_purchased, total_used, buyer:buyers!credits_buyer_id_fkey(id, name, is_active)')
+    .eq('type', 'appointment')
+  const apptMap: Record<string, { id: string; name: string; remaining: number }> = {}
+  for (const c of (apptCredits || []) as any[]) {
+    const b = c.buyer
+    if (!b?.is_active) continue
+    if (!apptMap[c.buyer_id]) apptMap[c.buyer_id] = { id: b.id, name: b.name, remaining: 0 }
+    apptMap[c.buyer_id].remaining += (c.total_purchased - c.total_used)
+  }
+  const apptClients = Object.values(apptMap).filter(c => c.remaining > 0)
 
   const allLeads = leads || []
   const total = totalFiltered ?? 0
@@ -218,7 +231,7 @@ export default async function AdminLeadsPage({ searchParams }: { searchParams: P
                     {getInitials(lead.name)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <AppointmentModal leadId={lead.id} leadName={lead.name} agents={buyers || []} />
+                    <AppointmentModal leadId={lead.id} leadName={lead.name} clients={apptClients} />
                     <p className="text-[11px]" style={{ color: '#94a3b8' }}>{lead.phone}{lead.city ? ` · ${lead.city}` : ''}</p>
                   </div>
                   <span className="w-[40px] text-center px-2 py-0.5 rounded text-[10px] font-bold" style={{ background: '#eef2ff', color: '#6366f1' }}>

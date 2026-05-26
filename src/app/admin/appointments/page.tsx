@@ -53,17 +53,19 @@ export default async function AdminAppointmentsPage() {
     .order('created_at', { ascending: false })
     .limit(10)
 
-  // Appointments agendados (reuniões → agenda dos compradores). Só de HOJE em diante,
-  // pra não poluir com reuniões passadas do pipeline. Ordena pelo mais próximo.
-  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
-  const { data: scheduled } = await db
-    .from('follow_ups')
-    .select('id, scheduled_at, description, lead:leads(name, phone, state), buyer:buyers!follow_ups_buyer_id_fkey(name)')
-    .eq('type', 'meeting')
-    .not('scheduled_at', 'is', null)
-    .gte('scheduled_at', todayStart.toISOString())
-    .order('scheduled_at', { ascending: true })
-    .limit(50)
+  // Saldo de appointments por cliente (quem comprou o produto: comprou / entregou / falta)
+  const { data: apptCreditRows } = await db.from('credits')
+    .select('total_purchased, total_used, buyer:buyers!credits_buyer_id_fkey(id, name, is_active)')
+    .eq('type', 'appointment')
+  const balByClient: Record<string, { name: string; bought: number; used: number }> = {}
+  for (const c of (apptCreditRows || []) as any[]) {
+    const b = c.buyer
+    if (!b) continue
+    if (!balByClient[b.id]) balByClient[b.id] = { name: b.name, bought: 0, used: 0 }
+    balByClient[b.id].bought += c.total_purchased
+    balByClient[b.id].used += c.total_used
+  }
+  const apptBalances = Object.values(balByClient).sort((a, b) => (b.bought - b.used) - (a.bought - a.used))
 
   return (
     <div className="max-w-[1100px]">
@@ -131,25 +133,23 @@ export default async function AdminAppointmentsPage() {
         </div>
       )}
 
-      {/* Appointments Agendados (reuniões geradas pelo admin → agenda dos compradores) */}
-      {scheduled && scheduled.length > 0 && (
+      {/* Appointments por cliente — gestão de quem comprou o produto */}
+      {apptBalances.length > 0 && (
         <div className="rounded-2xl overflow-hidden mb-8" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
           <div className="px-6 py-4" style={{ borderBottom: '1px solid #e8ecf4' }}>
-            <h2 className="text-[15px] font-bold" style={{ color: '#1a1a2e' }}>📅 Appointments Agendados ({scheduled.length})</h2>
-            <p className="text-[12px] mt-0.5" style={{ color: '#94a3b8' }}>Reuniões geradas na agenda dos compradores</p>
+            <h2 className="text-[15px] font-bold" style={{ color: '#1a1a2e' }}>📊 Appointments por Cliente</h2>
+            <p className="text-[12px] mt-0.5" style={{ color: '#94a3b8' }}>Quem comprou o pacote · quanto já foi entregue · quanto falta</p>
           </div>
-          {scheduled.map((a: any, i: number) => {
-            const dt = a.scheduled_at ? new Date(a.scheduled_at) : null
-            const when = dt ? dt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'
+          {apptBalances.map((c, i) => {
+            const remaining = c.bought - c.used
             return (
-              <div key={a.id} className="flex items-center gap-3 px-6 py-3" style={{ borderBottom: i < scheduled.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
-                <span className="text-[12px] font-bold px-2 py-1 rounded-lg text-center" style={{ background: '#eef2ff', color: '#6366f1', minWidth: 96 }}>{when}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-semibold truncate" style={{ color: '#1a1a2e' }}>{a.lead?.name || '—'}{a.lead?.state ? ` · ${a.lead.state}` : ''}</p>
-                  {a.description && <p className="text-[11px] truncate" style={{ color: '#94a3b8' }}>{a.description}</p>}
-                </div>
-                <span className="text-[12px]" style={{ color: '#94a3b8' }}>→</span>
-                <span className="text-[13px] font-medium" style={{ color: '#64748b' }}>{a.buyer?.name || '—'}</span>
+              <div key={i} className="flex items-center gap-3 px-6 py-3" style={{ borderBottom: i < apptBalances.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                <span className="text-[13px] font-semibold flex-1" style={{ color: '#1a1a2e' }}>{c.name}</span>
+                <span className="text-[12px]" style={{ color: '#64748b' }}>comprou <strong>{c.bought}</strong></span>
+                <span className="text-[12px]" style={{ color: '#64748b' }}>entregue <strong>{c.used}</strong></span>
+                <span className="text-[12px] font-bold px-2 py-1 rounded-lg" style={{ background: remaining > 0 ? '#fff7ed' : '#dcfce7', color: remaining > 0 ? '#ea580c' : '#15803d' }}>
+                  {remaining > 0 ? `faltam ${remaining}` : 'completo'}
+                </span>
               </div>
             )
           })}
