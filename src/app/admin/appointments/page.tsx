@@ -53,6 +53,15 @@ export default async function AdminAppointmentsPage() {
     .order('created_at', { ascending: false })
     .limit(10)
 
+  // Appointments agendados (reuniões geradas a partir dos leads → agenda dos compradores)
+  const { data: scheduled } = await db
+    .from('follow_ups')
+    .select('id, scheduled_at, description, lead:leads(name, phone, state), buyer:buyers!follow_ups_buyer_id_fkey(name)')
+    .eq('type', 'meeting')
+    .not('scheduled_at', 'is', null)
+    .order('scheduled_at', { ascending: true })
+    .limit(50)
+
   return (
     <div className="max-w-[1100px]">
       <h1 className="text-[24px] font-extrabold mb-1" style={{ color: '#1a1a2e' }}>Fila de Appointments</h1>
@@ -116,6 +125,31 @@ export default async function AdminAppointmentsPage() {
           </div>
           <p className="text-[15px] font-semibold" style={{ color: '#1a1a2e' }}>Fila vazia</p>
           <p className="text-[13px] mt-1" style={{ color: '#94a3b8' }}>Todos os appointments foram agendados</p>
+        </div>
+      )}
+
+      {/* Appointments Agendados (reuniões geradas pelo admin → agenda dos compradores) */}
+      {scheduled && scheduled.length > 0 && (
+        <div className="rounded-2xl overflow-hidden mb-8" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+          <div className="px-6 py-4" style={{ borderBottom: '1px solid #e8ecf4' }}>
+            <h2 className="text-[15px] font-bold" style={{ color: '#1a1a2e' }}>📅 Appointments Agendados ({scheduled.length})</h2>
+            <p className="text-[12px] mt-0.5" style={{ color: '#94a3b8' }}>Reuniões geradas na agenda dos compradores</p>
+          </div>
+          {scheduled.map((a: any, i: number) => {
+            const dt = a.scheduled_at ? new Date(a.scheduled_at) : null
+            const when = dt ? dt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'
+            return (
+              <div key={a.id} className="flex items-center gap-3 px-6 py-3" style={{ borderBottom: i < scheduled.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                <span className="text-[12px] font-bold px-2 py-1 rounded-lg text-center" style={{ background: '#eef2ff', color: '#6366f1', minWidth: 96 }}>{when}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold truncate" style={{ color: '#1a1a2e' }}>{a.lead?.name || '—'}{a.lead?.state ? ` · ${a.lead.state}` : ''}</p>
+                  {a.description && <p className="text-[11px] truncate" style={{ color: '#94a3b8' }}>{a.description}</p>}
+                </div>
+                <span className="text-[12px]" style={{ color: '#94a3b8' }}>→</span>
+                <span className="text-[13px] font-medium" style={{ color: '#64748b' }}>{a.buyer?.name || '—'}</span>
+              </div>
+            )
+          })}
         </div>
       )}
 
