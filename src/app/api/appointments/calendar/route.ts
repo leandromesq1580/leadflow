@@ -64,6 +64,8 @@ export async function GET(request: NextRequest) {
       color: a.status === 'completed' ? '#10b981' : a.status === 'no_show' ? '#ef4444' : '#6366f1',
       raw_id: a.id,
       completed: a.status === 'completed',
+      // observação/qualificação do appointment → mostrada como DESCRIÇÃO na agenda do comprador
+      description: a.qualification_notes || null,
     })),
 
     // Follow-ups
