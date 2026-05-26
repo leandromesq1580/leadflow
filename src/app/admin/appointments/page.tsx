@@ -1,10 +1,10 @@
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { Badge } from '@/components/ui/badge'
 import { timeAgo, getInitials } from '@/lib/utils'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { AppointmentActions } from './appointment-actions'
+import { AppointmentManager } from './appointment-manager'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,12 +46,21 @@ export default async function AdminAppointmentsPage() {
     }
   }))
 
-  // Recent completed appointments
-  const { data: completedAppts } = await db
+  // Todos os appointments (pra gestão: lista detalhada + edição)
+  const { data: apptRows } = await db
     .from('appointments')
-    .select('*, lead:leads(name, phone), buyer:buyers(name)')
-    .order('created_at', { ascending: false })
-    .limit(10)
+    .select('id, scheduled_at, status, qualification_notes, lead:leads(name, phone), buyer:buyers(name)')
+    .order('scheduled_at', { ascending: false })
+    .limit(100)
+  const apptList = (apptRows || []).map((a: any) => ({
+    id: a.id,
+    scheduled_at: a.scheduled_at,
+    status: a.status,
+    qualification_notes: a.qualification_notes,
+    lead_name: a.lead?.name || '—',
+    lead_phone: a.lead?.phone || '',
+    buyer_name: a.buyer?.name || '—',
+  }))
 
   // Saldo de appointments por cliente (quem comprou o produto: comprou / entregou / falta)
   const { data: apptCreditRows } = await db.from('credits')
@@ -156,23 +165,14 @@ export default async function AdminAppointmentsPage() {
         </div>
       )}
 
-      {/* Completed */}
-      {completedAppts && completedAppts.length > 0 && (
-        <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-          <div className="px-6 py-4" style={{ borderBottom: '1px solid #e8ecf4' }}>
-            <h2 className="text-[15px] font-bold" style={{ color: '#1a1a2e' }}>Appointments Recentes</h2>
-          </div>
-          {completedAppts.map((appt: any, i: number) => (
-            <div key={appt.id} className="flex items-center gap-3 px-6 py-3" style={{ borderBottom: i < completedAppts.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
-              <span className="text-[13px] font-semibold" style={{ color: '#1a1a2e' }}>{appt.lead?.name}</span>
-              <span className="text-[12px]" style={{ color: '#94a3b8' }}>→</span>
-              <span className="text-[13px] font-medium" style={{ color: '#64748b' }}>{appt.buyer?.name}</span>
-              <div className="flex-1" />
-              <Badge status={appt.status} />
-            </div>
-          ))}
+      {/* Todos os Appointments — lista detalhada + edição */}
+      <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+        <div className="px-6 py-4" style={{ borderBottom: '1px solid #e8ecf4' }}>
+          <h2 className="text-[15px] font-bold" style={{ color: '#1a1a2e' }}>🗓️ Todos os Appointments ({apptList.length})</h2>
+          <p className="text-[12px] mt-0.5" style={{ color: '#94a3b8' }}>Clique em "Editar" pra remarcar data/hora, mudar status ou a observação</p>
         </div>
-      )}
+        <AppointmentManager appointments={apptList} />
+      </div>
     </div>
   )
 }
