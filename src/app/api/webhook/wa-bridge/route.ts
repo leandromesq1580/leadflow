@@ -30,10 +30,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { wa_message_id, from, to, body, type, has_media, media_url, media_type } = await request.json()
+    const { wa_message_id, from, to, body, type, has_media, media_url, media_type, direction } = await request.json()
     if (!wa_message_id || !from) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
     }
+    // direction='out' = mensagem que o DONO enviou (do celular ou via backfill).
+    // Inbound (default): o LEAD é quem mandou (from); bridge = to.
+    // Outbound: o LEAD é o destinatário (to); bridge = from.
+    const isOut = direction === 'out'
 
     const db = createAdminClient()
 
@@ -47,33 +51,38 @@ export async function POST(request: NextRequest) {
 
     const normalizedFrom = String(from).replace(/\D/g, '')
     const normalizedTo = String(to || '').replace(/\D/g, '')
+    // O LEAD (contato) vs o nº do bridge do dono — dependem da direção.
+    const contactPhone = isOut ? normalizedTo : normalizedFrom
+    const ownBridgePhone = isOut ? normalizedFrom : normalizedTo
 
-    // Resolve recipient buyer (so usado pra desempate em lead duplicado)
+    // Resolve recipient buyer (so usado pra desempate em lead duplicado) — pelo nº do bridge do dono
     let recipientBuyerId: string | null = null
-    if (normalizedTo) {
-      const last10To = normalizedTo.slice(-10)
-      const last11To = normalizedTo.slice(-11)
+    if (ownBridgePhone) {
+      const last10To = ownBridgePhone.slice(-10)
+      const last11To = ownBridgePhone.slice(-11)
       const { data: bridgeBuyer } = await db
         .from('buyers')
         .select('id')
-        .or(`wa_bridge_phone.eq.${normalizedTo},wa_bridge_phone.ilike.%${last10To},wa_bridge_phone.ilike.%${last11To}`)
+        .or(`wa_bridge_phone.eq.${ownBridgePhone},wa_bridge_phone.ilike.%${last10To},wa_bridge_phone.ilike.%${last11To}`)
         .limit(1)
         .maybeSingle()
       recipientBuyerId = bridgeBuyer?.id || null
     }
 
-    // Acha leads pelo phone
-    const last10 = normalizedFrom.slice(-10)
-    const last11 = normalizedFrom.slice(-11)
+    if (!contactPhone) return NextResponse.json({ skipped: 'no_contact' })
+
+    // Acha leads pelo phone do CONTATO (o lead)
+    const last10 = contactPhone.slice(-10)
+    const last11 = contactPhone.slice(-11)
 
     const { data: candidates } = await db
       .from('leads')
       .select('id, assigned_to, assigned_to_member, phone, name, created_at, assigned_at')
-      .or(`phone.ilike.%${last10},phone.ilike.%${last11},phone.eq.${normalizedFrom},phone.eq.+${normalizedFrom}`)
+      .or(`phone.ilike.%${last10},phone.ilike.%${last11},phone.eq.${contactPhone},phone.eq.+${contactPhone}`)
       .limit(10)
 
     if (!candidates || candidates.length === 0) {
-      console.log(`[WA Inbox] No matching lead for phone ${normalizedFrom}`)
+      console.log(`[WA Inbox] No matching lead for phone ${contactPhone} (dir=${direction || 'in'})`)
       return NextResponse.json({ skipped: 'no_lead' })
     }
 
@@ -134,19 +143,20 @@ export async function POST(request: NextRequest) {
     await db.from('whatsapp_messages').insert({
       buyer_id: inboxBuyerId,
       lead_id: match.id,
-      direction: 'in',
+      direction: isOut ? 'out' : 'in',
       from_phone: normalizedFrom,
       to_phone: to || '',
       body: body || '',
       media_type: media_type || (has_media ? (type || 'media') : null),
       media_url: media_url || null,
       wa_message_id,
-      status: 'delivered',
+      status: isOut ? 'sent' : 'delivered',
     })
 
     await db.from('leads').update({ updated_at: new Date().toISOString() }).eq('id', match.id)
 
-    try {
+    // Push só pra mensagem RECEBIDA (não pra mensagem que o próprio dono mandou)
+    if (!isOut) try {
       const { pushToBuyer } = await import('@/lib/push-notify')
       const preview = body
         ? String(body).slice(0, 80)
