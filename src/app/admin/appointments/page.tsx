@@ -53,12 +53,15 @@ export default async function AdminAppointmentsPage() {
     .order('created_at', { ascending: false })
     .limit(10)
 
-  // Appointments agendados (reuniões geradas a partir dos leads → agenda dos compradores)
+  // Appointments agendados (reuniões → agenda dos compradores). Só de HOJE em diante,
+  // pra não poluir com reuniões passadas do pipeline. Ordena pelo mais próximo.
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
   const { data: scheduled } = await db
     .from('follow_ups')
     .select('id, scheduled_at, description, lead:leads(name, phone, state), buyer:buyers!follow_ups_buyer_id_fkey(name)')
     .eq('type', 'meeting')
     .not('scheduled_at', 'is', null)
+    .gte('scheduled_at', todayStart.toISOString())
     .order('scheduled_at', { ascending: true })
     .limit(50)
 
