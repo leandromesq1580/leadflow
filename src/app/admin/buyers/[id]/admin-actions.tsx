@@ -7,6 +7,7 @@ interface Props {
   buyerId: string
   isActive: boolean
   plan: string
+  buyerName: string
 }
 
 const TIERS = [
@@ -15,9 +16,10 @@ const TIERS = [
   { v: 'pro', label: '⚡ CRM Pro' },
 ]
 
-export function AdminActions({ buyerId, isActive, plan }: Props) {
+export function AdminActions({ buyerId, isActive, plan, buyerName }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
+  const [impBusy, setImpBusy] = useState(false)
   const [showGrant, setShowGrant] = useState(false)
   const [grantType, setGrantType] = useState<'lead' | 'cold_lead' | 'appointment'>('lead')
   const [grantQty, setGrantQty] = useState(10)
@@ -37,6 +39,23 @@ export function AdminActions({ buyerId, isActive, plan }: Props) {
   async function setPlan(p: string) {
     if (p === plan) return
     await call('set-plan', { plan: p })
+  }
+
+  async function verComo() {
+    if (!confirm(`Entrar no sistema como ${buyerName}?\n\nSua sessão de admin fica salva — você volta pelo banner no topo da tela.`)) return
+    setImpBusy(true)
+    const r = await fetch('/api/admin/impersonate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ buyerId }),
+    })
+    if (r.ok) {
+      window.location.href = '/dashboard'
+    } else {
+      const d = await r.json().catch(() => ({}))
+      alert(d.error || 'Falha ao entrar como este usuário')
+      setImpBusy(false)
+    }
   }
 
   async function grant() {
@@ -86,6 +105,13 @@ export function AdminActions({ buyerId, isActive, plan }: Props) {
           className="px-4 py-2 rounded-lg text-[12px] font-bold"
           style={{ background: '#eef2ff', color: '#6366f1' }}>
           + Adicionar Créditos
+        </button>
+
+        <button onClick={verComo} disabled={impBusy}
+          title="Entrar no sistema vendo exatamente o que este usuário vê"
+          className="px-4 py-2 rounded-lg text-[12px] font-bold disabled:opacity-50"
+          style={{ background: '#1a1a2e', color: '#fff' }}>
+          {impBusy ? 'Entrando…' : '👁 Ver como'}
         </button>
       </div>
 

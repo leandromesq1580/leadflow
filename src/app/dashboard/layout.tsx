@@ -4,7 +4,9 @@ import { Sidebar } from '@/components/dashboard/sidebar'
 import { PwaRegister } from '@/components/pwa-register'
 import { TrialBanner } from '@/components/trial-banner'
 import { MeetingBanner } from '@/components/dashboard/meeting-banner'
+import { ImpersonationBanner } from '@/components/dashboard/impersonation-banner'
 import { MetaPixel } from '@/components/meta-pixel'
+import { cookies } from 'next/headers'
 import { isTrialActive, trialDaysRemaining, isAppointmentOnly } from '@/lib/crm-access'
 import { AppointmentGate } from '@/components/dashboard/appointment-gate'
 import { getLocale } from '@/lib/locale'
@@ -41,6 +43,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const apptOnly = isAppointmentOnly(buyer)
   const locale = await getLocale()
 
+  // "Ver como": admin vendo o sistema na pele de outro usuário
+  const impAsRaw = (await cookies()).get('l4p-imp-as')?.value
+  const impAs = impAsRaw ? decodeURIComponent(impAsRaw) : null
+
   return (
     <I18nProvider locale={locale}>
       <PrivacyProvider>
@@ -49,6 +55,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <Sidebar type="buyer" userName={buyer?.name || user!.email || ''} isAgency={buyer?.is_agency || false} buyerId={buyer?.id} crmPlan={buyer?.crm_plan || 'free'} />
         </div>
         <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-auto" data-crm-plan={buyer?.crm_plan || 'free'}>
+          {impAs && <ImpersonationBanner name={impAs} />}
           {buyer?.id && <MeetingBanner buyerId={buyer.id} />}
           {showTrial && <TrialBanner daysLeft={daysLeft} />}
           <AppointmentGate active={apptOnly}>
