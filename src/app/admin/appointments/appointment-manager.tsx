@@ -10,9 +10,11 @@ interface Appt {
   qualification_notes: string | null
   lead_name: string
   lead_phone: string
+  buyer_id: string
   buyer_name: string
 }
-interface Props { appointments: Appt[] }
+interface Client { id: string; name: string; remaining: number }
+interface Props { appointments: Appt[]; clients: Client[] }
 
 const STATUSES = [
   { v: 'scheduled', label: '📅 Agendado', color: '#6366f1', bg: '#eef2ff' },
@@ -30,7 +32,7 @@ function toLocalParts(iso: string) {
   return { date, time }
 }
 
-export function AppointmentManager({ appointments }: Props) {
+export function AppointmentManager({ appointments, clients }: Props) {
   const router = useRouter()
   const [editing, setEditing] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -38,10 +40,11 @@ export function AppointmentManager({ appointments }: Props) {
   const [time, setTime] = useState('')
   const [status, setStatus] = useState('scheduled')
   const [notes, setNotes] = useState('')
+  const [buyerId, setBuyerId] = useState('')
 
   function openEdit(a: Appt) {
     const { date, time } = toLocalParts(a.scheduled_at)
-    setDate(date); setTime(time); setStatus(a.status); setNotes(a.qualification_notes || '')
+    setDate(date); setTime(time); setStatus(a.status); setNotes(a.qualification_notes || ''); setBuyerId(a.buyer_id)
     setEditing(a.id)
   }
 
@@ -51,7 +54,7 @@ export function AppointmentManager({ appointments }: Props) {
     const r = await fetch(`/api/appointments/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scheduled_at, status, qualification_notes: notes }),
+      body: JSON.stringify({ scheduled_at, status, qualification_notes: notes, buyer_id: buyerId }),
     })
     setBusy(false); setEditing(null)
     if (r.ok) router.refresh()
@@ -98,6 +101,10 @@ export function AppointmentManager({ appointments }: Props) {
 
             {isEd && (
               <div className="px-6 pb-4 pt-1" style={{ background: '#f8f9fc' }}>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>Cliente — pra quem foi agendado (trocar = transfere o crédito)</label>
+                <select value={buyerId} onChange={e => setBuyerId(e.target.value)} className={inputCls + ' cursor-pointer mb-2 w-full'} style={inputStyle}>
+                  {clients.map(c => <option key={c.id} value={c.id}>👤 {c.name} — saldo {c.remaining}</option>)}
+                </select>
                 <div className="flex flex-wrap gap-2 mb-2 items-center">
                   <input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputCls} style={inputStyle} />
                   <input type="time" value={time} onChange={e => setTime(e.target.value)} className={inputCls} style={inputStyle} />

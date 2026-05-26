@@ -49,7 +49,7 @@ export default async function AdminAppointmentsPage() {
   // Todos os appointments (pra gestão: lista detalhada + edição)
   const { data: apptRows } = await db
     .from('appointments')
-    .select('id, scheduled_at, status, qualification_notes, lead:leads(name, phone), buyer:buyers(name)')
+    .select('id, scheduled_at, status, qualification_notes, buyer_id, lead:leads(name, phone), buyer:buyers(name)')
     .order('scheduled_at', { ascending: false })
     .limit(100)
   const apptList = (apptRows || []).map((a: any) => ({
@@ -59,6 +59,7 @@ export default async function AdminAppointmentsPage() {
     qualification_notes: a.qualification_notes,
     lead_name: a.lead?.name || '—',
     lead_phone: a.lead?.phone || '',
+    buyer_id: a.buyer_id,
     buyer_name: a.buyer?.name || '—',
   }))
 
@@ -75,6 +76,8 @@ export default async function AdminAppointmentsPage() {
     balByClient[b.id].used += c.total_used
   }
   const apptBalances = Object.values(balByClient).sort((a, b) => (b.bought - b.used) - (a.bought - a.used))
+  // Clientes (com id) pro seletor de "trocar cliente" na edição do appointment
+  const apptClientList = Object.entries(balByClient).map(([id, v]) => ({ id, name: v.name, remaining: v.bought - v.used }))
 
   return (
     <div className="max-w-[1100px]">
@@ -171,7 +174,7 @@ export default async function AdminAppointmentsPage() {
           <h2 className="text-[15px] font-bold" style={{ color: '#1a1a2e' }}>🗓️ Todos os Appointments ({apptList.length})</h2>
           <p className="text-[12px] mt-0.5" style={{ color: '#94a3b8' }}>Clique em "Editar" pra remarcar data/hora, mudar status ou a observação</p>
         </div>
-        <AppointmentManager appointments={apptList} />
+        <AppointmentManager appointments={apptList} clients={apptClientList} />
       </div>
     </div>
   )
