@@ -52,10 +52,13 @@ export default async function LandingPage() {
             <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold mb-6" style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.2)' }}>
               <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#34d399' }} /> {t.hero.badge}
             </span>
-            <h1 className="text-[32px] sm:text-[44px] lg:text-[52px] font-extrabold leading-[1.06] tracking-tight text-white mb-6">
+            <h1 className="text-[32px] sm:text-[44px] lg:text-[52px] font-extrabold leading-[1.06] tracking-tight text-white mb-5">
               {t.hero.titleA} <span style={{ color: '#a78bfa' }}>{t.hero.titleB}</span>
             </h1>
-            <p className="text-[15px] sm:text-[18px] leading-relaxed mb-10 max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.55)' }}>
+            <p className="text-[17px] sm:text-[21px] font-bold leading-snug mb-4 max-w-2xl mx-auto text-white">
+              {t.hero.tagline}
+            </p>
+            <p className="text-[15px] sm:text-[17px] leading-relaxed mb-10 max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.55)' }}>
               {t.hero.subtitle}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
