@@ -82,6 +82,95 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      {/* ==================== COMO FUNCIONA — DOBRA #2 ==================== */}
+      <section className="py-16 sm:py-24 relative overflow-hidden" style={{ background: 'radial-gradient(1100px 480px at 82% -8%, rgba(139,92,246,0.20), transparent), linear-gradient(180deg, #0b1020 0%, #0e1430 100%)' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+            {/* Esquerda: narrativa + passos */}
+            <div>
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold mb-5" style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.25)' }}>
+                <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#34d399' }} /> {t.howItWorks.badge}
+              </span>
+              <h2 className="text-[28px] sm:text-[40px] font-extrabold text-white leading-[1.08] mb-4">
+                {t.howItWorks.titleA} <span style={{ color: '#a78bfa' }}>{t.howItWorks.titleB}</span>
+              </h2>
+              <p className="text-[15px] sm:text-[17px] leading-relaxed mb-8" style={{ color: 'rgba(255,255,255,0.62)' }}>
+                {t.howItWorks.narrative}
+              </p>
+              <div className="space-y-5">
+                {[
+                  { n: '1', icon: '🎯', color: '#8b5cf6', title: t.howItWorks.step1Title, desc: t.howItWorks.step1Desc },
+                  { n: '2', icon: '⚡', color: '#10b981', title: t.howItWorks.step2Title, desc: t.howItWorks.step2Desc },
+                  { n: '3', icon: '🤝', color: '#f59e0b', title: t.howItWorks.step3Title, desc: t.howItWorks.step3Desc },
+                ].map((s, i) => (
+                  <div key={i} className="flex gap-4 items-start">
+                    <div className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-[20px] relative" style={{ background: s.color + '22', border: `1px solid ${s.color}55` }}>
+                      {s.icon}
+                      <span className="absolute -top-2 -left-2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white" style={{ background: s.color }}>{s.n}</span>
+                    </div>
+                    <div>
+                      <p className="text-[15px] font-bold text-white mb-0.5">{s.title}</p>
+                      <p className="text-[13px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>{s.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Link href="/register" className="inline-block mt-8 px-7 py-3.5 rounded-xl text-[14px] font-bold" style={{ background: 'linear-gradient(135deg, #f59e0b, #eab308)', color: '#1a1a2e', boxShadow: '0 4px 20px rgba(245,158,11,0.35)' }}>
+                {t.howItWorks.cta}
+              </Link>
+            </div>
+
+            {/* Direita: feed de leads chegando (figura de desejo) */}
+            <div className="relative">
+              <div className="absolute inset-0 blur-3xl pointer-events-none" style={{ background: 'radial-gradient(circle at 50% 35%, rgba(139,92,246,0.22), transparent 70%)' }} />
+              <div className="relative">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-center mb-4 flex items-center justify-center gap-2" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                  <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#34d399' }} /> {t.howItWorks.feedLabel}
+                </p>
+                <div className="space-y-3.5">
+                  {[
+                    { name: 'Maria S.', loc: 'Orlando, FL', hue: 280 },
+                    { name: 'João P.', loc: 'Newark, NJ', hue: 160 },
+                    { name: 'Ana R.', loc: 'Boston, MA', hue: 32 },
+                  ].map((l, i) => (
+                    <div key={i} className="rounded-2xl p-4 flex items-center gap-3" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 12px 34px rgba(0,0,0,0.35)' }}>
+                      <div className="w-11 h-11 rounded-full flex items-center justify-center text-[14px] font-extrabold text-white flex-shrink-0" style={{ background: `hsl(${l.hue}, 58%, 55%)` }}>
+                        {l.name.split(' ').map(w => w[0]).join('')}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-[14px] font-bold text-white">{l.name}</p>
+                          <span className="text-[9px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: 'rgba(16,185,129,0.2)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)' }}>{t.howItWorks.leadBadge}</span>
+                        </div>
+                        <p className="text-[12px] truncate" style={{ color: 'rgba(255,255,255,0.55)' }}>🇺🇸 {l.loc} · {t.howItWorks.leadTag}</p>
+                      </div>
+                      <span className="flex items-center gap-1 text-[10px] font-bold flex-shrink-0" style={{ color: '#34d399' }}>
+                        <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#34d399' }} /> {t.howItWorks.leadNew}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Faixa de stats */}
+          <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {[
+              { n: t.howItWorks.stat1n, l: t.howItWorks.stat1l },
+              { n: t.howItWorks.stat2n, l: t.howItWorks.stat2l },
+              { n: t.howItWorks.stat3n, l: t.howItWorks.stat3l },
+              { n: t.howItWorks.stat4n, l: t.howItWorks.stat4l },
+            ].map((s, i) => (
+              <div key={i} className="rounded-2xl p-5 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <p className="text-[20px] sm:text-[26px] font-extrabold" style={{ color: '#a78bfa' }}>{s.n}</p>
+                <p className="text-[11px] font-semibold mt-1" style={{ color: 'rgba(255,255,255,0.55)' }}>{s.l}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ==================== SOCIAL PROOF BAR ==================== */}
       <section className="py-8 sm:py-12" style={{ background: '#fff', borderBottom: '1px solid #e8ecf4' }}>
         <div className="max-w-5xl mx-auto px-4 flex flex-wrap justify-center gap-6 sm:gap-12">
