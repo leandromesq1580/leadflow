@@ -4,6 +4,7 @@ import { getLocale } from '@/lib/locale'
 import { getMessages } from '@/lib/i18n'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { WhatsAppFab } from '@/components/whatsapp-fab'
+import { LiveLeadToast } from '@/components/live-lead-toast'
 import { MetaPixel } from '@/components/meta-pixel'
 
 export default async function LandingPage() {
@@ -462,6 +463,7 @@ export default async function LandingPage() {
       </footer>
 
       <WhatsAppFab phone="17867442126" label="Fale Conosco!" />
+      <LiveLeadToast badge={t.liveToast.badge} interest={t.liveToast.interest} now={t.liveToast.now} minsAgo={t.liveToast.minsAgo} />
       <MetaPixel />
     </div>
   )

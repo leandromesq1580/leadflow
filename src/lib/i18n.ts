@@ -61,6 +61,12 @@ export const messages = {
       stat3n: 'Recém', stat3l: 'convertidos · quentes',
       stat4n: '🇺🇸 EUA', stat4l: 'leads dos Estados Unidos',
     },
+    liveToast: {
+      badge: 'novo lead exclusivo',
+      interest: 'quer saber de seguro de vida',
+      now: 'agora mesmo',
+      minsAgo: 'há {n} min',
+    },
     stats: {
       perLead: 'por lead exclusivo',
       delivery: 'entrega WhatsApp',
@@ -515,6 +521,12 @@ export const messages = {
       stat3n: 'Freshly', stat3l: 'converted · hot',
       stat4n: '🇺🇸 USA', stat4l: 'leads from the US',
     },
+    liveToast: {
+      badge: 'new exclusive lead',
+      interest: 'wants life insurance info',
+      now: 'just now',
+      minsAgo: '{n} min ago',
+    },
     stats: {
       perLead: 'per exclusive lead',
       delivery: 'WhatsApp delivery',
@@ -968,6 +980,12 @@ export const messages = {
       stat2n: '100%', stat2l: 'exclusivos, solo tuyos',
       stat3n: 'Recién', stat3l: 'convertidos · calientes',
       stat4n: '🇺🇸 EE.UU.', stat4l: 'leads de Estados Unidos',
+    },
+    liveToast: {
+      badge: 'nuevo lead exclusivo',
+      interest: 'quiere info de seguro de vida',
+      now: 'ahora mismo',
+      minsAgo: 'hace {n} min',
     },
     stats: {
       perLead: 'por lead exclusivo',
