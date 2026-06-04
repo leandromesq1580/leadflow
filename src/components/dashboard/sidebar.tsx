@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n-client'
-import { appointmentCanAccess } from '@/lib/crm-access'
+import { appointmentCanAccess, leadCanAccess } from '@/lib/crm-access'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { useRealtime } from '@/lib/use-realtime'
 import { PrivacyToggle } from '@/components/dashboard/privacy-toggle'
@@ -97,6 +97,7 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan }: SidebarP
   const pathname = usePathname()
   const t = useT()
   const apptOnly = type === 'buyer' && crmPlan === 'appointment'
+  const leadOnly = type === 'buyer' && crmPlan === 'lead_only'
   const waUnread = useWhatsAppUnread(type === 'buyer' ? buyerId : undefined)
   const upcomingMeetings = useUpcomingMeetings(type === 'buyer' ? buyerId : undefined)
 
@@ -162,7 +163,7 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan }: SidebarP
             const isActive = pathname === link.href ||
               (link.href !== '/dashboard' && link.href !== '/admin' && pathname.startsWith(link.href))
 
-            const locked = apptOnly && !appointmentCanAccess(link.href)
+            const locked = (apptOnly && !appointmentCanAccess(link.href)) || (leadOnly && !leadCanAccess(link.href))
             const showBadge = !locked && link.href === '/dashboard/whatsapp' && waUnread > 0
             const showApptBadge = !locked && link.href === '/dashboard/appointments' && upcomingMeetings > 0
             return (

@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 /**
  * POST /api/admin/buyers/[id]/set-plan
- * Body: { plan: 'free' | 'appointment' | 'pro' }
+ * Body: { plan: 'free' | 'lead_only' | 'appointment' | 'pro' }
  * Define o tier do comprador manualmente (admin).
  */
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -18,8 +18,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!me?.is_admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { plan } = await request.json()
-  if (!['free', 'appointment', 'pro'].includes(plan)) {
-    return NextResponse.json({ error: 'plan deve ser free, appointment ou pro' }, { status: 400 })
+  if (!['free', 'lead_only', 'appointment', 'pro'].includes(plan)) {
+    return NextResponse.json({ error: 'plan deve ser free, lead_only, appointment ou pro' }, { status: 400 })
   }
 
   const update: Record<string, unknown> = {

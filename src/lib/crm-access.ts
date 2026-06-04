@@ -38,6 +38,31 @@ export function appointmentCanAccess(pathname: string): boolean {
   return APPOINTMENT_ALLOWED_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))
 }
 
+/**
+ * Tier "lead-only": compra pacotes de leads e gerencia o saldo, mas nao usa
+ * pipeline/CRM/whatsapp/automacoes do sistema. Ve SO My Leads + Credits +
+ * Settings; o resto fica atras do upsell. Admin e quem tem trial/pro nunca sao
+ * lead-only.
+ */
+export function isLeadOnly(buyer: CrmAccessBuyer | null | undefined): boolean {
+  if (!buyer) return false
+  if (buyer.is_admin === true) return false
+  if (hasCrmAccess(buyer)) return false
+  return buyer.crm_plan === 'lead_only'
+}
+
+/** Rotas liberadas pro perfil lead-only. Todo o resto = UpsellGate. */
+export const LEAD_ALLOWED_ROUTES = [
+  '/dashboard/leads',
+  '/dashboard/credits',
+  '/dashboard/settings',
+]
+
+/** True se a rota e acessivel pelo perfil lead-only. */
+export function leadCanAccess(pathname: string): boolean {
+  return LEAD_ALLOWED_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))
+}
+
 export function trialDaysRemaining(buyer: CrmAccessBuyer | null | undefined): number {
   if (!buyer?.trial_ends_at) return 0
   const ms = new Date(buyer.trial_ends_at).getTime() - Date.now()

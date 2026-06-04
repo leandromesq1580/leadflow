@@ -7,8 +7,9 @@ import { MeetingBanner } from '@/components/dashboard/meeting-banner'
 import { ImpersonationBanner } from '@/components/dashboard/impersonation-banner'
 import { MetaPixel } from '@/components/meta-pixel'
 import { cookies } from 'next/headers'
-import { isTrialActive, trialDaysRemaining, isAppointmentOnly } from '@/lib/crm-access'
+import { isTrialActive, trialDaysRemaining, isAppointmentOnly, isLeadOnly } from '@/lib/crm-access'
 import { AppointmentGate } from '@/components/dashboard/appointment-gate'
+import { LeadGate } from '@/components/dashboard/lead-gate'
 import { getLocale } from '@/lib/locale'
 import { I18nProvider } from '@/lib/i18n-client'
 import { PrivacyProvider } from '@/lib/privacy-mode'
@@ -41,6 +42,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const showTrial = isTrialActive(buyer)
   const daysLeft = trialDaysRemaining(buyer)
   const apptOnly = isAppointmentOnly(buyer)
+  const leadOnly = isLeadOnly(buyer)
   const locale = await getLocale()
 
   // "Ver como": admin vendo o sistema na pele de outro usuário
@@ -59,7 +61,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
           {buyer?.id && <MeetingBanner buyerId={buyer.id} />}
           {showTrial && <TrialBanner daysLeft={daysLeft} />}
           <AppointmentGate active={apptOnly}>
-            {children}
+            <LeadGate active={leadOnly}>
+              {children}
+            </LeadGate>
           </AppointmentGate>
         </main>
         {buyer?.id && <PwaRegister buyerId={buyer.id} />}

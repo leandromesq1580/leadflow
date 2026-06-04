@@ -10,7 +10,7 @@ import { StaleLeadsAlert } from '@/components/stale-leads-alert'
 import { PrivatePhone } from '@/components/private-field'
 import { getLocale } from '@/lib/locale'
 import { getMessages } from '@/lib/i18n'
-import { isAppointmentOnly } from '@/lib/crm-access'
+import { isAppointmentOnly, isLeadOnly } from '@/lib/crm-access'
 
 export default async function DashboardPage() {
   const supabase = await createServerSupabase()
@@ -25,6 +25,8 @@ export default async function DashboardPage() {
 
   // Appointment-only: a "home" dele é a agenda (o overview fica atrás do upsell).
   if (isAppointmentOnly(buyer)) redirect('/dashboard/appointments')
+  // Lead-only: a "home" dele é a lista de leads que recebeu.
+  if (isLeadOnly(buyer)) redirect('/dashboard/leads')
 
   if (!buyer) {
     return (
