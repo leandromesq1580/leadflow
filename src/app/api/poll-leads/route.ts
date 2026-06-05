@@ -164,9 +164,13 @@ export async function GET(request: Request) {
   }
 
   // Reprocessa leads que ficaram pendentes por horário (entrega quando a janela
-  // de algum comprador abre). try/catch: nunca pode derrubar o poll principal.
+  // de algum comprador abre). Passa o alvo de roteamento p/ respeitar a mesma
+  // programação dos leads novos. try/catch: nunca pode derrubar o poll principal.
   let redistributed = 0
-  try { redistributed = await redistributePendingLeads() } catch (e) { console.error('[Poll] redistribute err:', (e as any)?.message) }
+  try {
+    const pendTarget = resolveRoutingTarget(routing)
+    redistributed = await redistributePendingLeads(pendTarget?.emails || null)
+  } catch (e) { console.error('[Poll] redistribute err:', (e as any)?.message) }
 
   return NextResponse.json({
     status: 'ok',

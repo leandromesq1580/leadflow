@@ -269,7 +269,7 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
  * lead chegou. Chamado pelo cron (poll-leads). Quando a janela de alguém abre,
  * o lead é finalmente entregue. Ignora leads muito antigos pra não acumular.
  */
-export async function redistributePendingLeads(maxAgeHours = 72): Promise<number> {
+export async function redistributePendingLeads(routingEmails?: string[] | null, maxAgeHours = 72): Promise<number> {
   const supabase = createAdminClient()
   const cutoff = new Date(Date.now() - maxAgeHours * 3600_000).toISOString()
   const { data: pending } = await supabase
@@ -282,10 +282,17 @@ export async function redistributePendingLeads(maxAgeHours = 72): Promise<number
     .order('created_at', { ascending: true })
     .limit(50)
 
+  // Respeita a PROGRAMAÇÃO: se há um alvo de roteamento (exclusive/sequential),
+  // os pendentes vão pro alvo (igual leads novos), não pela distribuição normal.
+  // Sem alvo (modo normal) = distribuição por estado/crédito/horário.
+  const hasRouting = !!routingEmails && routingEmails.length > 0
+
   let assigned = 0
   for (const lead of pending || []) {
     try {
-      const buyer = await distributeLeadToNextBuyer(lead as Lead)
+      const buyer = hasRouting
+        ? await forceAssignRoundRobin(lead as Lead, routingEmails!)
+        : await distributeLeadToNextBuyer(lead as Lead)
       if (buyer) { assigned++; console.log(`[Redistribute] Lead pendente ${lead.id} → ${buyer.name}`) }
     } catch (e) {
       console.error(`[Redistribute] erro no lead ${lead.id}:`, (e as any)?.message)
