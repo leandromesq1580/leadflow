@@ -53,14 +53,15 @@ export async function forceAssignRoundRobin(
   if (emails.length === 0) return null
   const supabase = createAdminClient()
 
-  // Pega buyers dos emails, na ordem que veio
+  // Pega buyers dos emails, na ordem que veio — só ATIVOS (suspenso não recebe lead)
   const { data: buyers } = await supabase
     .from('buyers')
     .select('id, name, email, phone, notification_email, notification_sms')
     .in('email', emails)
+    .eq('is_active', true)
 
   if (!buyers || buyers.length === 0) {
-    console.error(`[Distribute] ROUND_ROBIN: nenhum buyer encontrado para ${emails.join(',')}`)
+    console.error(`[Distribute] ROUND_ROBIN: nenhum buyer ATIVO encontrado para ${emails.join(',')}`)
     return null
   }
 
@@ -152,9 +153,23 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
     return null
   }
 
+  // Guard defensivo: remove buyers SUSPENSOS (is_active=false) que o RPC possa
+  // ter deixado passar. Suspenso nunca recebe lead.
+  let eligible = buyers as EligibleBuyer[]
+  const ids = eligible.map(b => b.id)
+  if (ids.length > 0) {
+    const { data: actives } = await supabase.from('buyers').select('id').in('id', ids).eq('is_active', true)
+    const activeSet = new Set((actives || []).map(a => a.id))
+    eligible = eligible.filter(b => activeSet.has(b.id))
+  }
+  if (eligible.length === 0) {
+    console.log(`[Distribute] Eligible buyers all suspended for lead ${lead.id}`)
+    return null
+  }
+
   // Buyers are already sorted by remaining DESC (weighted distribution)
   // Pick the first one (most credits remaining)
-  const selectedBuyer = (buyers as EligibleBuyer[])[0]
+  const selectedBuyer = eligible[0]
 
   // Assign lead to buyer
   const { error: assignError } = await supabase

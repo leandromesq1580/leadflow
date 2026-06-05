@@ -196,10 +196,12 @@ async function executeAction(auto: Automation, target: Target): Promise<void> {
     const [{ data: template }, { data: lead }, { data: agent }] = await Promise.all([
       db.from('templates').select('*').eq('id', templateId).single(),
       db.from('leads').select('*').eq('id', target.lead_id).single(),
-      db.from('buyers').select('name, email, phone').eq('id', auto.buyer_id).single(),
+      db.from('buyers').select('name, email, phone, is_active').eq('id', auto.buyer_id).single(),
     ])
 
     if (!template || !lead || !agent) throw new Error('Template/lead/agent not found')
+    // Comprador suspenso: não dispara automação
+    if (agent.is_active === false) { console.log(`[Automation] buyer ${auto.buyer_id} suspenso — skip`); return }
 
     const body = renderTemplate(template.body, lead, agent)
 

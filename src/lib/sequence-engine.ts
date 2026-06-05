@@ -279,8 +279,10 @@ async function executeStep(step: any, enr: any): Promise<void> {
 
   // send_template
   const { data: lead } = await db.from('leads').select('*').eq('id', enr.lead_id).single()
-  const { data: agent } = await db.from('buyers').select('name, email, phone').eq('id', enr.buyer_id).single()
+  const { data: agent } = await db.from('buyers').select('name, email, phone, is_active').eq('id', enr.buyer_id).single()
   if (!lead || !agent) throw new Error('Lead or agent missing')
+  // Comprador suspenso: não dispara mensagem (sequência fica parada até reativar)
+  if (agent.is_active === false) { console.log(`[Sequence] buyer ${enr.buyer_id} suspenso — skip`); return }
 
   let body = ''
   let type: 'whatsapp' | 'email' = 'whatsapp'

@@ -5,6 +5,7 @@ import { PwaRegister } from '@/components/pwa-register'
 import { TrialBanner } from '@/components/trial-banner'
 import { MeetingBanner } from '@/components/dashboard/meeting-banner'
 import { ImpersonationBanner } from '@/components/dashboard/impersonation-banner'
+import { SuspendedAccount } from '@/components/dashboard/suspended-account'
 import { MetaPixel } from '@/components/meta-pixel'
 import { cookies } from 'next/headers'
 import { isTrialActive, trialDaysRemaining, isAppointmentOnly, isLeadOnly } from '@/lib/crm-access'
@@ -30,13 +31,19 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const db = createAdminClient()
   let { data: buyer } = await db
     .from('buyers')
-    .select('id, name, is_admin, is_agency, crm_plan, trial_ends_at')
+    .select('id, name, is_admin, is_agency, is_active, crm_plan, trial_ends_at')
     .eq('auth_user_id', user!.id)
     .single()
   // Fallback se a migration trial_ends_at ainda não tiver sido aplicada
   if (!buyer) {
-    const fb = await db.from('buyers').select('id, name, is_admin, is_agency, crm_plan').eq('auth_user_id', user!.id).single()
+    const fb = await db.from('buyers').select('id, name, is_admin, is_agency, is_active, crm_plan').eq('auth_user_id', user!.id).single()
     buyer = fb.data as any
+  }
+
+  // Conta suspensa (is_active=false) → bloqueia acesso à plataforma inteira.
+  // Admin nunca é bloqueado. is_active null/undefined = conta antiga = liberada.
+  if (buyer && buyer.is_active === false && buyer.is_admin !== true) {
+    return <SuspendedAccount name={buyer.name || user!.email || ''} />
   }
 
   const showTrial = isTrialActive(buyer)
