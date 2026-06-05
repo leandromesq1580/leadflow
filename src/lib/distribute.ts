@@ -1,5 +1,6 @@
 import { createAdminClient } from './supabase/admin'
 import { sendLeadNotificationEmail, sendTeamMemberNotification } from './notifications'
+import { buyerTimezone, isAvailableNow } from './availability'
 
 async function assignLeadToBuyer(
   supabase: ReturnType<typeof createAdminClient>,
@@ -167,6 +168,30 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
     return null
   }
 
+  // Filtro de DISPONIBILIDADE (horário): só recebe quem está dentro da janela
+  // configurada AGORA (fuso derivado dos estados do comprador). Quem não tem
+  // disponibilidade configurada = disponível 24/7. Se ninguém disponível agora,
+  // o lead fica pendente (assigned_to=null) e o cron reprocessa até abrir a janela.
+  const eligibleIds = eligible.map(b => b.id)
+  const [statesRes, availRes] = await Promise.all([
+    supabase.from('buyer_states').select('buyer_id, state_code').in('buyer_id', eligibleIds),
+    supabase.from('buyer_availability').select('buyer_id, day_type, period').in('buyer_id', eligibleIds),
+  ])
+  const statesByBuyer: Record<string, string[]> = {}
+  for (const r of statesRes.data || []) (statesByBuyer[r.buyer_id] ||= []).push(r.state_code)
+  const availByBuyer: Record<string, { day_type: string; period: string }[]> = {}
+  for (const r of availRes.data || []) (availByBuyer[r.buyer_id] ||= []).push({ day_type: r.day_type, period: r.period })
+
+  const availableNow = eligible.filter(b => {
+    const tz = buyerTimezone(statesByBuyer[b.id])
+    return isAvailableNow(availByBuyer[b.id], tz)
+  })
+  if (availableNow.length === 0) {
+    console.log(`[Distribute] Nenhum buyer disponível AGORA p/ lead ${lead.id} (${lead.state}) — fica pendente`)
+    return null
+  }
+  eligible = availableNow
+
   // Buyers are already sorted by remaining DESC (weighted distribution)
   // Pick the first one (most credits remaining)
   const selectedBuyer = eligible[0]
@@ -236,6 +261,38 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
   console.log(`[Distribute] Lead ${lead.id} (${lead.state}) → ${selectedBuyer.name} (remaining: ${selectedBuyer.remaining - 1})`)
 
   return selectedBuyer
+}
+
+/**
+ * Reprocessa leads que ficaram PENDENTES (status=new, sem dono) — tipicamente
+ * porque nenhum comprador elegível estava dentro da janela de horário quando o
+ * lead chegou. Chamado pelo cron (poll-leads). Quando a janela de alguém abre,
+ * o lead é finalmente entregue. Ignora leads muito antigos pra não acumular.
+ */
+export async function redistributePendingLeads(maxAgeHours = 72): Promise<number> {
+  const supabase = createAdminClient()
+  const cutoff = new Date(Date.now() - maxAgeHours * 3600_000).toISOString()
+  const { data: pending } = await supabase
+    .from('leads')
+    .select('id, name, email, phone, city, state, interest, campaign_name, product_type')
+    .eq('status', 'new')
+    .is('assigned_to', null)
+    .eq('product_type', 'lead')
+    .gte('created_at', cutoff)
+    .order('created_at', { ascending: true })
+    .limit(50)
+
+  let assigned = 0
+  for (const lead of pending || []) {
+    try {
+      const buyer = await distributeLeadToNextBuyer(lead as Lead)
+      if (buyer) { assigned++; console.log(`[Redistribute] Lead pendente ${lead.id} → ${buyer.name}`) }
+    } catch (e) {
+      console.error(`[Redistribute] erro no lead ${lead.id}:`, (e as any)?.message)
+    }
+  }
+  if (assigned > 0) console.log(`[Redistribute] ${assigned} lead(s) pendente(s) entregue(s)`)
+  return assigned
 }
 
 /**

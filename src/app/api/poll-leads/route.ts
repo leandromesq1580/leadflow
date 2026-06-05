@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { distributeLeadToNextBuyer, forceAssignRoundRobin } from '@/lib/distribute'
+import { distributeLeadToNextBuyer, forceAssignRoundRobin, redistributePendingLeads } from '@/lib/distribute'
 import { stateFromPhone } from '@/lib/us-area-codes'
 
 const FORM_IDS = [
@@ -163,10 +163,16 @@ export async function GET(request: Request) {
     }
   }
 
+  // Reprocessa leads que ficaram pendentes por horário (entrega quando a janela
+  // de algum comprador abre). try/catch: nunca pode derrubar o poll principal.
+  let redistributed = 0
+  try { redistributed = await redistributePendingLeads() } catch (e) { console.error('[Poll] redistribute err:', (e as any)?.message) }
+
   return NextResponse.json({
     status: 'ok',
     imported,
     skipped,
+    redistributed,
     timestamp: new Date().toISOString(),
   })
 }
