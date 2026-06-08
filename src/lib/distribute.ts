@@ -112,6 +112,7 @@ interface Lead {
   interest: string
   campaign_name: string
   product_type: 'lead' | 'appointment'
+  created_at?: string
 }
 
 interface EligibleBuyer {
@@ -219,8 +220,18 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
     return isAvailableNow(availByBuyer[b.id], tz)
   })
   if (availableNow.length === 0) {
-    console.log(`[Distribute] Nenhum buyer disponível AGORA p/ lead ${lead.id} (${lead.state}) — fallback`)
-    return await assignToFallback(supabase, lead, 'ninguém dentro do horário agora')
+    // Existe comprador do estado, mas fora da janela agora. CARÊNCIA: dá tempo
+    // da janela dele abrir antes de cair pro fallback. Dentro da carência →
+    // espera (pendente, redistribute tenta de novo). Estourou → fallback (Regiane).
+    const { data: rt } = await supabase.from('settings').select('value').eq('key', 'lead_routing').maybeSingle()
+    const delayH = Number((rt?.value as any)?.fallback_delay_hours) || 6
+    const ageH = lead.created_at ? (Date.now() - new Date(lead.created_at).getTime()) / 3600000 : 999
+    if (ageH < delayH) {
+      console.log(`[Distribute] lead ${lead.id} (${lead.state}) aguardando janela do comprador — ${ageH.toFixed(1)}h/${delayH}h`)
+      return null // fica pendente; o redistribute reprocessa (entrega ao dono quando a janela abrir)
+    }
+    console.log(`[Distribute] lead ${lead.id} aguardou ${ageH.toFixed(1)}h sem janela (carência ${delayH}h) — fallback`)
+    return await assignToFallback(supabase, lead, `carência ${delayH}h sem janela`)
   }
   eligible = availableNow
 
@@ -306,7 +317,7 @@ export async function redistributePendingLeads(routingEmails?: string[] | null, 
   const cutoff = new Date(Date.now() - maxAgeHours * 3600_000).toISOString()
   const { data: pending } = await supabase
     .from('leads')
-    .select('id, name, email, phone, city, state, interest, campaign_name, product_type')
+    .select('id, name, email, phone, city, state, interest, campaign_name, product_type, created_at')
     .eq('status', 'new')
     .is('assigned_to', null)
     .eq('product_type', 'lead')
