@@ -135,6 +135,38 @@ interface EligibleBuyer {
  * 3. Weighted by credits: buyer with more remaining credits gets priority
  * 4. If tie, buyer who purchased first gets priority
  */
+/**
+ * Fallback 24/7: quando a distribuição normal não acha ninguém (sem comprador
+ * do estado, ou ninguém dentro da janela de horário agora), o lead vai pro
+ * comprador de fallback (settings.lead_routing.fallback_email — tipicamente a
+ * Regiane, que atende sempre). Garante que NADA fica preso. Se não houver
+ * fallback configurado/ativo, o lead fica pendente (e o grupo é avisado).
+ */
+async function assignToFallback(
+  supabase: ReturnType<typeof createAdminClient>,
+  lead: Lead,
+  reason: string,
+): Promise<EligibleBuyer | null> {
+  const { data: setting } = await supabase.from('settings').select('value').eq('key', 'lead_routing').maybeSingle()
+  const fallbackEmail = (setting?.value as any)?.fallback_email
+  if (!fallbackEmail) {
+    console.log(`[Distribute] lead ${lead.id} pendente (${reason}) — sem fallback configurado`)
+    return null
+  }
+  const { data: fb } = await supabase
+    .from('buyers')
+    .select('id, name, email, phone, notification_email, notification_sms')
+    .eq('email', fallbackEmail)
+    .eq('is_active', true)
+    .maybeSingle()
+  if (!fb) {
+    console.log(`[Distribute] lead ${lead.id} pendente (${reason}) — fallback ${fallbackEmail} inativo/inexistente`)
+    return null
+  }
+  console.log(`[Distribute] FALLBACK → ${fb.name} | lead ${lead.id} (${lead.state}) | motivo: ${reason}`)
+  return await assignLeadToBuyer(supabase, lead, fb as any)
+}
+
 export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuyer | null> {
   // Appointments go to admin queue, not auto-distributed
   if (lead.product_type === 'appointment') {
@@ -151,7 +183,7 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
 
   if (error || !buyers || buyers.length === 0) {
     console.log(`[Distribute] No eligible buyers for lead ${lead.id} (state: ${lead.state})`)
-    return null
+    return await assignToFallback(supabase, lead, `sem comprador p/ estado ${lead.state || '?'}`)
   }
 
   // Guard defensivo: remove buyers SUSPENSOS (is_active=false) que o RPC possa
@@ -165,7 +197,7 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
   }
   if (eligible.length === 0) {
     console.log(`[Distribute] Eligible buyers all suspended for lead ${lead.id}`)
-    return null
+    return await assignToFallback(supabase, lead, 'todos os compradores suspensos')
   }
 
   // Filtro de DISPONIBILIDADE (horário): só recebe quem está dentro da janela
@@ -187,8 +219,8 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
     return isAvailableNow(availByBuyer[b.id], tz)
   })
   if (availableNow.length === 0) {
-    console.log(`[Distribute] Nenhum buyer disponível AGORA p/ lead ${lead.id} (${lead.state}) — fica pendente`)
-    return null
+    console.log(`[Distribute] Nenhum buyer disponível AGORA p/ lead ${lead.id} (${lead.state}) — fallback`)
+    return await assignToFallback(supabase, lead, 'ninguém dentro do horário agora')
   }
   eligible = availableNow
 
