@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { distributeLeadToNextBuyer, forceAssignRoundRobin, redistributePendingLeads } from '@/lib/distribute'
+import { notifyGroupLeadPending } from '@/lib/notifications'
 import { stateFromPhone } from '@/lib/us-area-codes'
 
 const FORM_IDS = [
@@ -155,7 +156,12 @@ export async function GET(request: Request) {
         if (!buyer) {
           buyer = await distributeLeadToNextBuyer(newLead)
         }
-        console.log(`[Poll] Lead ${newLead.id} — ${name} → ${buyer?.name || 'no buyer'}`)
+        // Lead chegou mas ficou pendente (ninguém disponível por estado/horário):
+        // avisa o grupo MESMO ASSIM — nunca deixar o grupo cego.
+        if (!buyer) {
+          try { await notifyGroupLeadPending(newLead) } catch (e) { console.error('[Poll] aviso pendente err:', (e as any)?.message) }
+        }
+        console.log(`[Poll] Lead ${newLead.id} — ${name} → ${buyer?.name || 'PENDENTE (grupo avisado)'}`)
         imported++
       }
     } catch (err) {

@@ -39,6 +39,25 @@ async function sendWhatsApp(phone: string, message: string, bridge?: { url: stri
   }
 }
 
+/**
+ * Avisa o GRUPO de controle que um lead CHEGOU mas ainda não tem dono
+ * (nenhum comprador disponível por estado/horário). Garante que o grupo nunca
+ * fica cego: todo lead gera aviso, mesmo os que ficam pendentes. Quando o lead
+ * for finalmente distribuído, o sendLeadNotificationEmail avisa "entregue pra X".
+ */
+export async function notifyGroupLeadPending(lead: { name: string; phone: string; state?: string | null; interest?: string | null }) {
+  const adminGroupId = process.env.WHATSAPP_ADMIN_GROUP || '120363403347083071@g.us'
+  const msg = `🔔 *NOVO LEAD RECEBIDO* (aguardando distribuição)
+
+📋 *${lead.name}*
+📞 ${lead.phone}
+📍 ${lead.state || '—'}
+💡 ${lead.interest || 'Seguro de vida'}
+
+⏳ Nenhum comprador disponível agora (estado/horário). Será entregue automaticamente quando a janela abrir.`
+  await sendWhatsApp(adminGroupId, msg) // bridge global do grupo
+}
+
 interface Buyer {
   name: string
   email: string
