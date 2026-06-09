@@ -410,9 +410,9 @@ export default async function LandingPage() {
           <p className="text-center text-[13px] mb-7 max-w-xl mx-auto" style={{ color: '#94a3b8' }}>{t.pricing.pkg.leadsNote}</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-16 max-w-4xl mx-auto">
             {[
+              { qty: 5, total: 99, per: 19.80, tag: t.pricing.pkg.starter },
               { qty: 10, total: 220, per: 22 },
               { qty: 25, total: 500, per: 20, tag: t.pricing.pkg.popular },
-              { qty: 50, total: 900, per: 18, tag: t.pricing.pkg.best },
             ].map((p, i) => (
               <div key={i} className="rounded-2xl p-6 relative text-center" style={{ background: '#fff', border: p.tag ? '2px solid #6366f1' : '1px solid #e8ecf4', boxShadow: p.tag ? '0 14px 40px rgba(99,102,241,0.2)' : '0 4px 12px rgba(0,0,0,0.04)' }}>
                 {p.tag && <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap" style={{ background: '#6366f1', color: '#fff' }}>{p.tag}</span>}
