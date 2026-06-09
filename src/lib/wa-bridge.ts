@@ -64,3 +64,31 @@ export async function getBridgeForLeadOwner(db: Db, leadId: string): Promise<Bri
   if (!ownerBuyerId) return null
   return getBridgeForBuyer(db, ownerBuyerId)
 }
+
+/**
+ * Resolve URL + chave da bridge pra ENVIAR uma mensagem em nome de um buyer.
+ * Usa a bridge própria do buyer quando ele tem uma; senão cai na bridge global
+ * (env WA_BRIDGE_URL / default :3457). Garante que mensagens AUTOMÁTICAS
+ * (sequências, automações, alertas de lead novo) saiam do WhatsApp do DONO do
+ * lead — não de uma instância global compartilhada.
+ *
+ * A exceção Fernanda Bridi → Regiane continua valendo: como a wa_bridge_url da
+ * Fernanda aponta de propósito pra instância da Regiane (:3457), resolver pelo
+ * registro do próprio buyer mantém ela na bridge da Regiane automaticamente.
+ */
+export async function resolveSendBridge(
+  db: Db,
+  buyerId: string | null | undefined,
+): Promise<{ url: string; key: string; phone: string }> {
+  const clean = (s: string) => String(s).trim().replace(/\\n/g, '').replace(/\s+$/, '').replace(/\/$/, '')
+  let url = ''
+  let key = ''
+  let phone = ''
+  if (buyerId) {
+    const b = await getBridgeForBuyer(db, buyerId)
+    if (b) { url = b.url; key = b.key; phone = b.phone || '' }
+  }
+  if (!url) url = process.env.WA_BRIDGE_URL || 'http://31.220.97.186:3457'
+  if (!key) key = process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026'
+  return { url: clean(url), key: String(key).trim(), phone }
+}

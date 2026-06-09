@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { renderTemplate } from '@/lib/template-render'
+import { resolveSendBridge } from '@/lib/wa-bridge'
 import { Resend } from 'resend'
 
 /**
@@ -120,9 +121,18 @@ export async function processSequencesForLead(leadId: string): Promise<number> {
       }
       processed++
     } catch (err: any) {
-      console.error(`[processSequencesForLead ${enr.id}] err:`, err?.message)
-      const retry = new Date(Date.now() + 3600_000).toISOString()
-      await db.from('sequence_enrollments').update({ next_run_at: retry }).eq('id', enr.id)
+      const msg = err?.message || ''
+      console.error(`[processSequencesForLead ${enr.id}] err:`, msg)
+      // Mesma regra do processSequences: erro permanente -> stop, transitorio -> retry
+      if (/no\s*lid|nao\s*tem\s*whatsapp/i.test(msg)) {
+        await db.from('sequence_enrollments').update({
+          status: 'stopped',
+          completed_at: new Date().toISOString(),
+        }).eq('id', enr.id)
+      } else {
+        const retry = new Date(Date.now() + 3600_000).toISOString()
+        await db.from('sequence_enrollments').update({ next_run_at: retry }).eq('id', enr.id)
+      }
     }
   }
   return processed
@@ -223,10 +233,23 @@ export async function processSequences(): Promise<{ processed: number; failed: n
       }
       processed++
     } catch (err: any) {
-      console.error(`[Sequence ${enr.id}] Error:`, err?.message)
-      // Pause on error, retry in 1h
-      const retry = new Date(Date.now() + 3600_000).toISOString()
-      await db.from('sequence_enrollments').update({ next_run_at: retry }).eq('id', enr.id)
+      const msg = err?.message || ''
+      console.error(`[Sequence ${enr.id}] Error:`, msg)
+      // Erro PERMANENTE do wa-bridge (numero sem WhatsApp) -> stop, nao retry
+      // infinito. Sem esse check, lead sem WhatsApp gera retry +1h forever
+      // toda vez que o cron roda -> log poluido de failed:1 + carga no
+      // wa-bridge. Aplicado a 'No LID' e 'nao tem WhatsApp' (que e o que
+      // o wa-bridge retorna como 404 quando o numero nao esta no WhatsApp).
+      if (/no\s*lid|nao\s*tem\s*whatsapp/i.test(msg)) {
+        await db.from('sequence_enrollments').update({
+          status: 'stopped',
+          completed_at: now,
+        }).eq('id', enr.id)
+      } else {
+        // Erro transitório (timeout, bridge offline, etc) -> retry em 1h
+        const retry = new Date(Date.now() + 3600_000).toISOString()
+        await db.from('sequence_enrollments').update({ next_run_at: retry }).eq('id', enr.id)
+      }
       failed++
     }
   }
@@ -256,8 +279,10 @@ async function executeStep(step: any, enr: any): Promise<void> {
 
   // send_template
   const { data: lead } = await db.from('leads').select('*').eq('id', enr.lead_id).single()
-  const { data: agent } = await db.from('buyers').select('name, email, phone').eq('id', enr.buyer_id).single()
+  const { data: agent } = await db.from('buyers').select('name, email, phone, is_active').eq('id', enr.buyer_id).single()
   if (!lead || !agent) throw new Error('Lead or agent missing')
+  // Comprador suspenso: não dispara mensagem (sequência fica parada até reativar)
+  if (agent.is_active === false) { console.log(`[Sequence] buyer ${enr.buyer_id} suspenso — skip`); return }
 
   let body = ''
   let type: 'whatsapp' | 'email' = 'whatsapp'
@@ -277,12 +302,12 @@ async function executeStep(step: any, enr: any): Promise<void> {
 
   if (type === 'whatsapp') {
     if (!lead.phone) throw new Error('No phone')
-    const bridgeUrl = (process.env.WA_BRIDGE_URL || 'http://31.220.97.186:3457').replace(/\/$/, '')
-    const bridgeKey = (process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026').trim()
+    // Envia pela bridge do DONO do lead (não pela global/Regiane)
+    const sb = await resolveSendBridge(db, enr.buyer_id)
     const cleanPhone = lead.phone.replace(/[\s\-()]/g, '').replace(/^\+/, '')
-    const r = await fetch(`${bridgeUrl}/send`, {
+    const r = await fetch(`${sb.url}/send`, {
       method: 'POST',
-      headers: { apikey: bridgeKey, 'Content-Type': 'application/json' },
+      headers: { apikey: sb.key, 'Content-Type': 'application/json' },
       body: JSON.stringify({ number: cleanPhone, message: body }),
     })
     if (!r.ok) throw new Error(`wa-bridge ${r.status}`)
@@ -291,7 +316,7 @@ async function executeStep(step: any, enr: any): Promise<void> {
       buyer_id: enr.buyer_id,
       lead_id: enr.lead_id,
       direction: 'out',
-      from_phone: '',
+      from_phone: sb.phone,
       to_phone: cleanPhone,
       body,
       wa_message_id: waId,

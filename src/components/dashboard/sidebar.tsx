@@ -4,14 +4,17 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n-client'
+import { appointmentCanAccess, leadCanAccess } from '@/lib/crm-access'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { useRealtime } from '@/lib/use-realtime'
+import { PrivacyToggle } from '@/components/dashboard/privacy-toggle'
 
 interface SidebarProps {
   type: 'buyer' | 'admin'
   userName?: string
   isAgency?: boolean
   buyerId?: string
+  crmPlan?: string
 }
 
 function useWhatsAppUnread(buyerId?: string): number {
@@ -52,6 +55,28 @@ function useWhatsAppUnread(buyerId?: string): number {
   return count
 }
 
+function useUpcomingMeetings(buyerId?: string): number {
+  const [count, setCount] = useState(0)
+
+  useEffect(() => {
+    if (!buyerId) return
+    let cancelled = false
+    const load = async () => {
+      try {
+        const r = await fetch(`/api/appointments/upcoming?buyer_id=${buyerId}&minutes=90`, { cache: 'no-store' })
+        if (!r.ok) return
+        const d = await r.json()
+        if (!cancelled) setCount(Array.isArray(d.events) ? d.events.length : 0)
+      } catch {}
+    }
+    load()
+    const t = setInterval(load, 30000)
+    return () => { cancelled = true; clearInterval(t) }
+  }, [buyerId])
+
+  return count
+}
+
 // Lead4Pro brand mark — dark rounded tile + amber gradient bolt
 function BrandMark({ size = 32 }: { size?: number }) {
   return (
@@ -68,10 +93,13 @@ function BrandMark({ size = 32 }: { size?: number }) {
   )
 }
 
-export function Sidebar({ type, userName, isAgency, buyerId }: SidebarProps) {
+export function Sidebar({ type, userName, isAgency, buyerId, crmPlan }: SidebarProps) {
   const pathname = usePathname()
   const t = useT()
+  const apptOnly = type === 'buyer' && crmPlan === 'appointment'
+  const leadOnly = type === 'buyer' && crmPlan === 'lead_only'
   const waUnread = useWhatsAppUnread(type === 'buyer' ? buyerId : undefined)
+  const upcomingMeetings = useUpcomingMeetings(type === 'buyer' ? buyerId : undefined)
 
   const buyerLinks = [
     { href: '/dashboard', label: t.sidebar.overview, icon: '📊' },
@@ -84,6 +112,7 @@ export function Sidebar({ type, userName, isAgency, buyerId }: SidebarProps) {
     { href: '/dashboard/automations', label: t.sidebar.automations, icon: '⚡' },
     { href: '/dashboard/sequences', label: t.sidebar.sequences, icon: '🔁' },
     { href: '/dashboard/appointments', label: t.sidebar.appointments, icon: '📅' },
+    { href: '/dashboard/settings/notifications', label: t._locale === 'en' ? 'Reminders' : t._locale === 'es' ? 'Avisos' : 'Avisos', icon: '🔔' },
     { href: '/dashboard/team', label: t.sidebar.team, icon: '👥' },
     { href: '/dashboard/referral', label: t.sidebar.referral, icon: '🎁' },
     { href: '/dashboard/credits', label: t.sidebar.credits, icon: '💳' },
@@ -134,23 +163,34 @@ export function Sidebar({ type, userName, isAgency, buyerId }: SidebarProps) {
             const isActive = pathname === link.href ||
               (link.href !== '/dashboard' && link.href !== '/admin' && pathname.startsWith(link.href))
 
-            const showBadge = link.href === '/dashboard/whatsapp' && waUnread > 0
+            const locked = (apptOnly && !appointmentCanAccess(link.href)) || (leadOnly && !leadCanAccess(link.href))
+            const showBadge = !locked && link.href === '/dashboard/whatsapp' && waUnread > 0
+            const showApptBadge = !locked && link.href === '/dashboard/appointments' && upcomingMeetings > 0
             return (
               <Link
                 key={link.href}
                 href={link.href}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-semibold"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-opacity"
                 style={{
                   color: isActive ? '#6366f1' : '#64748b',
                   background: isActive ? '#eef2ff' : 'transparent',
+                  opacity: locked ? 0.5 : 1,
                 }}
+                title={locked ? 'Disponível no plano completo' : undefined}
               >
                 <span className="text-[16px]">{link.icon}</span>
                 <span className="flex-1">{link.label}</span>
+                {locked && <span className="text-[12px]" aria-label="bloqueado">🔒</span>}
                 {showBadge && (
                   <span className="text-[10px] font-extrabold text-white rounded-full flex items-center justify-center"
                     style={{ background: '#ef4444', minWidth: 18, height: 18, padding: '0 5px', boxShadow: '0 1px 3px rgba(239,68,68,0.35)' }}>
                     {waUnread > 99 ? '99+' : waUnread}
+                  </span>
+                )}
+                {showApptBadge && (
+                  <span className="text-[10px] font-extrabold text-white rounded-full flex items-center justify-center"
+                    style={{ background: '#6366f1', minWidth: 18, height: 18, padding: '0 5px', boxShadow: '0 1px 3px rgba(99,102,241,0.35)' }}>
+                    {upcomingMeetings > 99 ? '99+' : upcomingMeetings}
                   </span>
                 )}
               </Link>
@@ -170,6 +210,9 @@ export function Sidebar({ type, userName, isAgency, buyerId }: SidebarProps) {
             <p className="text-[11px]" style={{ color: '#94a3b8' }}>{type === 'admin' ? t.sidebar.admin : t.sidebar.buyer}</p>
           </div>
           <LocaleSwitcher current={t._locale} />
+        </div>
+        <div className="mt-3">
+          <PrivacyToggle />
         </div>
         <button onClick={handleLogout} className="mt-3 text-[11px] font-medium hover:text-red-500" style={{ color: '#94a3b8' }}>
           {t.sidebar.logout}

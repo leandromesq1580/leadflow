@@ -3,6 +3,9 @@ import Image from 'next/image'
 import { getLocale } from '@/lib/locale'
 import { getMessages } from '@/lib/i18n'
 import { LocaleSwitcher } from '@/components/locale-switcher'
+import { WhatsAppFab } from '@/components/whatsapp-fab'
+import { LiveLeadToast } from '@/components/live-lead-toast'
+import { MetaPixel } from '@/components/meta-pixel'
 
 export default async function LandingPage() {
   const locale = await getLocale()
@@ -50,10 +53,13 @@ export default async function LandingPage() {
             <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold mb-6" style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.2)' }}>
               <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#34d399' }} /> {t.hero.badge}
             </span>
-            <h1 className="text-[32px] sm:text-[44px] lg:text-[52px] font-extrabold leading-[1.06] tracking-tight text-white mb-6">
+            <h1 className="text-[32px] sm:text-[44px] lg:text-[52px] font-extrabold leading-[1.06] tracking-tight text-white mb-5">
               {t.hero.titleA} <span style={{ color: '#a78bfa' }}>{t.hero.titleB}</span>
             </h1>
-            <p className="text-[15px] sm:text-[18px] leading-relaxed mb-10 max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.55)' }}>
+            <p className="text-[17px] sm:text-[21px] font-bold leading-snug mb-4 max-w-2xl mx-auto text-white">
+              {t.hero.tagline}
+            </p>
+            <p className="text-[15px] sm:text-[17px] leading-relaxed mb-10 max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.55)' }}>
               {t.hero.subtitle}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
@@ -108,6 +114,95 @@ export default async function LandingPage() {
                 </div>
               )
             })}
+          </div>
+        </div>
+      </section>
+
+      {/* ==================== COMO FUNCIONA — DOBRA #2 ==================== */}
+      <section className="py-16 sm:py-24 relative overflow-hidden" style={{ background: 'radial-gradient(1100px 480px at 82% -8%, rgba(139,92,246,0.20), transparent), linear-gradient(180deg, #0b1020 0%, #0e1430 100%)' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+            {/* Esquerda: narrativa + passos */}
+            <div>
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold mb-5" style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.25)' }}>
+                <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#34d399' }} /> {t.howItWorks.badge}
+              </span>
+              <h2 className="text-[28px] sm:text-[40px] font-extrabold text-white leading-[1.08] mb-4">
+                {t.howItWorks.titleA} <span style={{ color: '#a78bfa' }}>{t.howItWorks.titleB}</span>
+              </h2>
+              <p className="text-[15px] sm:text-[17px] leading-relaxed mb-8" style={{ color: 'rgba(255,255,255,0.62)' }}>
+                {t.howItWorks.narrative}
+              </p>
+              <div className="space-y-5">
+                {[
+                  { n: '1', icon: '🎯', color: '#8b5cf6', title: t.howItWorks.step1Title, desc: t.howItWorks.step1Desc },
+                  { n: '2', icon: '⚡', color: '#10b981', title: t.howItWorks.step2Title, desc: t.howItWorks.step2Desc },
+                  { n: '3', icon: '🤝', color: '#f59e0b', title: t.howItWorks.step3Title, desc: t.howItWorks.step3Desc },
+                ].map((s, i) => (
+                  <div key={i} className="flex gap-4 items-start">
+                    <div className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-[20px] relative" style={{ background: s.color + '22', border: `1px solid ${s.color}55` }}>
+                      {s.icon}
+                      <span className="absolute -top-2 -left-2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white" style={{ background: s.color }}>{s.n}</span>
+                    </div>
+                    <div>
+                      <p className="text-[15px] font-bold text-white mb-0.5">{s.title}</p>
+                      <p className="text-[13px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>{s.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Link href="/register" className="inline-block mt-8 px-7 py-3.5 rounded-xl text-[14px] font-bold" style={{ background: 'linear-gradient(135deg, #f59e0b, #eab308)', color: '#1a1a2e', boxShadow: '0 4px 20px rgba(245,158,11,0.35)' }}>
+                {t.howItWorks.cta}
+              </Link>
+            </div>
+
+            {/* Direita: feed de leads chegando (figura de desejo) */}
+            <div className="relative">
+              <div className="absolute inset-0 blur-3xl pointer-events-none" style={{ background: 'radial-gradient(circle at 50% 35%, rgba(139,92,246,0.22), transparent 70%)' }} />
+              <div className="relative">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-center mb-4 flex items-center justify-center gap-2" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                  <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#34d399' }} /> {t.howItWorks.feedLabel}
+                </p>
+                <div className="space-y-3.5">
+                  {[
+                    { name: 'Maria S.', loc: 'Orlando, FL', hue: 280 },
+                    { name: 'João P.', loc: 'Newark, NJ', hue: 160 },
+                    { name: 'Ana R.', loc: 'Boston, MA', hue: 32 },
+                  ].map((l, i) => (
+                    <div key={i} className="rounded-2xl p-4 flex items-center gap-3" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 12px 34px rgba(0,0,0,0.35)' }}>
+                      <div className="w-11 h-11 rounded-full flex items-center justify-center text-[14px] font-extrabold text-white flex-shrink-0" style={{ background: `hsl(${l.hue}, 58%, 55%)` }}>
+                        {l.name.split(' ').map(w => w[0]).join('')}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-[14px] font-bold text-white">{l.name}</p>
+                          <span className="text-[9px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: 'rgba(16,185,129,0.2)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)' }}>{t.howItWorks.leadBadge}</span>
+                        </div>
+                        <p className="text-[12px] truncate" style={{ color: 'rgba(255,255,255,0.55)' }}>🇺🇸 {l.loc} · {t.howItWorks.leadTag}</p>
+                      </div>
+                      <span className="flex items-center gap-1 text-[10px] font-bold flex-shrink-0" style={{ color: '#34d399' }}>
+                        <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#34d399' }} /> {t.howItWorks.leadNew}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Faixa de stats */}
+          <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {[
+              { n: t.howItWorks.stat1n, l: t.howItWorks.stat1l },
+              { n: t.howItWorks.stat2n, l: t.howItWorks.stat2l },
+              { n: t.howItWorks.stat3n, l: t.howItWorks.stat3l },
+              { n: t.howItWorks.stat4n, l: t.howItWorks.stat4l },
+            ].map((s, i) => (
+              <div key={i} className="rounded-2xl p-5 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <p className="text-[20px] sm:text-[26px] font-extrabold" style={{ color: '#a78bfa' }}>{s.n}</p>
+                <p className="text-[11px] font-semibold mt-1" style={{ color: 'rgba(255,255,255,0.55)' }}>{s.l}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -308,7 +403,53 @@ export default async function LandingPage() {
           <h2 className="text-center text-[28px] sm:text-[40px] font-extrabold mb-3" style={{ color: '#1a1a2e' }}>{t.pricing.title}</h2>
           <p className="text-center text-[15px] mb-12 max-w-xl mx-auto" style={{ color: '#94a3b8' }}>{t.pricing.subtitle}</p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* ===== PACOTES DE LEADS EXCLUSIVOS ===== */}
+          <div className="text-center mb-2 mt-2">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-extrabold" style={{ background: '#eef2ff', color: '#6366f1', border: '1px solid #c7d2fe' }}>🎯 {t.pricing.pkg.leadsLabel}</span>
+          </div>
+          <p className="text-center text-[13px] mb-7 max-w-xl mx-auto" style={{ color: '#94a3b8' }}>{t.pricing.pkg.leadsNote}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-16 max-w-4xl mx-auto">
+            {[
+              { qty: 10, total: 220, per: 22 },
+              { qty: 25, total: 500, per: 20, tag: t.pricing.pkg.popular },
+              { qty: 50, total: 900, per: 18, tag: t.pricing.pkg.best },
+            ].map((p, i) => (
+              <div key={i} className="rounded-2xl p-6 relative text-center" style={{ background: '#fff', border: p.tag ? '2px solid #6366f1' : '1px solid #e8ecf4', boxShadow: p.tag ? '0 14px 40px rgba(99,102,241,0.2)' : '0 4px 12px rgba(0,0,0,0.04)' }}>
+                {p.tag && <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap" style={{ background: '#6366f1', color: '#fff' }}>{p.tag}</span>}
+                <p className="text-[15px] font-bold" style={{ color: '#64748b' }}>{p.qty} {t.pricing.pkg.unitLeads}</p>
+                <p className="text-[38px] font-extrabold leading-none my-2" style={{ color: '#1a1a2e' }}>${p.total}</p>
+                <p className="text-[13px] font-bold mb-5" style={{ color: '#6366f1' }}>${p.per}{t.pricing.pkg.perLead}</p>
+                <Link href="/register" className="block text-center px-6 py-2.5 rounded-xl text-[13px] font-bold" style={{ background: p.tag ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : '#f1f5f9', color: p.tag ? '#fff' : '#1a1a2e' }}>{t.pricing.pkg.buy}</Link>
+              </div>
+            ))}
+          </div>
+
+          {/* ===== PACOTES DE APPOINTMENTS ===== */}
+          <div className="text-center mb-2">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-extrabold" style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa' }}>📅 {t.pricing.pkg.apptLabel}</span>
+          </div>
+          <p className="text-center text-[13px] mb-7 max-w-xl mx-auto" style={{ color: '#94a3b8' }}>{t.pricing.pkg.apptNote}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-4 max-w-2xl mx-auto">
+            {[
+              { qty: 10, total: 380, per: 38 },
+              { qty: 25, total: 875, per: 35, tag: t.pricing.pkg.best },
+            ].map((p, i) => (
+              <div key={i} className="rounded-2xl p-6 relative text-center" style={{ background: '#fff', border: p.tag ? '2px solid #ea580c' : '1px solid #e8ecf4', boxShadow: p.tag ? '0 14px 40px rgba(234,88,12,0.18)' : '0 4px 12px rgba(0,0,0,0.04)' }}>
+                {p.tag && <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap" style={{ background: '#ea580c', color: '#fff' }}>{p.tag}</span>}
+                <p className="text-[15px] font-bold" style={{ color: '#64748b' }}>{p.qty} {t.pricing.pkg.unitAppts}</p>
+                <p className="text-[38px] font-extrabold leading-none my-2" style={{ color: '#1a1a2e' }}>${p.total}</p>
+                <p className="text-[13px] font-bold mb-5" style={{ color: '#ea580c' }}>${p.per}{t.pricing.pkg.perAppt}</p>
+                <Link href="/register" className="block text-center px-6 py-2.5 rounded-xl text-[13px] font-bold" style={{ background: p.tag ? 'linear-gradient(135deg, #f59e0b, #ea580c)' : '#f1f5f9', color: p.tag ? '#fff' : '#1a1a2e' }}>{t.pricing.pkg.buy}</Link>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-[12px] mb-16" style={{ color: '#94a3b8' }}>{t.pricing.pkg.cold}</p>
+
+          {/* ===== CRM (grátis / Pro) ===== */}
+          <div className="text-center mb-6">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-extrabold" style={{ background: '#f1f5f9', color: '#475569' }}>⚡ {t.pricing.pkg.crmLabel}</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-3xl mx-auto">
             {/* Free */}
             <div className="rounded-2xl p-8" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
               <p className="text-[14px] font-bold mb-1" style={{ color: '#64748b' }}>{t.pricing.free.name}</p>
@@ -348,26 +489,6 @@ export default async function LandingPage() {
                 {t.pricing.pro.cta}
               </Link>
             </div>
-
-            {/* Leads */}
-            <div className="rounded-2xl p-8" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-              <p className="text-[14px] font-bold mb-1" style={{ color: '#64748b' }}>{t.pricing.leads.name}</p>
-              <div className="flex items-baseline gap-1 mb-6">
-                <span className="text-[12px]" style={{ color: '#94a3b8' }}>{t.pricing.leads.priceFrom}</span>
-                <span className="text-[40px] font-extrabold" style={{ color: '#1a1a2e' }}>{t.pricing.leads.price}</span>
-                <span className="text-[14px]" style={{ color: '#94a3b8' }}>{t.pricing.leads.priceSub}</span>
-              </div>
-              <ul className="space-y-2 mb-8">
-                {t.pricing.leads.features.map((f, i) => (
-                  <li key={i} className="flex items-start gap-2 text-[13px]" style={{ color: '#475569' }}>
-                    <span>✓</span> {f}
-                  </li>
-                ))}
-              </ul>
-              <Link href="/register" className="block text-center px-6 py-3 rounded-xl text-[13px] font-bold" style={{ background: '#f1f5f9', color: '#1a1a2e' }}>
-                {t.pricing.leads.cta}
-              </Link>
-            </div>
           </div>
         </div>
       </section>
@@ -401,6 +522,10 @@ export default async function LandingPage() {
           <p className="text-[11px]" style={{ color: '#c0c8d4' }}>{t.footer.copyright}</p>
         </div>
       </footer>
+
+      <WhatsAppFab phone="17867442126" label="Fale Conosco!" />
+      <LiveLeadToast badge={t.liveToast.badge} interest={t.liveToast.interest} now={t.liveToast.now} minsAgo={t.liveToast.minsAgo} />
+      <MetaPixel />
     </div>
   )
 }

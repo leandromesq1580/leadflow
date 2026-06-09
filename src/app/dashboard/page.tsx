@@ -7,8 +7,10 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { OnboardingChecklist } from '@/components/onboarding-checklist'
 import { StaleLeadsAlert } from '@/components/stale-leads-alert'
+import { PrivatePhone } from '@/components/private-field'
 import { getLocale } from '@/lib/locale'
 import { getMessages } from '@/lib/i18n'
+import { isAppointmentOnly, isLeadOnly } from '@/lib/crm-access'
 
 export default async function DashboardPage() {
   const supabase = await createServerSupabase()
@@ -19,7 +21,12 @@ export default async function DashboardPage() {
   const t = getMessages(locale)
 
   const db = createAdminClient()
-  const { data: buyer } = await db.from('buyers').select('id, name').eq('auth_user_id', user.id).single()
+  const { data: buyer } = await db.from('buyers').select('id, name, crm_plan, is_admin, trial_ends_at').eq('auth_user_id', user.id).single()
+
+  // Appointment-only: a "home" dele é a agenda (o overview fica atrás do upsell).
+  if (isAppointmentOnly(buyer)) redirect('/dashboard/appointments')
+  // Lead-only: a "home" dele é a lista de leads que recebeu.
+  if (isLeadOnly(buyer)) redirect('/dashboard/leads')
 
   if (!buyer) {
     return (
@@ -147,9 +154,7 @@ export default async function DashboardPage() {
                   <p className="text-[12px]" style={{ color: '#94a3b8' }}>{lead.city}, {lead.state} · {lead.interest}</p>
                 </div>
                 <div className="hidden sm:block">
-                  <span className="text-[13px] font-semibold" style={{ color: '#6366f1' }}>
-                    {lead.phone}
-                  </span>
+                  <PrivatePhone value={lead.phone} className="text-[13px] font-semibold" style={{ color: '#6366f1' }} />
                 </div>
                 <Badge status={lead.status} />
                 <span className="text-[12px] whitespace-nowrap" style={{ color: '#94a3b8' }}>{timeAgo(lead.created_at)}</span>

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { timeAgo, getInitials } from '@/lib/utils'
 import { AssignButton } from './assign-button'
+import { usePrivacy } from '@/lib/privacy-mode'
 
 interface Lead {
   id: string
@@ -38,6 +39,7 @@ function digits(s: string) {
 }
 
 export function LeadsList({ leads, isAgency, teamMembers }: Props) {
+  const privacy = usePrivacy()
   const [query, setQuery] = useState('')
 
   const filtered = useMemo(() => {
@@ -103,7 +105,7 @@ export function LeadsList({ leads, isAgency, teamMembers }: Props) {
                       <p className="text-[12px]" style={{ color: '#94a3b8' }}>{lead.city}{lead.state ? `, ${lead.state}` : ''} · {lead.interest}</p>
                     </div>
                     <div className="hidden sm:block">
-                      <span className="text-[13px] font-semibold" style={{ color: '#6366f1' }}>{lead.phone}</span>
+                      <span className="text-[13px] font-semibold" style={{ color: '#6366f1' }}>{privacy.mask(lead.phone, 'phone')}</span>
                     </div>
                   </Link>
 

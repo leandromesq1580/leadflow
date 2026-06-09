@@ -1,5 +1,6 @@
 import { createAdminClient } from './supabase/admin'
 import { sendLeadNotificationEmail, sendTeamMemberNotification } from './notifications'
+import { buyerTimezone, isAvailableNow } from './availability'
 
 async function assignLeadToBuyer(
   supabase: ReturnType<typeof createAdminClient>,
@@ -53,14 +54,15 @@ export async function forceAssignRoundRobin(
   if (emails.length === 0) return null
   const supabase = createAdminClient()
 
-  // Pega buyers dos emails, na ordem que veio
+  // Pega buyers dos emails, na ordem que veio — só ATIVOS (suspenso não recebe lead)
   const { data: buyers } = await supabase
     .from('buyers')
     .select('id, name, email, phone, notification_email, notification_sms')
     .in('email', emails)
+    .eq('is_active', true)
 
   if (!buyers || buyers.length === 0) {
-    console.error(`[Distribute] ROUND_ROBIN: nenhum buyer encontrado para ${emails.join(',')}`)
+    console.error(`[Distribute] ROUND_ROBIN: nenhum buyer ATIVO encontrado para ${emails.join(',')}`)
     return null
   }
 
@@ -110,6 +112,7 @@ interface Lead {
   interest: string
   campaign_name: string
   product_type: 'lead' | 'appointment'
+  created_at?: string
 }
 
 interface EligibleBuyer {
@@ -133,6 +136,38 @@ interface EligibleBuyer {
  * 3. Weighted by credits: buyer with more remaining credits gets priority
  * 4. If tie, buyer who purchased first gets priority
  */
+/**
+ * Fallback 24/7: quando a distribuição normal não acha ninguém (sem comprador
+ * do estado, ou ninguém dentro da janela de horário agora), o lead vai pro
+ * comprador de fallback (settings.lead_routing.fallback_email — tipicamente a
+ * Regiane, que atende sempre). Garante que NADA fica preso. Se não houver
+ * fallback configurado/ativo, o lead fica pendente (e o grupo é avisado).
+ */
+async function assignToFallback(
+  supabase: ReturnType<typeof createAdminClient>,
+  lead: Lead,
+  reason: string,
+): Promise<EligibleBuyer | null> {
+  const { data: setting } = await supabase.from('settings').select('value').eq('key', 'lead_routing').maybeSingle()
+  const fallbackEmail = (setting?.value as any)?.fallback_email
+  if (!fallbackEmail) {
+    console.log(`[Distribute] lead ${lead.id} pendente (${reason}) — sem fallback configurado`)
+    return null
+  }
+  const { data: fb } = await supabase
+    .from('buyers')
+    .select('id, name, email, phone, notification_email, notification_sms')
+    .eq('email', fallbackEmail)
+    .eq('is_active', true)
+    .maybeSingle()
+  if (!fb) {
+    console.log(`[Distribute] lead ${lead.id} pendente (${reason}) — fallback ${fallbackEmail} inativo/inexistente`)
+    return null
+  }
+  console.log(`[Distribute] FALLBACK → ${fb.name} | lead ${lead.id} (${lead.state}) | motivo: ${reason}`)
+  return await assignLeadToBuyer(supabase, lead, fb as any)
+}
+
 export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuyer | null> {
   // Appointments go to admin queue, not auto-distributed
   if (lead.product_type === 'appointment') {
@@ -149,12 +184,60 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
 
   if (error || !buyers || buyers.length === 0) {
     console.log(`[Distribute] No eligible buyers for lead ${lead.id} (state: ${lead.state})`)
-    return null
+    return await assignToFallback(supabase, lead, `sem comprador p/ estado ${lead.state || '?'}`)
   }
+
+  // Guard defensivo: remove buyers SUSPENSOS (is_active=false) que o RPC possa
+  // ter deixado passar. Suspenso nunca recebe lead.
+  let eligible = buyers as EligibleBuyer[]
+  const ids = eligible.map(b => b.id)
+  if (ids.length > 0) {
+    const { data: actives } = await supabase.from('buyers').select('id').in('id', ids).eq('is_active', true)
+    const activeSet = new Set((actives || []).map(a => a.id))
+    eligible = eligible.filter(b => activeSet.has(b.id))
+  }
+  if (eligible.length === 0) {
+    console.log(`[Distribute] Eligible buyers all suspended for lead ${lead.id}`)
+    return await assignToFallback(supabase, lead, 'todos os compradores suspensos')
+  }
+
+  // Filtro de DISPONIBILIDADE (horário): só recebe quem está dentro da janela
+  // configurada AGORA (fuso derivado dos estados do comprador). Quem não tem
+  // disponibilidade configurada = disponível 24/7. Se ninguém disponível agora,
+  // o lead fica pendente (assigned_to=null) e o cron reprocessa até abrir a janela.
+  const eligibleIds = eligible.map(b => b.id)
+  const [statesRes, availRes] = await Promise.all([
+    supabase.from('buyer_states').select('buyer_id, state_code').in('buyer_id', eligibleIds),
+    supabase.from('buyer_availability').select('buyer_id, day_type, period').in('buyer_id', eligibleIds),
+  ])
+  const statesByBuyer: Record<string, string[]> = {}
+  for (const r of statesRes.data || []) (statesByBuyer[r.buyer_id] ||= []).push(r.state_code)
+  const availByBuyer: Record<string, { day_type: string; period: string }[]> = {}
+  for (const r of availRes.data || []) (availByBuyer[r.buyer_id] ||= []).push({ day_type: r.day_type, period: r.period })
+
+  const availableNow = eligible.filter(b => {
+    const tz = buyerTimezone(statesByBuyer[b.id])
+    return isAvailableNow(availByBuyer[b.id], tz)
+  })
+  if (availableNow.length === 0) {
+    // Existe comprador do estado, mas fora da janela agora. CARÊNCIA: dá tempo
+    // da janela dele abrir antes de cair pro fallback. Dentro da carência →
+    // espera (pendente, redistribute tenta de novo). Estourou → fallback (Regiane).
+    const { data: rt } = await supabase.from('settings').select('value').eq('key', 'lead_routing').maybeSingle()
+    const delayH = Number((rt?.value as any)?.fallback_delay_hours) || 6
+    const ageH = lead.created_at ? (Date.now() - new Date(lead.created_at).getTime()) / 3600000 : 999
+    if (ageH < delayH) {
+      console.log(`[Distribute] lead ${lead.id} (${lead.state}) aguardando janela do comprador — ${ageH.toFixed(1)}h/${delayH}h`)
+      return null // fica pendente; o redistribute reprocessa (entrega ao dono quando a janela abrir)
+    }
+    console.log(`[Distribute] lead ${lead.id} aguardou ${ageH.toFixed(1)}h sem janela (carência ${delayH}h) — fallback`)
+    return await assignToFallback(supabase, lead, `carência ${delayH}h sem janela`)
+  }
+  eligible = availableNow
 
   // Buyers are already sorted by remaining DESC (weighted distribution)
   // Pick the first one (most credits remaining)
-  const selectedBuyer = (buyers as EligibleBuyer[])[0]
+  const selectedBuyer = eligible[0]
 
   // Assign lead to buyer
   const { error: assignError } = await supabase
@@ -221,6 +304,45 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
   console.log(`[Distribute] Lead ${lead.id} (${lead.state}) → ${selectedBuyer.name} (remaining: ${selectedBuyer.remaining - 1})`)
 
   return selectedBuyer
+}
+
+/**
+ * Reprocessa leads que ficaram PENDENTES (status=new, sem dono) — tipicamente
+ * porque nenhum comprador elegível estava dentro da janela de horário quando o
+ * lead chegou. Chamado pelo cron (poll-leads). Quando a janela de alguém abre,
+ * o lead é finalmente entregue. Ignora leads muito antigos pra não acumular.
+ */
+export async function redistributePendingLeads(routingEmails?: string[] | null, maxAgeHours = 72): Promise<number> {
+  const supabase = createAdminClient()
+  const cutoff = new Date(Date.now() - maxAgeHours * 3600_000).toISOString()
+  const { data: pending } = await supabase
+    .from('leads')
+    .select('id, name, email, phone, city, state, interest, campaign_name, product_type, created_at')
+    .eq('status', 'new')
+    .is('assigned_to', null)
+    .eq('product_type', 'lead')
+    .gte('created_at', cutoff)
+    .order('created_at', { ascending: true })
+    .limit(50)
+
+  // Respeita a PROGRAMAÇÃO: se há um alvo de roteamento (exclusive/sequential),
+  // os pendentes vão pro alvo (igual leads novos), não pela distribuição normal.
+  // Sem alvo (modo normal) = distribuição por estado/crédito/horário.
+  const hasRouting = !!routingEmails && routingEmails.length > 0
+
+  let assigned = 0
+  for (const lead of pending || []) {
+    try {
+      const buyer = hasRouting
+        ? await forceAssignRoundRobin(lead as Lead, routingEmails!)
+        : await distributeLeadToNextBuyer(lead as Lead)
+      if (buyer) { assigned++; console.log(`[Redistribute] Lead pendente ${lead.id} → ${buyer.name}`) }
+    } catch (e) {
+      console.error(`[Redistribute] erro no lead ${lead.id}:`, (e as any)?.message)
+    }
+  }
+  if (assigned > 0) console.log(`[Redistribute] ${assigned} lead(s) pendente(s) entregue(s)`)
+  return assigned
 }
 
 /**

@@ -7,6 +7,7 @@ import { LeadCard } from './lead-card'
 import { LeadModal } from './lead-modal'
 import { useT } from '@/lib/i18n-client'
 import { useRealtime } from '@/lib/use-realtime'
+import { isStale } from '@/lib/stale-leads'
 import Link from 'next/link'
 
 interface Stage { id: string; name: string; color: string; position: number }
@@ -62,7 +63,7 @@ export default function PipelinePage() {
     const cookie = document.cookie.split('; ').find(c => c.startsWith(`sb-${ref}-auth-token=`))
     if (cookie) {
       try {
-        const token = JSON.parse(atob(cookie.split('=')[1]))
+        const token = JSON.parse(atob(decodeURIComponent(cookie.substring(cookie.indexOf('=') + 1))))
         const payload = JSON.parse(atob(token.access_token.split('.')[1]))
         fetchBuyer(payload.sub)
       } catch {}
@@ -209,8 +210,9 @@ export default function PipelinePage() {
     if (filterStage && l.stage_id !== filterStage) return false
     if (closedOnly && !l.lead.contract_closed) return false
     if (staleOnly) {
-      const movedAt = l.moved_at ? new Date(l.moved_at).getTime() : 0
-      if (Date.now() - movedAt < 3 * 86400000 || l.lead.contract_closed) return false
+      if (l.lead.contract_closed) return false
+      // Considera ultima atividade (move OR follow-up) — bate com o badge do card
+      if (!isStale([l.moved_at, l.last_follow_up?.scheduled_at, l.last_follow_up?.created_at], 'alert')) return false
     }
     if (filterDate || filterDateFrom || filterDateTo) {
       const created = new Date(l.lead.created_at)
@@ -254,8 +256,7 @@ export default function PipelinePage() {
   const hasFilters = !!(search || filterStage || filterDate || filterDateFrom || filterDateTo || closedOnly || staleOnly)
   const staleCount = leads.filter(l => {
     if (l.lead.contract_closed) return false
-    const movedAt = l.moved_at ? new Date(l.moved_at).getTime() : 0
-    return Date.now() - movedAt >= 3 * 86400000
+    return isStale([l.moved_at, l.last_follow_up?.scheduled_at, l.last_follow_up?.created_at], 'alert')
   }).length
 
   const getStageLeads = useCallback((stageId: string) => {
@@ -364,13 +365,6 @@ export default function PipelinePage() {
               <span className="text-[12px] font-bold px-2 py-0.5 rounded-md" style={{ background: '#dcfce7', color: '#15803d' }}>
                 {closedLeads} fechados
               </span>
-            )}
-            {staleCount > 0 && (
-              <button onClick={() => { setStaleOnly(true); setShowFilters(true) }}
-                className="text-[12px] font-bold px-2 py-0.5 rounded-md transition-all hover:shadow-sm"
-                style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa' }}>
-                ⚠️ {staleCount} parado{staleCount > 1 ? 's' : ''} 3+ dias
-              </button>
             )}
           </div>
         </div>

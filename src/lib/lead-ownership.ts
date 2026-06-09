@@ -44,12 +44,32 @@ export async function getCurrentLeadOwner(db: Db, leadId: string): Promise<strin
  * Verifica se um buyer é o dono atual do lead.
  * Usado pra bloquear acesso a dados privados (ex: thread WhatsApp) de leads
  * que foram transferidos.
+ *
+ * Cenarios aceitos:
+ *  1) buyer = assigned_to do lead (dono direto)
+ *  2) buyer = conta do team_member em assigned_to_member
+ *  3) buyer ja recebeu/enviou msgs WhatsApp nesse lead (multi-bridge:
+ *     wa-bridge dele roteou a thread pra ele mesmo que o lead.assigned_to
+ *     ainda aponte pra agency). Sem essa regra, team_member que ve a
+ *     thread na inbox NAO consegue responder ("Lead pertence a outro user").
  */
 export async function assertBuyerOwnsLead(db: Db, buyerId: string, leadId: string): Promise<{ ok: boolean; reason?: string }> {
   const ownerBuyerId = await getCurrentLeadOwner(db, leadId)
   if (!ownerBuyerId) return { ok: false, reason: 'Lead sem dono' }
-  if (ownerBuyerId !== buyerId) return { ok: false, reason: 'Lead pertence a outro usuario' }
-  return { ok: true }
+  if (ownerBuyerId === buyerId) return { ok: true }
+
+  // Fallback: o buyer ja tem msgs nessa thread (webhook roteou a conversa
+  // pro wa-bridge dele). Permite que ele continue conversando.
+  const { data: hasMsgs } = await db
+    .from('whatsapp_messages')
+    .select('id')
+    .eq('lead_id', leadId)
+    .eq('buyer_id', buyerId)
+    .limit(1)
+    .maybeSingle()
+  if (hasMsgs) return { ok: true }
+
+  return { ok: false, reason: 'Lead pertence a outro usuario' }
 }
 
 /**

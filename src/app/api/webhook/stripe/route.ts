@@ -100,6 +100,19 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Se comprou appointment e ainda nao tem CRM, vira perfil "appointment-only"
+      // (libera so a agenda + comprar + config; NUNCA rebaixa quem ja e pro/trial/admin).
+      if (productType === 'appointment') {
+        const { data: b } = await supabase.from('buyers')
+          .select('crm_plan, is_admin, trial_ends_at').eq('id', buyerId).single()
+        const hasCrm = !!b?.is_admin || b?.crm_plan === 'pro' ||
+          (!!b?.trial_ends_at && new Date(b.trial_ends_at).getTime() > Date.now())
+        if (!hasCrm && b?.crm_plan !== 'appointment') {
+          await supabase.from('buyers').update({ crm_plan: 'appointment' }).eq('id', buyerId)
+          console.log(`[Stripe Webhook] Buyer ${buyerId} marcado como appointment-only`)
+        }
+      }
+
       // Update buyer's Stripe customer ID if not set
       if (session.customer) {
         await supabase

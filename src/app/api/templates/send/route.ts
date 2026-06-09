@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { renderTemplate } from '@/lib/template-render'
+import { resolveSendBridge } from '@/lib/wa-bridge'
 import { Resend } from 'resend'
 
 /** POST /api/templates/send — render template and send via WhatsApp or Email */
@@ -30,13 +31,13 @@ export async function POST(request: NextRequest) {
 
   if (type === 'whatsapp') {
     if (!lead.phone) return NextResponse.json({ error: 'Lead sem telefone' }, { status: 400 })
-    const bridgeUrl = (process.env.WA_BRIDGE_URL || 'http://31.220.97.186:3457').replace(/\/$/, '')
-    const bridgeKey = (process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026').trim()
+    // Envia pela bridge do DONO do lead (não pela global/Regiane)
+    const sb = await resolveSendBridge(db, buyer_id)
     const cleanPhone = lead.phone.replace(/[\s\-\(\)]/g, '').replace(/^\+/, '')
 
-    const res = await fetch(`${bridgeUrl}/send`, {
+    const res = await fetch(`${sb.url}/send`, {
       method: 'POST',
-      headers: { apikey: bridgeKey, 'Content-Type': 'application/json' },
+      headers: { apikey: sb.key, 'Content-Type': 'application/json' },
       body: JSON.stringify({ number: cleanPhone, message: body }),
     })
 
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
       buyer_id,
       lead_id,
       direction: 'out',
-      from_phone: '',
+      from_phone: sb.phone,
       to_phone: cleanPhone,
       body,
       wa_message_id: sendRes?.id || null,

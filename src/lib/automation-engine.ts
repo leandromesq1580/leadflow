@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { renderTemplate } from '@/lib/template-render'
+import { resolveSendBridge } from '@/lib/wa-bridge'
 import { Resend } from 'resend'
 
 interface Automation {
@@ -85,15 +86,25 @@ interface Target {
 async function findTargets(auto: Automation): Promise<Target[]> {
   const db = createAdminClient()
 
+  // pipeline_leads NAO tem buyer_id. Pegamos os pipelines do buyer
+  // primeiro, depois filtramos pipeline_leads por pipeline_id.
+  // Bug historico: usar .eq('buyer_id', X) em pipeline_leads retorna 0
+  // sempre (coluna nao existe) -> automacao nunca disparava.
+  async function pipelineIdsOfBuyer(buyerId: string): Promise<string[]> {
+    const { data } = await db.from('pipelines').select('id').eq('buyer_id', buyerId)
+    return (data || []).map(p => p.id)
+  }
+
   if (auto.trigger_type === 'stage_entered') {
     const stageId = auto.trigger_config.stage_id
     if (!stageId) return []
-    // Leads currently in that stage, buyer owns them
+    const pipelineIds = await pipelineIdsOfBuyer(auto.buyer_id)
+    if (pipelineIds.length === 0) return []
     const { data } = await db
       .from('pipeline_leads')
-      .select('id, lead_id, buyer_id')
+      .select('id, lead_id')
       .eq('stage_id', stageId)
-      .eq('buyer_id', auto.buyer_id)
+      .in('pipeline_id', pipelineIds)
     return (data || []).map(r => ({ lead_id: r.lead_id, pipeline_lead_id: r.id }))
   }
 
@@ -101,12 +112,14 @@ async function findTargets(auto: Automation): Promise<Target[]> {
     const stageId = auto.trigger_config.stage_id
     const hours = auto.trigger_config.hours || 24
     if (!stageId) return []
+    const pipelineIds = await pipelineIdsOfBuyer(auto.buyer_id)
+    if (pipelineIds.length === 0) return []
     const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
     const { data } = await db
       .from('pipeline_leads')
-      .select('id, lead_id, buyer_id')
+      .select('id, lead_id')
       .eq('stage_id', stageId)
-      .eq('buyer_id', auto.buyer_id)
+      .in('pipeline_id', pipelineIds)
       .lte('moved_at', cutoff)
     return (data || []).map(r => ({ lead_id: r.lead_id, pipeline_lead_id: r.id }))
   }
@@ -183,21 +196,23 @@ async function executeAction(auto: Automation, target: Target): Promise<void> {
     const [{ data: template }, { data: lead }, { data: agent }] = await Promise.all([
       db.from('templates').select('*').eq('id', templateId).single(),
       db.from('leads').select('*').eq('id', target.lead_id).single(),
-      db.from('buyers').select('name, email, phone').eq('id', auto.buyer_id).single(),
+      db.from('buyers').select('name, email, phone, is_active').eq('id', auto.buyer_id).single(),
     ])
 
     if (!template || !lead || !agent) throw new Error('Template/lead/agent not found')
+    // Comprador suspenso: não dispara automação
+    if (agent.is_active === false) { console.log(`[Automation] buyer ${auto.buyer_id} suspenso — skip`); return }
 
     const body = renderTemplate(template.body, lead, agent)
 
     if (template.type === 'whatsapp') {
       if (!lead.phone) throw new Error('Lead sem telefone')
-      const bridgeUrl = (process.env.WA_BRIDGE_URL || 'http://31.220.97.186:3457').replace(/\/$/, '')
-      const bridgeKey = (process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026').trim()
+      // Envia pela bridge do DONO do lead (não pela global/Regiane)
+      const sb = await resolveSendBridge(db, auto.buyer_id)
       const cleanPhone = lead.phone.replace(/[\s\-()]/g, '').replace(/^\+/, '')
-      const res = await fetch(`${bridgeUrl}/send`, {
+      const res = await fetch(`${sb.url}/send`, {
         method: 'POST',
-        headers: { apikey: bridgeKey, 'Content-Type': 'application/json' },
+        headers: { apikey: sb.key, 'Content-Type': 'application/json' },
         body: JSON.stringify({ number: cleanPhone, message: body }),
       })
       if (!res.ok) throw new Error(`wa-bridge ${res.status}`)
@@ -208,7 +223,7 @@ async function executeAction(auto: Automation, target: Target): Promise<void> {
         buyer_id: auto.buyer_id,
         lead_id: target.lead_id,
         direction: 'out',
-        from_phone: '',
+        from_phone: sb.phone,
         to_phone: cleanPhone,
         body,
         wa_message_id: waId,

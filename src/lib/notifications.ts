@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { getBridgeForBuyer } from './wa-bridge'
 
 let _resend: Resend | null = null
 function getResend(): Resend {
@@ -12,9 +13,10 @@ function getResend(): Resend {
  * Send WhatsApp notification via wa-bridge (whatsapp-web.js).
  * Supports both direct (phone number) and groups (JID@g.us).
  */
-async function sendWhatsApp(phone: string, message: string) {
-  const bridgeUrl = (process.env.WA_BRIDGE_URL || 'http://31.220.97.186:3457').replace(/\/$/, '')
-  const bridgeKey = (process.env.WA_BRIDGE_KEY || 'lead4producers-bridge-2026').trim()
+async function sendWhatsApp(phone: string, message: string, bridge?: { url: string; key: string } | null) {
+  const clean = (s: string) => String(s).trim().replace(/\\n/g, '').replace(/\s+$/, '').replace(/\/$/, '')
+  const bridgeUrl = clean(bridge?.url || process.env.WA_BRIDGE_URL || 'http://31.220.97.186:3457')
+  const bridgeKey = (bridge?.key || process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026').trim()
 
   if (!bridgeKey) return
 
@@ -35,6 +37,25 @@ async function sendWhatsApp(phone: string, message: string) {
   } catch (err) {
     console.error('[WhatsApp] Failed:', err)
   }
+}
+
+/**
+ * Avisa o GRUPO de controle que um lead CHEGOU mas ainda não tem dono
+ * (nenhum comprador disponível por estado/horário). Garante que o grupo nunca
+ * fica cego: todo lead gera aviso, mesmo os que ficam pendentes. Quando o lead
+ * for finalmente distribuído, o sendLeadNotificationEmail avisa "entregue pra X".
+ */
+export async function notifyGroupLeadPending(lead: { name: string; phone: string; state?: string | null; interest?: string | null }) {
+  const adminGroupId = process.env.WHATSAPP_ADMIN_GROUP || '120363403347083071@g.us'
+  const msg = `🔔 *NOVO LEAD RECEBIDO* (aguardando distribuição)
+
+📋 *${lead.name}*
+📞 ${lead.phone}
+📍 ${lead.state || '—'}
+💡 ${lead.interest || 'Seguro de vida'}
+
+⏳ Nenhum comprador disponível agora (estado/horário). Será entregue automaticamente quando a janela abrir.`
+  await sendWhatsApp(adminGroupId, msg) // bridge global do grupo
 }
 
 interface Buyer {
@@ -135,7 +156,15 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead) {
 ⚡ Ligue nos proximos 5 minutos!
 🔗 lead4producers.com/dashboard`
 
-    await sendWhatsApp(buyer.phone, whatsappMsg)
+    // Alerta sai da bridge do PRÓPRIO buyer (não da global/Regiane).
+    // Sem bridge própria configurada → cai no global (comportamento de hoje).
+    let ownerBridge: { url: string; key: string } | null = null
+    try {
+      const { createAdminClient } = await import('@/lib/supabase/admin')
+      const b = await getBridgeForBuyer(createAdminClient(), (buyer as any).id)
+      if (b) ownerBridge = { url: b.url, key: b.key }
+    } catch {}
+    await sendWhatsApp(buyer.phone, whatsappMsg, ownerBridge)
   }
 }
 

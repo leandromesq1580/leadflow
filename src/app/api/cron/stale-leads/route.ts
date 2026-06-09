@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { resolveSendBridge } from '@/lib/wa-bridge'
 
 /**
  * GET /api/cron/stale-leads — Daily WhatsApp digest of stale leads (3+ days)
@@ -32,15 +33,14 @@ export async function GET(request: NextRequest) {
     byBuyer[buyerId].push(entry)
   }
 
-  // Send WhatsApp digest to each buyer
-  const bridgeUrl = (process.env.WA_BRIDGE_URL || 'http://31.220.97.186:3457').replace(/\/$/, '')
-  const bridgeKey = (process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026').trim()
+  // Send WhatsApp digest to each buyer — pela bridge do PRÓPRIO buyer (não global/Regiane)
   let sent = 0
 
   for (const [buyerId, entries] of Object.entries(byBuyer)) {
     const { data: buyer } = await db.from('buyers').select('name, phone, whatsapp').eq('id', buyerId).single()
     const targetPhone = buyer?.whatsapp || buyer?.phone
     if (!targetPhone) continue
+    const sb = await resolveSendBridge(db, buyerId)
 
     const top = entries.slice(0, 5)
     const more = entries.length - top.length
@@ -54,9 +54,9 @@ export async function GET(request: NextRequest) {
 
     const cleanPhone = targetPhone.replace(/[\s\-\(\)]/g, '').replace(/^\+/, '')
     try {
-      await fetch(`${bridgeUrl}/send`, {
+      await fetch(`${sb.url}/send`, {
         method: 'POST',
-        headers: { apikey: bridgeKey, 'Content-Type': 'application/json' },
+        headers: { apikey: sb.key, 'Content-Type': 'application/json' },
         body: JSON.stringify({ number: cleanPhone, message }),
       })
       sent++

@@ -66,8 +66,10 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
         }
       })
       .catch(() => {})
-    // Fallback poll lento
-    const interval = setInterval(load, 30000)
+    // Fallback poll — 5s pra responsividade tipo chat. Realtime cobre
+    // o caso normal; o poll garante que mesmo se WebSocket falhar a thread
+    // atualiza em poucos segundos.
+    const interval = setInterval(load, 5000)
     return () => clearInterval(interval)
   }, [leadId])
 

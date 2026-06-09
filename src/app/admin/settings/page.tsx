@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { LeadRoutingCard } from './lead-routing-card'
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<Record<string, Record<string, unknown>>>({})
@@ -88,6 +89,8 @@ export default function AdminSettingsPage() {
           </div>
         </div>
       </div>
+
+      <LeadRoutingCard />
 
       {/* Meta Webhook */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">

@@ -58,7 +58,7 @@ export default function WhatsAppPage() {
     const cookie = document.cookie.split('; ').find(c => c.startsWith(`sb-${ref}-auth-token=`))
     if (!cookie) { setLoading(false); return }
     try {
-      const token = JSON.parse(atob(cookie.split('=')[1]))
+      const token = JSON.parse(atob(decodeURIComponent(cookie.substring(cookie.indexOf('=') + 1))))
       const payload = JSON.parse(atob(token.access_token.split('.')[1]))
       fetchBuyer(payload.sub)
     } catch {
@@ -88,10 +88,11 @@ export default function WhatsAppPage() {
     setLoading(false)
   }
 
-  // Fallback poll lento caso Realtime nao funcione
+  // Fallback poll caso Realtime nao funcione — 10s pra ter responsividade
+  // razoavel sem depender so do WebSocket
   useEffect(() => {
     if (!buyerId) return
-    const t = setInterval(() => loadConversations(buyerId), 60000)
+    const t = setInterval(() => loadConversations(buyerId), 10000)
     return () => clearInterval(t)
   }, [buyerId])
 

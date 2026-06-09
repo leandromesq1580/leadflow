@@ -6,6 +6,7 @@ import { TagPicker } from '@/components/tag-picker'
 import { WhatsAppInbox } from '@/components/whatsapp-inbox'
 import { AiScoreBadge } from '@/components/ai-score-badge'
 import { TimePicker } from '@/components/time-picker'
+import { usePrivacy } from '@/lib/privacy-mode'
 
 interface Props {
   leadId: string
@@ -31,6 +32,7 @@ interface Attachment {
 }
 
 export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
+  const privacy = usePrivacy()
   const [tab, setTab] = useState<'details' | 'inbox' | 'followups' | 'attachments'>('details')
   const [lead, setLead] = useState<any>(null)
   const [followUps, setFollowUps] = useState<FollowUp[]>([])
@@ -65,10 +67,28 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
       fetch(`/api/pipelines?buyer_id=${buyerId}`).then(r => r.json()),
       fetch(`/api/leads/${leadId}/pipeline`).then(r => r.ok ? r.json() : { pipelineLead: null }),
     ])
-    setPipelines(pipesRes.pipelines || [])
-    setPipelineLead(plRes.pipelineLead || null)
-    setPendingStageId(plRes.pipelineLead?.stage_id || null)
-    setPendingPipelineId(plRes.pipelineLead?.pipeline?.id || null)
+    let pipes: any[] = pipesRes.pipelines || []
+    const pl = plRes.pipelineLead || null
+
+    // Cross-buyer fix: lead pode estar em pipeline de outro buyer (ex: team member
+    // vendo lead que ainda está na pipeline da agência). Se a pipeline atual do
+    // lead não estiver na lista do buyer logado, busca ela diretamente pra que
+    // os stages apareçam no dropdown.
+    const currentPipeId = pl?.pipeline?.id
+    if (currentPipeId && !pipes.some((p: any) => p.id === currentPipeId)) {
+      try {
+        const extraRes = await fetch(`/api/pipelines/${currentPipeId}`)
+        if (extraRes.ok) {
+          const extra = await extraRes.json()
+          if (extra?.pipeline) pipes = [...pipes, extra.pipeline]
+        }
+      } catch {}
+    }
+
+    setPipelines(pipes)
+    setPipelineLead(pl)
+    setPendingStageId(pl?.stage_id || null)
+    setPendingPipelineId(pl?.pipeline?.id || null)
   }
 
   async function loadFollowUps() {
@@ -86,14 +106,61 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   async function uploadFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+
+    const MAX = 30 * 1024 * 1024
+    if (file.size > MAX) {
+      alert(`Arquivo muito grande (${(file.size / 1024 / 1024).toFixed(1)}MB). Máximo ${MAX / 1024 / 1024}MB.`)
+      e.target.value = ''
+      return
+    }
+
     setUploading(true)
-    const form = new FormData()
-    form.append('file', file)
-    form.append('buyer_id', buyerId)
-    await fetch(`/api/leads/${leadId}/attachments`, { method: 'POST', body: form })
-    setUploading(false)
-    loadAttachments()
-    e.target.value = ''
+    try {
+      // 1) Pede signed URL pro server (bypassa o limit de 4.5MB do Vercel)
+      const urlRes = await fetch(`/api/leads/${leadId}/attachments/upload-url`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file_name: file.name, file_size: file.size, buyer_id: buyerId }),
+      })
+      if (!urlRes.ok) {
+        const d = await urlRes.json().catch(() => ({}))
+        throw new Error(d.error || `Falha ao gerar upload URL (HTTP ${urlRes.status})`)
+      }
+      const { signedUrl, path } = await urlRes.json()
+
+      // 2) PUT direto no Supabase Storage
+      const upRes = await fetch(signedUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        body: file,
+      })
+      if (!upRes.ok) throw new Error(`Falha no upload (HTTP ${upRes.status})`)
+
+      // 3) Registra metadados no DB
+      const regRes = await fetch(`/api/leads/${leadId}/attachments/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          buyer_id: buyerId,
+          file_name: file.name,
+          file_path: path,
+          file_size: file.size,
+          file_type: file.type,
+        }),
+      })
+      if (!regRes.ok) {
+        const d = await regRes.json().catch(() => ({}))
+        throw new Error(d.error || `Falha ao registrar arquivo (HTTP ${regRes.status})`)
+      }
+
+      await loadAttachments()
+    } catch (err: any) {
+      console.error('[uploadFile] erro:', err)
+      alert(`Não foi possível anexar: ${err?.message || 'erro desconhecido'}`)
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
   }
 
   async function deleteAttachment(attId: string) {
@@ -220,16 +287,28 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
 
   const hue = (lead.name?.charCodeAt(0) * 47 + (lead.name?.charCodeAt(1) || 0) * 23) % 360
 
-  const input = (label: string, field: string, type = 'text', icon = '') => (
-    <div>
-      <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: '#94a3b8' }}>
-        {icon && <span className="mr-1">{icon}</span>}{label}
-      </label>
-      <input type={type} value={lead[field] || ''} onChange={e => setLead({ ...lead, [field]: type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value })}
-        className="w-full px-3.5 py-2.5 rounded-xl text-[13px] font-medium transition-all focus:outline-none focus:ring-2 focus:ring-indigo-200"
-        style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
-    </div>
-  )
+  const input = (label: string, field: string, type = 'text', icon = '') => {
+    const sensitive = field === 'phone' || field === 'email'
+    const masked = privacy.enabled && sensitive
+    const displayValue = masked
+      ? privacy.mask(lead[field] || '', field === 'email' ? 'email' : 'phone')
+      : (lead[field] || '')
+    return (
+      <div>
+        <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: '#94a3b8' }}>
+          {icon && <span className="mr-1">{icon}</span>}{label}
+        </label>
+        <input
+          type={masked ? 'text' : type}
+          value={displayValue}
+          readOnly={masked}
+          onChange={masked ? undefined : (e => setLead({ ...lead, [field]: type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value }))}
+          className="w-full px-3.5 py-2.5 rounded-xl text-[13px] font-medium transition-all focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          style={{ background: masked ? '#f1f5f9' : '#f8f9fc', border: '1px solid #e8ecf4', color: masked ? '#94a3b8' : '#1a1a2e' }}
+        />
+      </div>
+    )
+  }
 
   return (
     <>
@@ -251,7 +330,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
             <div className="flex-1 min-w-0">
               <h2 className="text-[20px] font-extrabold truncate" style={{ color: '#1a1a2e' }}>{lead.name}</h2>
               <p className="text-[12px] font-medium" style={{ color: '#94a3b8' }}>
-                {lead.phone} {lead.state && `· ${lead.state}`}
+                {privacy.mask(lead.phone, 'phone')} {lead.state && `· ${lead.state}`}
               </p>
             </div>
             <button onClick={() => setShowSendMsg(true)}
