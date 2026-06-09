@@ -58,6 +58,18 @@ export async function notifyGroupLeadPending(lead: { name: string; phone: string
   await sendWhatsApp(adminGroupId, msg) // bridge global do grupo
 }
 
+/** Avisa o GRUPO de controle que um lead respondeu o SMS em massa. */
+export async function notifyGroupSmsReply(leadName: string | null, fromPhone: string, body: string) {
+  const adminGroupId = process.env.WHATSAPP_ADMIN_GROUP || '120363403347083071@g.us'
+  const msg = `📩 *RESPOSTA DE SMS*
+
+👤 *${leadName || 'Número não cadastrado'}*
+📞 +${fromPhone}
+
+💬 "${body.slice(0, 400)}"`
+  await sendWhatsApp(adminGroupId, msg)
+}
+
 interface Buyer {
   name: string
   email: string
