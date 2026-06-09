@@ -25,13 +25,33 @@ export function SmsClient({ campaigns, replies, buyers }: Props) {
   const [states, setStates] = useState<string[]>([])
   const [buyerId, setBuyerId] = useState('')
   const [days, setDays] = useState(0)
+  // segmentação por pipeline/coluna do dono
+  const [pipelines, setPipelines] = useState<{ id: string; name: string; stages: { id: string; name: string }[] }[]>([])
+  const [pipelineId, setPipelineId] = useState('')
+  const [stageId, setStageId] = useState('')
   const [estimate, setEstimate] = useState<{ total: number; segments_per_msg: number; est_cost_usd: number; sample_rendered: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   // progresso do disparo
   const [progress, setProgress] = useState<{ total: number; sent: number; failed: number } | null>(null)
 
-  const filters = { states: states.length ? states : undefined, buyer_id: buyerId || undefined, days: days || undefined }
+  const filters = {
+    states: states.length ? states : undefined,
+    buyer_id: buyerId || undefined,
+    days: days || undefined,
+    pipeline_id: pipelineId || undefined,
+    stage_id: stageId || undefined,
+  }
+
+  async function trocarDono(id: string) {
+    setBuyerId(id); setPipelineId(''); setStageId(''); setPipelines([]); setEstimate(null)
+    if (!id) return
+    try {
+      const r = await fetch(`/api/admin/sms/pipelines?buyer_id=${id}`)
+      const d = await r.json()
+      if (r.ok) setPipelines(d.pipelines || [])
+    } catch {}
+  }
 
   async function calcular() {
     setErr(''); setEstimate(null); setBusy(true)
@@ -135,10 +155,27 @@ export function SmsClient({ campaigns, replies, buyers }: Props) {
             </div>
             <div>
               <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>Dono do lead</label>
-              <select value={buyerId} onChange={e => { setBuyerId(e.target.value); setEstimate(null) }} className={inputCls + ' cursor-pointer'} style={inputStyle}>
+              <select value={buyerId} onChange={e => trocarDono(e.target.value)} className={inputCls + ' cursor-pointer'} style={inputStyle}>
                 <option value="">Todos</option>
                 {buyers.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
+
+              <label className="block text-[11px] font-bold uppercase tracking-wider mb-1 mt-3" style={{ color: '#94a3b8' }}>Pipeline do dono</label>
+              <select value={pipelineId} disabled={!buyerId || pipelines.length === 0}
+                onChange={e => { setPipelineId(e.target.value); setStageId(''); setEstimate(null) }}
+                className={inputCls + ' cursor-pointer disabled:opacity-50'} style={inputStyle}>
+                <option value="">{!buyerId ? 'Escolha o dono primeiro' : pipelines.length === 0 ? 'Dono sem pipeline' : 'Pipeline inteira (qualquer)'}</option>
+                {pipelines.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+
+              <label className="block text-[11px] font-bold uppercase tracking-wider mb-1 mt-3" style={{ color: '#94a3b8' }}>Coluna (estágio)</label>
+              <select value={stageId} disabled={!pipelineId}
+                onChange={e => { setStageId(e.target.value); setEstimate(null) }}
+                className={inputCls + ' cursor-pointer disabled:opacity-50'} style={inputStyle}>
+                <option value="">{!pipelineId ? 'Escolha a pipeline primeiro' : 'Todas as colunas'}</option>
+                {(pipelines.find(p => p.id === pipelineId)?.stages || []).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+
               <label className="block text-[11px] font-bold uppercase tracking-wider mb-1 mt-3" style={{ color: '#94a3b8' }}>Leads dos últimos</label>
               <select value={days} onChange={e => { setDays(Number(e.target.value)); setEstimate(null) }} className={inputCls + ' cursor-pointer'} style={inputStyle}>
                 <option value={0}>Sempre (todos)</option>

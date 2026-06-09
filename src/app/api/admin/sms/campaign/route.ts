@@ -5,7 +5,7 @@ import { toE164, renderSmsBody, smsSegments, twilioConfigured } from '@/lib/twil
 
 /**
  * POST /api/admin/sms/campaign — cria a campanha e ENFILEIRA os destinatários.
- * Body: { name, body, filters: { states?: string[], buyer_id?: string, days?: number }, dry_run?: boolean }
+ * Body: { name, body, filters: { states?: string[], buyer_id?: string, days?: number, pipeline_id?: string, stage_id?: string }, dry_run?: boolean }
  * dry_run=true → só calcula o público (total + estimativa), não cria nada.
  * O envio em si é feito em lotes pelo /api/admin/sms/dispatch.
  */
@@ -56,6 +56,14 @@ export async function POST(request: NextRequest) {
     const cutoff = Date.now() - Number(filters.days) * 86400_000
     const { data: recents } = await db.from('leads').select('id, created_at').gte('created_at', new Date(cutoff).toISOString()).limit(10000)
     const ids = new Set((recents || []).map(o => o.id))
+    leads = leads.filter(l => ids.has(l.id))
+  }
+  // Pipeline/coluna: segmenta por onde o lead está no kanban do dono
+  if (filters.pipeline_id) {
+    let pq = db.from('pipeline_leads').select('lead_id').eq('pipeline_id', filters.pipeline_id).limit(10000)
+    if (filters.stage_id) pq = pq.eq('stage_id', filters.stage_id)
+    const { data: inPipe } = await pq
+    const ids = new Set((inPipe || []).map(o => o.lead_id))
     leads = leads.filter(l => ids.has(l.id))
   }
 
