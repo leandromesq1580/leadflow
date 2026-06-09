@@ -77,11 +77,46 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      {/* ==================== TESTIMONIALS ==================== */}
+      <section className="py-12 sm:py-16" style={{ background: '#fff', borderBottom: '1px solid #e8ecf4' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10">
+            <h2 className="text-[22px] sm:text-[30px] font-extrabold mb-2" style={{ color: '#1a1a2e' }}>{t.testimonials.title}</h2>
+            <p className="text-[13px] sm:text-[14px]" style={{ color: '#94a3b8' }}>{t.testimonials.subtitle}</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {t.testimonials.cards.map((c, i) => {
+              const colors = ['#6366f1', '#10b981', '#f59e0b']
+              const bg = colors[i % colors.length]
+              return (
+                <div key={i} className="rounded-2xl p-6 relative" style={{ background: '#fafbff', border: '1px solid #e8ecf4' }}>
+                  <span className="absolute -top-3 right-5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider text-white" style={{ background: bg, boxShadow: `0 4px 14px ${bg}40` }}>
+                    {c.tag}
+                  </span>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-extrabold text-[18px] flex-shrink-0" style={{ background: bg }}>
+                      {c.initials}
+                    </div>
+                    <div>
+                      <p className="text-[15px] font-extrabold" style={{ color: '#1a1a2e' }}>{c.name}</p>
+                      <p className="text-[11px] font-semibold" style={{ color: '#94a3b8' }}>{c.location}</p>
+                    </div>
+                  </div>
+                  <p className="text-[13.5px] leading-relaxed italic" style={{ color: '#475569' }}>
+                    &ldquo;{c.quote}&rdquo;
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* ==================== SOCIAL PROOF BAR ==================== */}
-      <section className="py-8 sm:py-12" style={{ background: '#fff', borderBottom: '1px solid #e8ecf4' }}>
+      <section className="py-8 sm:py-12" style={{ background: '#f8f9fc', borderBottom: '1px solid #e8ecf4' }}>
         <div className="max-w-5xl mx-auto px-4 flex flex-wrap justify-center gap-6 sm:gap-12">
           {[
-            { n: '$22', label: t.stats.perLead },
+            { n: '$19.80', label: t.stats.perLead },
             { n: '< 5min', label: t.stats.delivery },
             { n: '100%', label: t.stats.exclusive },
             { n: 'AI', label: t.stats.ai },
