@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface Campaign { id: string; name: string; body: string; total: number; sent: number; failed: number; status: string; created_at: string }
@@ -34,6 +34,19 @@ export function SmsClient({ campaigns, replies, buyers }: Props) {
   const [err, setErr] = useState('')
   // progresso do disparo
   const [progress, setProgress] = useState<{ total: number; sent: number; failed: number } | null>(null)
+  const bodyRef = useRef<HTMLTextAreaElement>(null)
+
+  /** Insere a variável na posição do cursor do textarea. */
+  function inserirVariavel(v: string) {
+    const el = bodyRef.current
+    setEstimate(null)
+    if (!el) { setBody(b => b + v); return }
+    const start = el.selectionStart ?? body.length
+    const end = el.selectionEnd ?? body.length
+    const novo = body.slice(0, start) + v + body.slice(end)
+    setBody(novo)
+    setTimeout(() => { el.focus(); el.setSelectionRange(start + v.length, start + v.length) }, 0)
+  }
 
   const filters = {
     states: states.length ? states : undefined,
@@ -140,10 +153,27 @@ export function SmsClient({ campaigns, replies, buyers }: Props) {
           <input value={name} onChange={e => setName(e.target.value)} placeholder="ex: Reativação junho" className={inputCls + ' mb-4'} style={inputStyle} />
 
           <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>Mensagem</label>
-          <textarea value={body} onChange={e => { setBody(e.target.value); setEstimate(null) }} rows={4}
-            placeholder={'Oi {nome}! Aqui é da National Life...\nVariáveis: {nome} {nome_completo} {estado}'}
-            className={inputCls + ' resize-none mb-1'} style={inputStyle} />
-          <p className="text-[11px] mb-4" style={{ color: '#94a3b8' }}>{body.length} caracteres · variáveis: {'{nome} {nome_completo} {estado}'}</p>
+          <textarea ref={bodyRef} value={body} onChange={e => { setBody(e.target.value); setEstimate(null) }} rows={4}
+            placeholder={'Oi {nome}! Aqui é da National Life...'}
+            className={inputCls + ' resize-none mb-2'} style={inputStyle} />
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Inserir variável:</span>
+            {[
+              { v: '{nome}', label: '👤 Primeiro nome' },
+              { v: '{nome_completo}', label: '👤 Nome completo' },
+              { v: '{estado}', label: '📍 Estado' },
+            ].map(x => (
+              <button key={x.v} type="button" onClick={() => inserirVariavel(x.v)}
+                title={`Insere ${x.v} na posição do cursor — vira o dado real de cada lead no envio`}
+                className="px-2.5 py-1 rounded-lg text-[12px] font-bold"
+                style={{ background: '#eef2ff', color: '#6366f1', border: '1px solid #c7d2fe' }}>
+                {x.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] mb-4" style={{ color: '#94a3b8' }}>
+            {body.length} caracteres · no envio, {'{nome}'} vira o nome real de cada lead (ex: "Oi {'{nome}'}!" → "Oi Maria!")
+          </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-2">
             <div>
