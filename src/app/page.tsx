@@ -4,6 +4,7 @@ import { getLocale } from '@/lib/locale'
 import { getMessages } from '@/lib/i18n'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { WhatsAppFab } from '@/components/whatsapp-fab'
+import { WhatsAppLeadCta } from '@/components/whatsapp-lead-cta'
 import { LiveLeadToast } from '@/components/live-lead-toast'
 import { MetaPixel } from '@/components/meta-pixel'
 
@@ -63,9 +64,7 @@ export default async function LandingPage() {
               {t.hero.subtitle}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
-              <Link href="/register" className="px-8 py-4 rounded-xl text-[15px] font-bold text-center inline-block" style={{ background: 'linear-gradient(135deg, #f59e0b, #eab308)', color: '#1a1a2e', boxShadow: '0 4px 20px rgba(245,158,11,0.35)' }}>
-                {t.hero.ctaStart}
-              </Link>
+              <WhatsAppLeadCta size="lg" label={t.hero.ctaStart} message={t.hero.waMessage} />
               <Link href="#features" className="px-8 py-4 rounded-xl text-[15px] font-bold text-white text-center inline-block" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}>
                 {t.hero.ctaFeatures}
               </Link>
@@ -419,7 +418,7 @@ export default async function LandingPage() {
                 <p className="text-[15px] font-bold" style={{ color: '#64748b' }}>{p.qty} {t.pricing.pkg.unitLeads}</p>
                 <p className="text-[38px] font-extrabold leading-none my-2" style={{ color: '#1a1a2e' }}>${p.total}</p>
                 <p className="text-[13px] font-bold mb-5" style={{ color: '#6366f1' }}>${p.per}{t.pricing.pkg.perLead}</p>
-                <Link href="/register" className="block text-center px-6 py-2.5 rounded-xl text-[13px] font-bold" style={{ background: p.tag ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : '#f1f5f9', color: p.tag ? '#fff' : '#1a1a2e' }}>{t.pricing.pkg.buy}</Link>
+                <WhatsAppLeadCta block label={t.pricing.pkg.buy} message={t.hero.waMsgPkg.replace('{qty}', String(p.qty)).replace('{unit}', t.pricing.pkg.unitLeads).replace('{total}', String(p.total))} />
               </div>
             ))}
           </div>
@@ -439,7 +438,7 @@ export default async function LandingPage() {
                 <p className="text-[15px] font-bold" style={{ color: '#64748b' }}>{p.qty} {t.pricing.pkg.unitAppts}</p>
                 <p className="text-[38px] font-extrabold leading-none my-2" style={{ color: '#1a1a2e' }}>${p.total}</p>
                 <p className="text-[13px] font-bold mb-5" style={{ color: '#ea580c' }}>${p.per}{t.pricing.pkg.perAppt}</p>
-                <Link href="/register" className="block text-center px-6 py-2.5 rounded-xl text-[13px] font-bold" style={{ background: p.tag ? 'linear-gradient(135deg, #f59e0b, #ea580c)' : '#f1f5f9', color: p.tag ? '#fff' : '#1a1a2e' }}>{t.pricing.pkg.buy}</Link>
+                <WhatsAppLeadCta block label={t.pricing.pkg.buy} message={t.hero.waMsgPkg.replace('{qty}', String(p.qty)).replace('{unit}', t.pricing.pkg.unitAppts).replace('{total}', String(p.total))} />
               </div>
             ))}
           </div>
