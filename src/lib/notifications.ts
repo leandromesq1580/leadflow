@@ -169,12 +169,20 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead) {
 🔗 lead4producers.com/dashboard`
 
     // Alerta sai da bridge do PRÓPRIO buyer (não da global/Regiane).
-    // Sem bridge própria configurada → cai no global (comportamento de hoje).
+    // EXCEÇÃO: se o nº de aviso do buyer é o MESMO da bridge dele, seria uma
+    // self-message (cai no chat "você" sem notificar — na prática não chega).
+    // Nesse caso manda pela bridge GLOBAL: chega como mensagem normal de outro
+    // número e notifica de verdade. Sem bridge própria → global (como antes).
     let ownerBridge: { url: string; key: string } | null = null
     try {
       const { createAdminClient } = await import('@/lib/supabase/admin')
       const b = await getBridgeForBuyer(createAdminClient(), (buyer as any).id)
-      if (b) ownerBridge = { url: b.url, key: b.key }
+      if (b) {
+        const alertDigits = String(buyer.phone).replace(/\D/g, '').slice(-10)
+        const bridgeDigits = String(b.phone || '').replace(/\D/g, '').slice(-10)
+        const isSelf = !!alertDigits && alertDigits === bridgeDigits
+        if (!isSelf) ownerBridge = { url: b.url, key: b.key }
+      }
     } catch {}
     await sendWhatsApp(buyer.phone, whatsappMsg, ownerBridge)
   }
