@@ -57,27 +57,36 @@ export default async function LandingPage() {
             <h1 className="text-[32px] sm:text-[44px] lg:text-[52px] font-extrabold leading-[1.06] tracking-tight text-white mb-5">
               {t.hero.titleA} <span style={{ color: '#a78bfa' }}>{t.hero.titleB}</span>
             </h1>
-            <p className="text-[17px] sm:text-[21px] font-bold leading-snug mb-4 max-w-2xl mx-auto text-white">
+            <p className="text-[17px] sm:text-[21px] font-bold leading-snug mb-3 max-w-2xl mx-auto text-white">
               {t.hero.tagline}
             </p>
-            <p className="text-[15px] sm:text-[17px] leading-relaxed mb-10 max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.55)' }}>
+            <p className="text-[14px] sm:text-[16px] leading-relaxed mb-9 max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.55)' }}>
               {t.hero.subtitle}
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
+
+            {/* Vídeo de apresentação — autoplay mudo (HTML cru garante o atributo muted no SSR) */}
+            <div className="relative mx-auto max-w-3xl mb-9">
+              <div className="absolute -inset-5 sm:-inset-8 rounded-3xl blur-2xl pointer-events-none" style={{ background: 'radial-gradient(closest-side, rgba(139,92,246,0.4), rgba(99,102,241,0.18), transparent)' }} />
+              <div
+                className="relative rounded-xl sm:rounded-2xl overflow-hidden"
+                style={{ border: '1px solid rgba(255,255,255,0.22)', boxShadow: '0 24px 80px rgba(0,0,0,0.55)' }}
+                dangerouslySetInnerHTML={{
+                  __html: '<video src="/hero-video.mp4" poster="/hero-video-poster.jpg" autoplay muted loop playsinline controls preload="metadata" style="display:block;width:100%;height:auto;aspect-ratio:16/9;background:#0b0820"></video>',
+                }}
+              />
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-4">
               <WhatsAppLeadCta size="lg" label={t.hero.ctaStart} message={t.hero.waMessage} />
               <Link href="#features" className="px-8 py-4 rounded-xl text-[15px] font-bold text-white text-center inline-block" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}>
                 {t.hero.ctaFeatures}
               </Link>
             </div>
-            <p className="text-[13px] mb-6 flex items-center justify-center gap-2 flex-wrap" style={{ color: 'rgba(255,255,255,0.7)' }}>
+            <p className="text-[13px] mb-2 flex items-center justify-center gap-2 flex-wrap" style={{ color: 'rgba(255,255,255,0.7)' }}>
               <span>🎁</span>
               <strong style={{ color: '#fbbf24' }}>7 {t.hero.trialNote}</strong>
               <span>{t.hero.trialDetails}</span>
             </p>
-          </div>
-
-          <div className="mt-8 sm:mt-12 rounded-xl sm:rounded-2xl overflow-hidden mx-auto max-w-5xl" style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <Image src="/ss-pipeline.png" alt="Pipeline Kanban Lead4Pro" width={1200} height={700} className="w-full h-auto" priority />
           </div>
         </div>
       </section>
