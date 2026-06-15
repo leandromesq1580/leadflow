@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getStripe, PRODUCTS } from '@/lib/stripe'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { STARTER_PACKAGE_ID, hasPurchased } from '@/lib/starter'
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,6 +43,14 @@ export async function POST(request: NextRequest) {
 
     if (!buyer) {
       return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
+    }
+
+    // 🔒 Starter é EXCLUSIVO da primeira compra. Se o buyer já comprou qualquer
+    // coisa, bloqueia (mesmo que a 1ª compra tenha sido outro pacote).
+    if (packageId === STARTER_PACKAGE_ID && (await hasPurchased(db, buyer.id))) {
+      return NextResponse.json({
+        error: 'O pacote Starter é exclusivo da primeira compra. Escolha outro pacote.',
+      }, { status: 400 })
     }
 
     // Create Stripe Checkout Session

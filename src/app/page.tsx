@@ -426,7 +426,10 @@ export default async function LandingPage() {
                 {p.tag && <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap" style={{ background: '#6366f1', color: '#fff' }}>{p.tag}</span>}
                 <p className="text-[15px] font-bold" style={{ color: '#64748b' }}>{p.qty} {t.pricing.pkg.unitLeads}</p>
                 <p className="text-[38px] font-extrabold leading-none my-2" style={{ color: '#1a1a2e' }}>${p.total}</p>
-                <p className="text-[13px] font-bold mb-5" style={{ color: '#6366f1' }}>${p.per}{t.pricing.pkg.perLead}</p>
+                <p className="text-[13px] font-bold mb-1" style={{ color: '#6366f1' }}>${p.per}{t.pricing.pkg.perLead}</p>
+                {p.qty === 5
+                  ? <p className="text-[11px] font-semibold mb-4" style={{ color: '#10b981' }}>⭐ {t.pricing.pkg.starterNote}</p>
+                  : <div className="mb-4" />}
                 <WhatsAppLeadCta block label={t.pricing.pkg.buy} message={t.hero.waMsgPkg.replace('{qty}', String(p.qty)).replace('{unit}', t.pricing.pkg.unitLeads).replace('{total}', String(p.total))} />
               </div>
             ))}
