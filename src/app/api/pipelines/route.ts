@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
 /** POST /api/pipelines — create pipeline with default stages */
 export async function POST(request: NextRequest) {
-  const { buyer_id, name } = await request.json()
+  const { buyer_id, name, populate_existing } = await request.json()
   if (!buyer_id || !name) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
 
   const db = createAdminClient()
@@ -55,31 +55,37 @@ export async function POST(request: NextRequest) {
   const stages = DEFAULT_STAGES.map(s => ({ ...s, pipeline_id: pipeline.id }))
   await db.from('pipeline_stages').insert(stages)
 
-  // Auto-populate: add all existing leads to first stage
-  const { data: firstStage } = await db
-    .from('pipeline_stages')
-    .select('id')
-    .eq('pipeline_id', pipeline.id)
-    .order('position')
-    .limit(1)
-    .single()
-
-  if (firstStage) {
-    const { data: leads } = await db
-      .from('leads')
+  // Popular com os leads existentes APENAS se o usuário pediu (populate_existing).
+  // Antes isso era automático e despejava TODOS os leads no pipeline novo —
+  // assustador e duplicava os leads entre pipelines. Agora é opt-in.
+  let populated = 0
+  if (populate_existing) {
+    const { data: firstStage } = await db
+      .from('pipeline_stages')
       .select('id')
-      .eq('assigned_to', buyer_id)
+      .eq('pipeline_id', pipeline.id)
+      .order('position')
+      .limit(1)
+      .single()
 
-    if (leads && leads.length > 0) {
-      const entries = leads.map((l, i) => ({
-        lead_id: l.id,
-        pipeline_id: pipeline.id,
-        stage_id: firstStage.id,
-        position: i,
-      }))
-      await db.from('pipeline_leads').insert(entries)
+    if (firstStage) {
+      const { data: leads } = await db
+        .from('leads')
+        .select('id')
+        .eq('assigned_to', buyer_id)
+
+      if (leads && leads.length > 0) {
+        const entries = leads.map((l, i) => ({
+          lead_id: l.id,
+          pipeline_id: pipeline.id,
+          stage_id: firstStage.id,
+          position: i,
+        }))
+        await db.from('pipeline_leads').insert(entries)
+        populated = leads.length
+      }
     }
   }
 
-  return NextResponse.json({ pipeline })
+  return NextResponse.json({ pipeline, populated })
 }

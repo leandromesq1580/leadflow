@@ -45,10 +45,15 @@ export default function PipelineSettingsPage() {
 
   async function createPipeline() {
     if (!newName.trim()) return
+    const populate_existing = confirm(
+      'Trazer seus leads existentes pra esse novo pipeline?\n\n' +
+      'OK = traz todos os seus leads atuais pra primeira coluna\n' +
+      'Cancelar = pipeline vazio (você arrasta os leads que quiser depois)'
+    )
     await fetch('/api/pipelines', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ buyer_id: buyerId, name: newName }),
+      body: JSON.stringify({ buyer_id: buyerId, name: newName, populate_existing }),
     })
     setNewName('')
     loadPipelines(buyerId)

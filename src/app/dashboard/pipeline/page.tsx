@@ -193,10 +193,13 @@ export default function PipelinePage() {
 
   async function createPipeline() {
     setCreating(true)
+    // 1º pipeline ("Vendas"): popula com os leads existentes (o usuário quer
+    // ver os leads dele de cara). Pipelines ADICIONAIS (criados em Configurações)
+    // perguntam antes de popular.
     await fetch('/api/pipelines', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ buyer_id: buyerId, name: 'Vendas' }),
+      body: JSON.stringify({ buyer_id: buyerId, name: 'Vendas', populate_existing: true }),
     })
     loadPipelines(buyerId)
     setCreating(false)
