@@ -405,6 +405,45 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      {/* ==================== QUEM SOMOS ==================== */}
+      <section className="py-16 sm:py-24" style={{ background: 'linear-gradient(160deg, #0f0a2e 0%, #1e1b4b 60%, #312e81 100%)' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+            {/* Foto */}
+            <div className="relative mx-auto w-full max-w-[420px]">
+              <div className="absolute -inset-4 rounded-3xl blur-2xl pointer-events-none" style={{ background: 'radial-gradient(closest-side, rgba(139,92,246,0.35), transparent)' }} />
+              <Image src="/quem-somos.jpg" alt="Leandro e Regiane — fundadores do Lead4Pro" width={840} height={1120}
+                className="relative w-full h-auto rounded-2xl object-cover"
+                style={{ border: '1px solid rgba(255,255,255,0.18)', boxShadow: '0 24px 70px rgba(0,0,0,0.5)' }} />
+            </div>
+            {/* Texto */}
+            <div>
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold mb-5" style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.25)' }}>
+                <span className="w-2 h-2 rounded-full" style={{ background: '#34d399' }} /> {t.about.badge}
+              </span>
+              <h2 className="text-[26px] sm:text-[34px] font-extrabold text-white leading-tight mb-5">{t.about.title}</h2>
+              <div className="space-y-4 text-[15px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.72)' }}>
+                <p>{t.about.p1}</p>
+                <p>{t.about.p2}</p>
+                <p className="text-white font-semibold">{t.about.p3}</p>
+              </div>
+              <div className="grid grid-cols-3 gap-3 mt-8">
+                {[
+                  { n: t.about.stat1, l: t.about.stat1l },
+                  { n: t.about.stat2, l: t.about.stat2l },
+                  { n: t.about.stat3, l: t.about.stat3l },
+                ].map((s, i) => (
+                  <div key={i} className="rounded-2xl p-4 text-center" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <p className="text-[15px] sm:text-[17px] font-extrabold" style={{ color: '#a78bfa' }}>{s.n}</p>
+                    <p className="text-[10px] sm:text-[11px] font-semibold mt-1" style={{ color: 'rgba(255,255,255,0.55)' }}>{s.l}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ==================== PRICING ==================== */}
       <section id="pricing" className="py-16 sm:py-24" style={{ background: 'linear-gradient(180deg, #fff 0%, #f8f9fc 100%)' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
