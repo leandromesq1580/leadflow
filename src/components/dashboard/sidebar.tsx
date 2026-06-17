@@ -15,6 +15,7 @@ interface SidebarProps {
   isAgency?: boolean
   buyerId?: string
   crmPlan?: string
+  isAdmin?: boolean
 }
 
 function useWhatsAppUnread(buyerId?: string): number {
@@ -93,7 +94,7 @@ function BrandMark({ size = 32 }: { size?: number }) {
   )
 }
 
-export function Sidebar({ type, userName, isAgency, buyerId, crmPlan }: SidebarProps) {
+export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, isAdmin }: SidebarProps) {
   const pathname = usePathname()
   const t = useT()
   const apptOnly = type === 'buyer' && crmPlan === 'appointment'
@@ -117,6 +118,12 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan }: SidebarP
     { href: '/dashboard/referral', label: t.sidebar.referral, icon: '🎁' },
     { href: '/dashboard/credits', label: t.sidebar.credits, icon: '💳' },
     { href: '/dashboard/settings', label: t.sidebar.settings, icon: '⚙️' },
+    // Admin (Regiane/Leandro) usa o dashboard de comprador mas precisa do
+    // atendimento a clientes à mão — atalho direto pra central (admin-only).
+    ...(isAdmin ? [
+      { href: '/admin/clients', label: 'Atendimento Clientes', icon: '👥' },
+      { href: '/admin', label: 'Painel Admin', icon: '🛡️' },
+    ] : []),
   ]
 
   const adminLinks = [

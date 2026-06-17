@@ -61,7 +61,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <PrivacyProvider>
       <div className="flex min-h-screen" style={{ background: '#f8f9fc' }}>
         <div className="hidden md:block">
-          <Sidebar type="buyer" userName={buyer?.name || user!.email || ''} isAgency={buyer?.is_agency || false} buyerId={buyer?.id} crmPlan={buyer?.crm_plan || 'free'} />
+          <Sidebar type="buyer" userName={buyer?.name || user!.email || ''} isAgency={buyer?.is_agency || false} buyerId={buyer?.id} crmPlan={buyer?.crm_plan || 'free'} isAdmin={!!buyer?.is_admin} />
         </div>
         <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-auto" data-crm-plan={buyer?.crm_plan || 'free'}>
           {impAs && <ImpersonationBanner name={impAs} />}
