@@ -108,6 +108,8 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, isAdmin }:
     { href: '/dashboard/leads', label: t.sidebar.leads, icon: '🎯' },
     { href: '/dashboard/pipeline', label: t.sidebar.pipeline, icon: '📋' },
     { href: '/dashboard/whatsapp', label: t.sidebar.whatsapp, icon: '💬' },
+    // Atendimento a Clientes logo abaixo do WhatsApp — só admin (Regiane/Leandro)
+    ...(isAdmin ? [{ href: '/dashboard/clients', label: 'Atendimento Clientes', icon: '👥' }] : []),
     { href: '/dashboard/ai-consult', label: t._locale === 'en' ? 'AI Specialist' : t._locale === 'es' ? 'Especialista IA' : 'Especialista AI', icon: '🤖' },
     { href: '/dashboard/templates', label: t.sidebar.templates, icon: '📝' },
     { href: '/dashboard/automations', label: t.sidebar.automations, icon: '⚡' },
@@ -118,11 +120,6 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, isAdmin }:
     { href: '/dashboard/referral', label: t.sidebar.referral, icon: '🎁' },
     { href: '/dashboard/credits', label: t.sidebar.credits, icon: '💳' },
     { href: '/dashboard/settings', label: t.sidebar.settings, icon: '⚙️' },
-    // Atendimento a clientes no PRÓPRIO dashboard do admin (Regiane/Leandro) —
-    // página dentro do perfil dela, não redireciona pro /admin. Admin-only.
-    ...(isAdmin ? [
-      { href: '/dashboard/clients', label: 'Atendimento Clientes', icon: '👥' },
-    ] : []),
   ]
 
   const adminLinks = [
