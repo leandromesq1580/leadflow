@@ -55,10 +55,8 @@ export async function POST(request: NextRequest) {
 
     // Create Stripe Checkout Session
     const stripe = getStripe()
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      customer: buyer.stripe_customer_id || undefined,
-      customer_email: !buyer.stripe_customer_id ? buyer.email : undefined,
+    const baseParams = {
+      mode: 'payment' as const,
       line_items: [
         {
           price_data: {
@@ -81,7 +79,26 @@ export async function POST(request: NextRequest) {
       },
       success_url: 'https://lead4producers.com/dashboard/credits?success=true',
       cancel_url: 'https://lead4producers.com/dashboard/credits?cancelled=true',
-    })
+    }
+
+    let session
+    try {
+      session = await stripe.checkout.sessions.create({
+        ...baseParams,
+        customer: buyer.stripe_customer_id || undefined,
+        customer_email: !buyer.stripe_customer_id ? buyer.email : undefined,
+      })
+    } catch (e: any) {
+      // stripe_customer_id criado em TEST mode mas key é LIVE (resíduo da migração
+      // test→live). Limpa o id inválido e refaz com email — o webhook associa o
+      // novo customer live depois. Recuperação transparente (cliente não vê erro).
+      if (/No such customer|similar object exists in test mode/i.test(e?.message || '')) {
+        await db.from('buyers').update({ stripe_customer_id: null }).eq('id', buyer.id)
+        session = await stripe.checkout.sessions.create({ ...baseParams, customer_email: buyer.email })
+      } else {
+        throw e
+      }
+    }
 
     return NextResponse.json({ url: session.url })
   } catch (error: any) {
