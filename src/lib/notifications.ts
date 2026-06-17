@@ -20,9 +20,14 @@ async function sendWhatsApp(phone: string, message: string, bridge?: { url: stri
 
   if (!bridgeKey) return
 
-  const cleanNumber = phone.includes('@g.us')
+  let cleanNumber = phone.includes('@g.us')
     ? phone
     : phone.replace(/[\s\-\(\)]/g, '').replace(/^\+/, '')
+  // Número salvo SEM código de país (ex: "9788962345" da Janiane). A whatsapp-web.js
+  // não resolve número de 10 dígitos — precisa do DDI. Plataforma é US → prefixa "1".
+  // Sem isso o /send é aceito mas NÃO entrega (some sem erro). Não toca em grupos
+  // (@g.us) nem em números que já têm DDI (11+ dígitos).
+  if (/^\d{10}$/.test(cleanNumber)) cleanNumber = '1' + cleanNumber
 
   try {
     const res = await fetch(`${bridgeUrl}/send`, {
