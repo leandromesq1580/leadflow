@@ -67,13 +67,30 @@ export async function forceAssignRoundRobin(
   }
 
   // Ordena buyers na mesma ordem dos emails recebidos (case-insensitive)
-  const ordered = emails
+  let ordered = emails
     .map(e => buyers.find(b => b.email.toLowerCase() === e.toLowerCase().trim()))
     .filter((b): b is NonNullable<typeof b> => !!b)
 
   if (ordered.length === 0) {
     console.error(`[Distribute] ROUND_ROBIN: emails nao casaram com buyers`)
     return null
+  }
+
+  // 🔒 LICENÇA ESTADUAL: o roteamento programado NUNCA pode mandar um lead pra
+  // quem não tem licença no estado dele (ex: lead de CT pra quem só atende MA).
+  // Filtra o pool pelos que têm o estado do lead. Se o lead tem estado e NINGUÉM
+  // do pool cobre → retorna null e cai na distribuição normal (que respeita
+  // estado + tem fallback). Lead sem estado = não filtra.
+  if (lead.state) {
+    const ids = ordered.map(b => b.id)
+    const { data: stRows } = await supabase.from('buyer_states').select('buyer_id, state_code').in('buyer_id', ids)
+    const licensed = new Set((stRows || []).filter(s => s.state_code === lead.state).map(s => s.buyer_id))
+    const filtered = ordered.filter(b => licensed.has(b.id))
+    if (filtered.length === 0) {
+      console.log(`[Distribute] ROUND_ROBIN: ninguém do pool tem licença em ${lead.state} (lead ${lead.id}) — cai na distribuição normal`)
+      return null
+    }
+    ordered = filtered
   }
 
   // Busca ULTIMO lead Meta atribuido a qualquer buyer da lista

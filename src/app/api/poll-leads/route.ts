@@ -29,8 +29,10 @@ function resolveRoutingTarget(r: LeadRouting | null): { emails: string[]; stepIn
   if (r.mode === 'exclusive') return r.exclusive_email ? { emails: [r.exclusive_email] } : null
   if (r.mode === 'roundrobin') return (r.pool_emails || []).filter(Boolean).length ? { emails: (r.pool_emails || []).filter(Boolean) } : null
   if (r.mode === 'random') {
+    // Passa o pool inteiro — o forceAssignRoundRobin filtra por licença estadual
+    // e distribui entre os elegíveis (não pré-sorteia 1 que pode não ter o estado).
     const pool = (r.pool_emails || []).filter(Boolean)
-    return pool.length ? { emails: [pool[Math.floor(Math.random() * pool.length)]] } : null
+    return pool.length ? { emails: pool } : null
   }
   if (r.mode === 'sequential') {
     const steps = r.steps || []
