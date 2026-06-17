@@ -97,13 +97,8 @@ export async function POST(request: NextRequest) {
         wa_message_id,
         status: isOut ? 'sent' : 'received',
       })
-      // Avisa o grupo só quando o CLIENTE escreve (não quando o admin responde)
-      if (!isOut) {
-        try {
-          const { notifyGroupClientMessage } = await import('@/lib/notifications')
-          await notifyGroupClientMessage(clientBuyer.name || null, normalizedFrom, body || '')
-        } catch (e) { console.error('[WA Webhook] aviso cliente falhou:', (e as any)?.message) }
-      }
+      // Mensagem de cliente NÃO gera aviso no grupo (evita spam) — só entra na
+      // caixa de Atendimento a Clientes, onde o admin vê e responde.
       return NextResponse.json({ success: true, client_buyer_id: clientBuyer.id })
     }
 
