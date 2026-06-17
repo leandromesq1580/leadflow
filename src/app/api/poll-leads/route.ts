@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { distributeLeadToNextBuyer, forceAssignRoundRobin, redistributePendingLeads } from '@/lib/distribute'
-import { notifyGroupLeadPending } from '@/lib/notifications'
+import { notifyGroupLeadPending, sendLeadNotificationEmail, checkBridgeHealthAndAlert } from '@/lib/notifications'
 import { stateFromPhone } from '@/lib/us-area-codes'
 
 const FORM_IDS = [
@@ -180,11 +180,43 @@ export async function GET(request: Request) {
     redistributed = await redistributePendingLeads(pendTarget?.emails || null)
   } catch (e) { console.error('[Poll] redistribute err:', (e as any)?.message) }
 
+  // 🔒 WATCHDOG + RECONCILIAÇÃO (rede de segurança das notificações).
+  // 1) Checa a saúde da bridge; se cair, alerta o admin por email (1x/30min).
+  // 2) Se a bridge está OK, reenvia os leads atribuídos nas últimas 6h que NÃO
+  //    foram notificados (notified_at IS NULL) — pega o que falhou por flap/queda.
+  //    Só roda quando a bridge está pronta (não adianta reenviar pra bridge fora).
+  let renotified = 0
+  let bridgeReady = true
+  try { bridgeReady = await checkBridgeHealthAndAlert() } catch (e) { console.error('[Poll] watchdog err:', (e as any)?.message) }
+  if (bridgeReady) {
+    try {
+      const cutoff = new Date(Date.now() - 6 * 3600_000).toISOString()
+      const { data: missed, error: mErr } = await supabase
+        .from('leads')
+        .select('*, buyer:assigned_to(id, name, email, phone, notification_email, notification_sms)')
+        .not('assigned_to', 'is', null)
+        .is('notified_at', null)
+        .gte('created_at', cutoff)
+        .limit(25)
+      if (mErr) throw mErr
+      for (const lead of missed || []) {
+        const buyer = (lead as any).buyer
+        if (!buyer) continue
+        // sendLeadNotificationEmail carimba notified_at quando grupo+comprador ok
+        const ok = await sendLeadNotificationEmail(buyer, lead as any)
+        if (ok) renotified++
+      }
+      if (renotified) console.log(`[Poll] reconciliação: ${renotified} lead(s) reenviado(s)`)
+    } catch (e) { console.error('[Poll] reconcile err (coluna notified_at existe?):', (e as any)?.message) }
+  }
+
   return NextResponse.json({
     status: 'ok',
     imported,
     skipped,
     redistributed,
+    renotified,
+    bridge_ready: bridgeReady,
     timestamp: new Date().toISOString(),
   })
 }

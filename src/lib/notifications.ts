@@ -13,12 +13,12 @@ function getResend(): Resend {
  * Send WhatsApp notification via wa-bridge (whatsapp-web.js).
  * Supports both direct (phone number) and groups (JID@g.us).
  */
-async function sendWhatsApp(phone: string, message: string, bridge?: { url: string; key: string } | null) {
+async function sendWhatsApp(phone: string, message: string, bridge?: { url: string; key: string } | null): Promise<boolean> {
   const clean = (s: string) => String(s).trim().replace(/\\n/g, '').replace(/\s+$/, '').replace(/\/$/, '')
   const bridgeUrl = clean(bridge?.url || process.env.WA_BRIDGE_URL || 'http://31.220.97.186:3457')
   const bridgeKey = (bridge?.key || process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026').trim()
 
-  if (!bridgeKey) return
+  if (!bridgeKey) return false
 
   let cleanNumber = phone.includes('@g.us')
     ? phone
@@ -29,19 +29,30 @@ async function sendWhatsApp(phone: string, message: string, bridge?: { url: stri
   // (@g.us) nem em números que já têm DDI (11+ dígitos).
   if (/^\d{10}$/.test(cleanNumber)) cleanNumber = '1' + cleanNumber
 
-  try {
-    const res = await fetch(`${bridgeUrl}/send`, {
-      method: 'POST',
-      headers: {
-        'apikey': bridgeKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ number: cleanNumber, message }),
-    })
-    console.log(`[WhatsApp] ${cleanNumber} — ${res.status}`)
-  } catch (err) {
-    console.error('[WhatsApp] Failed:', err)
+  // Uma tentativa REAL: checa res.ok E o corpo (a bridge devolve {success, id}).
+  // "200 sem id" ou "success:false" = NÃO entregou — conta como falha (antes
+  // engolia tudo como sucesso, por isso falhas sumiam sem ninguém ver).
+  const attempt = async (): Promise<boolean> => {
+    try {
+      const res = await fetch(`${bridgeUrl}/send`, {
+        method: 'POST',
+        headers: { 'apikey': bridgeKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ number: cleanNumber, message }),
+      })
+      const data: any = await res.json().catch(() => null)
+      const ok = res.ok && !!(data && (data.success === true || data.id))
+      console.log(`[WhatsApp] ${cleanNumber} — ${res.status} ${ok ? 'OK' : 'FALHOU'}`)
+      return ok
+    } catch (err) {
+      console.error('[WhatsApp] Failed:', err)
+      return false
+    }
   }
+
+  // Retry 1x: os flaps da bridge ("Promise was collected") são transitórios.
+  if (await attempt()) return true
+  await new Promise(r => setTimeout(r, 1500))
+  return await attempt()
 }
 
 /**
@@ -107,7 +118,7 @@ interface Lead {
 /**
  * Send email notification to buyer when a new lead is assigned.
  */
-export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead) {
+export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead): Promise<boolean> {
   // Fire-and-forget push
   try {
     const { pushToBuyer } = await import('@/lib/push-notify')
@@ -171,11 +182,12 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead) {
 📧 ${buyer.email}`
 
   // Send to group (primary) + admin direct (backup)
-  await sendWhatsApp(adminGroupId, adminMsg)
+  const groupOk = await sendWhatsApp(adminGroupId, adminMsg)
   const adminPhone = process.env.ADMIN_WHATSAPP || '18632808023'
   if (adminPhone) await sendWhatsApp(adminPhone, adminMsg)
 
   // WhatsApp notification to BUYER
+  let buyerOk = false
   if (buyer.phone) {
     const whatsappMsg = `🎯 *Novo Lead — Lead4Producers!*
 
@@ -203,8 +215,74 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead) {
         if (!isSelf) ownerBridge = { url: b.url, key: b.key }
       }
     } catch {}
-    await sendWhatsApp(buyer.phone, whatsappMsg, ownerBridge)
+    buyerOk = await sendWhatsApp(buyer.phone, whatsappMsg, ownerBridge)
   }
+
+  // 🔒 GARANTIA: carimba notified_at SÓ quando grupo E comprador receberam de
+  // verdade. Se faltou (bridge caída/flap), fica null e o cron poll-leads reenvia.
+  // Comprador sem telefone = nada a entregar por WhatsApp, não bloqueia o carimbo.
+  // try/catch: se a coluna notified_at ainda não existe (migration não rodada),
+  // NÃO quebra o envio — a rede de segurança só fica dormente até a migration.
+  const buyerNotified = !buyer.phone || buyerOk
+  const fullyNotified = groupOk && buyerNotified
+  if (fullyNotified && (lead as any).id) {
+    try {
+      const { createAdminClient } = await import('@/lib/supabase/admin')
+      await createAdminClient().from('leads').update({ notified_at: new Date().toISOString() }).eq('id', (lead as any).id)
+    } catch { /* coluna pode não existir ainda — ignora */ }
+  }
+  return fullyNotified
+}
+
+/**
+ * Watchdog da bridge global. Se estiver fora (ready:false), alerta o admin por
+ * E-MAIL — canal que funciona mesmo com o WhatsApp fora (foi o que faltou: hoje a
+ * bridge ficou 13h caída em silêncio). Throttle de 30min via settings pra não
+ * spammar. Retorna se a bridge está pronta (o cron usa pra decidir reconciliar).
+ */
+export async function checkBridgeHealthAndAlert(): Promise<boolean> {
+  const bridgeUrl = (process.env.WA_BRIDGE_URL || 'http://31.220.97.186:3457').trim().replace(/\/$/, '')
+  const bridgeKey = (process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026').trim()
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const db = createAdminClient()
+
+  let ready = false
+  try {
+    const res = await fetch(`${bridgeUrl}/status`, { headers: { apikey: bridgeKey } })
+    const data: any = await res.json().catch(() => null)
+    ready = !!(data && data.ready === true)
+  } catch { ready = false }
+
+  let alertedAt: string | null = null
+  try {
+    const { data } = await db.from('settings').select('value').eq('key', 'bridge_down_alerted_at').maybeSingle()
+    alertedAt = (data?.value as any)?.at || null
+  } catch {}
+
+  if (ready) {
+    if (alertedAt) { try { await db.from('settings').upsert({ key: 'bridge_down_alerted_at', value: { at: null }, updated_at: new Date().toISOString() }) } catch {} }
+    return true
+  }
+
+  // Fora do ar: alerta no máximo 1x a cada 30min
+  const recent = alertedAt && (Date.now() - new Date(alertedAt).getTime()) < 30 * 60_000
+  if (recent) return false
+  try {
+    await getResend().emails.send({
+      from: 'Lead4Producers <onboarding@resend.dev>',
+      to: (process.env.ALERT_EMAIL || 'leandromesq@gmail.com').trim(),
+      subject: '🚨 WhatsApp do Lead4Pro CAIU — leads sem notificação',
+      html: `<div style="font-family:sans-serif">
+        <h2>⚠️ A bridge de WhatsApp está desconectada</h2>
+        <p>O número de notificações (Regiane) está <b>fora do ar</b> (ready:false). Enquanto isso, os avisos de lead <b>não chegam no grupo nem nos compradores</b>.</p>
+        <p><b>Como resolver:</b> a Regiane abre o Lead4Pro → <b>Configurações → WhatsApp</b> → escaneia o QR.</p>
+        <p>Os leads que chegarem nesse meio-tempo são <b>reenviados automaticamente</b> assim que a bridge voltar — ninguém fica sem aviso.</p>
+      </div>`,
+    })
+    await db.from('settings').upsert({ key: 'bridge_down_alerted_at', value: { at: new Date().toISOString() }, updated_at: new Date().toISOString() })
+    console.log('[Watchdog] bridge DOWN — alerta por email enviado')
+  } catch (e) { console.error('[Watchdog] alert err:', (e as any)?.message) }
+  return false
 }
 
 interface TeamMember {
