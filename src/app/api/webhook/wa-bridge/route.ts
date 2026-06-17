@@ -74,14 +74,15 @@ export async function POST(request: NextRequest) {
     // 👥 É um CLIENTE (comprador cadastrado)? Atendimento a clientes é um canal
     // SEPARADO do de leads (mesmo número, mas caixas distintas; só admins veem).
     // Tem prioridade: se o contato é um buyer, a conversa é de cliente, não lead.
+    // IMPORTANTE: buyers.phone vem FORMATADO ('+1(442)234-4782'), então comparamos
+    // os DÍGITOS normalizados (últimos 10) — ilike com dígitos puros não casaria.
     const cph10 = contactPhone.slice(-10)
-    const { data: clientBuyer } = await db
-      .from('buyers')
-      .select('id, name')
-      .or(`phone.ilike.%${cph10},whatsapp.ilike.%${cph10}`)
-      .eq('is_active', true)
-      .limit(1)
-      .maybeSingle()
+    const { data: activeBuyers } = await db.from('buyers').select('id, name, phone, whatsapp').eq('is_active', true)
+    const clientBuyer = (activeBuyers || []).find(b => {
+      const p1 = String(b.phone || '').replace(/\D/g, '').slice(-10)
+      const p2 = String(b.whatsapp || '').replace(/\D/g, '').slice(-10)
+      return cph10.length === 10 && (p1 === cph10 || p2 === cph10)
+    })
     if (clientBuyer) {
       const { data: dupC } = await db.from('client_messages').select('id').eq('wa_message_id', wa_message_id).maybeSingle()
       if (dupC) return NextResponse.json({ skipped: 'duplicate_client' })
