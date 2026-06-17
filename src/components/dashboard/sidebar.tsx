@@ -118,11 +118,10 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, isAdmin }:
     { href: '/dashboard/referral', label: t.sidebar.referral, icon: '🎁' },
     { href: '/dashboard/credits', label: t.sidebar.credits, icon: '💳' },
     { href: '/dashboard/settings', label: t.sidebar.settings, icon: '⚙️' },
-    // Admin (Regiane/Leandro) usa o dashboard de comprador mas precisa do
-    // atendimento a clientes à mão — atalho direto pra central (admin-only).
+    // Atendimento a clientes no PRÓPRIO dashboard do admin (Regiane/Leandro) —
+    // página dentro do perfil dela, não redireciona pro /admin. Admin-only.
     ...(isAdmin ? [
-      { href: '/admin/clients', label: 'Atendimento Clientes', icon: '👥' },
-      { href: '/admin', label: 'Painel Admin', icon: '🛡️' },
+      { href: '/dashboard/clients', label: 'Atendimento Clientes', icon: '👥' },
     ] : []),
   ]
 
