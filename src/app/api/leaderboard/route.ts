@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { fetchStageByLead, isWonStage } from '@/lib/lead-stage'
 
 /**
  * GET /api/leaderboard?buyer_id=X&days=30
@@ -24,17 +25,18 @@ export async function GET(request: NextRequest) {
     const nameMap = new Map((allBuyers || []).map(b => [b.id, b.name]))
     const { data: leads } = await db
       .from('leads')
-      .select('assigned_to, contract_closed, policy_value')
+      .select('id, assigned_to, contract_closed, policy_value')
       .gte('created_at', since)
       .not('assigned_to', 'is', null)
       .limit(50000)
+    const stageMap = await fetchStageByLead(db, (leads || []).map(l => l.id))
     const agg = new Map<string, { received: number; converted: number; revenue: number }>()
     for (const l of leads || []) {
       const k = l.assigned_to as string
       if (!agg.has(k)) agg.set(k, { received: 0, converted: 0, revenue: 0 })
       const e = agg.get(k)!
       e.received++
-      if (l.contract_closed === true) { e.converted++; e.revenue += Number(l.policy_value) || 0 }
+      if (isWonStage(stageMap[l.id], l.contract_closed)) { e.converted++; e.revenue += Number(l.policy_value) || 0 }
     }
     const adminLeaders = Array.from(agg.entries()).map(([bid, e]) => ({
       buyer_id: bid,
@@ -79,15 +81,16 @@ export async function GET(request: NextRequest) {
 
     const { data: leads } = await db
       .from('leads')
-      .select('contract_closed, policy_value')
+      .select('id, contract_closed, policy_value')
       .eq('assigned_to', linkedBuyer.id)
       .gte('created_at', since)
       .limit(20000)
 
     const list = leads || []
+    const stageMap = await fetchStageByLead(db, list.map(l => l.id))
     const received = list.length
-    const converted = list.filter(l => l.contract_closed === true).length
-    const revenue = list.filter(l => l.contract_closed === true).reduce((s, l) => s + (Number(l.policy_value) || 0), 0)
+    const converted = list.filter(l => isWonStage(stageMap[l.id], l.contract_closed)).length
+    const revenue = list.filter(l => isWonStage(stageMap[l.id], l.contract_closed)).reduce((s, l) => s + (Number(l.policy_value) || 0), 0)
 
     leaders.push({
       buyer_id: linkedBuyer.id,

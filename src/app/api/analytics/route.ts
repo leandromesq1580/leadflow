@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { fetchStageByLead, isWonStage, isContacted } from '@/lib/lead-stage'
 
 /**
  * GET /api/analytics?buyer_id=X&days=30
@@ -32,15 +33,19 @@ export async function GET(request: NextRequest) {
 
   const list = leads || []
 
-  // Totals. Conversão = contrato fechado (status só assume assigned/appointment_set).
-  // Contatado = reunião marcada OU fechou (sinal mínimo de contato real).
+  // Estágio atual de cada lead (pipeline) — é onde o comprador marca conversão.
+  // contract_closed quase nunca é marcado; quem fecha move pro estágio "Fechado/Ganho".
+  const stageMap = await fetchStageByLead(db, list.map(l => l.id))
+  const won = (l: any) => isWonStage(stageMap[l.id], l.contract_closed)
+
+  // Totals. Conversão = estágio de ganho (ou contract_closed). Contatado = saiu de "Novo".
   const totalReceived = list.length
-  const totalConverted = list.filter(l => l.contract_closed === true).length
-  const totalContacted = list.filter(l => l.status === 'appointment_set' || l.contract_closed === true).length
+  const totalConverted = list.filter(won).length
+  const totalContacted = list.filter(l => isContacted(stageMap[l.id], { contractClosed: l.contract_closed, appointmentSet: l.status === 'appointment_set' })).length
   const totalLost = list.filter(l => l.status === 'lost').length
   const conversionRate = totalReceived > 0 ? (totalConverted / totalReceived) * 100 : 0
   const contactRate = totalReceived > 0 ? (totalContacted / totalReceived) * 100 : 0
-  const totalRevenue = list.filter(l => l.contract_closed === true).reduce((s, l) => s + (Number(l.policy_value) || 0), 0)
+  const totalRevenue = list.filter(won).reduce((s, l) => s + (Number(l.policy_value) || 0), 0)
 
   // Leads-per-day (up to 30 bars)
   const byDay: Record<string, number> = {}
@@ -62,7 +67,7 @@ export async function GET(request: NextRequest) {
     const s = l.campaign_name || 'Sem fonte'
     if (!bySource[s]) bySource[s] = { received: 0, converted: 0, spent: 0 }
     bySource[s].received++
-    if (l.contract_closed === true) { bySource[s].converted++; bySource[s].spent += Number(l.policy_value) || 0 }
+    if (won(l)) { bySource[s].converted++; bySource[s].spent += Number(l.policy_value) || 0 }
   }
 
   // By interest (product types)
