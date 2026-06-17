@@ -71,6 +71,41 @@ export async function POST(request: NextRequest) {
 
     if (!contactPhone) return NextResponse.json({ skipped: 'no_contact' })
 
+    // 👥 É um CLIENTE (comprador cadastrado)? Atendimento a clientes é um canal
+    // SEPARADO do de leads (mesmo número, mas caixas distintas; só admins veem).
+    // Tem prioridade: se o contato é um buyer, a conversa é de cliente, não lead.
+    const cph10 = contactPhone.slice(-10)
+    const { data: clientBuyer } = await db
+      .from('buyers')
+      .select('id, name')
+      .or(`phone.ilike.%${cph10},whatsapp.ilike.%${cph10}`)
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle()
+    if (clientBuyer) {
+      const { data: dupC } = await db.from('client_messages').select('id').eq('wa_message_id', wa_message_id).maybeSingle()
+      if (dupC) return NextResponse.json({ skipped: 'duplicate_client' })
+      await db.from('client_messages').insert({
+        client_buyer_id: clientBuyer.id,
+        direction: isOut ? 'out' : 'in',
+        from_phone: normalizedFrom,
+        to_phone: to || '',
+        body: body || '',
+        media_type: media_type || (has_media ? (type || 'media') : null),
+        media_url: media_url || null,
+        wa_message_id,
+        status: isOut ? 'sent' : 'received',
+      })
+      // Avisa o grupo só quando o CLIENTE escreve (não quando o admin responde)
+      if (!isOut) {
+        try {
+          const { notifyGroupClientMessage } = await import('@/lib/notifications')
+          await notifyGroupClientMessage(clientBuyer.name || null, normalizedFrom, body || '')
+        } catch (e) { console.error('[WA Webhook] aviso cliente falhou:', (e as any)?.message) }
+      }
+      return NextResponse.json({ success: true, client_buyer_id: clientBuyer.id })
+    }
+
     // Acha leads pelo phone do CONTATO (o lead)
     const last10 = contactPhone.slice(-10)
     const last11 = contactPhone.slice(-11)
