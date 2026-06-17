@@ -154,7 +154,7 @@ export default function PerformancePage() {
                 <div className="text-right">
                   <span style={{ color: '#64748b' }}>{s.received} → </span>
                   <span className="font-bold" style={{ color: '#10b981' }}>{s.converted} ({rate}%)</span>
-                  <div style={{ color: '#94a3b8', fontSize: 10 }}>${s.spent.toFixed(0)} gasto</div>
+                  <div style={{ color: '#94a3b8', fontSize: 10 }}>${s.spent.toFixed(0)} faturado</div>
                 </div>
               </div>
             )
