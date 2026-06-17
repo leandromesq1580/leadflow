@@ -14,23 +14,33 @@ export async function GET(request: NextRequest) {
   const db = createAdminClient()
   const since = new Date(Date.now() - days * 86400_000).toISOString()
 
-  // Leads in window
-  const { data: leads } = await db
+  // Admin enxerga a plataforma inteira; comprador comum, só os próprios leads.
+  const { data: viewer } = await db.from('buyers').select('is_admin').eq('id', buyerId).single()
+  const isAdmin = !!viewer?.is_admin
+
+  // Leads na janela. Colunas REAIS de leads: conversão = contract_closed,
+  // valor = policy_value, fonte = campaign_name. NÃO existem 'source'/'price_paid'
+  // — selecioná-las fazia a query falhar (data=null) e ZERAR a página inteira.
+  let q = db
     .from('leads')
-    .select('id, status, source, interest, created_at, price_paid')
-    .eq('assigned_to', buyerId)
+    .select('id, status, type, product_type, campaign_name, interest, created_at, policy_value, contract_closed')
     .gte('created_at', since)
+    .limit(20000)
+  if (!isAdmin) q = q.eq('assigned_to', buyerId)
+  const { data: leads, error: leadsErr } = await q
+  if (leadsErr) console.error('[Analytics] leads query err:', leadsErr.message)
 
   const list = leads || []
 
-  // Totals
+  // Totals. Conversão = contrato fechado (status só assume assigned/appointment_set).
+  // Contatado = reunião marcada OU fechou (sinal mínimo de contato real).
   const totalReceived = list.length
-  const totalConverted = list.filter(l => l.status === 'converted').length
-  const totalContacted = list.filter(l => l.status === 'contacted' || l.status === 'converted').length
+  const totalConverted = list.filter(l => l.contract_closed === true).length
+  const totalContacted = list.filter(l => l.status === 'appointment_set' || l.contract_closed === true).length
   const totalLost = list.filter(l => l.status === 'lost').length
   const conversionRate = totalReceived > 0 ? (totalConverted / totalReceived) * 100 : 0
   const contactRate = totalReceived > 0 ? (totalContacted / totalReceived) * 100 : 0
-  const totalSpent = list.reduce((s, l) => s + (Number(l.price_paid) || 0), 0)
+  const totalRevenue = list.filter(l => l.contract_closed === true).reduce((s, l) => s + (Number(l.policy_value) || 0), 0)
 
   // Leads-per-day (up to 30 bars)
   const byDay: Record<string, number> = {}
@@ -49,11 +59,10 @@ export async function GET(request: NextRequest) {
   // By source (hot/cold/appointment)
   const bySource: Record<string, { received: number; converted: number; spent: number }> = {}
   for (const l of list) {
-    const s = l.source || 'unknown'
+    const s = l.campaign_name || 'Sem fonte'
     if (!bySource[s]) bySource[s] = { received: 0, converted: 0, spent: 0 }
     bySource[s].received++
-    if (l.status === 'converted') bySource[s].converted++
-    bySource[s].spent += Number(l.price_paid) || 0
+    if (l.contract_closed === true) { bySource[s].converted++; bySource[s].spent += Number(l.policy_value) || 0 }
   }
 
   // By interest (product types)
@@ -63,11 +72,17 @@ export async function GET(request: NextRequest) {
     byInterest[i] = (byInterest[i] || 0) + 1
   }
 
-  // Pipeline funnel (current state across all stages)
-  const { data: pipelineLeads } = await db
-    .from('pipeline_leads')
-    .select('stage_id, pipeline_stages(name, position)')
-    .eq('buyer_id', buyerId)
+  // Pipeline funnel. pipeline_leads NÃO tem buyer_id — filtra pelos pipelines do
+  // comprador (admin = todos os pipelines da plataforma). Antes filtrava por uma
+  // coluna inexistente → query falhava → funil sempre "Nenhum lead no pipeline".
+  let plq = db.from('pipeline_leads').select('stage_id, pipeline_stages(name, position)').limit(20000)
+  if (!isAdmin) {
+    const { data: myPipes } = await db.from('pipelines').select('id').eq('buyer_id', buyerId)
+    const ids = (myPipes || []).map(p => p.id)
+    plq = plq.in('pipeline_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000'])
+  }
+  const { data: pipelineLeads, error: plErr } = await plq
+  if (plErr) console.error('[Analytics] funnel query err:', plErr.message)
 
   const funnel: Array<{ stage: string; count: number; position: number }> = []
   const stageCounts: Record<string, { name: string; position: number; count: number }> = {}
@@ -91,8 +106,9 @@ export async function GET(request: NextRequest) {
       total_lost: totalLost,
       conversion_rate: Number(conversionRate.toFixed(1)),
       contact_rate: Number(contactRate.toFixed(1)),
-      total_spent: totalSpent,
-      cost_per_conversion: totalConverted > 0 ? Number((totalSpent / totalConverted).toFixed(2)) : 0,
+      total_revenue: Number(totalRevenue.toFixed(2)),
+      total_spent: 0,
+      cost_per_conversion: 0,
     },
     daily: { labels: dailyLabels, values: dailyValues },
     by_source: bySource,

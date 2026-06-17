@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 interface Analytics {
   kpis: {
     total_received: number; total_converted: number; total_contacted: number; total_lost: number
-    conversion_rate: number; contact_rate: number; total_spent: number; cost_per_conversion: number
+    conversion_rate: number; contact_rate: number; total_spent: number; cost_per_conversion: number; total_revenue: number
   }
   daily: { labels: string[]; values: number[] }
   by_source: Record<string, { received: number; converted: number; spent: number }>
@@ -93,7 +93,7 @@ export default function PerformancePage() {
           { label: 'Leads recebidos', value: data.kpis.total_received, color: '#6366f1' },
           { label: 'Contatados', value: `${data.kpis.contact_rate}%`, sub: `${data.kpis.total_contacted} leads`, color: '#f59e0b' },
           { label: 'Convertidos', value: `${data.kpis.conversion_rate}%`, sub: `${data.kpis.total_converted} leads`, color: '#10b981' },
-          { label: 'Custo / conversão', value: `$${data.kpis.cost_per_conversion}`, sub: `gasto total $${data.kpis.total_spent}`, color: '#ec4899' },
+          { label: 'Faturamento', value: `$${(data.kpis.total_revenue ?? 0).toLocaleString('en-US')}`, sub: `${data.kpis.total_converted} contratos fechados`, color: '#ec4899' },
         ].map((k, i) => (
           <div key={i} className="rounded-xl p-4" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
             <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{k.label}</p>
