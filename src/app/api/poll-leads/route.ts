@@ -186,28 +186,42 @@ export async function GET(request: Request) {
   //    foram notificados (notified_at IS NULL) — pega o que falhou por flap/queda.
   //    Só roda quando a bridge está pronta (não adianta reenviar pra bridge fora).
   let renotified = 0
+  let missedCount = 0
+  let reconcileError: string | null = null
   let bridgeReady = true
   try { bridgeReady = await checkBridgeHealthAndAlert() } catch (e) { console.error('[Poll] watchdog err:', (e as any)?.message) }
   if (bridgeReady) {
     try {
       const cutoff = new Date(Date.now() - 6 * 3600_000).toISOString()
+      // Sem embed (evita ambiguidade do PostgREST entre a coluna assigned_to e o
+      // embed de mesmo nome). Busca os leads pendentes e os buyers à parte.
       const { data: missed, error: mErr } = await supabase
         .from('leads')
-        .select('*, buyer:assigned_to(id, name, email, phone, notification_email, notification_sms)')
+        .select('id, name, phone, state, interest, assigned_to, created_at')
         .not('assigned_to', 'is', null)
         .is('notified_at', null)
         .gte('created_at', cutoff)
         .limit(25)
       if (mErr) throw mErr
-      for (const lead of missed || []) {
-        const buyer = (lead as any).buyer
-        if (!buyer) continue
-        // sendLeadNotificationEmail carimba notified_at quando grupo+comprador ok
-        const ok = await sendLeadNotificationEmail(buyer, lead as any)
-        if (ok) renotified++
+      const missedLeads = missed || []
+      missedCount = missedLeads.length
+      if (missedLeads.length) {
+        const ids = [...new Set(missedLeads.map((l: any) => l.assigned_to))]
+        const { data: bs } = await supabase
+          .from('buyers')
+          .select('id, name, email, phone, notification_email, notification_sms')
+          .in('id', ids)
+        const bmap = new Map((bs || []).map((b: any) => [b.id, b]))
+        for (const lead of missedLeads) {
+          const buyer = bmap.get((lead as any).assigned_to)
+          if (!buyer) continue
+          // sendLeadNotificationEmail carimba notified_at quando grupo+comprador ok
+          const ok = await sendLeadNotificationEmail(buyer as any, lead as any)
+          if (ok) renotified++
+        }
+        if (renotified) console.log(`[Poll] reconciliação: ${renotified}/${missedCount} lead(s) reenviado(s)`)
       }
-      if (renotified) console.log(`[Poll] reconciliação: ${renotified} lead(s) reenviado(s)`)
-    } catch (e) { console.error('[Poll] reconcile err (coluna notified_at existe?):', (e as any)?.message) }
+    } catch (e) { reconcileError = (e as any)?.message || 'erro'; console.error('[Poll] reconcile err:', reconcileError) }
   }
 
   return NextResponse.json({
@@ -216,6 +230,8 @@ export async function GET(request: Request) {
     skipped,
     redistributed,
     renotified,
+    missed_count: missedCount,
+    reconcile_error: reconcileError,
     bridge_ready: bridgeReady,
     timestamp: new Date().toISOString(),
   })
