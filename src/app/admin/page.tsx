@@ -1,6 +1,6 @@
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { StatCard } from '@/components/ui/stat-card'
+import { DashboardKpis } from '@/components/admin/dashboard-kpis'
 import { Badge } from '@/components/ui/badge'
 import { timeAgo, getInitials } from '@/lib/utils'
 import Link from 'next/link'
@@ -15,63 +15,11 @@ export default async function AdminDashboard() {
 
   const db = createAdminClient()
 
-  const { count: totalLeads } = await db.from('leads').select('*', { count: 'exact', head: true })
-  const { count: assignedLeads } = await db.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'assigned')
+  // KPIs (receita, gasto, resultado, vendidos, etc.) agora vêm da API por PERÍODO
+  // via <DashboardKpis/> (client). Aqui ficam só os contadores dos alertas + header.
   const { count: unassignedLeads } = await db.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'new')
   const { count: pendingAppts } = await db.from('leads').select('*', { count: 'exact', head: true }).eq('product_type', 'appointment').eq('status', 'new')
-  const { count: totalBuyers } = await db.from('buyers').select('*', { count: 'exact', head: true })
-  const { count: activeBuyers } = await db.from('buyers').select('*', { count: 'exact', head: true }).eq('is_active', true)
   const { count: coldLeads } = await db.from('leads').select('*', { count: 'exact', head: true }).eq('type', 'cold').eq('status', 'new')
-  const { data: payments } = await db.from('payments').select('amount').eq('status', 'completed')
-  const totalRevenue = payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0
-
-  // Compromisso de entrega (PRECISO): por comprador com crédito de lead pago, conta
-  // os leads entregues APÓS a compra. devido = max(0, pago − entregue_após). NÃO usa
-  // credits.total_used — o roteamento não debita crédito, então 'used' subconta e
-  // inflava o devido (o livro dizia 88; o real é ~42).
-  const { data: leadCreditRows } = await db.from('credits').select('buyer_id, total_purchased, created_at').eq('type', 'lead')
-  const perBuyer = new Map<string, { purchased: number; since: string | null }>()
-  for (const c of leadCreditRows || []) {
-    if (!c.buyer_id || !(Number(c.total_purchased) > 0)) continue
-    const e = perBuyer.get(c.buyer_id) || { purchased: 0, since: null as string | null }
-    e.purchased += Number(c.total_purchased)
-    if (c.created_at && (!e.since || c.created_at < e.since)) e.since = c.created_at
-    perBuyer.set(c.buyer_id, e)
-  }
-  const soldLeads = Array.from(perBuyer.values()).reduce((s, e) => s + e.purchased, 0)
-  const perBuyerDelivery = await Promise.all(Array.from(perBuyer.entries()).map(async ([bid, e]) => {
-    let q = db.from('leads').select('*', { count: 'exact', head: true }).eq('assigned_to', bid).eq('product_type', 'lead')
-    if (e.since) q = q.gte('assigned_at', e.since)
-    const { count } = await q
-    const delivered = Math.min(e.purchased, count || 0)
-    return { delivered, owed: e.purchased - delivered }
-  }))
-  const deliveredPaid = perBuyerDelivery.reduce((s, x) => s + x.delivered, 0)
-  const owedLeads = perBuyerDelivery.reduce((s, x) => s + x.owed, 0)
-  const deliveryPct = soldLeads > 0 ? Math.round((deliveredPaid / soldLeads) * 100) : 0
-
-  // Compradores que REALMENTE pagaram (pagamento concluído) — exclui trials/cortesias.
-  const { data: paidPayments } = await db.from('payments').select('buyer_id').eq('status', 'completed')
-  const payingBuyers = new Set((paidPayments || []).map((p: any) => p.buyer_id).filter(Boolean)).size
-
-  // Gasto com tráfego pago (Meta Ads, total/all-time) — mesma fonte de /admin/ads
-  // (ad account act_2374409502997954 + Marketing API insights). Resultado = receita −
-  // gasto. try/catch + revalidate: uma falha do Meta não trava nem derruba o dashboard.
-  let adSpend = 0
-  let adSpendOk = false
-  try {
-    const metaToken = (process.env.META_PAGE_TOKEN || '').trim().replace(/\\n/g, '')
-    if (metaToken) {
-      const p = new URLSearchParams({ fields: 'spend', date_preset: 'maximum', access_token: metaToken })
-      const res = await fetch(`https://graph.facebook.com/v25.0/act_2374409502997954/insights?${p.toString()}`, { next: { revalidate: 600 } })
-      const raw = await res.json()
-      if (!raw.error && Array.isArray(raw.data)) {
-        adSpend = raw.data.reduce((s: number, r: any) => s + parseFloat(r.spend || '0'), 0)
-        adSpendOk = true
-      }
-    }
-  } catch {}
-  const netResult = totalRevenue - adSpend
 
   const { data: recentLeads } = await db.from('leads').select('*, buyer:buyers!assigned_to(name)').order('created_at', { ascending: false }).limit(8)
   const { data: buyers } = await db.from('buyers').select('*').order('created_at', { ascending: false }).limit(5)
@@ -87,26 +35,14 @@ export default async function AdminDashboard() {
           <Link href="/admin/buyers" className="px-5 py-2.5 rounded-xl text-[13px] font-bold" style={{ background: '#f8f9fc', color: '#1a1a2e', border: '1px solid #e8ecf4' }}>
             👥 Compradores
           </Link>
-          <Link href="/admin/buyers" className="px-5 py-2.5 rounded-xl text-[13px] font-bold" style={{ background: owedLeads > 0 ? '#fffbeb' : '#f8f9fc', color: owedLeads > 0 ? '#b45309' : '#1a1a2e', border: `1px solid ${owedLeads > 0 ? '#fde68a' : '#e8ecf4'}` }}>
-            📦 {owedLeads} Leads Devidos
-          </Link>
           <Link href="/admin/appointments" className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-white" style={{ background: '#6366f1' }}>
             📅 {pendingAppts || 0} Appts Pendentes
           </Link>
         </div>
       </div>
 
-      {/* Stats — linha 1: dinheiro (receita − tráfego = resultado) · linha 2: operação */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
-        <StatCard label="Receita" value={`$${totalRevenue.toLocaleString()}`} icon="💰" />
-        <StatCard label="Gasto Tráfego (Meta)" value={adSpendOk ? `$${Math.round(adSpend).toLocaleString()}` : '—'} icon="📣" change={adSpendOk ? 'investido em anúncios' : 'Meta indisponível'} />
-        <StatCard label="Resultado" value={adSpendOk ? `${netResult < 0 ? '-' : ''}$${Math.abs(Math.round(netResult)).toLocaleString()}` : '—'} icon={netResult >= 0 ? '📈' : '📉'} change={adSpendOk ? 'receita − tráfego' : 'precisa do gasto Meta'} trend={adSpendOk ? (netResult >= 0 ? 'up' : 'down') : undefined} danger={adSpendOk && netResult < 0} />
-        <StatCard label="Leads Gerados" value={(totalLeads || 0).toLocaleString()} icon="📋" change={`${(assignedLeads || 0).toLocaleString()} distribuídos`} />
-        <StatCard label="Vendidos (pagos)" value={soldLeads.toLocaleString()} icon="🏷️" change="leads que compradores pagaram" />
-        <StatCard label="% Entrega" value={`${deliveryPct}%`} icon="🚚" change={`${deliveredPaid} de ${soldLeads} pagos entregues`} />
-        <StatCard label="Compradores Pagantes" value={payingBuyers} icon="👥" change={`de ${totalBuyers} cadastrados`} />
-        <StatCard label="Leads Pendentes" value={owedLeads} icon="📦" change={`devidos · ${pendingAppts || 0} appts`} accent={owedLeads > 0} />
-      </div>
+      {/* KPIs por período (Hoje/7d/30d/Tudo) — receita − gasto(Meta) = resultado */}
+      <DashboardKpis />
 
       {/* Cold leads alert */}
       {(coldLeads || 0) > 0 && (

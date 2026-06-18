@@ -1,0 +1,110 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createServerSupabase } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+
+export const dynamic = 'force-dynamic'
+
+// Conta de anúncios CERTA do Lead4Producers (a 2374409502997954 era a MHF3).
+const AD_ACCOUNT_ID = 'act_1626622925084500'
+
+// Período → date_preset do Meta + corte de data pro banco (since=null = tudo/all-time).
+function resolvePeriod(key: string): { datePreset: string; since: string | null } {
+  const now = Date.now()
+  switch (key) {
+    case 'today': {
+      const d = new Date(now); const start = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
+      return { datePreset: 'today', since: start.toISOString() }
+    }
+    case '7d': return { datePreset: 'last_7d', since: new Date(now - 7 * 86400_000).toISOString() }
+    case '30d': return { datePreset: 'last_30d', since: new Date(now - 30 * 86400_000).toISOString() }
+    default: return { datePreset: 'maximum', since: null }
+  }
+}
+
+/**
+ * GET /api/admin/dashboard-metrics?period=today|7d|30d|all
+ * KPIs do dashboard admin, TODOS no mesmo período. Receita − Gasto(Meta) = Resultado.
+ */
+export async function GET(request: NextRequest) {
+  // auth: só admin (expõe receita/gasto)
+  const supa = await createServerSupabase()
+  const { data: { user } } = await supa.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const db = createAdminClient()
+  const { data: me } = await db.from('buyers').select('is_admin').eq('auth_user_id', user.id).single()
+  if (!me?.is_admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const periodKey = new URL(request.url).searchParams.get('period') || '30d'
+  const { datePreset, since } = resolvePeriod(periodKey)
+
+  // Receita + pagantes (pagamentos concluídos no período)
+  let payQ = db.from('payments').select('amount, buyer_id').eq('status', 'completed')
+  if (since) payQ = payQ.gte('created_at', since)
+  const { data: payments } = await payQ
+  const revenue = (payments || []).reduce((s, p) => s + Number(p.amount || 0), 0)
+  const payingBuyers = new Set((payments || []).map((p: any) => p.buyer_id).filter(Boolean)).size
+
+  // Leads gerados / distribuídos no período
+  let lgQ = db.from('leads').select('*', { count: 'exact', head: true })
+  if (since) lgQ = lgQ.gte('created_at', since)
+  const { count: leadsGenerated } = await lgQ
+  let asgQ = db.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'assigned')
+  if (since) asgQ = asgQ.gte('created_at', since)
+  const { count: assignedInPeriod } = await asgQ
+
+  // Cumulativos (estado "agora", não dependem de período)
+  const { count: pendingAppts } = await db.from('leads').select('*', { count: 'exact', head: true }).eq('product_type', 'appointment').eq('status', 'new')
+  const { count: totalBuyers } = await db.from('buyers').select('*', { count: 'exact', head: true })
+
+  // Compromisso de entrega: créditos de lead PAGOS no período + entregue após a compra.
+  let crQ = db.from('credits').select('buyer_id, total_purchased, purchased_at, created_at').eq('type', 'lead')
+  if (since) crQ = crQ.gte('purchased_at', since)
+  const { data: leadCreditRows } = await crQ
+  const perBuyer = new Map<string, { purchased: number; sincePurchase: string | null }>()
+  for (const c of leadCreditRows || []) {
+    if (!c.buyer_id || !(Number(c.total_purchased) > 0)) continue
+    const e = perBuyer.get(c.buyer_id) || { purchased: 0, sincePurchase: null as string | null }
+    e.purchased += Number(c.total_purchased)
+    const pd = c.purchased_at || c.created_at
+    if (pd && (!e.sincePurchase || pd < e.sincePurchase)) e.sincePurchase = pd
+    perBuyer.set(c.buyer_id, e)
+  }
+  const soldLeads = Array.from(perBuyer.values()).reduce((s, e) => s + e.purchased, 0)
+  const perDelivery = await Promise.all(Array.from(perBuyer.entries()).map(async ([bid, e]) => {
+    let q = db.from('leads').select('*', { count: 'exact', head: true }).eq('assigned_to', bid).eq('product_type', 'lead')
+    if (e.sincePurchase) q = q.gte('assigned_at', e.sincePurchase)
+    const { count } = await q
+    const delivered = Math.min(e.purchased, count || 0)
+    return { delivered, owed: e.purchased - delivered }
+  }))
+  const deliveredPaid = perDelivery.reduce((s, x) => s + x.delivered, 0)
+  const owedLeads = perDelivery.reduce((s, x) => s + x.owed, 0)
+  const deliveryPct = soldLeads > 0 ? Math.round((deliveredPaid / soldLeads) * 100) : 0
+
+  // Gasto com tráfego (Meta Ads) no MESMO período — conta certa.
+  let adSpend = 0
+  let adSpendOk = false
+  try {
+    const token = (process.env.META_PAGE_TOKEN || '').trim().replace(/\\n/g, '')
+    if (token) {
+      const p = new URLSearchParams({ fields: 'spend', date_preset: datePreset, access_token: token })
+      const res = await fetch(`https://graph.facebook.com/v25.0/${AD_ACCOUNT_ID}/insights?${p.toString()}`, { next: { revalidate: 300 } })
+      const raw = await res.json()
+      if (!raw.error && Array.isArray(raw.data)) {
+        adSpend = raw.data.reduce((s: number, r: any) => s + parseFloat(r.spend || '0'), 0)
+        adSpendOk = true
+      }
+    }
+  } catch {}
+  const netResult = revenue - adSpend
+
+  return NextResponse.json({
+    period: periodKey,
+    revenue, adSpend, adSpendOk, netResult,
+    leadsGenerated: leadsGenerated || 0,
+    assignedInPeriod: assignedInPeriod || 0,
+    soldLeads, deliveredPaid, owedLeads, deliveryPct,
+    payingBuyers, totalBuyers: totalBuyers || 0,
+    pendingAppts: pendingAppts || 0,
+  })
+}
