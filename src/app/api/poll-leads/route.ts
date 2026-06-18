@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { distributeLeadToNextBuyer, forceAssignRoundRobin, redistributePendingLeads } from '@/lib/distribute'
+import { distributeLeadToNextBuyer, forceAssignRoundRobin, redistributePendingLeads, tryAdminRule } from '@/lib/distribute'
 import { notifyGroupLeadPending, sendLeadNotificationEmail, checkBridgeHealthAndAlert } from '@/lib/notifications'
 import { stateFromPhone } from '@/lib/us-area-codes'
 
@@ -17,6 +17,8 @@ interface LeadRouting {
   steps?: RoutingStep[]
   fallback_mode?: 'normal' | 'exclusive'
   fallback_email?: string | null
+  // Regra do administrador: admins (por email) com cota diária garantida, em rodízio.
+  admin_rule?: { admin_emails?: string[]; daily_quota?: number }
 }
 
 /**
@@ -141,7 +143,11 @@ export async function GET(request: Request) {
         // Aplica o modo de roteamento. Sem alvo (modo normal ou fila sequencial
         // esgotada com fallback normal) → distribuicao padrao por creditos/estado.
         let buyer = null
-        const target = resolveRoutingTarget(routing)
+        // 🔑 REGRA DO ADMINISTRADOR: cota diária garantida (ex: Regiane) tem PRIORIDADE
+        // sobre o roteamento/distribuição. Respeita estado; só entra se o admin estiver
+        // sob a cota do dia. Se não bater, segue o fluxo normal abaixo.
+        try { buyer = await tryAdminRule(newLead, routing?.admin_rule) } catch (e) { console.error('[Poll] regra admin err:', (e as any)?.message) }
+        const target = buyer ? null : resolveRoutingTarget(routing)
         if (target && target.emails.length > 0) {
           buyer = await forceAssignRoundRobin(newLead, target.emails)
           // Sequential: conta o lead entregue nessa etapa e persiste no banco

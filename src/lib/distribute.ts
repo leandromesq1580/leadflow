@@ -119,6 +119,65 @@ export async function forceAssignRoundRobin(
   return assigned
 }
 
+interface AdminRule { admin_emails?: string[]; daily_quota?: number }
+
+/**
+ * REGRA DO ADMINISTRADOR: admins selecionados (ex: Regiane) recebem uma COTA DIÁRIA
+ * garantida de leads do sistema, em rodízio entre eles, ANTES da distribuição normal.
+ * Respeita licença de estado. Conta só leads do SISTEMA (meta_lead_id) entregues hoje.
+ * Retorna o admin que recebeu, ou null (ninguém configurado / todos na cota / sem
+ * licença no estado) — aí o lead segue pro roteamento/distribuição normal.
+ */
+export async function tryAdminRule(
+  lead: Lead & { meta_lead_id?: string | null },
+  rule?: AdminRule | null
+): Promise<EligibleBuyer | null> {
+  const quota = rule?.daily_quota || 0
+  const emails = (rule?.admin_emails || []).filter(Boolean)
+  if (quota <= 0 || emails.length === 0) return null
+  const supabase = createAdminClient()
+
+  const { data: admins } = await supabase
+    .from('buyers')
+    .select('id, name, email, phone, notification_email, notification_sms')
+    .in('email', emails)
+    .eq('is_active', true)
+  if (!admins || admins.length === 0) return null
+
+  // Só admins licenciados no estado do lead
+  let pool = admins
+  if (lead.state) {
+    const { data: stRows } = await supabase.from('buyer_states').select('buyer_id, state_code').in('buyer_id', admins.map(a => a.id))
+    const licensed = new Set((stRows || []).filter(s => s.state_code === lead.state).map(s => s.buyer_id))
+    pool = admins.filter(a => licensed.has(a.id))
+  }
+  if (pool.length === 0) return null
+
+  // Leads do SISTEMA entregues HOJE (UTC) a cada admin do pool
+  const d = new Date()
+  const dayStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())).toISOString()
+  const { data: todayLeads } = await supabase
+    .from('leads')
+    .select('assigned_to')
+    .in('assigned_to', pool.map(a => a.id))
+    .not('meta_lead_id', 'is', null)
+    .gte('assigned_at', dayStart)
+    .limit(5000)
+  const countBy = new Map<string, number>()
+  for (const l of todayLeads || []) countBy.set(l.assigned_to as string, (countBy.get(l.assigned_to as string) || 0) + 1)
+
+  // Quem ainda está sob a cota, do que menos recebeu hoje (rodízio justo entre admins)
+  const under = pool
+    .filter(a => (countBy.get(a.id) || 0) < quota)
+    .sort((a, b) => (countBy.get(a.id) || 0) - (countBy.get(b.id) || 0))
+  if (under.length === 0) return null
+
+  const chosen = under[0]
+  const assigned = await assignLeadToBuyer(supabase, lead, chosen)
+  console.log(`[Distribute] REGRA ADMIN: lead ${lead.id} → ${chosen.name} (cota ${(countBy.get(chosen.id) || 0) + 1}/${quota})`)
+  return assigned
+}
+
 interface Lead {
   id: string
   name: string

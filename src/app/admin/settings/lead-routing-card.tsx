@@ -12,6 +12,7 @@ interface Routing {
   steps?: Step[]
   fallback_mode?: 'normal' | 'exclusive'
   fallback_email?: string | null
+  admin_rule?: { admin_emails?: string[]; daily_quota?: number }
 }
 
 const MODES: { v: Routing['mode']; label: string; desc: string }[] = [
@@ -71,6 +72,14 @@ export function LeadRoutingCard() {
   function togglePool(email: string) {
     const pool = routing.pool_emails || []
     set({ pool_emails: pool.includes(email) ? pool.filter(e => e !== email) : [...pool, email] })
+  }
+  function toggleAdmin(email: string) {
+    const cur = routing.admin_rule || { admin_emails: [], daily_quota: 0 }
+    const list = cur.admin_emails || []
+    set({ admin_rule: { ...cur, admin_emails: list.includes(email) ? list.filter(e => e !== email) : [...list, email] } })
+  }
+  function setQuota(n: number) {
+    set({ admin_rule: { ...(routing.admin_rule || { admin_emails: [] }), daily_quota: n } })
   }
   function addStep() {
     set({ steps: [...(routing.steps || []), { email: buyers[0]?.email || '', limit: 10, delivered: 0 }] })
@@ -180,6 +189,30 @@ export function LeadRoutingCard() {
           </div>
         </div>
       )}
+
+      {/* Regra do Administrador — cota diária garantida, independente do modo acima */}
+      <div className="pt-4 mt-4 border-t border-gray-100">
+        <label className="block text-sm font-semibold text-gray-700 mb-1">👤 Regra do Administrador</label>
+        <p className="text-[11px] text-gray-400 mb-3">
+          Admin(s) que também atendem leads recebem uma <b>cota diária garantida</b> (em rodízio entre eles), com PRIORIDADE sobre o roteamento abaixo. Respeita a licença de estado. O que passar da cota segue o fluxo normal. Cota 0 = desligado.
+        </p>
+        <div className="flex items-center gap-2 mb-3">
+          <label className="text-sm text-gray-700">Cota por admin / dia:</label>
+          <input type="number" min={0} value={routing.admin_rule?.daily_quota ?? 0}
+            onChange={e => setQuota(parseInt(e.target.value) || 0)} className={inputCls} style={{ width: 80 }} />
+        </div>
+        <label className="block text-[12px] font-semibold text-gray-600 mb-1">Administradores no rodízio</label>
+        <div className="space-y-1.5 max-h-44 overflow-auto">
+          {buyers.map(b => (
+            <label key={b.id} className="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50">
+              <input type="checkbox" checked={(routing.admin_rule?.admin_emails || []).includes(b.email)} onChange={() => toggleAdmin(b.email)}
+                className="w-4 h-4 accent-indigo-500" />
+              <span className="text-sm text-gray-800">{b.name}</span>
+              <span className="text-[11px] text-gray-400">{b.email}</span>
+            </label>
+          ))}
+        </div>
+      </div>
 
       <div className="flex items-center gap-3 mt-5">
         <button onClick={save} disabled={saving || !loaded}
