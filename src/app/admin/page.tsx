@@ -25,6 +25,18 @@ export default async function AdminDashboard() {
   const { data: payments } = await db.from('payments').select('amount').eq('status', 'completed')
   const totalRevenue = payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0
 
+  // Compromisso de entrega (modelo comercial): créditos de lead PAGOS vs entregues.
+  // soldLeads = leads que compradores pagaram; deliveredPaid = consumidos; owed = devidos.
+  const { data: leadCredits } = await db.from('credits').select('total_purchased, total_used').eq('type', 'lead')
+  const soldLeads = (leadCredits || []).reduce((s, c) => s + (Number(c.total_purchased) || 0), 0)
+  const deliveredPaid = (leadCredits || []).reduce((s, c) => s + (Number(c.total_used) || 0), 0)
+  const owedLeads = (leadCredits || []).reduce((s, c) => s + Math.max(0, (Number(c.total_purchased) || 0) - (Number(c.total_used) || 0)), 0)
+  const deliveryPct = soldLeads > 0 ? Math.round((deliveredPaid / soldLeads) * 100) : 0
+
+  // Compradores que REALMENTE pagaram (pagamento concluído) — exclui trials/cortesias.
+  const { data: paidPayments } = await db.from('payments').select('buyer_id').eq('status', 'completed')
+  const payingBuyers = new Set((paidPayments || []).map((p: any) => p.buyer_id).filter(Boolean)).size
+
   const { data: recentLeads } = await db.from('leads').select('*, buyer:buyers!assigned_to(name)').order('created_at', { ascending: false }).limit(8)
   const { data: buyers } = await db.from('buyers').select('*').order('created_at', { ascending: false }).limit(5)
 
@@ -39,19 +51,23 @@ export default async function AdminDashboard() {
           <Link href="/admin/buyers" className="px-5 py-2.5 rounded-xl text-[13px] font-bold" style={{ background: '#f8f9fc', color: '#1a1a2e', border: '1px solid #e8ecf4' }}>
             👥 Compradores
           </Link>
+          <Link href="/admin/buyers" className="px-5 py-2.5 rounded-xl text-[13px] font-bold" style={{ background: owedLeads > 0 ? '#fffbeb' : '#f8f9fc', color: owedLeads > 0 ? '#b45309' : '#1a1a2e', border: `1px solid ${owedLeads > 0 ? '#fde68a' : '#e8ecf4'}` }}>
+            📦 {owedLeads} Leads Devidos
+          </Link>
           <Link href="/admin/appointments" className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-white" style={{ background: '#6366f1' }}>
-            📅 {pendingAppts || 0} Appointments Pendentes
+            📅 {pendingAppts || 0} Appts Pendentes
           </Link>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-5 gap-4 mb-8">
+      {/* Stats — linha 1: volume/receita · linha 2: compromisso de entrega */}
+      <div className="grid grid-cols-3 gap-4 mb-8">
         <StatCard label="Receita" value={`$${totalRevenue.toLocaleString()}`} icon="💰" />
-        <StatCard label="Leads Gerados" value={totalLeads || 0} icon="📋" />
-        <StatCard label="Vendidos" value={assignedLeads || 0} icon="✅" change={`${unassignedLeads || 0} na fila`} />
-        <StatCard label="Compradores" value={`${activeBuyers}/${totalBuyers}`} icon="👥" />
-        <StatCard label="Appts Pendentes" value={pendingAppts || 0} icon="📅" accent={(pendingAppts || 0) > 0} />
+        <StatCard label="Leads Gerados" value={(totalLeads || 0).toLocaleString()} icon="📋" change={`${(assignedLeads || 0).toLocaleString()} distribuídos`} />
+        <StatCard label="Vendidos (pagos)" value={soldLeads.toLocaleString()} icon="🏷️" change="leads que compradores pagaram" />
+        <StatCard label="% Entrega" value={`${deliveryPct}%`} icon="🚚" change={`${deliveredPaid} de ${soldLeads} pagos entregues`} />
+        <StatCard label="Compradores Pagantes" value={payingBuyers} icon="👥" change={`de ${totalBuyers} cadastrados`} />
+        <StatCard label="Leads Pendentes" value={owedLeads} icon="📦" change={`devidos a quem pagou · ${pendingAppts || 0} appts`} accent={owedLeads > 0} />
       </div>
 
       {/* Cold leads alert */}
