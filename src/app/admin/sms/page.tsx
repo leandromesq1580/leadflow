@@ -26,7 +26,7 @@ export default async function AdminSmsPage() {
         .select('id, from_phone, body, created_at, lead:leads(id, name, state)')
         .eq('direction', 'in')
         .order('created_at', { ascending: false })
-        .limit(100)
+        .limit(500)
       replies = (r.data || []).map((m: any) => ({
         id: m.id,
         from_phone: m.from_phone,
