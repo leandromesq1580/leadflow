@@ -17,7 +17,11 @@ export async function GET(request: Request) {
 
   const supabase = createAdminClient()
   const { data: lr } = await supabase.from('settings').select('value').eq('key', 'lead_routing').maybeSingle()
-  const rule = (lr?.value as any)?.admin_rule || null
+  let rule = (lr?.value as any)?.admin_rule || null
+  // Override de cota SÓ pro dry-run (não grava nada): permite testar o cap sem
+  // mexer na config de produção. ?quota=N substitui daily_quota só nesta resposta.
+  const qOverride = url.searchParams.get('quota')
+  if (qOverride != null && rule) rule = { ...rule, daily_quota: parseInt(qOverride) || 0 }
 
   const states = (url.searchParams.get('states') || 'FL,TX,CA,NY,WY').split(',').map(s => s.trim()).filter(Boolean)
   const results: any[] = []
