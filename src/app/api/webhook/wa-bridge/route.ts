@@ -113,6 +113,42 @@ export async function POST(request: NextRequest) {
       .limit(10)
 
     if (!candidates || candidates.length === 0) {
+      // 🆕 NOVO CLIENTE: caiu na bridge de VENDAS (18632808696 = Lead4Pro /
+      // regiane@myhomefirst.us). Não é lead de seguro — é um prospect chegando pela
+      // página de vendas. Cria um lead na pipeline do Lead4Pro pra Regiane atender.
+      // NÃO conta nas métricas (dashboard filtra esse buyer) e NÃO avisa o grupo;
+      // já nasce com notified_at (fora da reconciliação/spam). Só na 1ª mensagem —
+      // as próximas casam esse lead e caem no fluxo normal de inbox.
+      const NEW_CLIENT_BUYER = '2b1971f5-cfa4-4256-bd9e-44c14cd61ffc'
+      if (!isOut && recipientBuyerId === NEW_CLIENT_BUYER) {
+        const nowIso = new Date().toISOString()
+        const { data: newLead } = await db.from('leads').insert({
+          name: `Novo cliente ${contactPhone.slice(-4)}`,
+          phone: contactPhone, email: '', city: '', state: '',
+          interest: 'Quer comprar leads', campaign_name: 'NOVO CLIENTE (vendas)',
+          type: 'hot', status: 'assigned', product_type: 'lead',
+          assigned_to: NEW_CLIENT_BUYER, assigned_at: nowIso, notified_at: nowIso,
+        }).select('id').single()
+        if (newLead) {
+          const { data: pipe } = await db.from('pipelines')
+            .select('id, stages:pipeline_stages(id, position)')
+            .eq('buyer_id', NEW_CLIENT_BUYER).eq('is_default', true).maybeSingle()
+          if (pipe?.stages?.length) {
+            const firstStage = (pipe.stages as any[]).sort((a, b) => a.position - b.position)[0]
+            await db.from('pipeline_leads').upsert({
+              lead_id: newLead.id, pipeline_id: pipe.id, stage_id: firstStage.id, position: 0, moved_at: nowIso,
+            }, { onConflict: 'lead_id,pipeline_id' })
+          }
+          await db.from('whatsapp_messages').insert({
+            buyer_id: NEW_CLIENT_BUYER, lead_id: newLead.id, direction: 'in',
+            from_phone: normalizedFrom, to_phone: to || '', body: body || '',
+            media_type: media_type || (has_media ? (type || 'media') : null),
+            media_url: media_url || null, wa_message_id, status: 'delivered',
+          })
+          console.log(`[WA Inbox] NOVO CLIENTE → Lead4Pro: lead ${newLead.id} (${contactPhone})`)
+          return NextResponse.json({ success: true, new_client_lead: newLead.id })
+        }
+      }
       console.log(`[WA Inbox] No matching lead for phone ${contactPhone} (dir=${direction || 'in'})`)
       return NextResponse.json({ skipped: 'no_lead' })
     }

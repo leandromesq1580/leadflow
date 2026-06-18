@@ -12,7 +12,7 @@ interface Props {
   block?: boolean
 }
 
-const WA_NUMBER = '17867442126'
+const WA_NUMBER = '18632808696' // bridge de vendas/novos clientes (Lead4Pro / regiane@myhomefirst.us)
 
 export function WhatsAppLeadCta({ label, message, size = 'md', block }: Props) {
   const href = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(message)}`

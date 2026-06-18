@@ -573,7 +573,7 @@ export default async function LandingPage() {
         </div>
       </footer>
 
-      <WhatsAppFab phone="17867442126" label="Fale Conosco!" />
+      <WhatsAppFab phone="18632808696" label="Fale Conosco!" />
       <LiveLeadToast badge={t.liveToast.badge} interest={t.liveToast.interest} now={t.liveToast.now} minsAgo={t.liveToast.minsAgo} />
       <MetaPixel />
     </div>
