@@ -108,7 +108,7 @@ export default function PerformancePage() {
         <p className="text-[13px] font-bold mb-3" style={{ color: '#1a1a2e' }}>Leads por dia</p>
         <div className="flex items-end gap-1 h-[120px]">
           {data.daily.values.map((v, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center group relative">
+            <div key={i} className="flex-1 h-full flex flex-col justify-end items-center group relative">
               <div className="w-full rounded-t transition-all hover:opacity-80"
                 style={{ height: `${(v / maxDaily) * 100}%`, background: 'linear-gradient(180deg, #6366f1, #8b5cf6)', minHeight: v > 0 ? 2 : 0 }}>
                 <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold opacity-0 group-hover:opacity-100 px-1.5 py-0.5 rounded"

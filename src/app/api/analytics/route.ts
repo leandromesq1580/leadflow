@@ -89,17 +89,28 @@ export async function GET(request: NextRequest) {
   const { data: pipelineLeads, error: plErr } = await plq
   if (plErr) console.error('[Analytics] funnel query err:', plErr.message)
 
+  // Normaliza o nome do estágio (trim + sem acento + minúsculo) pra MESCLAR
+  // variações entre pipelines ("Não Atendeu" / "Nao atendeu" / "Não Atendeu ") —
+  // senão o admin (plataforma inteira) vê o MESMO estágio duplicado em várias linhas.
+  const normStage = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase()
   const funnel: Array<{ stage: string; count: number; position: number }> = []
-  const stageCounts: Record<string, { name: string; position: number; count: number }> = {}
+  const stageCounts: Record<string, { variants: Record<string, number>; position: number; count: number }> = {}
   for (const pl of pipelineLeads || []) {
     const stage = (pl as any).pipeline_stages
-    if (!stage) continue
-    const key = stage.name
-    if (!stageCounts[key]) stageCounts[key] = { name: key, position: stage.position, count: 0 }
-    stageCounts[key].count++
+    if (!stage?.name) continue
+    const key = normStage(stage.name)
+    if (!key) continue
+    if (!stageCounts[key]) stageCounts[key] = { variants: {}, position: stage.position ?? 0, count: 0 }
+    const sc = stageCounts[key]
+    sc.count++
+    const disp = String(stage.name).trim()
+    sc.variants[disp] = (sc.variants[disp] || 0) + 1
+    if ((stage.position ?? 0) < sc.position) sc.position = stage.position ?? 0
   }
   Object.values(stageCounts).sort((a, b) => a.position - b.position).forEach(s => {
-    funnel.push({ stage: s.name, count: s.count, position: s.position })
+    // rótulo = variante mais comum (ex: "Não Atendeu", não "nao atendeu ")
+    const name = Object.entries(s.variants).sort((a, b) => b[1] - a[1])[0][0]
+    funnel.push({ stage: name, count: s.count, position: s.position })
   })
 
   return NextResponse.json({
