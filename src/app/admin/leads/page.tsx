@@ -26,6 +26,7 @@ interface SearchParams {
   type?: string
   state?: string
   buyer?: string
+  fonte?: string
 }
 
 export default async function AdminLeadsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
@@ -40,6 +41,9 @@ export default async function AdminLeadsPage({ searchParams }: { searchParams: P
   const type = sp.type || ''
   const state = (sp.state || '').toUpperCase().slice(0, 2)
   const buyerFilter = sp.buyer || ''
+  // FONTE: 'sistema' (padrão) = só leads do Meta (meta_lead_id); 'manual' = feitos na
+  // mão; 'todos' = ambos. Por padrão a tela mostra/conta só os do sistema.
+  const fonte = sp.fonte || 'sistema'
 
   const db = createAdminClient()
 
@@ -54,6 +58,9 @@ export default async function AdminLeadsPage({ searchParams }: { searchParams: P
     if (state) builder = builder.eq('state', state)
     if (buyerFilter === 'unassigned') builder = builder.is('assigned_to', null)
     else if (buyerFilter) builder = builder.eq('assigned_to', buyerFilter)
+    // Fonte: sistema = só meta_lead_id; manual = sem meta_lead_id; todos = sem filtro
+    if (fonte === 'sistema') builder = builder.not('meta_lead_id', 'is', null)
+    else if (fonte === 'manual') builder = builder.is('meta_lead_id', null)
     return builder
   }
 
@@ -67,16 +74,20 @@ export default async function AdminLeadsPage({ searchParams }: { searchParams: P
   const { data: leads, count: totalFiltered } = await listQuery
 
   // Contagens GLOBAIS (sem filtros, pra cabeçalho)
+  // Contagens GLOBAIS do cabeçalho — SÓ lead do SISTEMA (meta_lead_id). Leads feitos
+  // na mão (Manual/INDICAÇÃO/CAMPANHA/CSV/prospect) NÃO contam; mostramos quantos são.
   const [
     { count: totalAll },
     { count: totalNew },
     { count: totalSold },
     { count: totalCold },
+    { count: totalManual },
   ] = await Promise.all([
-    db.from('leads').select('id', { count: 'exact', head: true }),
-    db.from('leads').select('id', { count: 'exact', head: true }).eq('status', 'new'),
-    db.from('leads').select('id', { count: 'exact', head: true }).neq('status', 'new'),
-    db.from('leads').select('id', { count: 'exact', head: true }).eq('type', 'cold').eq('status', 'new'),
+    db.from('leads').select('id', { count: 'exact', head: true }).not('meta_lead_id', 'is', null),
+    db.from('leads').select('id', { count: 'exact', head: true }).eq('status', 'new').not('meta_lead_id', 'is', null),
+    db.from('leads').select('id', { count: 'exact', head: true }).neq('status', 'new').not('meta_lead_id', 'is', null),
+    db.from('leads').select('id', { count: 'exact', head: true }).eq('type', 'cold').eq('status', 'new').not('meta_lead_id', 'is', null),
+    db.from('leads').select('id', { count: 'exact', head: true }).is('meta_lead_id', null),
   ])
 
   // Buyers pra dropdown (repasse)
@@ -98,7 +109,7 @@ export default async function AdminLeadsPage({ searchParams }: { searchParams: P
   const allLeads = leads || []
   const total = totalFiltered ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
-  const hasActiveFilter = !!(q || status || type || state || buyerFilter)
+  const hasActiveFilter = !!(q || status || type || state || buyerFilter || fonte !== 'sistema')
 
   function buildQS(overrides: Record<string, string | undefined>) {
     const params: Record<string, string> = {}
@@ -107,6 +118,7 @@ export default async function AdminLeadsPage({ searchParams }: { searchParams: P
     if (type) params.type = type
     if (state) params.state = state
     if (buyerFilter) params.buyer = buyerFilter
+    if (fonte && fonte !== 'sistema') params.fonte = fonte
     if (page > 1) params.page = String(page)
     for (const [k, v] of Object.entries(overrides)) {
       if (v === undefined || v === '') delete params[k]
@@ -122,7 +134,7 @@ export default async function AdminLeadsPage({ searchParams }: { searchParams: P
         <div>
           <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>Todos os Leads</h1>
           <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>
-            <strong>{totalAll ?? 0}</strong> total · {totalSold ?? 0} vendidos · {(totalNew ?? 0) - (totalCold ?? 0)} quentes na fila · {totalCold ?? 0} frios
+            <strong>{totalAll ?? 0}</strong> do sistema · {totalSold ?? 0} vendidos · {(totalNew ?? 0) - (totalCold ?? 0)} quentes na fila · {totalCold ?? 0} frios · <span style={{ color: '#94a3b8' }}>{totalManual ?? 0} manuais (não contam)</span>
           </p>
         </div>
         <Link href="/admin/import" className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-white" style={{ background: '#6366f1' }}>
@@ -185,6 +197,15 @@ export default async function AdminLeadsPage({ searchParams }: { searchParams: P
             {(buyers || []).map((b: any) => (
               <option key={b.id} value={b.id}>{b.name}</option>
             ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-[10px] font-bold uppercase mb-1" style={{ color: '#94a3b8' }}>Fonte</label>
+          <select name="fonte" defaultValue={fonte} className="px-3 py-2 rounded-lg text-[13px]" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }}>
+            <option value="sistema">Sistema (Meta)</option>
+            <option value="manual">Manuais</option>
+            <option value="todos">Todos</option>
           </select>
         </div>
 
