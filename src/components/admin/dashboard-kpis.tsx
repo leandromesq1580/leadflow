@@ -21,7 +21,7 @@ interface Metrics {
 }
 
 export function DashboardKpis() {
-  const [period, setPeriod] = useState('30d')
+  const [period, setPeriod] = useState('all')
   const [m, setM] = useState<Metrics | null>(null)
   const [loading, setLoading] = useState(true)
 
