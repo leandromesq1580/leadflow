@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const AD_ACCOUNT_ID = 'act_1626622925084500' // Lead4Producers (conta certa; a 2374409502997954 era a MHF3)
+const AD_ACCOUNT_ID = 'act_2374409502997954'
 const LEAD_PRICE = 22 // selling price per lead
 
 /**
