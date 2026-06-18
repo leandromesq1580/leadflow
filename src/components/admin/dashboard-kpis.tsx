@@ -65,7 +65,7 @@ export function DashboardKpis() {
         <div className="grid grid-cols-4 gap-4" style={{ opacity: loading ? 0.5 : 1, transition: 'opacity .2s' }}>
           <StatCard label="Receita" value={usd(m.revenue)} icon="💰" />
           <StatCard label="Gasto Tráfego (Meta)" value={m.adSpendOk ? usd(m.adSpend) : '—'} icon="📣" change={m.adSpendOk ? 'investido em anúncios' : 'Meta indisponível'} />
-          <StatCard label="Resultado" value={m.adSpendOk ? `${m.netResult < 0 ? '-' : ''}${usd(Math.abs(m.netResult))}` : '—'} icon={m.netResult >= 0 ? '📈' : '📉'} change={m.adSpendOk ? 'receita − tráfego' : 'precisa do gasto Meta'} trend={m.adSpendOk ? (m.netResult >= 0 ? 'up' : 'down') : undefined} danger={m.adSpendOk && m.netResult < 0} />
+          <StatCard label="Lucro" value={m.adSpendOk ? `${m.netResult < 0 ? '-' : ''}${usd(Math.abs(m.netResult))}` : '—'} icon={m.netResult >= 0 ? '📈' : '📉'} change={m.adSpendOk ? (m.revenue > 0 ? `Margem ${Math.round((m.netResult / m.revenue) * 100)}%` : 'receita − tráfego') : 'precisa do gasto Meta'} trend={m.adSpendOk ? (m.netResult >= 0 ? 'up' : 'down') : undefined} danger={m.adSpendOk && m.netResult < 0} />
           <StatCard label="Leads Gerados" value={m.leadsGenerated.toLocaleString()} icon="📋" change={`${m.assignedInPeriod.toLocaleString()} distribuídos`} />
           <StatCard label="Vendidos (pagos)" value={m.soldLeads.toLocaleString()} icon="🏷️" change="leads que compradores pagaram" />
           <StatCard label="% Entrega" value={`${m.deliveryPct}%`} icon="🚚" change={`${m.deliveredPaid} de ${m.soldLeads} pagos entregues`} />
