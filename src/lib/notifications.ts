@@ -1,5 +1,4 @@
 import { Resend } from 'resend'
-import { getBridgeForBuyer } from './wa-bridge'
 
 let _resend: Resend | null = null
 function getResend(): Resend {
@@ -199,23 +198,15 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead): Promi
 ⚡ Ligue nos proximos 5 minutos!
 🔗 lead4producers.com/dashboard`
 
-    // Alerta sai da bridge do PRÓPRIO buyer (não da global/Regiane).
-    // EXCEÇÃO: se o nº de aviso do buyer é o MESMO da bridge dele, seria uma
-    // self-message (cai no chat "você" sem notificar — na prática não chega).
-    // Nesse caso manda pela bridge GLOBAL: chega como mensagem normal de outro
-    // número e notifica de verdade. Sem bridge própria → global (como antes).
-    let ownerBridge: { url: string; key: string } | null = null
-    try {
-      const { createAdminClient } = await import('@/lib/supabase/admin')
-      const b = await getBridgeForBuyer(createAdminClient(), (buyer as any).id)
-      if (b) {
-        const alertDigits = String(buyer.phone).replace(/\D/g, '').slice(-10)
-        const bridgeDigits = String(b.phone || '').replace(/\D/g, '').slice(-10)
-        const isSelf = !!alertDigits && alertDigits === bridgeDigits
-        if (!isSelf) ownerBridge = { url: b.url, key: b.key }
-      }
-    } catch {}
-    buyerOk = await sendWhatsApp(buyer.phone, whatsappMsg, ownerBridge)
+    // O alerta "você recebeu um lead" é da PLATAFORMA pro comprador → sai SEMPRE
+    // pela bridge GLOBAL (Regiane). Antes saía pela bridge PRÓPRIA do comprador
+    // (getBridgeForBuyer) e quebrava quando ela estava desconectada — ex: Leandro
+    // com bridge :3460 em pending_qr → buyerOk=false → notified_at nunca gravava
+    // → a reconciliação reenviava o MESMO lead a cada 2 min (spam infinito).
+    // A bridge própria do comprador é pra ELE falar com os leads dele, não pra
+    // receber alerta da plataforma. (Self-message só se o comprador for o número
+    // da própria bridge global — aí o bridge ainda devolve success, não trava.)
+    buyerOk = await sendWhatsApp(buyer.phone, whatsappMsg)
   }
 
   // 🔒 GARANTIA: carimba notified_at SÓ quando grupo E comprador receberam de
