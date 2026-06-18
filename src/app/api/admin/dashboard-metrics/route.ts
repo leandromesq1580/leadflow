@@ -55,12 +55,15 @@ export async function GET(request: NextRequest) {
   const revenue = (payments || []).reduce((s, p) => s + Number(p.amount || 0), 0)
   const payingBuyers = new Set((payments || []).map((p: any) => p.buyer_id).filter(Boolean)).size
 
-  // Leads gerados / distribuídos no período
-  let lgQ = db.from('leads').select('*', { count: 'exact', head: true })
+  // Leads gerados / distribuídos no período. EXCLUI os da conta de NOVOS CLIENTES
+  // (regiane@myhomefirst.us / Lead4Pro): esses são prospects chegando pela página de
+  // vendas, NÃO leads de seguro do sistema — não contam como "lead gerado".
+  const NEW_CLIENT_BUYER = '2b1971f5-cfa4-4256-bd9e-44c14cd61ffc'
+  let lgQ = db.from('leads').select('*', { count: 'exact', head: true }).or(`assigned_to.is.null,assigned_to.neq.${NEW_CLIENT_BUYER}`)
   if (since) lgQ = lgQ.gte('created_at', since)
   if (until) lgQ = lgQ.lt('created_at', until)
   const { count: leadsGenerated } = await lgQ
-  let asgQ = db.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'assigned')
+  let asgQ = db.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'assigned').neq('assigned_to', NEW_CLIENT_BUYER)
   if (since) asgQ = asgQ.gte('created_at', since)
   if (until) asgQ = asgQ.lt('created_at', until)
   const { count: assignedInPeriod } = await asgQ
