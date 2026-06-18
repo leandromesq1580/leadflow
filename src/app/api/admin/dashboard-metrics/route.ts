@@ -34,8 +34,14 @@ export async function GET(request: NextRequest) {
   const { data: me } = await db.from('buyers').select('is_admin').eq('auth_user_id', user.id).single()
   if (!me?.is_admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const periodKey = new URL(request.url).searchParams.get('period') || '30d'
-  const { datePreset, since } = resolvePeriod(periodKey)
+  const sp = new URL(request.url).searchParams
+  const periodKey = sp.get('period') || '30d'
+  const sinceParam = sp.get('since')
+  const { datePreset, since: fallbackSince } = resolvePeriod(periodKey)
+  // O cliente manda o corte de data no FUSO LOCAL dele (param `since`). Usar ele
+  // faz o "Hoje" bater com o dia do usuário — antes usava meia-noite UTC, então
+  // uma venda da tarde (horário local) caía como "ontem" e sumia do "Hoje".
+  const since = periodKey === 'all' ? null : (sinceParam || fallbackSince)
 
   // Receita + pagantes (pagamentos concluídos no período)
   let payQ = db.from('payments').select('amount, buyer_id').eq('status', 'completed')

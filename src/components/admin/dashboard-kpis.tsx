@@ -25,7 +25,14 @@ export function DashboardKpis() {
 
   useEffect(() => {
     setLoading(true)
-    fetch(`/api/admin/dashboard-metrics?period=${period}`, { cache: 'no-store' })
+    // Corte de data no FUSO LOCAL do navegador — assim "Hoje" = o SEU dia, não o
+    // dia UTC (que está horas à frente e jogava a venda da tarde pra "ontem").
+    const now = new Date()
+    let since = ''
+    if (period === 'today') { const d = new Date(now); d.setHours(0, 0, 0, 0); since = d.toISOString() }
+    else if (period === '7d') since = new Date(now.getTime() - 7 * 86400_000).toISOString()
+    else if (period === '30d') since = new Date(now.getTime() - 30 * 86400_000).toISOString()
+    fetch(`/api/admin/dashboard-metrics?period=${period}&since=${encodeURIComponent(since)}`, { cache: 'no-store' })
       .then(r => r.json())
       .then(d => { if (!d.error) setM(d); setLoading(false) })
       .catch(() => setLoading(false))
