@@ -130,7 +130,8 @@ interface AdminRule { admin_emails?: string[]; daily_quota?: number }
  */
 export async function tryAdminRule(
   lead: Lead & { meta_lead_id?: string | null },
-  rule?: AdminRule | null
+  rule?: AdminRule | null,
+  dryRun = false
 ): Promise<EligibleBuyer | null> {
   const quota = rule?.daily_quota || 0
   const emails = (rule?.admin_emails || []).filter(Boolean)
@@ -173,6 +174,8 @@ export async function tryAdminRule(
   if (under.length === 0) return null
 
   const chosen = under[0]
+  // Dry-run (preview/teste): retorna quem PEGARIA sem atribuir nem notificar.
+  if (dryRun) return { ...(chosen as any), _today: countBy.get(chosen.id) || 0, _quota: quota } as EligibleBuyer
   const assigned = await assignLeadToBuyer(supabase, lead, chosen)
   console.log(`[Distribute] REGRA ADMIN: lead ${lead.id} → ${chosen.name} (cota ${(countBy.get(chosen.id) || 0) + 1}/${quota})`)
   return assigned
