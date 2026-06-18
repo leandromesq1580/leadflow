@@ -54,6 +54,25 @@ export default async function AdminDashboard() {
   const { data: paidPayments } = await db.from('payments').select('buyer_id').eq('status', 'completed')
   const payingBuyers = new Set((paidPayments || []).map((p: any) => p.buyer_id).filter(Boolean)).size
 
+  // Gasto com tráfego pago (Meta Ads, total/all-time) — mesma fonte de /admin/ads
+  // (ad account act_2374409502997954 + Marketing API insights). Resultado = receita −
+  // gasto. try/catch + revalidate: uma falha do Meta não trava nem derruba o dashboard.
+  let adSpend = 0
+  let adSpendOk = false
+  try {
+    const metaToken = (process.env.META_PAGE_TOKEN || '').trim().replace(/\\n/g, '')
+    if (metaToken) {
+      const p = new URLSearchParams({ fields: 'spend', date_preset: 'maximum', access_token: metaToken })
+      const res = await fetch(`https://graph.facebook.com/v25.0/act_2374409502997954/insights?${p.toString()}`, { next: { revalidate: 600 } })
+      const raw = await res.json()
+      if (!raw.error && Array.isArray(raw.data)) {
+        adSpend = raw.data.reduce((s: number, r: any) => s + parseFloat(r.spend || '0'), 0)
+        adSpendOk = true
+      }
+    }
+  } catch {}
+  const netResult = totalRevenue - adSpend
+
   const { data: recentLeads } = await db.from('leads').select('*, buyer:buyers!assigned_to(name)').order('created_at', { ascending: false }).limit(8)
   const { data: buyers } = await db.from('buyers').select('*').order('created_at', { ascending: false }).limit(5)
 
@@ -77,14 +96,16 @@ export default async function AdminDashboard() {
         </div>
       </div>
 
-      {/* Stats — linha 1: volume/receita · linha 2: compromisso de entrega */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      {/* Stats — linha 1: dinheiro (receita − tráfego = resultado) · linha 2: operação */}
+      <div className="grid grid-cols-4 gap-4 mb-8">
         <StatCard label="Receita" value={`$${totalRevenue.toLocaleString()}`} icon="💰" />
+        <StatCard label="Gasto Tráfego (Meta)" value={adSpendOk ? `$${Math.round(adSpend).toLocaleString()}` : '—'} icon="📣" change={adSpendOk ? 'investido em anúncios' : 'Meta indisponível'} />
+        <StatCard label="Resultado" value={adSpendOk ? `${netResult < 0 ? '-' : ''}$${Math.abs(Math.round(netResult)).toLocaleString()}` : '—'} icon={netResult >= 0 ? '📈' : '📉'} change={adSpendOk ? 'receita − tráfego' : 'precisa do gasto Meta'} trend={adSpendOk ? (netResult >= 0 ? 'up' : 'down') : undefined} danger={adSpendOk && netResult < 0} />
         <StatCard label="Leads Gerados" value={(totalLeads || 0).toLocaleString()} icon="📋" change={`${(assignedLeads || 0).toLocaleString()} distribuídos`} />
         <StatCard label="Vendidos (pagos)" value={soldLeads.toLocaleString()} icon="🏷️" change="leads que compradores pagaram" />
         <StatCard label="% Entrega" value={`${deliveryPct}%`} icon="🚚" change={`${deliveredPaid} de ${soldLeads} pagos entregues`} />
         <StatCard label="Compradores Pagantes" value={payingBuyers} icon="👥" change={`de ${totalBuyers} cadastrados`} />
-        <StatCard label="Leads Pendentes" value={owedLeads} icon="📦" change={`devidos a quem pagou · ${pendingAppts || 0} appts`} accent={owedLeads > 0} />
+        <StatCard label="Leads Pendentes" value={owedLeads} icon="📦" change={`devidos · ${pendingAppts || 0} appts`} accent={owedLeads > 0} />
       </div>
 
       {/* Cold leads alert */}

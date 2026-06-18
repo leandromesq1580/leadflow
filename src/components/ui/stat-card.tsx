@@ -5,15 +5,16 @@ interface StatCardProps {
   trend?: 'up' | 'down'
   icon?: string
   accent?: boolean
+  danger?: boolean
 }
 
-export function StatCard({ label, value, change, trend, icon, accent }: StatCardProps) {
+export function StatCard({ label, value, change, trend, icon, accent, danger }: StatCardProps) {
   return (
     <div
       className="rounded-2xl p-5 relative overflow-hidden"
       style={{
-        background: accent ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : '#fff',
-        border: accent ? 'none' : '1px solid #e8ecf4',
+        background: accent ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : danger ? '#fef2f2' : '#fff',
+        border: accent ? 'none' : danger ? '1px solid #fecaca' : '1px solid #e8ecf4',
         boxShadow: accent ? '0 8px 30px rgba(99,102,241,0.25)' : '0 1px 3px rgba(0,0,0,0.04)',
       }}
     >
@@ -25,7 +26,7 @@ export function StatCard({ label, value, change, trend, icon, accent }: StatCard
           </p>
           {icon && <span className="text-[20px]">{icon}</span>}
         </div>
-        <p className="text-[32px] font-extrabold leading-none" style={{ color: accent ? '#fff' : '#1a1a2e' }}>
+        <p className="text-[32px] font-extrabold leading-none" style={{ color: accent ? '#fff' : danger ? '#ef4444' : '#1a1a2e' }}>
           {value}
         </p>
         {change && (
