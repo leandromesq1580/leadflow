@@ -7,17 +7,19 @@ export const dynamic = 'force-dynamic'
 // Conta de anúncios CERTA do Lead4Producers (a 2374409502997954 era a MHF3).
 const AD_ACCOUNT_ID = 'act_1626622925084500'
 
-// Período → date_preset do Meta + corte de data pro banco (since=null = tudo/all-time).
-function resolvePeriod(key: string): { datePreset: string; since: string | null } {
-  const now = Date.now()
+// Período → date_preset do Meta + corte de data pro banco (fallback UTC; o cliente
+// manda since/until no fuso LOCAL dele). since=null = tudo. until = fim do range
+// (só p/ "mês passado", que é fechado).
+function resolvePeriod(key: string): { datePreset: string; since: string | null; until: string | null } {
+  const d = new Date()
+  const y = d.getUTCFullYear(), m = d.getUTCMonth()
   switch (key) {
-    case 'today': {
-      const d = new Date(now); const start = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
-      return { datePreset: 'today', since: start.toISOString() }
-    }
-    case '7d': return { datePreset: 'last_7d', since: new Date(now - 7 * 86400_000).toISOString() }
-    case '30d': return { datePreset: 'last_30d', since: new Date(now - 30 * 86400_000).toISOString() }
-    default: return { datePreset: 'maximum', since: null }
+    case 'today': return { datePreset: 'today', since: new Date(Date.UTC(y, m, d.getUTCDate())).toISOString(), until: null }
+    case '7d': return { datePreset: 'last_7d', since: new Date(Date.now() - 7 * 86400_000).toISOString(), until: null }
+    case '30d': return { datePreset: 'last_30d', since: new Date(Date.now() - 30 * 86400_000).toISOString(), until: null }
+    case 'this_month': return { datePreset: 'this_month', since: new Date(Date.UTC(y, m, 1)).toISOString(), until: null }
+    case 'last_month': return { datePreset: 'last_month', since: new Date(Date.UTC(y, m - 1, 1)).toISOString(), until: new Date(Date.UTC(y, m, 1)).toISOString() }
+    default: return { datePreset: 'maximum', since: null, until: null }
   }
 }
 
@@ -37,15 +39,18 @@ export async function GET(request: NextRequest) {
   const sp = new URL(request.url).searchParams
   const periodKey = sp.get('period') || '30d'
   const sinceParam = sp.get('since')
-  const { datePreset, since: fallbackSince } = resolvePeriod(periodKey)
-  // O cliente manda o corte de data no FUSO LOCAL dele (param `since`). Usar ele
-  // faz o "Hoje" bater com o dia do usuário — antes usava meia-noite UTC, então
-  // uma venda da tarde (horário local) caía como "ontem" e sumia do "Hoje".
-  const since = periodKey === 'all' ? null : (sinceParam || fallbackSince)
+  const untilParam = sp.get('until')
+  const fb = resolvePeriod(periodKey)
+  const datePreset = fb.datePreset
+  // O cliente manda since/until no FUSO LOCAL dele — faz "Hoje"/"Este mês" baterem
+  // com o calendário do usuário (UTC está horas à frente). `until` só p/ "Mês passado".
+  const since = periodKey === 'all' ? null : (sinceParam || fb.since)
+  const until = untilParam || fb.until
 
   // Receita + pagantes (pagamentos concluídos no período)
   let payQ = db.from('payments').select('amount, buyer_id').eq('status', 'completed')
   if (since) payQ = payQ.gte('created_at', since)
+  if (until) payQ = payQ.lt('created_at', until)
   const { data: payments } = await payQ
   const revenue = (payments || []).reduce((s, p) => s + Number(p.amount || 0), 0)
   const payingBuyers = new Set((payments || []).map((p: any) => p.buyer_id).filter(Boolean)).size
@@ -53,9 +58,11 @@ export async function GET(request: NextRequest) {
   // Leads gerados / distribuídos no período
   let lgQ = db.from('leads').select('*', { count: 'exact', head: true })
   if (since) lgQ = lgQ.gte('created_at', since)
+  if (until) lgQ = lgQ.lt('created_at', until)
   const { count: leadsGenerated } = await lgQ
   let asgQ = db.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'assigned')
   if (since) asgQ = asgQ.gte('created_at', since)
+  if (until) asgQ = asgQ.lt('created_at', until)
   const { count: assignedInPeriod } = await asgQ
 
   // Cumulativos (estado "agora", não dependem de período)

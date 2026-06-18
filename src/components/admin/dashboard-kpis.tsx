@@ -7,6 +7,8 @@ const PERIODS = [
   { key: 'today', label: 'Hoje' },
   { key: '7d', label: '7 dias' },
   { key: '30d', label: '30 dias' },
+  { key: 'this_month', label: 'Este mês' },
+  { key: 'last_month', label: 'Mês passado' },
   { key: 'all', label: 'Tudo' },
 ]
 
@@ -28,11 +30,16 @@ export function DashboardKpis() {
     // Corte de data no FUSO LOCAL do navegador — assim "Hoje" = o SEU dia, não o
     // dia UTC (que está horas à frente e jogava a venda da tarde pra "ontem").
     const now = new Date()
-    let since = ''
+    let since = '', until = ''
     if (period === 'today') { const d = new Date(now); d.setHours(0, 0, 0, 0); since = d.toISOString() }
     else if (period === '7d') since = new Date(now.getTime() - 7 * 86400_000).toISOString()
     else if (period === '30d') since = new Date(now.getTime() - 30 * 86400_000).toISOString()
-    fetch(`/api/admin/dashboard-metrics?period=${period}&since=${encodeURIComponent(since)}`, { cache: 'no-store' })
+    else if (period === 'this_month') since = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+    else if (period === 'last_month') {
+      since = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString()
+      until = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+    }
+    fetch(`/api/admin/dashboard-metrics?period=${period}&since=${encodeURIComponent(since)}&until=${encodeURIComponent(until)}`, { cache: 'no-store' })
       .then(r => r.json())
       .then(d => { if (!d.error) setM(d); setLoading(false) })
       .catch(() => setLoading(false))
