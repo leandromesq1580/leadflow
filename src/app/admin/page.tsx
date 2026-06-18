@@ -25,12 +25,29 @@ export default async function AdminDashboard() {
   const { data: payments } = await db.from('payments').select('amount').eq('status', 'completed')
   const totalRevenue = payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0
 
-  // Compromisso de entrega (modelo comercial): créditos de lead PAGOS vs entregues.
-  // soldLeads = leads que compradores pagaram; deliveredPaid = consumidos; owed = devidos.
-  const { data: leadCredits } = await db.from('credits').select('total_purchased, total_used').eq('type', 'lead')
-  const soldLeads = (leadCredits || []).reduce((s, c) => s + (Number(c.total_purchased) || 0), 0)
-  const deliveredPaid = (leadCredits || []).reduce((s, c) => s + (Number(c.total_used) || 0), 0)
-  const owedLeads = (leadCredits || []).reduce((s, c) => s + Math.max(0, (Number(c.total_purchased) || 0) - (Number(c.total_used) || 0)), 0)
+  // Compromisso de entrega (PRECISO): por comprador com crédito de lead pago, conta
+  // os leads entregues APÓS a compra. devido = max(0, pago − entregue_após). NÃO usa
+  // credits.total_used — o roteamento não debita crédito, então 'used' subconta e
+  // inflava o devido (o livro dizia 88; o real é ~42).
+  const { data: leadCreditRows } = await db.from('credits').select('buyer_id, total_purchased, created_at').eq('type', 'lead')
+  const perBuyer = new Map<string, { purchased: number; since: string | null }>()
+  for (const c of leadCreditRows || []) {
+    if (!c.buyer_id || !(Number(c.total_purchased) > 0)) continue
+    const e = perBuyer.get(c.buyer_id) || { purchased: 0, since: null as string | null }
+    e.purchased += Number(c.total_purchased)
+    if (c.created_at && (!e.since || c.created_at < e.since)) e.since = c.created_at
+    perBuyer.set(c.buyer_id, e)
+  }
+  const soldLeads = Array.from(perBuyer.values()).reduce((s, e) => s + e.purchased, 0)
+  const perBuyerDelivery = await Promise.all(Array.from(perBuyer.entries()).map(async ([bid, e]) => {
+    let q = db.from('leads').select('*', { count: 'exact', head: true }).eq('assigned_to', bid).eq('product_type', 'lead')
+    if (e.since) q = q.gte('assigned_at', e.since)
+    const { count } = await q
+    const delivered = Math.min(e.purchased, count || 0)
+    return { delivered, owed: e.purchased - delivered }
+  }))
+  const deliveredPaid = perBuyerDelivery.reduce((s, x) => s + x.delivered, 0)
+  const owedLeads = perBuyerDelivery.reduce((s, x) => s + x.owed, 0)
   const deliveryPct = soldLeads > 0 ? Math.round((deliveredPaid / soldLeads) * 100) : 0
 
   // Compradores que REALMENTE pagaram (pagamento concluído) — exclui trials/cortesias.
