@@ -209,20 +209,25 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead): Promi
     buyerOk = await sendWhatsApp(buyer.phone, whatsappMsg)
   }
 
-  // 🔒 GARANTIA: carimba notified_at SÓ quando grupo E comprador receberam de
-  // verdade. Se faltou (bridge caída/flap), fica null e o cron poll-leads reenvia.
-  // Comprador sem telefone = nada a entregar por WhatsApp, não bloqueia o carimbo.
-  // try/catch: se a coluna notified_at ainda não existe (migration não rodada),
-  // NÃO quebra o envio — a rede de segurança só fica dormente até a migration.
+  // 🔒 GARANTIA: o GRUPO é o registro autoritativo de "lead processado + time
+  // avisado". Carimba notified_at quando o GRUPO recebe — MESMO se o alerta ao
+  // comprador falhar. Motivo: se o comprador tem telefone INVÁLIDO (ex: a conta
+  // "Lead4Pro" com 498632808696), o alerta dele falha PRA SEMPRE → notified_at
+  // nunca gravava → a reconciliação reenviava a cada 2min e SPAMMAVA o grupo.
+  // Bridge OK (grupo entregou) + comprador falhou = problema no NÚMERO do comprador
+  // (dado), não transitório — reenviar não resolve. Bridge caída → groupOk=false →
+  // não carimba → reenvia quando voltar (esse é o retry legítimo).
   const buyerNotified = !buyer.phone || buyerOk
-  const fullyNotified = groupOk && buyerNotified
-  if (fullyNotified && (lead as any).id) {
+  if (groupOk && !buyerNotified) {
+    console.error(`[Notify] grupo OK mas COMPRADOR falhou (telefone ${buyer.phone} inválido?) — lead ${(lead as any).id} carimbado p/ NÃO spammar. Corrigir o telefone do comprador.`)
+  }
+  if (groupOk && (lead as any).id) {
     try {
       const { createAdminClient } = await import('@/lib/supabase/admin')
       await createAdminClient().from('leads').update({ notified_at: new Date().toISOString() }).eq('id', (lead as any).id)
     } catch { /* coluna pode não existir ainda — ignora */ }
   }
-  return fullyNotified
+  return groupOk
 }
 
 /**
