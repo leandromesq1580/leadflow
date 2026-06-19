@@ -2,6 +2,7 @@ import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { DashboardKpis } from '@/components/admin/dashboard-kpis'
 import { BuyerDebtCard } from '@/components/admin/buyer-debt-card'
+import { DeliveryQueueCard } from '@/components/admin/delivery-queue-card'
 import { Badge } from '@/components/ui/badge'
 import { timeAgo, getInitials } from '@/lib/utils'
 import Link from 'next/link'
@@ -44,6 +45,9 @@ export default async function AdminDashboard() {
 
       {/* KPIs por período (Hoje/7d/30d/Tudo) — receita − gasto(Meta) = resultado */}
       <DashboardKpis />
+
+      {/* Fila de entregas: ordem em que recebem o próximo lead + créditos + estados */}
+      <DeliveryQueueCard />
 
       {/* Saldo devedor dos compradores pagos (comprou x recebeu x falta) */}
       <BuyerDebtCard />
