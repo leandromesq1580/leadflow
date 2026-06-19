@@ -203,8 +203,9 @@ export async function GET(request: Request) {
       // embed de mesmo nome). Busca os leads pendentes e os buyers à parte.
       const { data: missed, error: mErr } = await supabase
         .from('leads')
-        .select('id, name, phone, state, interest, assigned_to, created_at')
+        .select('id, name, phone, state, interest, assigned_to, created_at, meta_lead_id')
         .not('assigned_to', 'is', null)
+        .not('meta_lead_id', 'is', null)
         .is('notified_at', null)
         .gte('created_at', cutoff)
         .limit(25)
