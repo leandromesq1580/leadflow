@@ -156,11 +156,10 @@ export function BuyersList({ buyers: initial }: { buyers: Buyer[] }) {
                   {TIER_BADGE[b.tier].label}
                 </span>
 
-                {!b.is_active && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase flex-shrink-0" style={{ background: '#fef2f2', color: '#dc2626' }}>
-                    Inativo
-                  </span>
-                )}
+                <span className="text-[10px] font-bold uppercase flex items-center gap-1 flex-shrink-0" style={{ color: b.is_active ? '#15803d' : '#dc2626' }}>
+                  <span className="inline-block rounded-full" style={{ width: 6, height: 6, background: b.is_active ? '#22c55e' : '#ef4444' }} />
+                  {b.is_active ? 'Ativo' : 'Inativo'}
+                </span>
 
                 {b.is_admin ? (
                   <span className="text-[16px] opacity-0 group-hover:opacity-100 flex-shrink-0" style={{ color: '#94a3b8' }}>›</span>
