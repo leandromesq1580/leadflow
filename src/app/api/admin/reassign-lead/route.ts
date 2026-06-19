@@ -7,7 +7,8 @@ import { migrateWhatsAppOwnership } from '@/lib/lead-ownership'
 /**
  * POST /api/admin/reassign-lead — repassa um lead pra outro agente (buyer).
  * Body: { lead_id, to_buyer_id }
- * O lead SAI do pipeline do dono atual e ENTRA no inicio do pipeline do novo dono.
+ * REGRA: reatribuição pelo admin DEBITA 1 crédito de lead do comprador que recebe
+ * (qualquer lead, sistema ou manual). Sem crédito → BLOQUEIA (avisa, não manda).
  */
 export async function POST(request: NextRequest) {
   const supabase = await createServerSupabase()
@@ -29,6 +30,24 @@ export async function POST(request: NextRequest) {
     .select('id, name, email, phone, notification_email, notification_sms')
     .eq('id', to_buyer_id).single()
   if (!toBuyer) return NextResponse.json({ error: 'Agente destino nao encontrado' }, { status: 404 })
+
+  // 💳 CHECA CRÉDITO ANTES de mover nada. Sem saldo de lead → bloqueia (avisa o admin).
+  const { data: creds } = await db.from('credits')
+    .select('id, total_purchased, total_used, expires_at').eq('buyer_id', to_buyer_id).eq('type', 'lead')
+  const nowMs = Date.now()
+  let debitRow: any = null, remaining = 0
+  for (const c of (creds || [])) {
+    const rem = (Number(c.total_purchased) || 0) - (Number(c.total_used) || 0)
+    const notExpired = !c.expires_at || new Date(c.expires_at).getTime() > nowMs
+    if (notExpired && rem > 0) {
+      remaining += rem
+      const best = debitRow ? (Number(debitRow.total_purchased) || 0) - (Number(debitRow.total_used) || 0) : -1
+      if (rem > best) debitRow = c
+    }
+  }
+  if (!debitRow || remaining <= 0) {
+    return NextResponse.json({ error: `${(toBuyer.name || '').trim()} está sem crédito de lead — não dá pra reatribuir. Adicione crédito ou escolha outro agente.`, code: 'NO_CREDIT' }, { status: 409 })
+  }
 
   // 1) Reatribui o lead (limpa member tambem — repasse e entre agentes/buyers)
   await db.from('leads').update({
@@ -53,11 +72,14 @@ export async function POST(request: NextRequest) {
     }, { onConflict: 'lead_id,pipeline_id' })
   }
 
-  // 4) Privacidade: thread do WhatsApp passa pro novo dono (o antigo nao ve msgs futuras)
+  // 4) Privacidade: thread do WhatsApp passa pro novo dono
   try { await migrateWhatsAppOwnership(db, lead_id, to_buyer_id) } catch (e) { console.error('[Reassign] WA migrate:', (e as any)?.message) }
 
-  // 5) Notifica o novo agente (email + WhatsApp, como na distribuicao normal)
+  // 5) Debita 1 crédito de lead do novo dono (reatribuição do admin = entrega que cobra)
+  await db.from('credits').update({ total_used: (Number(debitRow.total_used) || 0) + 1 }).eq('id', debitRow.id)
+
+  // 6) Notifica o novo agente
   try { await sendLeadNotificationEmail(toBuyer as any, lead) } catch (e) { console.error('[Reassign] notify:', (e as any)?.message) }
 
-  return NextResponse.json({ success: true, to: toBuyer.name })
+  return NextResponse.json({ success: true, to: (toBuyer.name || '').trim(), credito_debitado: true, saldo_restante: remaining - 1 })
 }
