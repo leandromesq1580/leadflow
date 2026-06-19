@@ -76,8 +76,9 @@ export async function GET(request: NextRequest) {
   // Compromisso de entrega pela MESMA fonte do card Saldo Devedor: crédito reconciliado
   // comprou(total_purchased) - recebeu(total_used). NAO reconta leads (evita contar lead
   // MANUAL como entrega de lead pago) -> bate 1:1 com /api/admin/buyer-debt.
-  let crQ = db.from('credits').select('buyer_id, total_purchased, total_used').eq('type', 'lead')
-  if (since) crQ = crQ.gte('purchased_at', since)
+  // Saldo devedor é SEMPRE o atual (NÃO filtra por período) — bate com o card Saldo
+  // Devedor em qualquer filtro (Hoje/7d/etc), porque saldo é estoque, não fluxo.
+  const crQ = db.from('credits').select('buyer_id, total_purchased, total_used').eq('type', 'lead')
   const { data: leadCreditRows } = await crQ
   const perBuyer = new Map<string, { purchased: number; used: number }>()
   for (const c of leadCreditRows || []) {
