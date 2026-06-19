@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 
 interface Admin { id: string; nome: string; estados: string[]; regraAdmin: number | null; isFallback: boolean }
-interface Row { pos: number; id: string; nome: string; creditos: number; estados: string[] }
+interface Row { pos: number; id: string; nome: string; creditos: number; estados: string[]; recebeuHoje?: boolean }
 interface Data { adminRule: { N: number; leadsUntilAdmin: number | null; herTurnNow: boolean }; admins: Admin[]; fila: Row[] }
 
 function StateChips({ estados }: { estados: string[] }) {
@@ -100,7 +100,7 @@ export function DeliveryQueueCard() {
             <div key={q.id} className="flex items-center gap-4 px-6 py-3" style={{ borderBottom: i < data.fila.length - 1 ? '1px solid #f8fafc' : 'none' }}>
               <div className="w-9 h-9 rounded-lg flex items-center justify-center text-[14px] font-extrabold flex-shrink-0" style={{ background: q.pos === 1 ? '#6366f1' : '#eef2ff', color: q.pos === 1 ? '#fff' : '#6366f1' }}>{q.pos}º</div>
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-semibold flex items-center gap-2" style={{ color: '#1a1a2e' }}><span className="truncate">{q.nome}</span>{q.pos === 1 && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase flex-shrink-0" style={{ background: '#eef2ff', color: '#6366f1' }}>1º da fila</span>}</p>
+                <p className="text-[13px] font-semibold flex items-center gap-2" style={{ color: '#1a1a2e' }}><span className="truncate">{q.nome}</span>{q.pos === 1 && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase flex-shrink-0" style={{ background: '#eef2ff', color: '#6366f1' }}>1º da fila</span>}{q.recebeuHoje ? <span className="text-[9px] font-bold px-1.5 py-0.5 rounded flex-shrink-0" style={{ background: '#f1f5f9', color: '#94a3b8' }}>✓ recebeu hoje</span> : <span className="text-[9px] font-bold px-1.5 py-0.5 rounded flex-shrink-0" style={{ background: '#dcfce7', color: '#15803d' }}>🟢 aguarda 1º do dia</span>}</p>
                 <div className="flex gap-1 flex-wrap mt-1"><StateChips estados={q.estados} /></div>
               </div>
               <div className="text-right flex-shrink-0"><p className="text-[18px] font-extrabold" style={{ color: '#15803d' }}>{q.creditos}</p><p className="text-[10px]" style={{ color: '#94a3b8' }}>a receber</p></div>
