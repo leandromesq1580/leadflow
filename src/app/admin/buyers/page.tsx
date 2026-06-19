@@ -29,7 +29,7 @@ export default async function BuyersPage() {
   const buyerData = await Promise.all((buyers || []).map(async (b) => {
     const { data: states } = await db.from('buyer_states').select('state_code').eq('buyer_id', b.id)
     const { data: credits } = await db.from('credits').select('type, total_purchased, total_used').eq('buyer_id', b.id)
-    const { count: leadCount } = await db.from('leads').select('*', { count: 'exact', head: true }).eq('assigned_to', b.id)
+    const { count: leadCount } = await db.from('leads').select('*', { count: 'exact', head: true }).eq('assigned_to', b.id).not('meta_lead_id', 'is', null)
 
     const leadCreds = credits?.filter(c => c.type === 'lead') || []
     const apptCreds = credits?.filter(c => c.type === 'appointment') || []
