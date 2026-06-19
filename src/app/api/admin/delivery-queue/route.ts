@@ -7,6 +7,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
  * Inclui o(s) admin(s) que interceptam por REGRA (1 a cada N, antes da fila de crédito)
  * + a fila de crédito (pagantes) + indica de quem é o PRÓXIMO lead.
  */
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   const supabase = await createServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
