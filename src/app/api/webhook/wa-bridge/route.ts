@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     const { data: candidates } = await db
       .from('leads')
       .select('id, assigned_to, assigned_to_member, phone, name, created_at, assigned_at')
-      .or(`phone.ilike.%${last10},phone.ilike.%${last11},phone.eq.${contactPhone},phone.eq.+${contactPhone}`)
+      .or(`phone_digits.eq.${contactPhone},phone_digits.ilike.%${last10}`)
       .limit(10)
 
     if (!candidates || candidates.length === 0) {
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
         // candidates roda antes; o lead irmao pode ter sido criado no meio). Se ja
         // existe lead na conta de vendas com esse telefone, anexa a msg e sai.
         const { data: dupeLead } = await db.from('leads')
-          .select('id').eq('assigned_to', NEW_CLIENT_BUYER).eq('phone', contactPhone)
+          .select('id').eq('assigned_to', NEW_CLIENT_BUYER).eq('phone_digits', contactPhone)
           .order('created_at', { ascending: true }).limit(1).maybeSingle()
         if (dupeLead) {
           await db.from('whatsapp_messages').insert({
