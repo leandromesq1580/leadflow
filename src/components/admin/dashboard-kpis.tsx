@@ -26,23 +26,35 @@ export function DashboardKpis() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    setLoading(true)
-    // Corte de data no FUSO LOCAL do navegador — assim "Hoje" = o SEU dia, não o
-    // dia UTC (que está horas à frente e jogava a venda da tarde pra "ontem").
-    const now = new Date()
-    let since = '', until = ''
-    if (period === 'today') { const d = new Date(now); d.setHours(0, 0, 0, 0); since = d.toISOString() }
-    else if (period === '7d') since = new Date(now.getTime() - 7 * 86400_000).toISOString()
-    else if (period === '30d') since = new Date(now.getTime() - 30 * 86400_000).toISOString()
-    else if (period === 'this_month') since = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-    else if (period === 'last_month') {
-      since = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString()
-      until = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+    let alive = true
+    // Corte de data no FUSO LOCAL do navegador — "Hoje" = o SEU dia, não o dia UTC.
+    function range() {
+      const now = new Date()
+      let since = '', until = ''
+      if (period === 'today') { const d = new Date(now); d.setHours(0, 0, 0, 0); since = d.toISOString() }
+      else if (period === '7d') since = new Date(now.getTime() - 7 * 86400_000).toISOString()
+      else if (period === '30d') since = new Date(now.getTime() - 30 * 86400_000).toISOString()
+      else if (period === 'this_month') since = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+      else if (period === 'last_month') { since = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString(); until = new Date(now.getFullYear(), now.getMonth(), 1).toISOString() }
+      return { since, until }
     }
-    fetch(`/api/admin/dashboard-metrics?period=${period}&since=${encodeURIComponent(since)}&until=${encodeURIComponent(until)}`, { cache: 'no-store' })
-      .then(r => r.json())
-      .then(d => { if (!d.error) setM(d); setLoading(false) })
-      .catch(() => setLoading(false))
+    async function load() {
+      const { since, until } = range()
+      try {
+        const d = await fetch(`/api/admin/dashboard-metrics?period=${period}&since=${encodeURIComponent(since)}&until=${encodeURIComponent(until)}`, { cache: 'no-store' }).then(r => r.json())
+        if (alive && !d.error) setM(d)
+      } catch {}
+      if (alive) setLoading(false)
+    }
+    setLoading(true)
+    load()
+    // KPIs AO VIVO: refaz a cada 15s + quando a aba volta ao foco (navegador congela
+    // timers de aba em 2o plano). Antes carregava 1x e ficava parado ate recarregar.
+    const t = setInterval(load, 15000)
+    const onVis = () => { if (document.visibilityState === 'visible') load() }
+    document.addEventListener('visibilitychange', onVis)
+    window.addEventListener('focus', onVis)
+    return () => { alive = false; clearInterval(t); document.removeEventListener('visibilitychange', onVis); window.removeEventListener('focus', onVis) }
   }, [period])
 
   const usd = (n: number) => `$${Math.round(n).toLocaleString('en-US')}`
