@@ -22,7 +22,7 @@ export default async function BuyerDetailPage({ params }: { params: Promise<{ id
   const { data: states } = await db.from('buyer_states').select('state_code').eq('buyer_id', id)
   const { data: availability } = await db.from('buyer_availability').select('day_type, period').eq('buyer_id', id)
   const { data: credits } = await db.from('credits').select('*').eq('buyer_id', id).order('purchased_at', { ascending: false })
-  const { data: leads } = await db.from('leads').select('id, name, city, state, status, created_at').eq('assigned_to', id).order('created_at', { ascending: false }).limit(10)
+  const { data: leads } = await db.from('leads').select('id, name, city, state, status, created_at').eq('assigned_to', id).not('meta_lead_id', 'is', null).order('created_at', { ascending: false }).limit(10)
   const { data: appointments } = await db.from('appointments').select('*, lead:leads(name, phone)').eq('buyer_id', id).order('scheduled_at', { ascending: false }).limit(5)
 
   const leadCredits = credits?.filter(c => c.type === 'lead') || []
