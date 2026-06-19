@@ -122,6 +122,22 @@ export async function POST(request: NextRequest) {
       const NEW_CLIENT_BUYER = '2b1971f5-cfa4-4256-bd9e-44c14cd61ffc'
       if (!isOut && recipientBuyerId === NEW_CLIENT_BUYER) {
         const nowIso = new Date().toISOString()
+        // Dedup anti-corrida: 2 msgs do MESMO numero novo chegando juntas criavam 2
+        // leads "Novo cliente". Re-checa o telefone exato AGORA (a checagem de
+        // candidates roda antes; o lead irmao pode ter sido criado no meio). Se ja
+        // existe lead na conta de vendas com esse telefone, anexa a msg e sai.
+        const { data: dupeLead } = await db.from('leads')
+          .select('id').eq('assigned_to', NEW_CLIENT_BUYER).eq('phone', contactPhone)
+          .order('created_at', { ascending: true }).limit(1).maybeSingle()
+        if (dupeLead) {
+          await db.from('whatsapp_messages').insert({
+            buyer_id: NEW_CLIENT_BUYER, lead_id: dupeLead.id, direction: 'in',
+            from_phone: normalizedFrom, to_phone: to || '', body: body || '',
+            media_type: media_type || (has_media ? (type || 'media') : null),
+            media_url: media_url || null, wa_message_id, status: 'delivered',
+          })
+          return NextResponse.json({ success: true, existing_client_lead: dupeLead.id })
+        }
         const { data: newLead } = await db.from('leads').insert({
           name: `Novo cliente ${contactPhone.slice(-4)}`,
           phone: contactPhone, email: '', city: '', state: '',
