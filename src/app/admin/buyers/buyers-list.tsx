@@ -6,12 +6,15 @@ import Link from 'next/link'
 interface Buyer {
   id: string; name: string; email: string; phone: string
   is_active: boolean; is_admin: boolean; crm_plan: string; is_agency: boolean
+  tier: 'paying' | 'trial' | 'free'; subStatus: string | null
   initials: string; avatarHue: number; states: string[]
   leadCredits: number; apptCredits: number; leadsReceived: number
 }
 
 const FILTERS = [
   { key: 'all', label: 'Todos' },
+  { key: 'paying', label: '💚 Pagantes' },
+  { key: 'trial', label: '🟡 Trial' },
   { key: 'pro', label: 'CRM Pro' },
   { key: 'agency', label: 'Agencias' },
   { key: 'no_credits', label: 'Sem creditos' },
@@ -19,15 +22,45 @@ const FILTERS = [
   { key: 'inactive', label: 'Inativos' },
 ]
 
-export function BuyersList({ buyers }: { buyers: Buyer[] }) {
+const TIER_BADGE: Record<Buyer['tier'], { label: string; bg: string; fg: string }> = {
+  paying: { label: 'Pagante', bg: '#dcfce7', fg: '#15803d' },
+  trial: { label: 'Trial', bg: '#fef3c7', fg: '#b45309' },
+  free: { label: 'Free', bg: '#f1f5f9', fg: '#64748b' },
+}
+
+export function BuyersList({ buyers: initial }: { buyers: Buyer[] }) {
+  const [buyers, setBuyers] = useState<Buyer[]>(initial)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
+  const [deleting, setDeleting] = useState<string | null>(null)
+
+  async function handleDelete(e: React.MouseEvent, b: Buyer) {
+    e.preventDefault(); e.stopPropagation()
+    if (deleting) return
+    const warn = b.tier === 'paying'
+      ? `⚠️ ${b.name} é PAGANTE. Apagar remove o cadastro, o login e os créditos dele (os leads recebidos viram não-atribuídos).`
+      : `Apagar ${b.name}? Remove o cadastro, o login e os dados dele. Os leads recebidos viram não-atribuídos.`
+    if (!confirm(`${warn}\n\nEssa ação NÃO tem como desfazer. Confirmar?`)) return
+    setDeleting(b.id)
+    try {
+      const r = await fetch(`/api/admin/buyers/${b.id}/delete`, { method: 'POST' })
+      const d = await r.json().catch(() => ({}))
+      if (!r.ok) { alert(d.error || 'Falha ao apagar'); setDeleting(null); return }
+      setBuyers(prev => prev.filter(x => x.id !== b.id))
+    } catch {
+      alert('Erro de rede ao apagar')
+    } finally {
+      setDeleting(null)
+    }
+  }
 
   const filtered = useMemo(() => buyers.filter(b => {
     if (search) {
       const q = search.toLowerCase()
       if (!b.name.toLowerCase().includes(q) && !b.email.toLowerCase().includes(q) && !b.phone?.includes(q)) return false
     }
+    if (filter === 'paying' && b.tier !== 'paying') return false
+    if (filter === 'trial' && b.tier !== 'trial') return false
     if (filter === 'pro' && b.crm_plan !== 'pro') return false
     if (filter === 'agency' && !b.is_agency) return false
     if (filter === 'no_credits' && (b.leadCredits > 0 || b.apptCredits > 0)) return false
@@ -39,7 +72,8 @@ export function BuyersList({ buyers }: { buyers: Buyer[] }) {
   const counts = {
     pro: buyers.filter(b => b.crm_plan === 'pro').length,
     agency: buyers.filter(b => b.is_agency).length,
-    paying: buyers.filter(b => b.crm_plan === 'pro' || b.leadCredits > 0).length,
+    paying: buyers.filter(b => b.tier === 'paying').length,
+    trial: buyers.filter(b => b.tier === 'trial').length,
   }
 
   return (
@@ -47,7 +81,9 @@ export function BuyersList({ buyers }: { buyers: Buyer[] }) {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>Compradores</h1>
-          <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>{buyers.length} cadastrados · {counts.paying} pagantes · {counts.pro} CRM Pro · {counts.agency} agencias</p>
+          <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>
+            {buyers.length} cadastrados · <b style={{ color: '#15803d' }}>{counts.paying} pagantes</b> · <span style={{ color: '#b45309' }}>{counts.trial} trial</span> · {counts.pro} CRM Pro · {counts.agency} agencias
+          </p>
         </div>
       </div>
 
@@ -114,11 +150,31 @@ export function BuyersList({ buyers }: { buyers: Buyer[] }) {
                   <p className="text-[10px]" style={{ color: '#94a3b8' }}>recebidos</p>
                 </div>
 
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase"
-                  style={{ background: b.is_active ? '#dcfce7' : '#fef2f2', color: b.is_active ? '#15803d' : '#dc2626' }}>
-                  {b.is_active ? 'Ativo' : 'Inativo'}
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase flex-shrink-0"
+                  style={{ background: TIER_BADGE[b.tier].bg, color: TIER_BADGE[b.tier].fg }}
+                  title={b.tier === 'paying' ? 'Pagou de verdade (assinatura ou compra de créditos)' : b.tier === 'trial' ? 'Trial / cortesia — não pagou' : 'Free — sem plano nem pagamento'}>
+                  {TIER_BADGE[b.tier].label}
                 </span>
-                <span className="text-[16px] opacity-0 group-hover:opacity-100" style={{ color: '#94a3b8' }}>›</span>
+
+                {!b.is_active && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase flex-shrink-0" style={{ background: '#fef2f2', color: '#dc2626' }}>
+                    Inativo
+                  </span>
+                )}
+
+                {b.is_admin ? (
+                  <span className="text-[16px] opacity-0 group-hover:opacity-100 flex-shrink-0" style={{ color: '#94a3b8' }}>›</span>
+                ) : (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={e => handleDelete(e, b)}
+                    title={`Apagar ${b.name}`}
+                    className="text-[15px] w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 opacity-40 group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 transition-all cursor-pointer"
+                    style={{ color: '#94a3b8' }}>
+                    {deleting === b.id ? '⏳' : '🗑'}
+                  </span>
+                )}
               </Link>
             ))}
           </div>
