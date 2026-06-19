@@ -9,6 +9,18 @@ import { createAdminClient } from '@/lib/supabase/admin'
  */
 export const dynamic = 'force-dynamic'
 
+// Inicio do dia (meia-noite) no fuso America/New_York, em ISO UTC. Robusto p/ EDT/EST.
+function easternDayStartISO(): string {
+  const now = new Date()
+  const p = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(now)
+  const g = (t: string) => (p.find(x => x.type === t) as any).value
+  const hh = g('hour') === '24' ? '00' : g('hour')
+  const wallNow = `${g('year')}-${g('month')}-${g('day')}T${hh}:${g('minute')}:${g('second')}`
+  const offsetMs = now.getTime() - new Date(wallNow + 'Z').getTime()
+  const wallMidnight = `${g('year')}-${g('month')}-${g('day')}T00:00:00`
+  return new Date(new Date(wallMidnight + 'Z').getTime() + offsetMs).toISOString()
+}
+
 export async function GET(request: NextRequest) {
   const supabase = await createServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
@@ -65,9 +77,20 @@ export async function GET(request: NextRequest) {
     if (cur) { cur.credits += Number(e.remaining) || 0; continue }
     seen.set(e.id, { id: e.id, name: (e.name || '').trim(), credits: Number(e.remaining) || 0 })
   }
-  const queue = [...seen.values()]
+  let queue = [...seen.values()]
+  // 🟢 PISO DIARIO: quem ainda NAO recebeu lead de sistema hoje (meia-noite Eastern) vem
+  // PRIMEIRO (ordenado por saldo), depois quem ja recebeu. Reflete a regra de distribuicao.
+  const dayStart = easternDayStartISO()
+  const { data: todayLeads } = await db.from('leads').select('assigned_to')
+    .in('assigned_to', queue.map(q => q.id)).not('meta_lead_id', 'is', null).gte('assigned_at', dayStart)
+  const gotToday = new Set((todayLeads || []).map((l: any) => l.assigned_to))
+  queue = queue.sort((a, b) => {
+    const ag = gotToday.has(a.id) ? 1 : 0, bg = gotToday.has(b.id) ? 1 : 0
+    if (ag !== bg) return ag - bg
+    return b.credits - a.credits
+  })
   const stMap2 = await statesOf(queue.map(q => q.id))
-  const fila = queue.map((q, i) => ({ pos: i + 1, id: q.id, nome: q.name, creditos: q.credits, estados: (stMap2[q.id] || []).sort() }))
+  const fila = queue.map((q, i) => ({ pos: i + 1, id: q.id, nome: q.name, creditos: q.credits, estados: (stMap2[q.id] || []).sort(), recebeuHoje: gotToday.has(q.id) }))
 
   return NextResponse.json({ adminRule: { N, leadsUntilAdmin, herTurnNow }, admins, fila })
 }
