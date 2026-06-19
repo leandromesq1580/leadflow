@@ -65,6 +65,13 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
     loadPipelineInfo()
   }, [leadId, buyerId])
 
+  // Reunião: assim que tem data, assume 09:00 como hora padrão se o user nao mexeu no
+  // horario. O TimePicker MOSTRA 09:00 mas so seta o estado quando mexem num select —
+  // sem isso a hora ficava vazia e a mensagem de confirmacao nunca era montada.
+  useEffect(() => {
+    if (fuType === 'meeting' && fuDate && !fuTime) setFuTime('09:00')
+  }, [fuType, fuDate, fuTime])
+
   // Monta a mensagem de confirmação da reunião automaticamente (a menos que o user edite).
   useEffect(() => {
     if (fuType !== 'meeting' || !fuSendConfirm || fuConfirmEdited) return
