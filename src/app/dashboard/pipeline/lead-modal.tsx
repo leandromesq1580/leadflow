@@ -78,7 +78,9 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
     if (!fuDate || !fuTime) { setFuConfirmMsg(''); return }
     const first = (lead?.name || '').trim().split(' ')[0] || 'tudo bem'
     const [y, m, d] = fuDate.split('-')
-    setFuConfirmMsg(`Oi ${first}! 👋 como combinado deixamos nossa conversa para o dia ${d}/${m}/${y} às ${fuTime}. Até lá!\nQualquer imprevisto, é só me avisar por aqui. 🙂`)
+    const [hh, mm] = fuTime.split(':').map(Number)
+    const horaFmt = `${hh % 12 || 12}:${String(mm).padStart(2, '0')} ${hh >= 12 ? 'PM' : 'AM'}`
+    setFuConfirmMsg(`Oi ${first}! 👋 como combinado deixamos nossa conversa para o dia ${d}/${m}/${y} às ${horaFmt}. Até lá!\nQualquer imprevisto, é só me avisar por aqui. 🙂`)
   }, [fuType, fuSendConfirm, fuConfirmEdited, fuDate, fuTime, lead?.name])
 
   async function loadPipelineInfo() {
