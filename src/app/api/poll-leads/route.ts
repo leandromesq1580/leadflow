@@ -17,8 +17,8 @@ interface LeadRouting {
   steps?: RoutingStep[]
   fallback_mode?: 'normal' | 'exclusive'
   fallback_email?: string | null
-  // Regra do administrador: admins (por email) com cota diária garantida, em rodízio.
-  admin_rule?: { admin_emails?: string[]; daily_quota?: number }
+  // Regra do administrador (1 a cada N): a cada N leads do sistema, 1 vai pro admin.
+  admin_rule?: { admin_emails?: string[]; one_in?: number; daily_quota?: number }
 }
 
 /**

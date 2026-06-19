@@ -12,7 +12,7 @@ interface Routing {
   steps?: Step[]
   fallback_mode?: 'normal' | 'exclusive'
   fallback_email?: string | null
-  admin_rule?: { admin_emails?: string[]; daily_quota?: number }
+  admin_rule?: { admin_emails?: string[]; one_in?: number; daily_quota?: number }
 }
 
 const MODES: { v: Routing['mode']; label: string; desc: string }[] = [
@@ -74,12 +74,13 @@ export function LeadRoutingCard() {
     set({ pool_emails: pool.includes(email) ? pool.filter(e => e !== email) : [...pool, email] })
   }
   function toggleAdmin(email: string) {
-    const cur = routing.admin_rule || { admin_emails: [], daily_quota: 0 }
+    const cur = routing.admin_rule || { admin_emails: [], one_in: 0 }
     const list = cur.admin_emails || []
     set({ admin_rule: { ...cur, admin_emails: list.includes(email) ? list.filter(e => e !== email) : [...list, email] } })
   }
-  function setQuota(n: number) {
-    set({ admin_rule: { ...(routing.admin_rule || { admin_emails: [] }), daily_quota: n } })
+  function setOneIn(n: number) {
+    // grava no campo novo (one_in) e zera o antigo (daily_quota) pra não confundir
+    set({ admin_rule: { ...(routing.admin_rule || { admin_emails: [] }), one_in: n, daily_quota: undefined } })
   }
   function addStep() {
     set({ steps: [...(routing.steps || []), { email: buyers[0]?.email || '', limit: 10, delivered: 0 }] })
@@ -190,16 +191,17 @@ export function LeadRoutingCard() {
         </div>
       )}
 
-      {/* Regra do Administrador — cota diária garantida, independente do modo acima */}
+      {/* Regra do Administrador — 1 a cada N leads (proporcional), independente do modo acima */}
       <div className="pt-4 mt-4 border-t border-gray-100">
         <label className="block text-sm font-semibold text-gray-700 mb-1">👤 Regra do Administrador</label>
         <p className="text-[11px] text-gray-400 mb-3">
-          Admin(s) que também atendem leads recebem uma <b>cota diária garantida</b> (em rodízio entre eles), com PRIORIDADE sobre o roteamento abaixo. Respeita a licença de estado. O que passar da cota segue o fluxo normal. Cota 0 = desligado.
+          A cada <b>N leads do sistema</b>, 1 vai pro(s) admin(s) (em rodízio entre eles), com PRIORIDADE sobre o roteamento abaixo e respeitando a licença de estado. É <b>proporcional ao volume</b> (não um teto por dia). Ex.: <b>3</b> = a cada 2 leads pros outros, o 3º vai pro admin. 0 = desligado.
         </p>
         <div className="flex items-center gap-2 mb-3">
-          <label className="text-sm text-gray-700">Cota por admin / dia:</label>
-          <input type="number" min={0} value={routing.admin_rule?.daily_quota ?? 0}
-            onChange={e => setQuota(parseInt(e.target.value) || 0)} className={inputCls} style={{ width: 80 }} />
+          <label className="text-sm text-gray-700">A cada</label>
+          <input type="number" min={0} value={routing.admin_rule?.one_in ?? routing.admin_rule?.daily_quota ?? 0}
+            onChange={e => setOneIn(parseInt(e.target.value) || 0)} className={inputCls} style={{ width: 70 }} />
+          <label className="text-sm text-gray-700">leads do sistema, 1 vai pro admin</label>
         </div>
         <label className="block text-[12px] font-semibold text-gray-600 mb-1">Administradores no rodízio</label>
         <div className="space-y-1.5 max-h-44 overflow-auto">

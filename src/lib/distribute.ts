@@ -119,23 +119,24 @@ export async function forceAssignRoundRobin(
   return assigned
 }
 
-interface AdminRule { admin_emails?: string[]; daily_quota?: number }
+interface AdminRule { admin_emails?: string[]; one_in?: number; daily_quota?: number }
 
 /**
- * REGRA DO ADMINISTRADOR: admins selecionados (ex: Regiane) recebem uma COTA DIÁRIA
- * garantida de leads do sistema, em rodízio entre eles, ANTES da distribuição normal.
- * Respeita licença de estado. Conta só leads do SISTEMA (meta_lead_id) entregues hoje.
- * Retorna o admin que recebeu, ou null (ninguém configurado / todos na cota / sem
- * licença no estado) — aí o lead segue pro roteamento/distribuição normal.
+ * REGRA DO ADMINISTRADOR (proporcional, "1 a cada N"): a cada N leads do SISTEMA,
+ * 1 vai pro(s) admin(s) selecionado(s) (ex: Regiane), em rodízio entre eles e ANTES
+ * da distribuição normal. Pega ~1/N de tudo, ESPALHADO conforme o volume real (não um
+ * teto fixo por dia). Respeita licença de estado. one_in=3 → "1 a cada 3" (a cada 2
+ * pros outros, o 3º pro admin). Retorna o admin que recebeu, ou null (não é a vez /
+ * sem licença / desligado) — aí o lead segue pro roteamento/distribuição normal.
  */
 export async function tryAdminRule(
   lead: Lead & { meta_lead_id?: string | null },
   rule?: AdminRule | null,
   dryRun = false
 ): Promise<EligibleBuyer | null> {
-  const quota = rule?.daily_quota || 0
+  const everyN = rule?.one_in ?? rule?.daily_quota ?? 0   // back-compat: lê o campo antigo se o novo não existir
   const emails = (rule?.admin_emails || []).filter(Boolean)
-  if (quota <= 0 || emails.length === 0) return null
+  if (everyN <= 0 || emails.length === 0) return null
   const supabase = createAdminClient()
 
   const { data: admins } = await supabase
@@ -154,30 +155,26 @@ export async function tryAdminRule(
   }
   if (pool.length === 0) return null
 
-  // Leads do SISTEMA entregues HOJE (UTC) a cada admin do pool
-  const d = new Date()
-  const dayStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())).toISOString()
-  const { data: todayLeads } = await supabase
+  // Posição deste lead na sequência de leads do SISTEMA já distribuídos (assigned_to set).
+  // A cada N posições é a vez do admin → proporcional ao volume (não teto diário).
+  const { count: prior } = await supabase
     .from('leads')
-    .select('assigned_to')
-    .in('assigned_to', pool.map(a => a.id))
+    .select('*', { count: 'exact', head: true })
     .not('meta_lead_id', 'is', null)
-    .gte('assigned_at', dayStart)
-    .limit(5000)
-  const countBy = new Map<string, number>()
-  for (const l of todayLeads || []) countBy.set(l.assigned_to as string, (countBy.get(l.assigned_to as string) || 0) + 1)
+    .not('assigned_to', 'is', null)
+  const position = (prior || 0) + 1
+  const isTurn = position % everyN === 0
 
-  // Quem ainda está sob a cota, do que menos recebeu hoje (rodízio justo entre admins)
-  const under = pool
-    .filter(a => (countBy.get(a.id) || 0) < quota)
-    .sort((a, b) => (countBy.get(a.id) || 0) - (countBy.get(b.id) || 0))
-  if (under.length === 0) return null
+  if (!isTurn && !dryRun) return null   // não é a vez → segue o fluxo normal
 
-  const chosen = under[0]
+  // Rodízio entre os admins licenciados: alterna a cada vez do admin.
+  const turn = Math.floor(position / everyN)
+  const chosen = pool[(Math.max(turn, 1) - 1) % pool.length]
+
   // Dry-run (preview/teste): retorna quem PEGARIA sem atribuir nem notificar.
-  if (dryRun) return { ...(chosen as any), _today: countBy.get(chosen.id) || 0, _quota: quota } as EligibleBuyer
+  if (dryRun) return { ...(chosen as any), _everyN: everyN, _position: position, _isTurn: isTurn } as EligibleBuyer
   const assigned = await assignLeadToBuyer(supabase, lead, chosen)
-  console.log(`[Distribute] REGRA ADMIN: lead ${lead.id} → ${chosen.name} (cota ${(countBy.get(chosen.id) || 0) + 1}/${quota})`)
+  console.log(`[Distribute] REGRA ADMIN (1 a cada ${everyN}): lead ${lead.id} #${position} → ${chosen.name}`)
   return assigned
 }
 
