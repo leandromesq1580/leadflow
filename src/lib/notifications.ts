@@ -118,6 +118,21 @@ interface Lead {
  * Send email notification to buyer when a new lead is assigned.
  */
 export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead): Promise<boolean> {
+  // REGRA UNIVERSAL: lead MANUAL (sem meta_lead_id) NUNCA gera notificacao de "novo
+  // lead". Cadastro/upload do proprio comprador NAO e entrega da plataforma —
+  // notificar quebra a confianca (cliente acha que mexemos no lead dele).
+  try {
+    if ((lead as any).id) {
+      const { createAdminClient } = await import('@/lib/supabase/admin')
+      const { data: src } = await createAdminClient()
+        .from('leads').select('meta_lead_id').eq('id', (lead as any).id).maybeSingle()
+      if (src && !src.meta_lead_id) {
+        console.log(`[Notify] Lead ${(lead as any).id} e MANUAL — pula notificacao (regra: manual nao notifica).`)
+        return false
+      }
+    }
+  } catch { /* se a checagem falhar, segue o fluxo normal */ }
+
   // Fire-and-forget push
   try {
     const { pushToBuyer } = await import('@/lib/push-notify')
