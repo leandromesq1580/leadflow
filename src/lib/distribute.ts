@@ -93,6 +93,33 @@ export async function forceAssignRoundRobin(
     ordered = filtered
   }
 
+  // 💳 CRÉDITO: o roteamento por pool TAMBÉM cobra crédito (igual à distribuição
+  // normal). Antes entregava lead pago DE GRAÇA, lesando quem paga. Só roteia pra
+  // quem tem saldo de lead > 0 e debita ao entregar. Sem ninguém com saldo → null
+  // (cai na distribuição normal, que respeita crédito/estado + tem fallback).
+  const creditByBuyer = new Map<string, { id: string; remaining: number }>()
+  {
+    const cids = ordered.map(b => b.id)
+    const { data: creds } = await supabase
+      .from('credits')
+      .select('id, buyer_id, total_purchased, total_used, expires_at')
+      .in('buyer_id', cids)
+      .eq('type', 'lead')
+    const nowMs = Date.now()
+    for (const c of creds || []) {
+      const remaining = (c.total_purchased || 0) - (c.total_used || 0)
+      const ok = remaining > 0 && (!c.expires_at || new Date(c.expires_at).getTime() > nowMs)
+      if (!ok) continue
+      const prev = creditByBuyer.get(c.buyer_id)
+      if (!prev || remaining > prev.remaining) creditByBuyer.set(c.buyer_id, { id: c.id, remaining })
+    }
+    ordered = ordered.filter(b => creditByBuyer.has(b.id))
+    if (ordered.length === 0) {
+      console.log(`[Distribute] ROUND_ROBIN: ninguem do pool tem credito de lead (lead ${lead.id}) - cai na distribuicao normal`)
+      return null
+    }
+  }
+
   // Busca ULTIMO lead Meta atribuido a qualquer buyer da lista
   const buyerIds = ordered.map(b => b.id)
   const { data: lastLead } = await supabase
@@ -115,7 +142,13 @@ export async function forceAssignRoundRobin(
   }
 
   const assigned = await assignLeadToBuyer(supabase, lead, nextBuyer)
-  console.log(`[Distribute] ROUND_ROBIN: lead ${lead.id} → ${nextBuyer.name} (anterior: ${lastLead?.assigned_to || 'nenhum'})`)
+  // Debita 1 credito de lead do escolhido (roteamento agora COBRA, como a normal).
+  const cr = creditByBuyer.get(nextBuyer.id)
+  if (cr) {
+    const { data: row } = await supabase.from('credits').select('total_used').eq('id', cr.id).single()
+    if (row) await supabase.from('credits').update({ total_used: (row.total_used || 0) + 1 }).eq('id', cr.id)
+  }
+  console.log(`[Distribute] ROUND_ROBIN: lead ${lead.id} → ${nextBuyer.name} (credito debitado; anterior: ${lastLead?.assigned_to || 'nenhum'})`)
   return assigned
 }
 
