@@ -23,7 +23,7 @@ export function DeliveryQueueCard() {
     let alive = true
     async function load() {
       try {
-        const d = await fetch('/api/admin/delivery-queue').then(r => (r.ok ? r.json() : null))
+        const d = await fetch('/api/admin/delivery-queue', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null))
         if (!alive || !d) { if (alive) setLoading(false); return }
         const sig = JSON.stringify([d.adminRule?.herTurnNow, d.adminRule?.leadsUntilAdmin, (d.fila || []).map((q: Row) => q.id + ':' + q.creditos)])
         if (sigRef.current && sigRef.current !== sig) { setFlash(true); setTimeout(() => { if (alive) setFlash(false) }, 2500) }
@@ -32,7 +32,14 @@ export function DeliveryQueueCard() {
       } catch {}
       if (alive) setLoading(false)
     }
-    load(); const t = setInterval(load, 15000); return () => { alive = false; clearInterval(t) }
+    load()
+    const t = setInterval(load, 15000)
+    // Re-busca quando a aba volta ao foco: o navegador congela timers de abas em
+    // segundo plano (por isso o "ao vivo" travava em 15:39). Ao reabrir, atualiza na hora.
+    const onVis = () => { if (document.visibilityState === 'visible') load() }
+    document.addEventListener('visibilitychange', onVis)
+    window.addEventListener('focus', onVis)
+    return () => { alive = false; clearInterval(t); document.removeEventListener('visibilitychange', onVis); window.removeEventListener('focus', onVis) }
   }, [])
 
   const ar = data?.adminRule
