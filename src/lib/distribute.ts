@@ -2,6 +2,18 @@ import { createAdminClient } from './supabase/admin'
 import { sendLeadNotificationEmail, sendTeamMemberNotification } from './notifications'
 import { buyerTimezone, isAvailableNow } from './availability'
 
+// Inicio do dia (meia-noite) no fuso America/New_York, em ISO UTC. Robusto p/ EDT/EST.
+function easternDayStartISO(): string {
+  const now = new Date()
+  const p = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(now)
+  const g = (t: string) => (p.find(x => x.type === t) as any).value
+  const hh = g('hour') === '24' ? '00' : g('hour')
+  const wallNow = `${g('year')}-${g('month')}-${g('day')}T${hh}:${g('minute')}:${g('second')}`
+  const offsetMs = now.getTime() - new Date(wallNow + 'Z').getTime()
+  const wallMidnight = `${g('year')}-${g('month')}-${g('day')}T00:00:00`
+  return new Date(new Date(wallMidnight + 'Z').getTime() + offsetMs).toISOString()
+}
+
 async function assignLeadToBuyer(
   supabase: ReturnType<typeof createAdminClient>,
   lead: Lead,
@@ -344,9 +356,24 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
   }
   eligible = availableNow
 
-  // Buyers are already sorted by remaining DESC (weighted distribution)
-  // Pick the first one (most credits remaining)
-  const selectedBuyer = eligible[0]
+  // Buyers are already sorted by remaining DESC (weighted distribution).
+  // 🟢 PISO DIARIO: cada apto recebe pelo menos 1 lead/dia ANTES de qualquer um pegar
+  // o 2o. Prioriza quem recebeu 0 leads de sistema HOJE (meia-noite Eastern). Esgotado
+  // o piso (todos ja tem >=1 hoje), volta ao ponderado por maior saldo (eligible ja vem
+  // ordenado por remaining DESC).
+  let selectedBuyer = eligible[0]
+  try {
+    const dayStart = easternDayStartISO()
+    const { data: todayLeads } = await supabase
+      .from('leads').select('assigned_to')
+      .in('assigned_to', eligible.map(b => b.id))
+      .not('meta_lead_id', 'is', null)
+      .gte('assigned_at', dayStart)
+    const gotToday = new Set((todayLeads || []).map((l: any) => l.assigned_to))
+    const semHoje = eligible.filter(b => !gotToday.has(b.id))
+    if (semHoje.length) selectedBuyer = semHoje[0]
+    console.log(`[Distribute] piso-diario: ${semHoje.length} apto(s) sem lead hoje -> ${selectedBuyer.name} (${semHoje.length ? 'piso' : 'ponderado'})`)
+  } catch (e) { console.error('[Distribute] piso err (fallback p/ ponderado):', (e as any)?.message) }
 
   // Assign lead to buyer
   const { error: assignError } = await supabase
