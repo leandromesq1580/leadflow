@@ -48,6 +48,10 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   const [fuDesc, setFuDesc] = useState('')
   const [fuDate, setFuDate] = useState('')
   const [fuTime, setFuTime] = useState('')
+  // Reunião: opção de mandar uma confirmação pro lead no WhatsApp com a data/hora.
+  const [fuSendConfirm, setFuSendConfirm] = useState(true)
+  const [fuConfirmMsg, setFuConfirmMsg] = useState('')
+  const [fuConfirmEdited, setFuConfirmEdited] = useState(false)
   const [showSendMsg, setShowSendMsg] = useState(false)
   const [pipelines, setPipelines] = useState<any[]>([])
   const [pipelineLead, setPipelineLead] = useState<any>(null)
@@ -60,6 +64,15 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
     loadAttachments()
     loadPipelineInfo()
   }, [leadId, buyerId])
+
+  // Monta a mensagem de confirmação da reunião automaticamente (a menos que o user edite).
+  useEffect(() => {
+    if (fuType !== 'meeting' || !fuSendConfirm || fuConfirmEdited) return
+    if (!fuDate || !fuTime) { setFuConfirmMsg(''); return }
+    const first = (lead?.name || '').trim().split(' ')[0] || 'tudo bem'
+    const [y, m, d] = fuDate.split('-')
+    setFuConfirmMsg(`Oi ${first}! 👋 Passando pra confirmar nossa reunião no dia ${d}/${m}/${y} às ${fuTime}. Até lá! Qualquer imprevisto, é só me avisar por aqui. 🙂`)
+  }, [fuType, fuSendConfirm, fuConfirmEdited, fuDate, fuTime, lead?.name])
 
   async function loadPipelineInfo() {
     if (!buyerId) return
@@ -241,10 +254,29 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ buyer_id: buyerId, type: fuType, description: fuDesc, scheduled_at }),
     })
+    // Reunião com confirmação marcada → manda WhatsApp pro lead com a data/hora.
+    if (fuType === 'meeting' && fuSendConfirm && fuConfirmMsg.trim() && lead?.phone) {
+      try {
+        const r = await fetch('/api/templates/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ override_body: fuConfirmMsg.trim(), lead_id: leadId, buyer_id: buyerId }),
+        })
+        if (!r.ok) {
+          const e = await r.json().catch(() => ({}))
+          alert('Reunião salva, mas a confirmação NÃO foi enviada: ' + (e.error || 'erro ao enviar'))
+        }
+      } catch {
+        alert('Reunião salva, mas falhou ao enviar a confirmação no WhatsApp.')
+      }
+    }
     setFuDesc('')
     setFuDate('')
     setFuTime('')
     setFuType('call') // reseta pra ligacao (padrao mais comum) — pra proxima vez
+    setFuSendConfirm(true)
+    setFuConfirmMsg('')
+    setFuConfirmEdited(false)
     setShowNewFU(false)
     loadFollowUps()
   }
@@ -659,6 +691,32 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                       <p className="text-[10px] mt-1.5" style={{ color: '#92400e' }}>
                         ⚠️ Reunião precisa de data + hora pra ser criada como appointment no calendário.
                       </p>
+                    )}
+
+                    {/* Confirmação pro lead no WhatsApp (com data/hora) */}
+                    {fuType === 'meeting' && lead?.phone && (
+                      <div className="mt-3 pt-3" style={{ borderTop: '1px dashed #fde68a' }}>
+                        <label className="flex items-start gap-2 cursor-pointer">
+                          <input type="checkbox" checked={fuSendConfirm} onChange={e => setFuSendConfirm(e.target.checked)}
+                            className="w-4 h-4 mt-0.5 accent-emerald-500 flex-shrink-0" />
+                          <span className="text-[12px] font-bold" style={{ color: '#92400e' }}>
+                            ✉️ Mandar confirmação pro lead no WhatsApp (com a data e hora) — pra ele não esquecer
+                          </span>
+                        </label>
+                        {fuSendConfirm && (
+                          <>
+                            <textarea value={fuConfirmMsg}
+                              onChange={e => { setFuConfirmMsg(e.target.value); setFuConfirmEdited(true) }}
+                              rows={3}
+                              placeholder={(!fuDate || !fuTime) ? 'Escolha a data e a hora — a mensagem é montada sozinha.' : ''}
+                              className="w-full mt-2 px-3 py-2 rounded-lg text-[12px] resize-none focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                              style={{ background: '#fff', border: '1px solid #fde68a', color: '#1a1a2e' }} />
+                            <p className="text-[10px] mt-1" style={{ color: '#a16207' }}>
+                              Vai pelo WhatsApp do seu número conectado e aparece na conversa do lead. Pode editar o texto acima.
+                            </p>
+                          </>
+                        )}
+                      </div>
                     )}
                   </div>
 
