@@ -73,28 +73,23 @@ export async function GET(request: NextRequest) {
   const { count: totalBuyers } = await db.from('buyers').select('*', { count: 'exact', head: true })
 
   // Compromisso de entrega: créditos de lead PAGOS no período + entregue após a compra.
-  let crQ = db.from('credits').select('buyer_id, total_purchased, purchased_at, created_at').eq('type', 'lead')
+  // Compromisso de entrega pela MESMA fonte do card Saldo Devedor: crédito reconciliado
+  // comprou(total_purchased) - recebeu(total_used). NAO reconta leads (evita contar lead
+  // MANUAL como entrega de lead pago) -> bate 1:1 com /api/admin/buyer-debt.
+  let crQ = db.from('credits').select('buyer_id, total_purchased, total_used').eq('type', 'lead')
   if (since) crQ = crQ.gte('purchased_at', since)
   const { data: leadCreditRows } = await crQ
-  const perBuyer = new Map<string, { purchased: number; sincePurchase: string | null }>()
+  const perBuyer = new Map<string, { purchased: number; used: number }>()
   for (const c of leadCreditRows || []) {
     if (!c.buyer_id || !(Number(c.total_purchased) > 0)) continue
-    const e = perBuyer.get(c.buyer_id) || { purchased: 0, sincePurchase: null as string | null }
+    const e = perBuyer.get(c.buyer_id) || { purchased: 0, used: 0 }
     e.purchased += Number(c.total_purchased)
-    const pd = c.purchased_at || c.created_at
-    if (pd && (!e.sincePurchase || pd < e.sincePurchase)) e.sincePurchase = pd
+    e.used += Number(c.total_used) || 0
     perBuyer.set(c.buyer_id, e)
   }
   const soldLeads = Array.from(perBuyer.values()).reduce((s, e) => s + e.purchased, 0)
-  const perDelivery = await Promise.all(Array.from(perBuyer.entries()).map(async ([bid, e]) => {
-    let q = db.from('leads').select('*', { count: 'exact', head: true }).eq('assigned_to', bid).eq('product_type', 'lead')
-    if (e.sincePurchase) q = q.gte('assigned_at', e.sincePurchase)
-    const { count } = await q
-    const delivered = Math.min(e.purchased, count || 0)
-    return { delivered, owed: e.purchased - delivered }
-  }))
-  const deliveredPaid = perDelivery.reduce((s, x) => s + x.delivered, 0)
-  const owedLeads = perDelivery.reduce((s, x) => s + x.owed, 0)
+  const deliveredPaid = Array.from(perBuyer.values()).reduce((s, e) => s + Math.min(e.used, e.purchased), 0)
+  const owedLeads = soldLeads - deliveredPaid
   const deliveryPct = soldLeads > 0 ? Math.round((deliveredPaid / soldLeads) * 100) : 0
 
   // Gasto com tráfego (Meta Ads) no MESMO período — conta certa.
