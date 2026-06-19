@@ -1,25 +1,53 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 
 interface Row { pos: number; id: string; nome: string; creditos: number; estados: string[] }
 
 export function DeliveryQueueCard() {
   const [fila, setFila] = useState<Row[] | null>(null)
   const [loading, setLoading] = useState(true)
+  const [updatedAt, setUpdatedAt] = useState('')
+  const [flash, setFlash] = useState(false)
+  const sigRef = useRef('')
 
   useEffect(() => {
-    fetch('/api/admin/delivery-queue')
-      .then(r => (r.ok ? r.json() : null))
-      .then(d => { setFila(d?.fila || null); setLoading(false) })
-      .catch(() => setLoading(false))
+    let alive = true
+    async function load() {
+      try {
+        const d = await fetch('/api/admin/delivery-queue').then(r => (r.ok ? r.json() : null))
+        if (!alive || !d?.fila) { if (alive) setLoading(false); return }
+        const sig = d.fila.map((q: Row) => `${q.id}:${q.creditos}`).join('|')
+        if (sigRef.current && sigRef.current !== sig) {
+          setFlash(true)
+          setTimeout(() => { if (alive) setFlash(false) }, 2500)
+        }
+        sigRef.current = sig
+        setFila(d.fila)
+        setUpdatedAt(new Date().toLocaleTimeString('pt-BR'))
+      } catch {}
+      if (alive) setLoading(false)
+    }
+    load()
+    const t = setInterval(load, 15000)
+    return () => { alive = false; clearInterval(t) }
   }, [])
 
   return (
-    <div className="rounded-2xl overflow-hidden mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-      <div className="px-6 py-4" style={{ borderBottom: '1px solid #e8ecf4' }}>
-        <h2 className="text-[15px] font-bold" style={{ color: '#1a1a2e' }}>📦 Fila de Entregas</h2>
-        <p className="text-[12px] mt-0.5" style={{ color: '#94a3b8' }}>Ordem em que recebem o próximo lead (mais crédito primeiro). O 1º apto no estado do lead leva.</p>
+    <div className="rounded-2xl overflow-hidden mb-6" style={{ background: '#fff', border: flash ? '2px solid #6366f1' : '1px solid #e8ecf4', transition: 'border-color .4s' }}>
+      <div className="px-6 py-4 flex items-start justify-between" style={{ borderBottom: '1px solid #e8ecf4' }}>
+        <div>
+          <h2 className="text-[15px] font-bold flex items-center gap-2" style={{ color: '#1a1a2e' }}>
+            📦 Fila de Entregas
+            {flash && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: '#eef2ff', color: '#6366f1' }}>↑ atualizada</span>}
+          </h2>
+          <p className="text-[12px] mt-0.5" style={{ color: '#94a3b8' }}>Ordem em que recebem o próximo lead (mais crédito primeiro). O 1º apto no estado do lead leva.</p>
+        </div>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ background: '#22c55e' }} />
+          <span className="text-[11px] font-semibold" style={{ color: '#15803d' }}>ao vivo</span>
+          {updatedAt && <span className="text-[10px]" style={{ color: '#cbd5e1' }}>· {updatedAt}</span>}
+        </div>
       </div>
       {loading ? (
         <div className="px-6 py-8 text-center text-[13px]" style={{ color: '#94a3b8' }}>Carregando…</div>
