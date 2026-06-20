@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { wa_message_id, from, to, body, type, has_media, media_url, media_type, direction } = await request.json()
+    const { wa_message_id, from, to, body, type, has_media, media_url, media_type, direction, push_name } = await request.json()
     if (!wa_message_id || !from) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
     }
@@ -138,8 +138,11 @@ export async function POST(request: NextRequest) {
           })
           return NextResponse.json({ success: true, existing_client_lead: dupeLead.id })
         }
+        // Nome real do WhatsApp (pushname) quando vier; senão "Novo cliente XXXX".
+        const waName = typeof push_name === 'string' ? push_name.trim() : ''
+        const leadName = (waName.length >= 2 && waName.length <= 60 && /[a-zA-ZÀ-ÿ]/.test(waName)) ? waName : `Novo cliente ${contactPhone.slice(-4)}`
         const { data: newLead } = await db.from('leads').insert({
-          name: `Novo cliente ${contactPhone.slice(-4)}`,
+          name: leadName,
           phone: contactPhone, email: '', city: '', state: '',
           interest: 'Quer comprar leads', campaign_name: 'NOVO CLIENTE (vendas)',
           type: 'hot', status: 'assigned', product_type: 'lead',
