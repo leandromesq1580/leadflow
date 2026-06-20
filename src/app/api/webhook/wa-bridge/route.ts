@@ -239,7 +239,19 @@ export async function POST(request: NextRequest) {
       status: isOut ? 'sent' : 'delivered',
     })
 
-    await db.from('leads').update({ updated_at: new Date().toISOString() }).eq('id', match.id)
+    // Auto-corrige o nome: lead criado como "Novo cliente XXXX" (1a msg sem pushname,
+    // ex. e2e_notification) ganha o NOME REAL do WhatsApp quando o lead manda um chat
+    // com pushname. Só inbound (o pushname e de quem MANDOU = o lead) e só sobrescreve
+    // o nome generico — nunca um nome ja editado a mao (ex. "Toddy").
+    const leadUpdates: Record<string, any> = { updated_at: new Date().toISOString() }
+    if (!isOut) {
+      const waName = typeof push_name === 'string' ? push_name.trim() : ''
+      if (waName.length >= 2 && waName.length <= 60 && /[a-zA-ZÀ-ÿ]/.test(waName) && /^Novo cliente \d+$/.test(match.name || '')) {
+        leadUpdates.name = waName
+        console.log(`[WA Inbox] auto-rename: "${match.name}" -> "${waName}" (lead ${match.id})`)
+      }
+    }
+    await db.from('leads').update(leadUpdates).eq('id', match.id)
 
     // Push só pra mensagem RECEBIDA (não pra mensagem que o próprio dono mandou)
     if (!isOut) try {
