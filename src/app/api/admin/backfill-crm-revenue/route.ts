@@ -41,7 +41,7 @@ export async function POST() {
           status: 'completed',
           created_at: new Date(((inv.created as number) || 0) * 1000).toISOString(),
         })
-        if (error) { errors++; console.error('[backfill-crm] insert:', error.message) } else inserted++
+        if (error) { errors++; errMsgs.push('insert: ' + error.message); console.error('[backfill-crm] insert:', error.message) } else inserted++
       }
     } catch (e: any) { errors++; errMsgs.push(e?.message || String(e)); console.error('[backfill-crm] sub', b.crm_subscription_id, e?.message) }
   }
