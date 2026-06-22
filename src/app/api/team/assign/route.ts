@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendTeamMemberNotification } from '@/lib/notifications'
 import { migrateWhatsAppOwnership } from '@/lib/lead-ownership'
+import { placeLeadInMemberPipeline } from '@/lib/place-member-lead'
 
 /** POST /api/team/assign — Manually assign a lead to a team member */
 export async function POST(request: NextRequest) {
@@ -14,15 +15,6 @@ export async function POST(request: NextRequest) {
   let { data: member } = await db.from('team_members').select('*').eq('id', member_id).single()
   if (!member) return NextResponse.json({ error: 'Member not found' }, { status: 404 })
 
-  // Auto-link: if member has no auth_user_id but email matches a buyer, link now
-  if (!member.auth_user_id && member.email) {
-    const { data: matchBuyer } = await db.from('buyers').select('auth_user_id').eq('email', member.email).single()
-    if (matchBuyer?.auth_user_id) {
-      await db.from('team_members').update({ auth_user_id: matchBuyer.auth_user_id }).eq('id', member_id)
-      member = { ...member, auth_user_id: matchBuyer.auth_user_id }
-    }
-  }
-
   // Get lead
   const { data: lead } = await db.from('leads').select('*').eq('id', lead_id).single()
   if (!lead) return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
@@ -31,33 +23,13 @@ export async function POST(request: NextRequest) {
   const { error } = await db.from('leads').update({ assigned_to_member: member_id }).eq('id', lead_id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Remove from owner's pipeline (lead goes to member now)
-  await db.from('pipeline_leads').delete().eq('lead_id', lead_id)
-
-  // If member has auth_user_id → they're a buyer too → add to THEIR pipeline
-  // + migrate WhatsApp thread ownership (privacy: owner antigo nao deve ver msgs futuras)
-  if (member.auth_user_id) {
-    const { data: memberBuyer } = await db.from('buyers').select('id').eq('auth_user_id', member.auth_user_id).single()
-    if (memberBuyer) {
-      const { data: memberPipeline } = await db
-        .from('pipelines')
-        .select('id, stages:pipeline_stages(id, position)')
-        .eq('buyer_id', memberBuyer.id)
-        .eq('is_default', true)
-        .single()
-
-      if (memberPipeline?.stages?.length) {
-        const firstStage = (memberPipeline.stages as any[]).sort((a: any, b: any) => a.position - b.position)[0]
-        await db.from('pipeline_leads').upsert({
-          lead_id, pipeline_id: memberPipeline.id, stage_id: firstStage.id,
-          position: 0, moved_at: new Date().toISOString(),
-        }, { onConflict: 'lead_id,pipeline_id' })
-      }
-
-      // 🔒 Privacidade: thread WhatsApp agora pertence ao novo dono
-      const migrated = await migrateWhatsAppOwnership(db, lead_id, memberBuyer.id)
-      if (migrated > 0) console.log(`[Assign] Migrated ${migrated} WA messages for lead ${lead_id} -> buyer ${memberBuyer.id}`)
-    }
+  // Coloca o lead no pipeline do MEMBRO (só remove o card antigo quando cria o novo —
+  // assim o lead delegado nunca fica sem card). Se o membro não tem pipeline próprio,
+  // mantém o card atual em vez de sumir. Migra a thread de WhatsApp pro novo dono.
+  const memberBuyerId = await placeLeadInMemberPipeline(db, lead_id, member)
+  if (memberBuyerId) {
+    const migrated = await migrateWhatsAppOwnership(db, lead_id, memberBuyerId)
+    if (migrated > 0) console.log(`[Assign] Migrated ${migrated} WA messages for lead ${lead_id} -> buyer ${memberBuyerId}`)
   }
 
   // Notify member

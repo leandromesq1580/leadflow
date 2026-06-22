@@ -1,6 +1,7 @@
 import { createAdminClient } from './supabase/admin'
 import { sendLeadNotificationEmail, sendTeamMemberNotification } from './notifications'
 import { buyerTimezone, isAvailableNow } from './availability'
+import { placeLeadInMemberPipeline } from './place-member-lead'
 
 // Inicio do dia (meia-noite) no fuso America/New_York, em ISO UTC. Robusto p/ EDT/EST.
 function easternDayStartISO(): string {
@@ -519,6 +520,9 @@ async function distributeToTeamMember(supabase: ReturnType<typeof createAdminCli
     .from('leads')
     .update({ assigned_to_member: nextMember.id })
     .eq('id', lead.id)
+
+  // Cria/move o card pro pipeline do membro — senao o lead delegado fica fora do kanban
+  await placeLeadInMemberPipeline(supabase, lead.id, nextMember)
 
   // Notify team member
   await sendTeamMemberNotification(nextMember, lead)
