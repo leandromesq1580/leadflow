@@ -179,6 +179,32 @@ export async function POST(request: NextRequest) {
       break
     }
 
+    case 'invoice.payment_succeeded': {
+      // Cobranca da ASSINATURA do CRM — grava como payment (type 'crm') pra entrar na receita.
+      const invoice = event.data.object as any
+      const subId = invoice.subscription || invoice.parent?.subscription_details?.subscription || invoice.lines?.data?.[0]?.subscription || null
+      const amount = (invoice.amount_paid || 0) / 100
+      if (subId && amount > 0) {
+        const { data: dupe } = await supabase.from('payments').select('id').eq('stripe_session_id', invoice.id).maybeSingle()
+        if (dupe) { console.log(`[Stripe Webhook] invoice CRM ja registrada: ${invoice.id}`); break }
+        const { data: subBuyer } = await supabase.from('buyers').select('id').eq('crm_subscription_id', subId).maybeSingle()
+        if (!subBuyer) { console.error(`[Stripe Webhook] invoice CRM sem buyer (sub ${subId})`); break }
+        const { error: crmPayErr } = await supabase.from('payments').insert({
+          buyer_id: subBuyer.id,
+          stripe_session_id: invoice.id,
+          stripe_payment_intent_id: invoice.payment_intent || null,
+          amount,
+          product_type: 'crm',
+          quantity: 1,
+          price_per_unit: amount,
+          status: 'completed',
+        })
+        if (crmPayErr) console.error('[Stripe Webhook] falha ao gravar payment CRM:', crmPayErr)
+        else console.log(`[Stripe Webhook] CRM payment $${amount} -> buyer ${subBuyer.id} (invoice ${invoice.id})`)
+      }
+      break
+    }
+
     case 'payment_intent.payment_failed': {
       const paymentIntent = event.data.object as Stripe.PaymentIntent
       console.log(`[Stripe Webhook] Payment failed: ${paymentIntent.id}`)

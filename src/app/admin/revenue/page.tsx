@@ -1,6 +1,7 @@
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getStripe } from '@/lib/stripe'
+import { BackfillCrmButton } from '@/components/admin/backfill-crm-button'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
@@ -101,7 +102,8 @@ export default async function RevenuePage() {
   return (
     <div className="max-w-[1100px]">
       <h1 className="text-[24px] font-extrabold mb-1" style={{ color: '#1a1a2e' }}>Receita</h1>
-      <p className="text-[14px] mb-8" style={{ color: '#64748b' }}>Financeiro do Lead4Producers</p>
+      <p className="text-[14px] mb-4" style={{ color: '#64748b' }}>Financeiro do Lead4Producers</p>
+      <div className="mb-8"><BackfillCrmButton /></div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -229,7 +231,7 @@ export default async function RevenuePage() {
                   <p className="text-[13px] font-semibold truncate" style={{ color: '#1a1a2e' }}>{p.buyer?.name || '—'}</p>
                   <p className="text-[11px] truncate" style={{ color: '#94a3b8' }}>{p.buyer?.email}</p>
                 </div>
-                <span className="text-[12px] font-medium" style={{ color: '#64748b' }}>{p.quantity}x {p.product_type === 'lead' ? 'Lead' : p.product_type === 'appointment' ? 'Appt' : p.product_type}</span>
+                <span className="text-[12px] font-medium" style={{ color: '#64748b' }}>{p.product_type === 'crm' ? '💳 CRM Pro' : `${p.quantity}x ${p.product_type === 'lead' ? 'Lead' : p.product_type === 'appointment' ? 'Appt' : p.product_type}`}</span>
                 <span className="text-[14px] font-bold" style={{ color: '#10b981' }}>${Number(p.amount).toFixed(0)}</span>
                 <span className="text-[11px]" style={{ color: '#94a3b8' }}>{new Date(p.created_at).toLocaleDateString('pt-BR')}</span>
               </div>
