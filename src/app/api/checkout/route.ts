@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
             currency: 'usd',
             product_data: {
               name: `${PRODUCTS[productType].name} — ${selectedPackage.quantity}x`,
-              description: `${selectedPackage.quantity} ${productType === 'lead' ? 'leads exclusivos' : 'appointments agendados'}`,
+              description: `${selectedPackage.quantity} ${productType === 'lead' ? 'leads exclusivos' : 'appointments agendados'} · ${buyer.name || buyer.email}`,
             },
             unit_amount: selectedPackage.unitPriceCents,
           },
@@ -72,10 +72,15 @@ export async function POST(request: NextRequest) {
       ],
       metadata: {
         buyer_id: buyer.id,
+        buyer_name: buyer.name || '',
+        buyer_email: buyer.email || '',
         product_type: productType,
         quantity: String(selectedPackage.quantity),
         price_per_unit: String(selectedPackage.pricePerUnit),
         package_id: selectedPackage.id,
+      },
+      payment_intent_data: {
+        description: `${selectedPackage.quantity}x ${PRODUCTS[productType].name} — ${buyer.name || buyer.email}`,
       },
       success_url: 'https://lead4producers.com/dashboard/credits?success=true',
       cancel_url: 'https://lead4producers.com/dashboard/credits?cancelled=true',
