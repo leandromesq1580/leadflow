@@ -53,6 +53,7 @@ export default async function BuyersPage() {
       is_agency: b.is_agency || false,
       tier,
       subStatus: b.crm_subscription_status || null,
+      crmPaying: !!b.crm_subscription_id && b.crm_subscription_status === 'active',
       initials: getInitials(b.name),
       avatarHue: (b.name.charCodeAt(0) * 37) % 360,
       states: states?.map(s => s.state_code) || [],

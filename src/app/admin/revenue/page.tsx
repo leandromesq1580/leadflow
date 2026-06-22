@@ -58,6 +58,11 @@ export default async function RevenuePage() {
     .map(([buyerId, total]) => ({ buyer: buyers.find(b => b.id === buyerId), total }))
     .filter(x => x.buyer)
 
+  // Assinantes CRM Pro: pagantes (assinatura Stripe ativa) vs cortesia (Pro setado na mao)
+  const proBuyers = buyers.filter(b => b.crm_plan === 'pro')
+  const crmPayers = proBuyers.filter(b => !!b.crm_subscription_id && b.crm_subscription_status === 'active')
+  const crmCourtesy = proBuyers.filter(b => !(!!b.crm_subscription_id && b.crm_subscription_status === 'active'))
+
   // Monthly data for last 6 months
   const months: { month: string; revenue: number; label: string }[] = []
   for (let i = 5; i >= 0; i--) {
@@ -153,6 +158,37 @@ export default async function RevenuePage() {
           </div>
         ) : (
           <p className="text-center py-8 text-[13px]" style={{ color: '#94a3b8' }}>Nenhum cliente ainda</p>
+        )}
+      </div>
+
+      {/* Assinantes CRM Pro — quem paga */}
+      <div className="rounded-2xl overflow-hidden mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+        <div className="px-6 py-4" style={{ borderBottom: '1px solid #e8ecf4' }}>
+          <h2 className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>💳 Assinantes CRM Pro — quem paga ({crmPayers.length} pagante{crmPayers.length === 1 ? '' : 's'} · {crmCourtesy.length} cortesia)</h2>
+        </div>
+        {crmPayers.length === 0 && crmCourtesy.length === 0 ? (
+          <p className="text-center py-8 text-[13px]" style={{ color: '#94a3b8' }}>Nenhum assinante Pro</p>
+        ) : (
+          <div>
+            {crmPayers.map((b: any) => (
+              <Link key={b.id} href={`/admin/buyers/${b.id}`} className="flex items-center gap-4 px-6 py-3 hover:bg-slate-50" style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-bold truncate" style={{ color: '#1a1a2e' }}>{b.name}</p>
+                  <p className="text-[11px] truncate" style={{ color: '#94a3b8' }}>{b.email}</p>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase flex-shrink-0" style={{ background: '#dcfce7', color: '#15803d' }}>Paga $99/mês</span>
+              </Link>
+            ))}
+            {crmCourtesy.map((b: any, i: number) => (
+              <Link key={b.id} href={`/admin/buyers/${b.id}`} className="flex items-center gap-4 px-6 py-3 hover:bg-slate-50" style={{ borderBottom: i < crmCourtesy.length - 1 ? '1px solid #f1f5f9' : 'none', opacity: 0.7 }}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold truncate" style={{ color: '#64748b' }}>{b.name}</p>
+                  <p className="text-[11px] truncate" style={{ color: '#94a3b8' }}>{b.email}</p>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase flex-shrink-0" style={{ background: '#f1f5f9', color: '#94a3b8' }}>Cortesia</span>
+              </Link>
+            ))}
+          </div>
         )}
       </div>
 

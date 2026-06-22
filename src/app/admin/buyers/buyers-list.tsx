@@ -6,7 +6,7 @@ import Link from 'next/link'
 interface Buyer {
   id: string; name: string; email: string; phone: string
   is_active: boolean; is_admin: boolean; crm_plan: string; is_agency: boolean
-  tier: 'paying' | 'trial' | 'free'; subStatus: string | null
+  tier: 'paying' | 'trial' | 'free'; subStatus: string | null; crmPaying: boolean
   initials: string; avatarHue: number; states: string[]
   leadCredits: number; apptCredits: number; leadsReceived: number
 }
@@ -16,6 +16,7 @@ const FILTERS = [
   { key: 'paying', label: '💚 Pagantes' },
   { key: 'trial', label: '🟡 Trial' },
   { key: 'pro', label: 'CRM Pro' },
+  { key: 'crm_paying', label: '💳 CRM pagante' },
   { key: 'agency', label: 'Agencias' },
   { key: 'no_credits', label: 'Sem creditos' },
   { key: 'no_states', label: 'Sem estados' },
@@ -62,6 +63,7 @@ export function BuyersList({ buyers: initial }: { buyers: Buyer[] }) {
     if (filter === 'paying' && b.tier !== 'paying') return false
     if (filter === 'trial' && b.tier !== 'trial') return false
     if (filter === 'pro' && b.crm_plan !== 'pro') return false
+    if (filter === 'crm_paying' && !b.crmPaying) return false
     if (filter === 'agency' && !b.is_agency) return false
     if (filter === 'no_credits' && (b.leadCredits > 0 || b.apptCredits > 0)) return false
     if (filter === 'no_states' && b.states.length > 0) return false
@@ -71,6 +73,7 @@ export function BuyersList({ buyers: initial }: { buyers: Buyer[] }) {
 
   const counts = {
     pro: buyers.filter(b => b.crm_plan === 'pro').length,
+    crmPaying: buyers.filter(b => b.crmPaying).length,
     agency: buyers.filter(b => b.is_agency).length,
     paying: buyers.filter(b => b.tier === 'paying').length,
     trial: buyers.filter(b => b.tier === 'trial').length,
@@ -82,7 +85,7 @@ export function BuyersList({ buyers: initial }: { buyers: Buyer[] }) {
         <div>
           <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>Compradores</h1>
           <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>
-            {buyers.length} cadastrados · <b style={{ color: '#15803d' }}>{counts.paying} pagantes</b> · <span style={{ color: '#b45309' }}>{counts.trial} trial</span> · {counts.pro} CRM Pro · {counts.agency} agencias
+            {buyers.length} cadastrados · <b style={{ color: '#15803d' }}>{counts.paying} pagantes</b> · <span style={{ color: '#b45309' }}>{counts.trial} trial</span> · {counts.pro} CRM Pro · <b style={{ color: '#15803d' }}>{counts.crmPaying} CRM pagante</b> · {counts.agency} agencias
           </p>
         </div>
       </div>
