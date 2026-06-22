@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { DashboardKpis } from '@/components/admin/dashboard-kpis'
 import { BuyerDebtCard } from '@/components/admin/buyer-debt-card'
 import { DeliveryQueueCard } from '@/components/admin/delivery-queue-card'
+import { CrmSubscribersPanel } from '@/components/admin/crm-subscribers-panel'
 import { Badge } from '@/components/ui/badge'
 import { timeAgo, getInitials } from '@/lib/utils'
 import Link from 'next/link'
@@ -51,6 +52,9 @@ export default async function AdminDashboard() {
 
       {/* Saldo devedor dos compradores pagos (comprou x recebeu x falta) */}
       <BuyerDebtCard />
+
+      {/* CRM Pro — MRR + quem paga (com datas), mais recente no topo */}
+      <CrmSubscribersPanel />
 
       {/* Cold leads alert */}
       {(coldLeads || 0) > 0 && (
