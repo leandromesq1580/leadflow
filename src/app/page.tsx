@@ -7,6 +7,7 @@ import { WhatsAppFab } from '@/components/whatsapp-fab'
 import { WhatsAppLeadCta } from '@/components/whatsapp-lead-cta'
 import { LiveLeadToast } from '@/components/live-lead-toast'
 import { MetaPixel } from '@/components/meta-pixel'
+import { BuyCheckoutCta } from '@/components/buy-checkout-cta'
 
 export default async function LandingPage() {
   const locale = await getLocale()
@@ -457,9 +458,9 @@ export default async function LandingPage() {
           <p className="text-center text-[13px] mb-7 max-w-xl mx-auto" style={{ color: '#94a3b8' }}>{t.pricing.pkg.leadsNote}</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-16 max-w-4xl mx-auto">
             {[
-              { qty: 5, total: 99, per: 19.80, tag: t.pricing.pkg.starter },
-              { qty: 10, total: 220, per: 22 },
-              { qty: 25, total: 500, per: 20, tag: t.pricing.pkg.popular },
+              { id: 'lead_5', qty: 5, total: 99, per: 19.80, tag: t.pricing.pkg.starter },
+              { id: 'lead_10', qty: 10, total: 220, per: 22 },
+              { id: 'lead_25', qty: 25, total: 500, per: 20, tag: t.pricing.pkg.popular },
             ].map((p, i) => (
               <div key={i} className="rounded-2xl p-6 relative text-center" style={{ background: '#fff', border: p.tag ? '2px solid #6366f1' : '1px solid #e8ecf4', boxShadow: p.tag ? '0 14px 40px rgba(99,102,241,0.2)' : '0 4px 12px rgba(0,0,0,0.04)' }}>
                 {p.tag && <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap" style={{ background: '#6366f1', color: '#fff' }}>{p.tag}</span>}
@@ -469,7 +470,7 @@ export default async function LandingPage() {
                 {p.qty === 5
                   ? <p className="text-[11px] font-semibold mb-4" style={{ color: '#10b981' }}>⭐ {t.pricing.pkg.starterNote}</p>
                   : <div className="mb-4" />}
-                <WhatsAppLeadCta block label={t.pricing.pkg.buy} message={t.hero.waMsgPkg.replace('{qty}', String(p.qty)).replace('{unit}', t.pricing.pkg.unitLeads).replace('{total}', String(p.total))} />
+                <BuyCheckoutCta block packageId={p.id} label={t.pricing.pkg.buy} />
               </div>
             ))}
           </div>
@@ -481,15 +482,15 @@ export default async function LandingPage() {
           <p className="text-center text-[13px] mb-7 max-w-xl mx-auto" style={{ color: '#94a3b8' }}>{t.pricing.pkg.apptNote}</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-4 max-w-2xl mx-auto">
             {[
-              { qty: 10, total: 380, per: 38 },
-              { qty: 25, total: 875, per: 35, tag: t.pricing.pkg.best },
+              { id: 'appt_10', qty: 10, total: 380, per: 38 },
+              { id: 'appt_25', qty: 25, total: 875, per: 35, tag: t.pricing.pkg.best },
             ].map((p, i) => (
               <div key={i} className="rounded-2xl p-6 relative text-center" style={{ background: '#fff', border: p.tag ? '2px solid #ea580c' : '1px solid #e8ecf4', boxShadow: p.tag ? '0 14px 40px rgba(234,88,12,0.18)' : '0 4px 12px rgba(0,0,0,0.04)' }}>
                 {p.tag && <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap" style={{ background: '#ea580c', color: '#fff' }}>{p.tag}</span>}
                 <p className="text-[15px] font-bold" style={{ color: '#64748b' }}>{p.qty} {t.pricing.pkg.unitAppts}</p>
                 <p className="text-[38px] font-extrabold leading-none my-2" style={{ color: '#1a1a2e' }}>${p.total}</p>
                 <p className="text-[13px] font-bold mb-5" style={{ color: '#ea580c' }}>${p.per}{t.pricing.pkg.perAppt}</p>
-                <WhatsAppLeadCta block label={t.pricing.pkg.buy} message={t.hero.waMsgPkg.replace('{qty}', String(p.qty)).replace('{unit}', t.pricing.pkg.unitAppts).replace('{total}', String(p.total))} />
+                <BuyCheckoutCta block packageId={p.id} label={t.pricing.pkg.buy} />
               </div>
             ))}
           </div>

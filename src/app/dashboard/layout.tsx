@@ -7,6 +7,7 @@ import { MeetingBanner } from '@/components/dashboard/meeting-banner'
 import { ImpersonationBanner } from '@/components/dashboard/impersonation-banner'
 import { SuspendedAccount } from '@/components/dashboard/suspended-account'
 import { MetaPixel } from '@/components/meta-pixel'
+import { ResumeCheckout } from '@/components/resume-checkout'
 import { cookies } from 'next/headers'
 import { isTrialActive, trialDaysRemaining, isAppointmentOnly, isLeadOnly } from '@/lib/crm-access'
 import { AppointmentGate } from '@/components/dashboard/appointment-gate'
@@ -75,6 +76,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </main>
         {buyer?.id && <PwaRegister buyerId={buyer.id} />}
         <MetaPixel />
+        <ResumeCheckout />
       </div>
       </PrivacyProvider>
     </I18nProvider>
