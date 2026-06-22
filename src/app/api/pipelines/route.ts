@@ -23,11 +23,15 @@ export async function GET(request: NextRequest) {
     .eq('buyer_id', buyerId)
     .order('created_at')
 
-  // Sort stages by position within each pipeline
-  const pipelines = (data || []).map(p => ({
-    ...p,
-    stages: (p.stages || []).sort((a: any, b: any) => a.position - b.position),
-  }))
+  // Estagios por position dentro de cada pipeline; e as pipelines pela coluna `position`.
+  // Resiliente: se a coluna `position` ainda nao existe no banco, vem undefined e
+  // o sort vira no-op (mantem a ordem por created_at) — nao quebra antes da migration.
+  const pipelines = (data || [])
+    .map(p => ({
+      ...p,
+      stages: (p.stages || []).sort((a: any, b: any) => a.position - b.position),
+    }))
+    .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
 
   return NextResponse.json({ pipelines })
 }

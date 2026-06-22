@@ -23,11 +23,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const { name, is_default } = await request.json()
+  const { name, is_default, position } = await request.json()
   const db = createAdminClient()
   const update: Record<string, unknown> = {}
   if (name !== undefined) update.name = name
   if (is_default !== undefined) update.is_default = is_default
+  if (position !== undefined) update.position = position
   const { data, error } = await db.from('pipelines').update(update).eq('id', id).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ pipeline: data })

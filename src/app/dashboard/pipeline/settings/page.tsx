@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
 interface Stage { id: string; name: string; color: string; position: number }
-interface Pipeline { id: string; name: string; is_default: boolean; stages: Stage[] }
+interface Pipeline { id: string; name: string; is_default: boolean; position?: number; stages: Stage[] }
 
 const COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#f97316', '#059669', '#ef4444', '#ec4899', '#06b6d4', '#84cc16']
 
@@ -15,6 +15,8 @@ export default function PipelineSettingsPage() {
   const [newName, setNewName] = useState('')
   const [newStageName, setNewStageName] = useState('')
   const [saving, setSaving] = useState(false)
+  const [editingPipelineId, setEditingPipelineId] = useState<string | null>(null)
+  const [editPipelineName, setEditPipelineName] = useState('')
 
   useEffect(() => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -39,8 +41,10 @@ export default function PipelineSettingsPage() {
   async function loadPipelines(bid: string) {
     const r = await fetch(`/api/pipelines?buyer_id=${bid}`)
     const d = await r.json()
-    setPipelines(d.pipelines || [])
-    if (d.pipelines?.length > 0 && !selected) setSelected(d.pipelines[0])
+    const list: Pipeline[] = d.pipelines || []
+    setPipelines(list)
+    // mantem a pipeline selecionada (refresca pelo id apos renomear/reordenar); senao a 1a
+    setSelected(prev => (prev && list.find(p => p.id === prev.id)) || list[0] || null)
   }
 
   async function createPipeline() {
@@ -68,6 +72,43 @@ export default function PipelineSettingsPage() {
       return
     }
     setSelected(null)
+    loadPipelines(buyerId)
+  }
+
+  function startRenamePipeline(p: Pipeline) {
+    setEditingPipelineId(p.id)
+    setEditPipelineName(p.name)
+  }
+
+  async function saveRenamePipeline() {
+    const id = editingPipelineId
+    const name = editPipelineName.trim()
+    setEditingPipelineId(null)
+    if (!id || !name) return
+    await fetch(`/api/pipelines/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    })
+    loadPipelines(buyerId)
+  }
+
+  async function movePipeline(idx: number, dir: -1 | 1) {
+    const target = idx + dir
+    if (target < 0 || target >= pipelines.length) return
+    const arr = [...pipelines]
+    const [moved] = arr.splice(idx, 1)
+    arr.splice(target, 0, moved)
+    setPipelines(arr) // otimista: reordena na tela na hora
+    // reatribui posicoes 0..n e persiste TODAS (robusto a posicoes iguais/ausentes
+    // antes da migration — a 1a reordenacao ja normaliza tudo)
+    await Promise.all(arr.map((p, i) =>
+      fetch(`/api/pipelines/${p.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ position: i }),
+      })
+    ))
     loadPipelines(buyerId)
   }
 
@@ -143,20 +184,46 @@ export default function PipelineSettingsPage() {
         </button>
       </div>
 
-      {/* Pipeline list */}
-      <div className="flex gap-2 mb-6 flex-wrap">
-        {pipelines.map(p => (
-          <button key={p.id} onClick={() => setSelected(p)}
-            className="px-4 py-2 rounded-xl text-[13px] font-bold"
-            style={{
-              background: selected?.id === p.id ? '#6366f1' : '#fff',
-              color: selected?.id === p.id ? '#fff' : '#64748b',
-              border: `1px solid ${selected?.id === p.id ? '#6366f1' : '#e8ecf4'}`,
-            }}>
-            {p.name} {p.is_default && '★'}
-          </button>
-        ))}
+      {/* Pipeline list — clicar pra abrir, ✏️ pra renomear, ‹ › pra reordenar */}
+      <div className="flex gap-2 mb-2 flex-wrap items-center">
+        {pipelines.map((p, idx) => {
+          const isSel = selected?.id === p.id
+          const ico = isSel ? '#c7d2fe' : '#94a3b8'
+          return (
+            <div key={p.id} className="flex items-center rounded-xl pl-0.5 pr-1 py-0.5"
+              style={{ background: isSel ? '#6366f1' : '#fff', border: `1px solid ${isSel ? '#6366f1' : '#e8ecf4'}` }}>
+              <button onClick={() => movePipeline(idx, -1)} disabled={idx === 0} title="Mover pra esquerda"
+                className="w-5 h-7 rounded flex items-center justify-center text-[15px] leading-none disabled:opacity-20"
+                style={{ color: ico }}>‹</button>
+
+              {editingPipelineId === p.id ? (
+                <input autoFocus value={editPipelineName}
+                  onChange={e => setEditPipelineName(e.target.value)}
+                  onBlur={saveRenamePipeline}
+                  onKeyDown={e => { if (e.key === 'Enter') saveRenamePipeline(); if (e.key === 'Escape') setEditingPipelineId(null) }}
+                  className="px-2 py-1 rounded-lg text-[13px] font-bold w-36"
+                  style={{ border: '1px solid #c7d2fe', color: '#1a1a2e' }} />
+              ) : (
+                <button onClick={() => setSelected(p)} onDoubleClick={() => startRenamePipeline(p)}
+                  title="Clicar pra abrir · 2 cliques pra renomear"
+                  className="px-2 py-1 text-[13px] font-bold whitespace-nowrap"
+                  style={{ color: isSel ? '#fff' : '#64748b' }}>
+                  {p.name} {p.is_default && '★'}
+                </button>
+              )}
+
+              <button onClick={() => startRenamePipeline(p)} title="Renomear"
+                className="w-6 h-7 rounded flex items-center justify-center text-[12px] leading-none opacity-80 hover:opacity-100">✏️</button>
+              <button onClick={() => movePipeline(idx, 1)} disabled={idx === pipelines.length - 1} title="Mover pra direita"
+                className="w-5 h-7 rounded flex items-center justify-center text-[15px] leading-none disabled:opacity-20"
+                style={{ color: ico }}>›</button>
+            </div>
+          )
+        })}
       </div>
+      <p className="text-[11px] mb-6" style={{ color: '#94a3b8' }}>
+        Clique pra abrir · ✏️ (ou 2 cliques no nome) pra renomear · ‹ › pra mudar a ordem
+      </p>
 
       {/* Selected pipeline stages */}
       {selected && (
