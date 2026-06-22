@@ -17,7 +17,7 @@ export function BackfillCrmButton() {
     try {
       const r = await fetch('/api/admin/backfill-crm-revenue', { method: 'POST' })
       const d = await r.json().catch(() => ({}))
-      if (d.ok) { setDone(`✓ ${d.inserted} importados · ${d.skipped} já existiam · ${d.errors} erros`); if (d.inserted > 0) setTimeout(() => location.reload(), 1500) }
+      if (d.ok) { setDone(`✓ ${d.inserted} importados · ${d.skipped} já existiam · ${d.errors} erros${d.sample_error ? ' — ' + d.sample_error : ''}`); if (d.inserted > 0) setTimeout(() => location.reload(), 1500) }
       else setDone('Erro: ' + (d.error || 'falhou'))
     } catch { setDone('Erro de rede') }
     setLoading(false)

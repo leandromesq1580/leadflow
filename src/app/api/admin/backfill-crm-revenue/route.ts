@@ -21,6 +21,7 @@ export async function POST() {
   const { data: payers } = await db.from('buyers').select('id, crm_subscription_id').not('crm_subscription_id', 'is', null)
   const stripe = getStripe()
   let inserted = 0, skipped = 0, errors = 0
+  const errMsgs: string[] = []
   for (const b of (payers || [])) {
     try {
       const invoices = await stripe.invoices.list({ subscription: b.crm_subscription_id as string, status: 'paid', limit: 100 })
@@ -42,7 +43,7 @@ export async function POST() {
         })
         if (error) { errors++; console.error('[backfill-crm] insert:', error.message) } else inserted++
       }
-    } catch (e: any) { errors++; console.error('[backfill-crm] sub', b.crm_subscription_id, e?.message) }
+    } catch (e: any) { errors++; errMsgs.push(e?.message || String(e)); console.error('[backfill-crm] sub', b.crm_subscription_id, e?.message) }
   }
-  return NextResponse.json({ ok: true, inserted, skipped, errors })
+  return NextResponse.json({ ok: true, inserted, skipped, errors, sample_error: errMsgs[0] || null })
 }
