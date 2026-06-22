@@ -18,7 +18,7 @@ export default async function RevenuePage() {
   const [paymentsRes, creditsRes, buyersRes] = await Promise.all([
     db.from('payments').select('*, buyer:buyers(name, email)').order('created_at', { ascending: false }),
     db.from('credits').select('buyer_id, type, total_purchased, total_used, price_per_unit, purchased_at, stripe_payment_id'),
-    db.from('buyers').select('id, name, email, crm_plan, crm_subscription_status, crm_subscription_id'),
+    db.from('buyers').select('id, name, email, crm_plan, crm_subscription_status, crm_subscription_id, created_at'),
   ])
 
   const payments = paymentsRes.data || []
@@ -79,6 +79,9 @@ export default async function RevenuePage() {
     for (const r of rows) subDates[r.id] = { paid: r.paid, renews: r.renews }
   } catch {}
   const fmtTs = (ts: number | null) => ts ? new Date(ts * 1000).toLocaleDateString('pt-BR') : null
+  // Sempre do mais recente pro mais antigo: pagantes pelo ultimo pagamento, cortesias pela criacao
+  crmPayers.sort((a: any, b: any) => (subDates[b.id]?.paid ?? 0) - (subDates[a.id]?.paid ?? 0) || new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+  crmCourtesy.sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
 
   // Monthly data for last 6 months
   const months: { month: string; revenue: number; label: string }[] = []
