@@ -1,5 +1,6 @@
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getStripe } from '@/lib/stripe'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
@@ -62,6 +63,22 @@ export default async function RevenuePage() {
   const proBuyers = buyers.filter(b => b.crm_plan === 'pro')
   const crmPayers = proBuyers.filter(b => !!b.crm_subscription_id && b.crm_subscription_status === 'active')
   const crmCourtesy = proBuyers.filter(b => !(!!b.crm_subscription_id && b.crm_subscription_status === 'active'))
+
+  // Datas reais de cobrança dos pagantes — buscadas no Stripe (o crm_expires_at do banco
+  // está vazio). current_period_start = último pagamento; current_period_end = próxima.
+  const subDates: Record<string, { paid: number | null; renews: number | null }> = {}
+  try {
+    const stripe = getStripe()
+    const rows = await Promise.all(crmPayers.map(async (b: any) => {
+      try {
+        const s: any = await stripe.subscriptions.retrieve(b.crm_subscription_id)
+        const it = s.items?.data?.[0] || {}
+        return { id: b.id, paid: s.current_period_start ?? it.current_period_start ?? null, renews: s.current_period_end ?? it.current_period_end ?? null }
+      } catch { return { id: b.id, paid: null, renews: null } }
+    }))
+    for (const r of rows) subDates[r.id] = { paid: r.paid, renews: r.renews }
+  } catch {}
+  const fmtTs = (ts: number | null) => ts ? new Date(ts * 1000).toLocaleDateString('pt-BR') : null
 
   // Monthly data for last 6 months
   const months: { month: string; revenue: number; label: string }[] = []
@@ -175,6 +192,10 @@ export default async function RevenuePage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-bold truncate" style={{ color: '#1a1a2e' }}>{b.name}</p>
                   <p className="text-[11px] truncate" style={{ color: '#94a3b8' }}>{b.email}</p>
+                </div>
+                <div className="text-right hidden sm:block flex-shrink-0">
+                  <p className="text-[11px] font-semibold" style={{ color: '#64748b' }}>{fmtTs(subDates[b.id]?.paid ?? null) ? `pgto ${fmtTs(subDates[b.id]?.paid ?? null)}` : '—'}</p>
+                  <p className="text-[10px]" style={{ color: '#94a3b8' }}>{fmtTs(subDates[b.id]?.renews ?? null) ? `renova ${fmtTs(subDates[b.id]?.renews ?? null)}` : ''}</p>
                 </div>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase flex-shrink-0" style={{ background: '#dcfce7', color: '#15803d' }}>Paga $99/mês</span>
               </Link>
