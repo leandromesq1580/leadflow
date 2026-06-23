@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { distributeColdLeads } from '@/lib/cold-leads'
+import { LEADS_PER_MONTH } from '@/lib/crm-plans'
 import Stripe from 'stripe'
 
 /**
@@ -201,6 +202,25 @@ export async function POST(request: NextRequest) {
         })
         if (crmPayErr) console.error('[Stripe Webhook] falha ao gravar payment CRM:', crmPayErr)
         else console.log(`[Stripe Webhook] CRM payment $${amount} -> buyer ${subBuyer.id} (invoice ${invoice.id})`)
+
+        // 🎁 BONUS DE LEADS do plano CRM: 5/mes * meses do ciclo, creditado a CADA cobranca
+        // (inicial + renovacoes). Idempotente por invoice. Meses = recurring da linha da invoice.
+        const bonusLine = invoice.lines?.data?.[0]
+        const rec = bonusLine?.price?.recurring || bonusLine?.plan || null
+        const monthsInCycle = rec ? (rec.interval === 'year' ? 12 * (rec.interval_count || 1) : (rec.interval_count || 1)) : 0
+        const bonusLeads = LEADS_PER_MONTH * monthsInCycle
+        if (bonusLeads > 0) {
+          const leadMarker = `crm-bonus:${invoice.id}`
+          const { data: dupLead } = await supabase.from('credits').select('id').eq('stripe_payment_id', leadMarker).maybeSingle()
+          if (!dupLead) {
+            const { error: bonusErr } = await supabase.from('credits').insert({
+              buyer_id: subBuyer.id, type: 'lead', total_purchased: bonusLeads, total_used: 0,
+              price_per_unit: 0, stripe_payment_id: leadMarker, purchased_at: new Date().toISOString(),
+            })
+            if (bonusErr) console.error('[Stripe Webhook] falha bonus leads CRM:', bonusErr)
+            else console.log(`[Stripe Webhook] CRM bonus ${bonusLeads} leads (${monthsInCycle}m) -> buyer ${subBuyer.id}`)
+          }
+        }
       }
       break
     }

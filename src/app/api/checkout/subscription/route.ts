@@ -2,16 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getCrmPlan } from '@/lib/crm-plans'
 
 /**
  * POST /api/checkout/subscription — Create Stripe Checkout for CRM Pro $99/mo
  */
 export async function POST(request: NextRequest) {
   try {
-    const { interval = 'month' } = await request.json().catch(() => ({}))
-    if (!['month', 'year'].includes(interval)) {
-      return NextResponse.json({ error: 'Invalid interval' }, { status: 400 })
-    }
+    // Aceita `plan` (mensal/trimestral/semestral/anual). Compat: `interval` antigo (month/year).
+    const body = await request.json().catch(() => ({}))
+    let planKey: string | undefined = body.plan
+    if (!planKey && body.interval) planKey = body.interval === 'year' ? 'anual' : 'mensal'
+    const plan = getCrmPlan(planKey || 'mensal')
+    if (!plan) return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
 
     const supabase = await createServerSupabase()
     const { data: { user } } = await supabase.auth.getUser()
@@ -40,12 +43,7 @@ export async function POST(request: NextRequest) {
       await db.from('buyers').update({ stripe_customer_id: customerId }).eq('id', buyer.id)
     }
 
-    // Pricing: $99/mo or $950/yr (~20% discount vs $1188 monthly)
-    const isYearly = interval === 'year'
-    const unitAmount = isYearly ? 95000 : 9900
-    const description = isYearly
-      ? 'Pipeline, Gestao de Time, Follow-ups — anual com 20% off'
-      : 'Pipeline, Gestao de Time, Follow-ups, Anexos e mais'
+    const description = `Pipeline, time, follow-ups + ${plan.leadsPerCycle} leads exclusivos + landing page exclusiva${plan.savingsPct ? ` — economia de ${plan.savingsPct}% vs mensal` : ''}`
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -53,14 +51,14 @@ export async function POST(request: NextRequest) {
       line_items: [{
         price_data: {
           currency: 'usd',
-          product_data: { name: `Lead4Producers CRM Pro (${isYearly ? 'Anual' : 'Mensal'})`, description },
-          unit_amount: unitAmount,
-          recurring: { interval: isYearly ? 'year' : 'month' },
+          product_data: { name: `Lead4Producers CRM Pro — ${plan.label}`, description },
+          unit_amount: plan.amountCents,
+          recurring: { interval: plan.interval, interval_count: plan.intervalCount },
         },
         quantity: 1,
       }],
-      metadata: { buyer_id: buyer.id, product_type: 'crm_pro', interval },
-      subscription_data: { metadata: { buyer_id: buyer.id, interval } },
+      metadata: { buyer_id: buyer.id, product_type: 'crm_pro', plan: plan.key, interval: plan.interval },
+      subscription_data: { metadata: { buyer_id: buyer.id, plan: plan.key, interval: plan.interval } },
       success_url: 'https://lead4producers.com/dashboard?crm=activated',
       cancel_url: 'https://lead4producers.com/dashboard/credits?cancelled=true',
     })
