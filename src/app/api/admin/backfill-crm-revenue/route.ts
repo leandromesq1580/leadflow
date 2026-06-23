@@ -10,13 +10,17 @@ export const dynamic = 'force-dynamic'
  * das assinaturas CRM e grava como payment (type 'crm') pra entrar na receita
  * histórica. Idempotente (dedup pela invoice id em stripe_session_id). Só admin.
  */
-export async function POST() {
-  const supa = await createServerSupabase()
-  const { data: { user } } = await supa.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function POST(request: Request) {
   const db = createAdminClient()
-  const { data: me } = await db.from('buyers').select('is_admin').eq('auth_user_id', user.id).single()
-  if (!me?.is_admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  // Autoriza por admin OU por secret (pra rodar via script sem sessão admin).
+  const bySecret = new URL(request.url).searchParams.get('secret') === (process.env.POLL_SECRET || 'leadflow-poll-2026')
+  if (!bySecret) {
+    const supa = await createServerSupabase()
+    const { data: { user } } = await supa.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: me } = await db.from('buyers').select('is_admin').eq('auth_user_id', user.id).single()
+    if (!me?.is_admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   const { data: payers } = await db.from('buyers').select('id, crm_subscription_id').not('crm_subscription_id', 'is', null)
   const stripe = getStripe()
