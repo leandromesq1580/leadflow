@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (type === 'whatsapp') {
-      const bridgeUrl = (agent.wa_bridge_url || process.env.WA_BRIDGE_URL || 'http://31.220.97.186:3457').replace(/\/$/, '')
+      const bridgeUrl = (agent.wa_bridge_url || process.env.WA_BRIDGE_URL || 'http://62.146.229.13:3457').replace(/\/$/, '')
       const bridgeKey = (agent.wa_bridge_key || process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026').trim()
       const cleanPhone = String(lead.phone || '').replace(/[\s\-()]/g, '').replace(/^\+/, '')
 

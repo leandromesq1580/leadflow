@@ -3,7 +3,7 @@ import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getBridgeForBuyer } from '@/lib/wa-bridge'
 
-const VPS_HOST = '31.220.97.186'
+const VPS_HOST = '62.146.229.13'
 const ADMIN_URL = (process.env.WA_ADMIN_URL || `http://${VPS_HOST}:3458`).replace(/\/$/, '')
 const ADMIN_KEY = process.env.WA_ADMIN_KEY || ''
 

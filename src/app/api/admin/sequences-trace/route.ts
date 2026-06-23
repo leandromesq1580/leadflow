@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
             trace.push(entry); continue
           }
           // Tenta o fetch wa-bridge (HEAD pra nao gastar)
-          const bridgeUrl = agent.wa_bridge_url || process.env.WA_BRIDGE_URL || 'http://31.220.97.186:3457'
+          const bridgeUrl = agent.wa_bridge_url || process.env.WA_BRIDGE_URL || 'http://62.146.229.13:3457'
           entry.would_send_to_bridge = bridgeUrl
           entry.diagnose = 'would_send_whatsapp'
         } else {

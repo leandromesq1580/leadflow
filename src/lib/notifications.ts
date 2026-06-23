@@ -14,7 +14,7 @@ function getResend(): Resend {
  */
 async function sendWhatsApp(phone: string, message: string, bridge?: { url: string; key: string } | null): Promise<boolean> {
   const clean = (s: string) => String(s).trim().replace(/\\n/g, '').replace(/\s+$/, '').replace(/\/$/, '')
-  const bridgeUrl = clean(bridge?.url || process.env.WA_BRIDGE_URL || 'http://31.220.97.186:3457')
+  const bridgeUrl = clean(bridge?.url || process.env.WA_BRIDGE_URL || 'http://62.146.229.13:3457')
   const bridgeKey = (bridge?.key || process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026').trim()
 
   if (!bridgeKey) return false
@@ -268,7 +268,7 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead): Promi
  * spammar. Retorna se a bridge está pronta (o cron usa pra decidir reconciliar).
  */
 export async function checkBridgeHealthAndAlert(): Promise<boolean> {
-  const bridgeUrl = (process.env.WA_BRIDGE_URL || 'http://31.220.97.186:3457').trim().replace(/\/$/, '')
+  const bridgeUrl = (process.env.WA_BRIDGE_URL || 'http://62.146.229.13:3457').trim().replace(/\/$/, '')
   const bridgeKey = (process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026').trim()
   const { createAdminClient } = await import('@/lib/supabase/admin')
   const db = createAdminClient()

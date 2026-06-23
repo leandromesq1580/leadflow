@@ -88,7 +88,7 @@ export async function resolveSendBridge(
     const b = await getBridgeForBuyer(db, buyerId)
     if (b) { url = b.url; key = b.key; phone = b.phone || '' }
   }
-  if (!url) url = process.env.WA_BRIDGE_URL || 'http://31.220.97.186:3457'
+  if (!url) url = process.env.WA_BRIDGE_URL || 'http://62.146.229.13:3457'
   if (!key) key = process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026'
   return { url: clean(url), key: String(key).trim(), phone }
 }

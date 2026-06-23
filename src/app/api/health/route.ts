@@ -67,7 +67,7 @@ export async function GET() {
 
   // 5. WhatsApp wa-bridge
   try {
-    const bridgeUrl = (process.env.WA_BRIDGE_URL || 'http://31.220.97.186:3457').replace(/\/$/, '')
+    const bridgeUrl = (process.env.WA_BRIDGE_URL || 'http://62.146.229.13:3457').replace(/\/$/, '')
     const bridgeKey = (process.env.WA_BRIDGE_KEY || 'lead4producers-bridge-2026').trim()
     const res = await fetch(`${bridgeUrl}/status`, { headers: { apikey: bridgeKey } })
     const data = await res.json()
