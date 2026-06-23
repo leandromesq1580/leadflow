@@ -41,8 +41,9 @@ export function CrmPlansGrid({ landing = false }: { landing?: boolean }) {
         const benefits = [
           'Acesso CRM Pro completo (pipeline, time, follow-ups)',
           `${plan.leadsPerCycle} leads exclusivos (5/mês)`,
-          'Landing page exclusiva',
         ]
+        // Landing page exclusiva: só nos planos de compromisso maior — o MENSAL não tem
+        if (plan.key !== 'mensal') benefits.push('Landing page exclusiva')
         return (
           <div key={plan.key} className="relative rounded-2xl p-6 flex flex-col"
             style={{ background: '#fff', border: `${hot ? 2 : 1}px solid ${hot ? '#6366f1' : '#e8ecf4'}`, boxShadow: hot ? '0 12px 32px rgba(99,102,241,0.18)' : 'none' }}>

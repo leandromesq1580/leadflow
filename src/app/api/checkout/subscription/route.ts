@@ -43,7 +43,8 @@ export async function POST(request: NextRequest) {
       await db.from('buyers').update({ stripe_customer_id: customerId }).eq('id', buyer.id)
     }
 
-    const description = `Pipeline, time, follow-ups + ${plan.leadsPerCycle} leads exclusivos + landing page exclusiva${plan.savingsPct ? ` — economia de ${plan.savingsPct}% vs mensal` : ''}`
+    const landingTxt = plan.key !== 'mensal' ? ' + landing page exclusiva' : ''
+    const description = `Pipeline, time, follow-ups + ${plan.leadsPerCycle} leads exclusivos${landingTxt}${plan.savingsPct ? ` — economia de ${plan.savingsPct}% vs mensal` : ''}`
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
