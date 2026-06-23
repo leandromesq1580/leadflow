@@ -6,11 +6,19 @@ import { CRM_PLAN_LIST, type CrmPlan } from '@/lib/crm-plans'
 function fmtMonth(n: number) { return n % 1 === 0 ? `$${n}` : `$${n.toFixed(2)}` }
 function fmtTotal(cents: number) { const v = cents / 100; return v % 1 === 0 ? `$${v}` : `$${v.toFixed(2)}` }
 
-export function CrmPlansGrid() {
+export function CrmPlansGrid({ landing = false }: { landing?: boolean }) {
   const [loading, setLoading] = useState<string | null>(null)
 
   async function subscribe(plan: CrmPlan) {
     setLoading(plan.key)
+    // Landing pública: dispara Lead no Pixel, guarda o plano e manda pro cadastro;
+    // o <ResumeCheckout/> retoma a assinatura automaticamente após o login.
+    if (landing) {
+      try { (window as unknown as { fbq?: (a: string, b: string) => void }).fbq?.('track', 'Lead') } catch {}
+      try { localStorage.setItem('l4p_plan', plan.key) } catch {}
+      window.location.href = '/register'
+      return
+    }
     try {
       const r = await fetch('/api/checkout/subscription', {
         method: 'POST',

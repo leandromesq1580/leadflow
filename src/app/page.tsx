@@ -8,6 +8,7 @@ import { WhatsAppLeadCta } from '@/components/whatsapp-lead-cta'
 import { LiveLeadToast } from '@/components/live-lead-toast'
 import { MetaPixel } from '@/components/meta-pixel'
 import { BuyCheckoutCta } from '@/components/buy-checkout-cta'
+import { CrmPlansGrid } from '@/app/dashboard/planos/crm-plans-grid'
 
 export default async function LandingPage() {
   const locale = await getLocale()
@@ -500,47 +501,10 @@ export default async function LandingPage() {
           <div className="text-center mb-6">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-extrabold" style={{ background: '#f1f5f9', color: '#475569' }}>⚡ {t.pricing.pkg.crmLabel}</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-3xl mx-auto">
-            {/* Free */}
-            <div className="rounded-2xl p-8" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-              <p className="text-[14px] font-bold mb-1" style={{ color: '#64748b' }}>{t.pricing.free.name}</p>
-              <div className="flex items-baseline gap-1 mb-6">
-                <span className="text-[40px] font-extrabold" style={{ color: '#1a1a2e' }}>{t.pricing.free.price}</span>
-                <span className="text-[14px]" style={{ color: '#94a3b8' }}>— {t.pricing.free.priceSub}</span>
-              </div>
-              <ul className="space-y-2 mb-8">
-                {t.pricing.free.features.map((f, i) => (
-                  <li key={i} className="flex items-start gap-2 text-[13px]" style={{ color: '#475569' }}>
-                    <span>✓</span> {f}
-                  </li>
-                ))}
-              </ul>
-              <Link href="/register" className="block text-center px-6 py-3 rounded-xl text-[13px] font-bold" style={{ background: '#f1f5f9', color: '#1a1a2e' }}>
-                {t.pricing.free.cta}
-              </Link>
-            </div>
-
-            {/* Pro — destaque */}
-            <div className="rounded-2xl p-8 relative" style={{ background: 'linear-gradient(135deg, #1e1b4b, #312e81)', boxShadow: '0 20px 60px rgba(99,102,241,0.3)' }}>
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-extrabold" style={{ background: '#fbbf24', color: '#1a1a2e' }}>{t.pricing.pro.badge}</span>
-              <p className="text-[14px] font-bold mb-1" style={{ color: '#c7d2fe' }}>{t.pricing.pro.name}</p>
-              <div className="flex items-baseline gap-1 mb-1">
-                <span className="text-[40px] font-extrabold text-white">{t.pricing.pro.price}</span>
-                <span className="text-[14px]" style={{ color: 'rgba(255,255,255,0.55)' }}>{t.pricing.pro.priceSub}</span>
-              </div>
-              <p className="text-[12px] font-bold mb-6" style={{ color: '#fbbf24' }}>🎁 {t.pricing.pro.trial}</p>
-              <ul className="space-y-2 mb-8">
-                {t.pricing.pro.features.map((f, i) => (
-                  <li key={i} className="flex items-start gap-2 text-[13px]" style={{ color: 'rgba(255,255,255,0.85)' }}>
-                    <span style={{ color: '#34d399' }}>✓</span> {f}
-                  </li>
-                ))}
-              </ul>
-              <Link href="/register" className="block text-center px-6 py-3 rounded-xl text-[13px] font-bold" style={{ background: 'linear-gradient(135deg, #f59e0b, #eab308)', color: '#1a1a2e' }}>
-                {t.pricing.pro.cta}
-              </Link>
-            </div>
-          </div>
+          <CrmPlansGrid landing />
+          <p className="text-center mt-7 text-[13px]" style={{ color: '#64748b' }}>
+            Prefere começar de graça? <Link href="/register" className="font-bold" style={{ color: '#6366f1' }}>Crie sua conta CRM grátis →</Link>
+          </p>
         </div>
       </section>
 

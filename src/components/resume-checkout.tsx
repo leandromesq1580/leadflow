@@ -14,6 +14,23 @@ export function ResumeCheckout() {
   useEffect(() => {
     if (ran.current) return
     ran.current = true
+    // Assinatura CRM (l4p_plan) tem prioridade sobre pacote de lead (l4p_buy)
+    let planKey: string | null = null
+    try { planKey = localStorage.getItem('l4p_plan') } catch {}
+    if (planKey) {
+      try { localStorage.removeItem('l4p_plan') } catch {}
+      ;(async () => {
+        try {
+          const res = await fetch('/api/checkout/subscription', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ plan: planKey }),
+          })
+          const data = await res.json().catch(() => ({}))
+          window.location.href = data?.url || '/dashboard/planos'
+        } catch { window.location.href = '/dashboard/planos' }
+      })()
+      return
+    }
     let pkg: string | null = null
     try { pkg = localStorage.getItem('l4p_buy') } catch {}
     if (!pkg) return
