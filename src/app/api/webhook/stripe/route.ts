@@ -247,6 +247,19 @@ export async function POST(request: NextRequest) {
       break
     }
 
+    case 'charge.refunded': {
+      // Reembolso na Stripe → marca o pagamento como 'refunded' no nosso banco.
+      // A receita (/admin/revenue) só soma status='completed', então isso já desconta.
+      const charge = event.data.object as any
+      const pi = typeof charge.payment_intent === 'string' ? charge.payment_intent : null
+      if (pi) {
+        const { error: refErr } = await supabase.from('payments').update({ status: 'refunded' }).eq('stripe_payment_intent_id', pi)
+        if (refErr) console.error('[Stripe Webhook] falha ao marcar refunded:', refErr)
+        else console.log(`[Stripe Webhook] pagamento marcado REFUNDED (PI ${pi})`)
+      }
+      break
+    }
+
     case 'payment_intent.payment_failed': {
       const paymentIntent = event.data.object as Stripe.PaymentIntent
       console.log(`[Stripe Webhook] Payment failed: ${paymentIntent.id}`)

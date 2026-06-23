@@ -48,11 +48,16 @@ export async function GET(request: NextRequest) {
 
   try {
     const inv = await stripe.invoices.list({ customer: cid, limit: 25 })
-    out.invoices = inv.data.map((i: any) => ({ date: new Date(i.created * 1000).toISOString(), amount_paid: (i.amount_paid || 0) / 100, status: i.status, reason: i.billing_reason }))
+    out.invoices = inv.data.map((i: any) => ({ id: i.id, date: new Date(i.created * 1000).toISOString(), amount_paid: (i.amount_paid || 0) / 100, status: i.status, reason: i.billing_reason }))
   } catch (e: any) { out.invoices_error = e?.message }
 
+  try {
+    const whs = await stripe.webhookEndpoints.list({ limit: 10 })
+    out.webhooks = whs.data.map((w: any) => ({ url: w.url, status: w.status, events: w.enabled_events }))
+  } catch (e: any) { out.webhooks_error = e?.message }
+
   // o que o NOSSO banco tem desse buyer (pra comparar)
-  const { data: ourPayments } = await db.from('payments').select('amount, product_type, status, created_at').eq('buyer_id', buyer.id).order('created_at', { ascending: false })
+  const { data: ourPayments } = await db.from('payments').select('amount, product_type, status, created_at, stripe_session_id').eq('buyer_id', buyer.id).order('created_at', { ascending: false })
   out.nosso_banco_payments = ourPayments
 
   return NextResponse.json(out)
