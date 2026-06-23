@@ -3,6 +3,7 @@ import { getStripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { distributeColdLeads } from '@/lib/cold-leads'
 import { LEADS_PER_MONTH } from '@/lib/crm-plans'
+import { notifyGroupPurchase } from '@/lib/notifications'
 import Stripe from 'stripe'
 
 /**
@@ -123,6 +124,17 @@ export async function POST(request: NextRequest) {
           .is('stripe_customer_id', null)
       }
 
+      // 🔔 Avisa o grupo de controle sobre a compra do pacote (nome, email, o que, valor)
+      try {
+        const { data: pBuyer } = await supabase.from('buyers').select('name, email').eq('id', buyerId).single()
+        const labelMap: Record<string, string> = { lead: 'Leads', cold_lead: 'Leads Frios', appointment: 'Appointments' }
+        await notifyGroupPurchase({
+          name: pBuyer?.name || null, email: pBuyer?.email || null,
+          description: `Pacote de ${quantity} ${labelMap[productType] || productType}`,
+          amount: (session.amount_total || 0) / 100, kind: 'pacote',
+        })
+      } catch (e) { console.error('[Stripe Webhook] aviso compra grupo:', (e as any)?.message) }
+
       break
     }
 
@@ -188,7 +200,7 @@ export async function POST(request: NextRequest) {
       if (subId && amount > 0) {
         const { data: dupe } = await supabase.from('payments').select('id').eq('stripe_session_id', invoice.id).maybeSingle()
         if (dupe) { console.log(`[Stripe Webhook] invoice CRM ja registrada: ${invoice.id}`); break }
-        const { data: subBuyer } = await supabase.from('buyers').select('id').eq('crm_subscription_id', subId).maybeSingle()
+        const { data: subBuyer } = await supabase.from('buyers').select('id, name, email').eq('crm_subscription_id', subId).maybeSingle()
         if (!subBuyer) { console.error(`[Stripe Webhook] invoice CRM sem buyer (sub ${subId})`); break }
         const { error: crmPayErr } = await supabase.from('payments').insert({
           buyer_id: subBuyer.id,
@@ -221,6 +233,16 @@ export async function POST(request: NextRequest) {
             else console.log(`[Stripe Webhook] CRM bonus ${bonusLeads} leads (${monthsInCycle}m) -> buyer ${subBuyer.id}`)
           }
         }
+
+        // 🔔 Avisa o grupo de controle sobre a assinatura/renovacao (nome, email, plano, valor)
+        try {
+          const planLabel = monthsInCycle === 12 ? 'Anual' : monthsInCycle === 6 ? 'Semestral' : monthsInCycle === 3 ? 'Trimestral' : 'Mensal'
+          await notifyGroupPurchase({
+            name: (subBuyer as any).name || null, email: (subBuyer as any).email || null,
+            description: `Assinatura CRM Pro — ${planLabel}`,
+            amount, kind: invoice.billing_reason === 'subscription_cycle' ? 'renovacao' : 'assinatura',
+          })
+        } catch (e) { console.error('[Stripe Webhook] aviso assinatura grupo:', (e as any)?.message) }
       }
       break
     }

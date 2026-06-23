@@ -99,6 +99,22 @@ export async function notifyGroupSmsReply(leadName: string | null, fromPhone: st
   await sendWhatsApp(adminGroupId, msg)
 }
 
+/** Avisa o GRUPO de controle sobre uma NOVA COMPRA (pacote de leads/appointments ou assinatura). */
+export async function notifyGroupPurchase(p: {
+  name: string | null; email: string | null; description: string; amount: number;
+  kind: 'pacote' | 'assinatura' | 'renovacao'
+}) {
+  const adminGroupId = process.env.WHATSAPP_ADMIN_GROUP || '120363403347083071@g.us'
+  const head = p.kind === 'renovacao' ? '🔁 *RENOVAÇÃO*' : p.kind === 'assinatura' ? '🟣 *NOVA ASSINATURA*' : '🛒 *NOVA COMPRA*'
+  const msg = `${head}
+
+👤 *${p.name || '—'}*
+📧 ${p.email || '—'}
+🧾 ${p.description}
+💵 US$ ${p.amount.toFixed(2)}`
+  await sendWhatsApp(adminGroupId, msg)
+}
+
 interface Buyer {
   name: string
   email: string
