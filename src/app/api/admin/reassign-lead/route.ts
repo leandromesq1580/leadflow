@@ -27,26 +27,30 @@ export async function POST(request: NextRequest) {
   if (lead.assigned_to === to_buyer_id) return NextResponse.json({ error: 'Lead ja pertence a esse agente' }, { status: 400 })
 
   const { data: toBuyer } = await db.from('buyers')
-    .select('id, name, email, phone, notification_email, notification_sms')
+    .select('id, name, email, phone, notification_email, notification_sms, is_admin')
     .eq('id', to_buyer_id).single()
   if (!toBuyer) return NextResponse.json({ error: 'Agente destino nao encontrado' }, { status: 404 })
 
   // 💳 CHECA CRÉDITO ANTES de mover nada. Sem saldo de lead → bloqueia (avisa o admin).
-  const { data: creds } = await db.from('credits')
-    .select('id, total_purchased, total_used, expires_at').eq('buyer_id', to_buyer_id).eq('type', 'lead')
-  const nowMs = Date.now()
+  // EXCEÇÃO: agente ADMINISTRADOR (is_admin) é ISENTO da trava — não checa nem debita.
+  const isAdminAgent = !!toBuyer.is_admin
   let debitRow: any = null, remaining = 0
-  for (const c of (creds || [])) {
-    const rem = (Number(c.total_purchased) || 0) - (Number(c.total_used) || 0)
-    const notExpired = !c.expires_at || new Date(c.expires_at).getTime() > nowMs
-    if (notExpired && rem > 0) {
-      remaining += rem
-      const best = debitRow ? (Number(debitRow.total_purchased) || 0) - (Number(debitRow.total_used) || 0) : -1
-      if (rem > best) debitRow = c
+  if (!isAdminAgent) {
+    const { data: creds } = await db.from('credits')
+      .select('id, total_purchased, total_used, expires_at').eq('buyer_id', to_buyer_id).eq('type', 'lead')
+    const nowMs = Date.now()
+    for (const c of (creds || [])) {
+      const rem = (Number(c.total_purchased) || 0) - (Number(c.total_used) || 0)
+      const notExpired = !c.expires_at || new Date(c.expires_at).getTime() > nowMs
+      if (notExpired && rem > 0) {
+        remaining += rem
+        const best = debitRow ? (Number(debitRow.total_purchased) || 0) - (Number(debitRow.total_used) || 0) : -1
+        if (rem > best) debitRow = c
+      }
     }
-  }
-  if (!debitRow || remaining <= 0) {
-    return NextResponse.json({ error: `${(toBuyer.name || '').trim()} está sem crédito de lead — não dá pra reatribuir. Adicione crédito ou escolha outro agente.`, code: 'NO_CREDIT' }, { status: 409 })
+    if (!debitRow || remaining <= 0) {
+      return NextResponse.json({ error: `${(toBuyer.name || '').trim()} está sem crédito de lead — não dá pra reatribuir. Adicione crédito ou escolha outro agente.`, code: 'NO_CREDIT' }, { status: 409 })
+    }
   }
 
   // 1) Reatribui o lead (limpa member tambem — repasse e entre agentes/buyers)
@@ -75,11 +79,14 @@ export async function POST(request: NextRequest) {
   // 4) Privacidade: thread do WhatsApp passa pro novo dono
   try { await migrateWhatsAppOwnership(db, lead_id, to_buyer_id) } catch (e) { console.error('[Reassign] WA migrate:', (e as any)?.message) }
 
-  // 5) Debita 1 crédito de lead do novo dono (reatribuição do admin = entrega que cobra)
-  await db.from('credits').update({ total_used: (Number(debitRow.total_used) || 0) + 1 }).eq('id', debitRow.id)
+  // 5) Debita 1 crédito de lead do novo dono (reatribuição = entrega que cobra).
+  //    Admin é ISENTO (debitRow fica null pra ele) → não debita.
+  if (!isAdminAgent && debitRow) {
+    await db.from('credits').update({ total_used: (Number(debitRow.total_used) || 0) + 1 }).eq('id', debitRow.id)
+  }
 
   // 6) Notifica o novo agente
   try { await sendLeadNotificationEmail(toBuyer as any, lead) } catch (e) { console.error('[Reassign] notify:', (e as any)?.message) }
 
-  return NextResponse.json({ success: true, to: (toBuyer.name || '').trim(), credito_debitado: true, saldo_restante: remaining - 1 })
+  return NextResponse.json({ success: true, to: (toBuyer.name || '').trim(), credito_debitado: !isAdminAgent, saldo_restante: isAdminAgent ? null : remaining - 1, admin_isento: isAdminAgent })
 }
