@@ -107,6 +107,7 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, isAdmin }:
     { href: '/dashboard/performance', label: t.sidebar.performance, icon: '📈' },
     { href: '/dashboard/leads', label: t.sidebar.leads, icon: '🎯' },
     { href: '/dashboard/pipeline', label: t.sidebar.pipeline, icon: '📋' },
+    { href: '/dashboard/notas', label: t._locale === 'en' ? 'Notes' : 'Notas', icon: '🗒️' },
     { href: '/dashboard/whatsapp', label: t.sidebar.whatsapp, icon: '💬' },
     // Atendimento a Clientes logo abaixo do WhatsApp — só admin (Regiane/Leandro)
     ...(isAdmin ? [{ href: '/dashboard/clients', label: 'Atendimento Clientes', icon: '👥' }] : []),
