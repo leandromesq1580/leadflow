@@ -21,6 +21,8 @@ const PERIODS = [
   { key: 'evening', label: 'Noite' },
 ]
 
+const ALL_AVAIL = DAY_TYPES.flatMap(d => PERIODS.map(p => `${d.key}_${p.key}`))
+
 const TOTAL_STEPS = 5
 
 export default function OnboardingPage() {
@@ -161,6 +163,10 @@ export default function OnboardingPage() {
               <h2 className="text-[18px] font-bold text-white">Seus estados</h2>
             </div>
             <p className="text-[13px] mb-6" style={{ color: 'rgba(255,255,255,0.4)' }}>Selecione os estados onde voce tem licenca pra vender seguro. Voce so recebera leads desses estados.</p>
+            <div className="flex items-center gap-2 mb-3">
+              <button type="button" onClick={() => setStates([...US_STATES])} className="text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all" style={{ background: 'rgba(99,102,241,0.25)', color: '#c4b5fd', border: '1px solid rgba(99,102,241,0.4)' }}>✓ Selecionar todos</button>
+              <button type="button" onClick={() => setStates([])} className="text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}>Limpar</button>
+            </div>
             <div className="flex flex-wrap gap-2 mb-6">
               {US_STATES.map(code => (
                 <button key={code} onClick={() => toggleState(code)}
@@ -198,6 +204,10 @@ export default function OnboardingPage() {
               <h2 className="text-[18px] font-bold text-white">Disponibilidade</h2>
             </div>
             <p className="text-[13px] mb-6" style={{ color: 'rgba(255,255,255,0.4)' }}>Quando voce pode atender? (Opcional — pode pular se quiser so leads)</p>
+            <div className="flex items-center gap-2 mb-4">
+              <button type="button" onClick={() => setAvail([...ALL_AVAIL])} className="text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all" style={{ background: 'rgba(99,102,241,0.25)', color: '#c4b5fd', border: '1px solid rgba(99,102,241,0.4)' }}>✓ Selecionar todos</button>
+              <button type="button" onClick={() => setAvail([])} className="text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}>Limpar</button>
+            </div>
             <div className="space-y-4 mb-6">
               {DAY_TYPES.map(day => (
                 <div key={day.key}>
