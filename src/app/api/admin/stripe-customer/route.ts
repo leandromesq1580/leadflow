@@ -43,7 +43,19 @@ export async function GET(request: NextRequest) {
 
   try {
     const subs = await stripe.subscriptions.list({ customer: cid, status: 'all', limit: 10 })
-    out.subscriptions = subs.data.map((s: any) => ({ id: s.id, status: s.status, created: new Date(s.created * 1000).toISOString() }))
+    out.subscriptions = subs.data.map((s: any) => {
+      const price = s.items?.data?.[0]?.price
+      const rec = price?.recurring
+      return {
+        id: s.id, status: s.status,
+        created: new Date(s.created * 1000).toISOString(),
+        proxima_cobranca: s.current_period_end ? new Date(s.current_period_end * 1000).toISOString() : null,
+        interval: rec?.interval || null,
+        interval_count: rec?.interval_count || null,
+        valor: price?.unit_amount != null ? price.unit_amount / 100 : null,
+        renova_automatico: !s.cancel_at_period_end,
+      }
+    })
   } catch (e: any) { out.subs_error = e?.message }
 
   try {
