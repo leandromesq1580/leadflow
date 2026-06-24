@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { distributeLeadToNextBuyer, forceAssignRoundRobin, redistributePendingLeads, tryAdminRule } from '@/lib/distribute'
+import { dripCrmBonusLeads } from '@/lib/crm-bonus-drip'
 import { notifyGroupLeadPending, sendLeadNotificationEmail, checkBridgeHealthAndAlert } from '@/lib/notifications'
 import { stateFromPhone } from '@/lib/us-area-codes'
 
@@ -186,6 +187,10 @@ export async function GET(request: Request) {
     redistributed = await redistributePendingLeads(pendTarget?.emails || null)
   } catch (e) { console.error('[Poll] redistribute err:', (e as any)?.message) }
 
+  // DRIP dos leads de bonus CRM: +5 a cada 30 dias nos planos multi-mes (trimestral/semestral/anual).
+  let crmDripped = 0
+  try { crmDripped = await dripCrmBonusLeads() } catch (e) { console.error('[Poll] crm drip err:', (e as any)?.message) }
+
   // 🔒 WATCHDOG + RECONCILIAÇÃO (rede de segurança das notificações).
   // 1) Checa a saúde da bridge; se cair, alerta o admin por email (1x/30min).
   // 2) Se a bridge está OK, reenvia os leads atribuídos nas últimas 6h que NÃO
@@ -236,6 +241,7 @@ export async function GET(request: Request) {
     imported,
     skipped,
     redistributed,
+    crm_dripped: crmDripped,
     renotified,
     missed_count: missedCount,
     reconcile_error: reconcileError,

@@ -223,9 +223,10 @@ export async function POST(request: NextRequest) {
         // Plano pelo VALOR cobrado (robusto: a linha da fatura as vezes vem sem recurring/interval_count → caia em 0/Mensal e bônus errado).
         const crmPlan = CRM_PLAN_LIST.find(p => p.amountCents === Math.round(amount * 100)) || null
         const monthsInCycle = crmPlan ? crmPlan.months : recMonths
-        const bonusLeads = crmPlan ? crmPlan.leadsPerCycle : (LEADS_PER_MONTH * monthsInCycle)
+        // DRIP: credita SÓ o mês 1 (5 leads) aqui; o cron dripCrmBonusLeads pinga +5 a cada 30 dias até o total do plano (trimestral/semestral/anual).
+        const bonusLeads = LEADS_PER_MONTH
         if (bonusLeads > 0) {
-          const leadMarker = `crm-bonus:${invoice.id}`
+          const leadMarker = `crm-bonus:${invoice.id}:m1`
           const { data: dupLead } = await supabase.from('credits').select('id').eq('stripe_payment_id', leadMarker).maybeSingle()
           if (!dupLead) {
             const { error: bonusErr } = await supabase.from('credits').insert({
