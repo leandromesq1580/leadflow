@@ -94,7 +94,7 @@ function BrandMark({ size = 32 }: { size?: number }) {
   )
 }
 
-export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, isAdmin }: SidebarProps) {
+export function Sidebar({ type, userName, isAgency, buyerId, crmPlan }: SidebarProps) {
   const pathname = usePathname()
   const t = useT()
   const apptOnly = type === 'buyer' && crmPlan === 'appointment'
@@ -109,13 +109,12 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, isAdmin }:
     { href: '/dashboard/pipeline', label: t.sidebar.pipeline, icon: '📋' },
     { href: '/dashboard/notas', label: t._locale === 'en' ? 'Notes' : 'Notas', icon: '🗒️' },
     { href: '/dashboard/whatsapp', label: t.sidebar.whatsapp, icon: '💬' },
-    // Atendimento a Clientes logo abaixo do WhatsApp — só admin (Regiane/Leandro)
-    ...(isAdmin ? [{ href: '/dashboard/clients', label: 'Atendimento Clientes', icon: '👥' }] : []),
+    // Appointments logo abaixo do WhatsApp
+    { href: '/dashboard/appointments', label: t.sidebar.appointments, icon: '📅' },
     { href: '/dashboard/ai-consult', label: t._locale === 'en' ? 'AI Specialist' : t._locale === 'es' ? 'Especialista IA' : 'Especialista AI', icon: '🤖' },
     { href: '/dashboard/templates', label: t.sidebar.templates, icon: '📝' },
     { href: '/dashboard/automations', label: t.sidebar.automations, icon: '⚡' },
     { href: '/dashboard/sequences', label: t.sidebar.sequences, icon: '🔁' },
-    { href: '/dashboard/appointments', label: t.sidebar.appointments, icon: '📅' },
     { href: '/dashboard/settings/notifications', label: t._locale === 'en' ? 'Reminders' : t._locale === 'es' ? 'Avisos' : 'Avisos', icon: '🔔' },
     { href: '/dashboard/team', label: t.sidebar.team, icon: '👥' },
     { href: '/dashboard/referral', label: t.sidebar.referral, icon: '🎁' },
