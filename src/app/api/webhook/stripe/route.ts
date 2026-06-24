@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { distributeColdLeads } from '@/lib/cold-leads'
-import { LEADS_PER_MONTH } from '@/lib/crm-plans'
+import { LEADS_PER_MONTH, CRM_PLAN_LIST } from '@/lib/crm-plans'
 import { notifyGroupPurchase } from '@/lib/notifications'
 import Stripe from 'stripe'
 
@@ -219,8 +219,11 @@ export async function POST(request: NextRequest) {
         // (inicial + renovacoes). Idempotente por invoice. Meses = recurring da linha da invoice.
         const bonusLine = invoice.lines?.data?.[0]
         const rec = bonusLine?.price?.recurring || bonusLine?.plan || null
-        const monthsInCycle = rec ? (rec.interval === 'year' ? 12 * (rec.interval_count || 1) : (rec.interval_count || 1)) : 0
-        const bonusLeads = LEADS_PER_MONTH * monthsInCycle
+        const recMonths = rec ? (rec.interval === 'year' ? 12 * (rec.interval_count || 1) : (rec.interval_count || 1)) : 0
+        // Plano pelo VALOR cobrado (robusto: a linha da fatura as vezes vem sem recurring/interval_count → caia em 0/Mensal e bônus errado).
+        const crmPlan = CRM_PLAN_LIST.find(p => p.amountCents === Math.round(amount * 100)) || null
+        const monthsInCycle = crmPlan ? crmPlan.months : recMonths
+        const bonusLeads = crmPlan ? crmPlan.leadsPerCycle : (LEADS_PER_MONTH * monthsInCycle)
         if (bonusLeads > 0) {
           const leadMarker = `crm-bonus:${invoice.id}`
           const { data: dupLead } = await supabase.from('credits').select('id').eq('stripe_payment_id', leadMarker).maybeSingle()
@@ -236,7 +239,7 @@ export async function POST(request: NextRequest) {
 
         // 🔔 Avisa o grupo de controle sobre a assinatura/renovacao (nome, email, plano, valor)
         try {
-          const planLabel = monthsInCycle === 12 ? 'Anual' : monthsInCycle === 6 ? 'Semestral' : monthsInCycle === 3 ? 'Trimestral' : 'Mensal'
+          const planLabel = crmPlan ? crmPlan.label : (monthsInCycle === 12 ? 'Anual' : monthsInCycle === 6 ? 'Semestral' : monthsInCycle === 3 ? 'Trimestral' : 'Mensal')
           await notifyGroupPurchase({
             name: (subBuyer as any).name || null, email: (subBuyer as any).email || null,
             description: `Assinatura CRM Pro — ${planLabel}`,
