@@ -394,6 +394,26 @@ interface TeamMember {
  * Send notification to a team member when a lead is assigned to them.
  */
 export async function sendTeamMemberNotification(member: TeamMember, lead: Lead, bridge?: { url: string; key: string } | null) {
+  // REGRA UNIVERSAL: lead MANUAL (sem meta_lead_id) NUNCA notifica — nem o membro do
+  // time. Mesmo guard do sendLeadNotificationEmail; FALTAVA aqui → lead manual
+  // delegado a um membro vazava o "Novo Lead" (caso SHARON E PEOPLES).
+  try {
+    if ((lead as any).id) {
+      const { createAdminClient } = await import('@/lib/supabase/admin')
+      const { data: src } = await createAdminClient()
+        .from('leads').select('campaign_name, form_name, raw_data').eq('id', (lead as any).id).maybeSingle()
+      const isManual = !!src && (
+        (src.raw_data as any)?.source === 'manual' ||
+        src.campaign_name === 'Manual' ||
+        src.form_name === 'manual_entry'
+      )
+      if (isManual) {
+        console.log(`[Notify team] Lead ${(lead as any).id} e MANUAL — pula notificacao ao membro (regra: manual nao notifica).`)
+        return
+      }
+    }
+  } catch { /* se a checagem falhar, segue o fluxo normal */ }
+
   // Push: se o membro tem conta propria (auth_user_id), manda push pro buyer dele
   if (member.auth_user_id) {
     try {
