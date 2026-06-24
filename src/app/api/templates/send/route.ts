@@ -35,21 +35,39 @@ export async function POST(request: NextRequest) {
     const sb = await resolveSendBridge(db, buyer_id)
     const cleanPhone = lead.phone.replace(/[\s\-\(\)]/g, '').replace(/^\+/, '')
 
-    const res = await fetch(`${sb.url}/send`, {
-      method: 'POST',
-      headers: { apikey: sb.key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ number: cleanPhone, message: body }),
-    })
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Falha desconhecida' }))
-      const msg = err?.error || 'Falha ao enviar WhatsApp'
-      const friendly = msg.includes('No LID') || msg.includes('nao tem WhatsApp')
-        ? `Este número não tem WhatsApp ativo (${cleanPhone}). Confirme o número com o lead.`
-        : msg
-      return NextResponse.json({ error: friendly }, { status: res.status })
+    // Envio com RETRY: o bridge (whatsapp-web.js/puppeteer) às vezes solta erro
+    // TRANSITÓRIO — "Promise was collected", contexto destruído, Chrome engasgado,
+    // 503 not-ready, rede. Retenta até 3x com backoff (0.8s, 1.6s). Só NÃO retenta
+    // erro PERMANENTE (número sem WhatsApp), que falha na hora.
+    let sendRes: any = null
+    let lastErr = 'Falha ao enviar WhatsApp'
+    let lastStatus = 500
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await fetch(`${sb.url}/send`, {
+          method: 'POST',
+          headers: { apikey: sb.key, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ number: cleanPhone, message: body }),
+        })
+        if (res.ok) { sendRes = await res.json().catch(() => ({ id: null })); break }
+        const err = await res.json().catch(() => ({ error: 'Falha desconhecida' }))
+        lastErr = err?.error || 'Falha ao enviar WhatsApp'
+        lastStatus = res.status
+      } catch (e: any) {
+        lastErr = e?.message || 'fetch failed'
+        lastStatus = 502
+      }
+      const permanent = /No LID|nao tem WhatsApp/i.test(lastErr)
+      if (permanent || attempt === 2) break
+      await new Promise(r => setTimeout(r, 800 * (attempt + 1)))
     }
-    const sendRes = await res.json().catch(() => ({ id: null }))
+
+    if (!sendRes) {
+      const friendly = /No LID|nao tem WhatsApp/i.test(lastErr)
+        ? `Este número não tem WhatsApp ativo (${cleanPhone}). Confirme o número com o lead.`
+        : lastErr
+      return NextResponse.json({ error: friendly }, { status: lastStatus })
+    }
 
     // Salva na thread de conversa do lead (aparece na aba "Conversa")
     await db.from('whatsapp_messages').insert({
