@@ -41,8 +41,8 @@ export const PRODUCTS = {
   appointment: {
     name: 'Appointment Agendado',
     packages: [
-      { id: 'appt_10', quantity: 10, unitPriceCents: 3800, totalDisplay: 380, label: '10 Appointments — $380', pricePerUnit: 38 },
-      { id: 'appt_25', quantity: 25, unitPriceCents: 3500, totalDisplay: 875, label: '25 Appointments — $875', pricePerUnit: 35 },
+      { id: 'appt_10', quantity: 10, unitPriceCents: 4970, totalDisplay: 497, label: '10 Appointments — $497', pricePerUnit: 49.70 },
+      { id: 'appt_25', quantity: 25, unitPriceCents: 4788, totalDisplay: 1197, label: '25 Appointments — $1,197', pricePerUnit: 47.88 },
     ],
   },
 } as const
