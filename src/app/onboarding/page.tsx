@@ -161,7 +161,7 @@ export default function OnboardingPage() {
               <h2 className="text-[18px] font-bold text-white">Seus estados</h2>
             </div>
             <p className="text-[13px] mb-6" style={{ color: 'rgba(255,255,255,0.4)' }}>Selecione os estados onde voce tem licenca pra vender seguro. Voce so recebera leads desses estados.</p>
-            <div className="flex flex-wrap gap-2 mb-6 max-h-[280px] overflow-y-auto">
+            <div className="flex flex-wrap gap-2 mb-6">
               {US_STATES.map(code => (
                 <button key={code} onClick={() => toggleState(code)}
                   className="px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all"
