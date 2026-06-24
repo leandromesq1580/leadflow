@@ -324,7 +324,7 @@ interface TeamMember {
 /**
  * Send notification to a team member when a lead is assigned to them.
  */
-export async function sendTeamMemberNotification(member: TeamMember, lead: Lead) {
+export async function sendTeamMemberNotification(member: TeamMember, lead: Lead, bridge?: { url: string; key: string } | null) {
   // Push: se o membro tem conta propria (auth_user_id), manda push pro buyer dele
   if (member.auth_user_id) {
     try {
@@ -390,7 +390,7 @@ export async function sendTeamMemberNotification(member: TeamMember, lead: Lead)
 
 ⚡ Ligue nos proximos 5 minutos!`
 
-    await sendWhatsApp(memberPhone, msg)
+    await sendWhatsApp(memberPhone, msg, bridge)
   }
 }
 

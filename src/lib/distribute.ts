@@ -2,6 +2,7 @@ import { createAdminClient } from './supabase/admin'
 import { sendLeadNotificationEmail, sendTeamMemberNotification } from './notifications'
 import { buyerTimezone, isAvailableNow } from './availability'
 import { placeLeadInMemberPipeline } from './place-member-lead'
+import { resolveSendBridge } from './wa-bridge'
 
 // Inicio do dia (meia-noite) no fuso America/New_York, em ISO UTC. Robusto p/ EDT/EST.
 function easternDayStartISO(): string {
@@ -548,8 +549,10 @@ async function distributeToTeamMember(supabase: ReturnType<typeof createAdminCli
   // Cria/move o card pro pipeline do membro — senao o lead delegado fica fora do kanban
   await placeLeadInMemberPipeline(supabase, lead.id, nextMember)
 
-  // Notify team member
-  await sendTeamMemberNotification(nextMember, lead)
+  // Notify team member — o aviso sai pela bridge da AGENCIA (dono do lead), nao do numero central (2126).
+  // resolveSendBridge cai na global so se a agencia nao tiver bridge propria.
+  const agencyBridge = await resolveSendBridge(supabase, buyerId)
+  await sendTeamMemberNotification(nextMember, lead, agencyBridge)
 
   console.log(`[Distribute] Team: ${lead.id} → member ${nextMember.name} (${memberCounts[nextMember.id] || 0} leads)`)
 }
