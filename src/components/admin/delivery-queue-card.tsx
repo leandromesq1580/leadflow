@@ -4,7 +4,9 @@ import { useEffect, useState, useRef } from 'react'
 
 interface Admin { id: string; nome: string; estados: string[]; regraAdmin: number | null; isFallback: boolean }
 interface Row { pos: number; id: string; nome: string; creditos: number; estados: string[]; recebeuHoje?: boolean }
-interface Data { adminRule: { N: number; leadsUntilAdmin: number | null; herTurnNow: boolean }; admins: Admin[]; fila: Row[] }
+interface Data { adminRule: { N: number; leadsUntilAdmin: number | null; herTurnNow: boolean }; queueOrder?: string; admins: Admin[]; fila: Row[] }
+
+const QUEUE_LABELS: Record<string, string> = { credito: 'Crédito', antiguidade: 'Antiguidade', hibrido: 'Híbrido', rodizio: 'Rodízio' }
 
 function StateChips({ estados }: { estados: string[] }) {
   if (estados.length === 0) return <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#fef2f2', color: '#dc2626' }}>⚠️ sem estado — não recebe</span>
@@ -18,6 +20,18 @@ export function DeliveryQueueCard() {
   const [updatedAt, setUpdatedAt] = useState('')
   const [flash, setFlash] = useState(false)
   const sigRef = useRef('')
+  const [savingOrder, setSavingOrder] = useState(false)
+
+  async function changeOrder(order: string) {
+    if (savingOrder || order === (data?.queueOrder || 'credito')) return
+    setSavingOrder(true)
+    try {
+      await fetch('/api/admin/queue-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order }) })
+      const d = await fetch('/api/admin/delivery-queue', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null))
+      if (d) setData(d)
+    } catch {}
+    setSavingOrder(false)
+  }
 
   useEffect(() => {
     let alive = true
@@ -55,13 +69,22 @@ export function DeliveryQueueCard() {
       <div className="px-6 py-4 flex items-start justify-between" style={{ borderBottom: '1px solid #e8ecf4' }}>
         <div>
           <h2 className="text-[15px] font-bold flex items-center gap-2" style={{ color: '#1a1a2e' }}>📦 Fila de Entregas {flash && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: '#eef2ff', color: '#6366f1' }}>↑ atualizada</span>}</h2>
-          <p className="text-[12px] mt-0.5" style={{ color: '#94a3b8' }}>Ordem real: o admin intercepta pela regra, o resto vai por crédito.</p>
+          <p className="text-[12px] mt-0.5" style={{ color: '#94a3b8' }}>Ordem real: o admin intercepta pela regra; o resto, por <b>{(QUEUE_LABELS[data?.queueOrder || 'credito'] || 'Crédito').toLowerCase()}</b>.</p>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ background: '#22c55e' }} />
           <span className="text-[11px] font-semibold" style={{ color: '#15803d' }}>ao vivo</span>
           {updatedAt && <span className="text-[10px]" style={{ color: '#cbd5e1' }}>· {updatedAt}</span>}
         </div>
+      </div>
+
+      <div className="px-6 py-2.5 flex items-center gap-2 flex-wrap" style={{ borderBottom: '1px solid #f1f5f9', background: '#fcfcff' }}>
+        <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Regra da fila:</span>
+        {(['credito', 'antiguidade', 'hibrido', 'rodizio'] as const).map(o => {
+          const active = (data?.queueOrder || 'credito') === o
+          return <button key={o} onClick={() => changeOrder(o)} disabled={savingOrder} className="text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all disabled:opacity-50" style={active ? { background: '#6366f1', color: '#fff' } : { background: '#eef2ff', color: '#6366f1' }}>{QUEUE_LABELS[o]}</button>
+        })}
+        {savingOrder && <span className="text-[10px]" style={{ color: '#94a3b8' }}>salvando…</span>}
       </div>
 
       {loading ? <div className="px-6 py-8 text-center text-[13px]" style={{ color: '#94a3b8' }}>Carregando…</div> : !data ? <div className="px-6 py-8 text-center text-[13px]" style={{ color: '#94a3b8' }}>Erro ao carregar.</div> : (
@@ -94,7 +117,7 @@ export function DeliveryQueueCard() {
             </div>
           ))}
 
-          <div className="px-6 py-2" style={{ background: '#fafbff' }}><p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Fila por crédito — recebem os outros leads</p></div>
+          <div className="px-6 py-2" style={{ background: '#fafbff' }}><p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Fila por {(QUEUE_LABELS[data?.queueOrder || 'credito'] || 'Crédito').toLowerCase()} — recebem os outros leads</p></div>
 
           {data.fila.length === 0 ? <div className="px-6 py-4 text-center text-[12px]" style={{ color: '#94a3b8' }}>Ninguém com crédito.</div> : data.fila.map((q, i) => (
             <div key={q.id} className="flex items-center gap-4 px-6 py-3" style={{ borderBottom: i < data.fila.length - 1 ? '1px solid #f8fafc' : 'none' }}>

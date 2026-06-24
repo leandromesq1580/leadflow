@@ -357,12 +357,30 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
   }
   eligible = availableNow
 
-  // Buyers are already sorted by remaining DESC (weighted distribution).
-  // 🟢 PISO DIARIO: cada apto recebe pelo menos 1 lead/dia ANTES de qualquer um pegar
-  // o 2o. Prioriza quem recebeu 0 leads de sistema HOJE (meia-noite Eastern). Esgotado
-  // o piso (todos ja tem >=1 hoje), volta ao ponderado por maior saldo (eligible ja vem
-  // ordenado por remaining DESC).
-  let selectedBuyer = eligible[0]
+  // 🟢 PISO DIARIO + REGRA DE ORDENACAO configuravel (settings.lead_routing.queue_order):
+  //   credito (PADRAO = comportamento atual, maior saldo 1o) | antiguidade (mais antigo 1o)
+  //   | hibrido (piso por antiguidade, sobras por credito) | rodizio (quem recebeu menos em 30d).
+  // O PISO continua nas 4: cada apto recebe >=1 lead/dia ANTES de alguem pegar o 2o.
+  let queueOrder = 'credito'
+  const createdAt: Record<string, number> = {}
+  try {
+    const { data: rtSet } = await supabase.from('settings').select('value').eq('key', 'lead_routing').maybeSingle()
+    queueOrder = ((rtSet?.value as any)?.queue_order as string) || 'credito'
+    if (queueOrder !== 'credito') {
+      const { data: cr } = await supabase.from('buyers').select('id, created_at').in('id', eligible.map(b => b.id))
+      for (const r of cr || []) createdAt[r.id] = new Date(r.created_at as string).getTime()
+    }
+  } catch (e) { console.error('[Distribute] queue_order err (fallback credito):', (e as any)?.message) }
+
+  const ordenaFila = (list: EligibleBuyer[], modo: string): EligibleBuyer[] => {
+    const arr = [...list]
+    if (modo === 'antiguidade') arr.sort((a, b) => (createdAt[a.id] || 0) - (createdAt[b.id] || 0))
+    else if (modo === 'rodizio') arr.sort((a, b) => (a.leads_count - b.leads_count) || ((createdAt[a.id] || 0) - (createdAt[b.id] || 0)))
+    else arr.sort((a, b) => b.remaining - a.remaining) // credito (padrao)
+    return arr
+  }
+
+  let selectedBuyer = ordenaFila(eligible, queueOrder === 'hibrido' ? 'credito' : queueOrder)[0]
   try {
     const dayStart = easternDayStartISO()
     const { data: todayLeads } = await supabase
@@ -372,9 +390,15 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
       .gte('assigned_at', dayStart)
     const gotToday = new Set((todayLeads || []).map((l: any) => l.assigned_to))
     const semHoje = eligible.filter(b => !gotToday.has(b.id))
-    if (semHoje.length) selectedBuyer = semHoje[0]
-    console.log(`[Distribute] piso-diario: ${semHoje.length} apto(s) sem lead hoje -> ${selectedBuyer.name} (${semHoje.length ? 'piso' : 'ponderado'})`)
-  } catch (e) { console.error('[Distribute] piso err (fallback p/ ponderado):', (e as any)?.message) }
+    if (semHoje.length) {
+      // Rodada 1 (piso): hibrido ordena por antiguidade; senao pela regra escolhida.
+      selectedBuyer = ordenaFila(semHoje, queueOrder === 'hibrido' ? 'antiguidade' : queueOrder)[0]
+    } else {
+      // Rodada 2 (todos ja receberam hoje): hibrido por credito; senao a regra.
+      selectedBuyer = ordenaFila(eligible, queueOrder === 'hibrido' ? 'credito' : queueOrder)[0]
+    }
+    console.log(`[Distribute] regra=${queueOrder} piso: ${semHoje.length} sem lead hoje -> ${selectedBuyer.name}`)
+  } catch (e) { console.error('[Distribute] piso err (fallback):', (e as any)?.message) }
 
   // Assign lead to buyer
   const { error: assignError } = await supabase

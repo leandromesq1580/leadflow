@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
   const N = Number(ar.one_in ?? ar.daily_quota ?? 0)
   const adminEmails: string[] = (ar.admin_emails || []).filter(Boolean)
   const fallbackEmail: string | null = routing.fallback_email || null
+  const queueOrder: string = routing.queue_order || 'credito'
 
   // Vez do admin: posição = leads do sistema já distribuídos; admin pega quando (pos % N == 0)
   let leadsUntilAdmin: number | null = null, herTurnNow = false
@@ -70,12 +71,12 @@ export async function GET(request: NextRequest) {
 
   // FILA DE CRÉDITO (RPC) — exclui quem já está como admin pra não duplicar
   const { data: elig } = await db.rpc('get_eligible_buyers', { p_product_type: 'lead', p_state: null })
-  const seen = new Map<string, { id: string; name: string; credits: number }>()
+  const seen = new Map<string, { id: string; name: string; credits: number; leads_count: number }>()
   for (const e of (elig || [])) {
     if (adminIds.has(e.id)) continue
     const cur = seen.get(e.id)
     if (cur) { cur.credits += Number(e.remaining) || 0; continue }
-    seen.set(e.id, { id: e.id, name: (e.name || '').trim(), credits: Number(e.remaining) || 0 })
+    seen.set(e.id, { id: e.id, name: (e.name || '').trim(), credits: Number(e.remaining) || 0, leads_count: Number(e.leads_count) || 0 })
   }
   let queue = [...seen.values()]
   // 🟢 PISO DIARIO: quem ainda NAO recebeu lead de sistema hoje (meia-noite Eastern) vem
@@ -84,13 +85,25 @@ export async function GET(request: NextRequest) {
   const { data: todayLeads } = await db.from('leads').select('assigned_to')
     .in('assigned_to', queue.map(q => q.id)).not('meta_lead_id', 'is', null).gte('assigned_at', dayStart)
   const gotToday = new Set((todayLeads || []).map((l: any) => l.assigned_to))
+  // Ordena pela regra escolhida (queue_order), dentro dos grupos do piso (nao-hoje 1o).
+  const createdAt: Record<string, number> = {}
+  if (queueOrder !== 'credito') {
+    const { data: cr } = await db.from('buyers').select('id, created_at').in('id', queue.map(q => q.id))
+    for (const r of cr || []) createdAt[r.id] = new Date(r.created_at as string).getTime()
+  }
+  const cmpRegra = (modo: string, a: any, b: any) => {
+    if (modo === 'antiguidade') return (createdAt[a.id] || 0) - (createdAt[b.id] || 0)
+    if (modo === 'rodizio') return (a.leads_count - b.leads_count) || ((createdAt[a.id] || 0) - (createdAt[b.id] || 0))
+    return b.credits - a.credits // credito
+  }
   queue = queue.sort((a, b) => {
     const ag = gotToday.has(a.id) ? 1 : 0, bg = gotToday.has(b.id) ? 1 : 0
-    if (ag !== bg) return ag - bg
-    return b.credits - a.credits
+    if (ag !== bg) return ag - bg // piso: quem nao recebeu hoje primeiro
+    if (queueOrder === 'hibrido') return cmpRegra(ag === 0 ? 'antiguidade' : 'credito', a, b)
+    return cmpRegra(queueOrder, a, b)
   })
   const stMap2 = await statesOf(queue.map(q => q.id))
   const fila = queue.map((q, i) => ({ pos: i + 1, id: q.id, nome: q.name, creditos: q.credits, estados: (stMap2[q.id] || []).sort(), recebeuHoje: gotToday.has(q.id) }))
 
-  return NextResponse.json({ adminRule: { N, leadsUntilAdmin, herTurnNow }, admins, fila })
+  return NextResponse.json({ adminRule: { N, leadsUntilAdmin, herTurnNow }, queueOrder, admins, fila })
 }
