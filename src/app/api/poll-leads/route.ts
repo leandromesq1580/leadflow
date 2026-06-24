@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { distributeLeadToNextBuyer, forceAssignRoundRobin, redistributePendingLeads, tryAdminRule } from '@/lib/distribute'
 import { dripCrmBonusLeads } from '@/lib/crm-bonus-drip'
-import { notifyGroupLeadPending, sendLeadNotificationEmail, checkBridgeHealthAndAlert } from '@/lib/notifications'
+import { notifyGroupLeadPending, sendLeadNotificationEmail, checkBridgeHealthAndAlert, checkAllBridgesAndAlert } from '@/lib/notifications'
 import { stateFromPhone } from '@/lib/us-area-codes'
 
 const FORM_IDS = [
@@ -201,6 +201,9 @@ export async function GET(request: Request) {
   let reconcileError: string | null = null
   let bridgeReady = true
   try { bridgeReady = await checkBridgeHealthAndAlert() } catch (e) { console.error('[Poll] watchdog err:', (e as any)?.message) }
+  // Monitor de TODAS as bridges (avisa o grupo quando a de qualquer comprador cai).
+  let bridgeMonitor: { checked: number; down: number; alerts: number } | null = null
+  try { bridgeMonitor = await checkAllBridgesAndAlert() } catch (e) { console.error('[Poll] bridge-monitor err:', (e as any)?.message) }
   if (bridgeReady) {
     try {
       const cutoff = new Date(Date.now() - 6 * 3600_000).toISOString()
@@ -246,6 +249,7 @@ export async function GET(request: Request) {
     missed_count: missedCount,
     reconcile_error: reconcileError,
     bridge_ready: bridgeReady,
+    bridge_monitor: bridgeMonitor,
     timestamp: new Date().toISOString(),
   })
 }

@@ -312,6 +312,75 @@ export async function checkBridgeHealthAndAlert(): Promise<boolean> {
   return false
 }
 
+/**
+ * Monitor de TODAS as bridges (não só a global). Roda no poll-leads (~2min).
+ * Detecta quando a bridge de QUALQUER comprador cai e avisa o GRUPO central pra
+ * o time pedir reconexão ANTES do cliente bater no erro. Rastreia o estado por
+ * comprador num settings key — alerta só na TRANSIÇÃO (up->down e down->up); na
+ * 1ª rodada apenas semeia o baseline (sem alertar). O alerta sai pela bridge
+ * global (sendWhatsApp pro grupo), que está no ar.
+ */
+export async function checkAllBridgesAndAlert(): Promise<{ checked: number; down: number; alerts: number }> {
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const db = createAdminClient()
+  const adminGroupId = process.env.WHATSAPP_ADMIN_GROUP || '120363403347083071@g.us'
+
+  const { data: buyers } = await db
+    .from('buyers')
+    .select('id, name, wa_bridge_url, wa_bridge_key, wa_bridge_phone')
+    .not('wa_bridge_url', 'is', null)
+  if (!buyers || !buyers.length) return { checked: 0, down: 0, alerts: 0 }
+
+  let prev: Record<string, string> = {}
+  try {
+    const { data } = await db.from('settings').select('value').eq('key', 'wa_bridge_monitor').maybeSingle()
+    prev = ((data?.value as any) || {}) as Record<string, string>
+  } catch {}
+
+  const next: Record<string, string> = {}
+  let down = 0
+  let alerts = 0
+  for (const b of buyers) {
+    if (!b.wa_bridge_url || !b.wa_bridge_key) continue
+    let ready = false
+    try {
+      const res = await fetch(`${String(b.wa_bridge_url).replace(/\/$/, '')}/status`, {
+        headers: { apikey: String(b.wa_bridge_key) },
+        signal: AbortSignal.timeout(6000),
+      })
+      const s: any = await res.json().catch(() => null)
+      ready = !!(s && s.ready === true)
+    } catch { ready = false }
+
+    const state = ready ? 'up' : 'down'
+    next[b.id] = state
+    if (!ready) down++
+
+    const before = prev[b.id]
+    // Só alerta em transição de um estado CONHECIDO (1ª rodada = baseline, sem spam).
+    if (before && before !== state) {
+      const who = (b.name || 'Comprador').trim()
+      const ph = b.wa_bridge_phone ? ` (${b.wa_bridge_phone})` : ''
+      try {
+        if (state === 'down') {
+          await sendWhatsApp(adminGroupId, `⚠️ WhatsApp de *${who}*${ph} DESCONECTOU. Peça pra reconectar: Configurações → Conectar WhatsApp → escanear o QR. Enquanto isso, as mensagens dele falham.`)
+          await db.from('buyers').update({ wa_bridge_status: 'disconnected' }).eq('id', b.id)
+        } else {
+          await sendWhatsApp(adminGroupId, `✅ WhatsApp de *${who}*${ph} reconectou — voltou a enviar normal.`)
+          await db.from('buyers').update({ wa_bridge_status: 'connected' }).eq('id', b.id)
+        }
+        alerts++
+      } catch (e) { console.error('[BridgeMonitor] alert err:', (e as any)?.message) }
+    }
+  }
+
+  try {
+    await db.from('settings').upsert({ key: 'wa_bridge_monitor', value: next, updated_at: new Date().toISOString() })
+  } catch {}
+  console.log(`[BridgeMonitor] checked=${buyers.length} down=${down} alerts=${alerts}`)
+  return { checked: buyers.length, down, alerts }
+}
+
 interface TeamMember {
   id: string
   name: string
