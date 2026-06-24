@@ -144,21 +144,45 @@ export async function POST(request: NextRequest) {
       bridgePayload.mediaFilename = fileName
     }
 
-    const r = await fetch(`${bridgeUrl}/send`, {
-      method: 'POST',
-      headers: { apikey: bridgeKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify(bridgePayload),
-    })
-
-    if (!r.ok) {
-      const errBody = await r.json().catch(() => ({ error: 'Falha' }))
-      const msg = errBody?.error || 'Falha ao enviar'
-      const friendly = msg.includes('No LID') || msg.includes('nao tem WhatsApp')
-        ? `Este número não tem WhatsApp ativo (${cleanPhone}). Confirme o número com o lead.`
-        : msg
-      return NextResponse.json({ error: friendly }, { status: r.status })
+    // RETRY: o bridge (whatsapp-web.js/puppeteer) solta erro TRANSITÓRIO às vezes —
+    // "Not connected" por blip momentâneo, "Promise was collected", 503, rede.
+    // Retenta até 3x (backoff 0.8/1.6s). Só NÃO retenta número sem WhatsApp.
+    let sent: any = null
+    let lastErr = 'Falha ao enviar'
+    let lastStatus = 500
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const r = await fetch(`${bridgeUrl}/send`, {
+          method: 'POST',
+          headers: { apikey: bridgeKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify(bridgePayload),
+        })
+        if (r.ok) { sent = await r.json().catch(() => ({ id: null })); break }
+        const errBody = await r.json().catch(() => ({ error: 'Falha' }))
+        lastErr = errBody?.error || 'Falha ao enviar'
+        lastStatus = r.status
+      } catch (e: any) {
+        lastErr = e?.message || 'fetch failed'
+        lastStatus = 502
+      }
+      const permanent = /No LID|nao tem WhatsApp/i.test(lastErr)
+      if (permanent || attempt === 2) break
+      await new Promise(res => setTimeout(res, 800 * (attempt + 1)))
     }
-    const { id: waId } = await r.json()
+
+    if (!sent) {
+      // Bridge caída de verdade → marca o cache pra parar de mentir 'connected'
+      if (lastStatus === 503 || /Not connected|not ready/i.test(lastErr)) {
+        await db.from('buyers').update({ wa_bridge_status: 'disconnected' }).eq('id', buyer_id)
+      }
+      const friendly = /No LID|nao tem WhatsApp/i.test(lastErr)
+        ? `Este número não tem WhatsApp ativo (${cleanPhone}). Confirme o número com o lead.`
+        : (lastStatus === 503 || /Not connected|not ready/i.test(lastErr))
+          ? 'Seu WhatsApp desconectou. Reconecte em Configurações → Conectar WhatsApp e tente de novo (sua mensagem continua aqui no campo).'
+          : lastErr
+      return NextResponse.json({ error: friendly }, { status: lastStatus })
+    }
+    const waId = sent?.id || null
 
     const { data: msg } = await db.from('whatsapp_messages').insert({
       buyer_id,
