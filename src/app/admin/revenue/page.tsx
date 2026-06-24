@@ -35,7 +35,6 @@ export default async function RevenuePage() {
   const activePro = buyers.filter(b => b.crm_plan === 'pro' && b.crm_subscription_status === 'active')
   const payingProSubs = activePro.filter(b => !!b.crm_subscription_id).length
   const compProSubs = activePro.filter(b => !b.crm_subscription_id).length
-  const mrr = payingProSubs * CRM_PRICE
 
   // This month revenue (stripe)
   const now = new Date()
@@ -67,18 +66,25 @@ export default async function RevenuePage() {
 
   // Datas reais de cobrança dos pagantes — buscadas no Stripe (o crm_expires_at do banco
   // está vazio). current_period_start = último pagamento; current_period_end = próxima.
-  const subDates: Record<string, { paid: number | null; renews: number | null }> = {}
+  const subDates: Record<string, { paid: number | null; renews: number | null; valor: number; label: string; mensal: number }> = {}
   try {
     const stripe = getStripe()
     const rows = await Promise.all(crmPayers.map(async (b: any) => {
       try {
         const s: any = await stripe.subscriptions.retrieve(b.crm_subscription_id)
         const it = s.items?.data?.[0] || {}
-        return { id: b.id, paid: s.current_period_start ?? it.current_period_start ?? null, renews: s.current_period_end ?? it.current_period_end ?? null }
-      } catch { return { id: b.id, paid: null, renews: null } }
+        const price = it.price || {}
+        const valor = price.unit_amount != null ? price.unit_amount / 100 : CRM_PRICE
+        const ic = price.recurring?.interval_count || 1
+        const meses = price.recurring?.interval === 'year' ? 12 * ic : ic
+        const label = meses === 12 ? 'Anual' : meses === 6 ? 'Semestral' : meses === 3 ? 'Trimestral' : 'Mensal'
+        return { id: b.id, paid: s.current_period_start ?? it.current_period_start ?? null, renews: s.current_period_end ?? it.current_period_end ?? null, valor, label, mensal: valor / meses }
+      } catch { return { id: b.id, paid: null, renews: null, valor: CRM_PRICE, label: 'Mensal', mensal: CRM_PRICE } }
     }))
-    for (const r of rows) subDates[r.id] = { paid: r.paid, renews: r.renews }
+    for (const r of rows) subDates[r.id] = { paid: r.paid, renews: r.renews, valor: r.valor, label: r.label, mensal: r.mensal }
   } catch {}
+  // MRR = soma do equivalente MENSAL de cada pagante (trimestral $237 = ~$79/mes; anual $718.80 = ~$59.90/mes).
+  const mrr = Math.round(crmPayers.reduce((acc: number, b: any) => acc + (subDates[b.id]?.mensal ?? CRM_PRICE), 0))
   const fmtTs = (ts: number | null) => ts ? new Date(ts * 1000).toLocaleDateString('pt-BR') : null
   // Sempre do mais recente pro mais antigo: pagantes pelo ultimo pagamento, cortesias pela criacao
   crmPayers.sort((a: any, b: any) => (subDates[b.id]?.paid ?? 0) - (subDates[a.id]?.paid ?? 0) || new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
@@ -110,7 +116,7 @@ export default async function RevenuePage() {
         <div className="rounded-2xl p-5" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
           <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.7)' }}>MRR (CRM Pro)</p>
           <p className="text-[28px] font-extrabold mt-1 text-white">${mrr.toLocaleString()}</p>
-          <p className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,0.6)' }}>{payingProSubs} pagante{payingProSubs === 1 ? '' : 's'} × $99{compProSubs > 0 ? ` · ${compProSubs} cortesia` : ''}</p>
+          <p className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,0.6)' }}>{payingProSubs} pagante{payingProSubs === 1 ? '' : 's'} (equiv. mensal){compProSubs > 0 ? ` · ${compProSubs} cortesia` : ''}</p>
         </div>
         <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
           <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Receita este mês</p>
@@ -202,7 +208,7 @@ export default async function RevenuePage() {
                   <p className="text-[11px] font-semibold" style={{ color: '#64748b' }}>{fmtTs(subDates[b.id]?.paid ?? null) ? `pgto ${fmtTs(subDates[b.id]?.paid ?? null)}` : '—'}</p>
                   <p className="text-[10px]" style={{ color: '#94a3b8' }}>{fmtTs(subDates[b.id]?.renews ?? null) ? `renova ${fmtTs(subDates[b.id]?.renews ?? null)}` : ''}</p>
                 </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase flex-shrink-0" style={{ background: '#dcfce7', color: '#15803d' }}>Paga $99/mês</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase flex-shrink-0" style={{ background: '#dcfce7', color: '#15803d' }}>{subDates[b.id]?.label || 'Mensal'} · ${subDates[b.id]?.valor ?? 99}</span>
               </Link>
             ))}
             {crmCourtesy.map((b: any, i: number) => (
