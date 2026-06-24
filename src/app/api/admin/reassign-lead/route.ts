@@ -85,6 +85,25 @@ export async function POST(request: NextRequest) {
     await db.from('credits').update({ total_used: (Number(debitRow.total_used) || 0) + 1 }).eq('id', debitRow.id)
   }
 
+  // 5b) REFUND ao dono ANTERIOR: ele perdeu o lead → o credito dele VOLTA (espelha o
+  //     debito do novo dono). Sem isso, toda reatribuicao VAZA 1 credito do perdedor
+  //     (caso Fabiany: o lead saiu dela e o saldo ficou 4 em vez de 5). So pra lead
+  //     AUTOMATICO (manual nao debita) + dono anterior nao-admin; nunca abaixo de 0.
+  const prevOwner = (lead as any).assigned_to
+  const leadIsManual = (lead as any).raw_data?.source === 'manual' || lead.campaign_name === 'Manual' || lead.form_name === 'manual_entry'
+  if (prevOwner && prevOwner !== to_buyer_id && !leadIsManual) {
+    const { data: prevAdmin } = await db.from('buyers').select('is_admin').eq('id', prevOwner).maybeSingle()
+    if (!prevAdmin?.is_admin) {
+      const { data: pc } = await db.from('credits')
+        .select('id, total_used').eq('buyer_id', prevOwner).eq('type', 'lead').gt('total_used', 0)
+        .order('total_used', { ascending: false }).limit(1)
+      if (pc && pc[0]) {
+        await db.from('credits').update({ total_used: Math.max(0, (Number(pc[0].total_used) || 0) - 1) }).eq('id', pc[0].id)
+        console.log(`[Reassign] refund 1 credito ao dono anterior ${prevOwner} (perdeu o lead ${lead_id}).`)
+      }
+    }
+  }
+
   // 6) Notifica o novo agente
   try { await sendLeadNotificationEmail(toBuyer as any, lead) } catch (e) { console.error('[Reassign] notify:', (e as any)?.message) }
 
