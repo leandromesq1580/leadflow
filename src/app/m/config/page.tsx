@@ -5,18 +5,11 @@ import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n-client'
 import { MIcon } from '@/components/mobile/icons'
 import { WaConnectCard } from '@/components/mobile/wa-connect-card'
+import { Toggle } from '@/components/mobile/toggle'
 
 const US_STATES = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC']
 const DAY_KEYS = ['weekday', 'saturday', 'sunday', 'holiday'] as const
 const PERIOD_KEYS = ['morning', 'afternoon', 'evening'] as const
-
-function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
-  return (
-    <div onClick={onClick} className="m-tap" style={{ width: 44, height: 26, borderRadius: 999, background: on ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : 'rgba(255,255,255,0.12)', position: 'relative', cursor: 'pointer', flexShrink: 0 }}>
-      <div style={{ position: 'absolute', top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left .2s' }} />
-    </div>
-  )
-}
 
 export default function MobileConfig() {
   const t = useT()
