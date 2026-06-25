@@ -3,6 +3,7 @@
   "appName": "Lead4Pro",
   "webDir": "www",
   "backgroundColor": "#0b0b12",
+  "appendUserAgent": "Lead4ProApp",
   "server": {
     "url": "https://lead4producers.com/m",
     "cleartext": false,

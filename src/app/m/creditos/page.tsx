@@ -19,9 +19,13 @@ export default function MobileCreditos() {
   const [err, setErr] = useState(false)
   const [success, setSuccess] = useState(false)
   const [busy, setBusy] = useState(false)
+  // No app nativo (iOS/Android) a compra fica ESCONDIDA — evita rejeição da Apple
+  // por In-App Purchase (Guia 3.1.1). Detecta pelo User-Agent injetado pelo Capacitor.
+  const [isNativeApp, setIsNativeApp] = useState(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.search.includes('success=true')) setSuccess(true)
+    if (typeof navigator !== 'undefined' && /Lead4ProApp/i.test(navigator.userAgent)) setIsNativeApp(true)
     fetch('/api/m/credits', { cache: 'no-store' }).then(r => (r.ok ? r.json() : Promise.reject())).then(setD).catch(() => setErr(true))
   }, [])
 
@@ -80,6 +84,15 @@ export default function MobileCreditos() {
             </div>
           </div>
 
+          {isNativeApp && (
+            <div className="m-card" style={{ padding: 16, marginBottom: 18 }}>
+              <p className="m-muted" style={{ fontSize: 13, lineHeight: 1.55, margin: 0, textAlign: 'center' }}>
+                {L('Para comprar leads ou assinar o CRM Pro, acesse lead4producers.com pelo navegador.', 'To buy leads or subscribe to CRM Pro, visit lead4producers.com in your browser.', 'Para comprar leads o suscribir, visita lead4producers.com en el navegador.')}
+              </p>
+            </div>
+          )}
+
+          {!isNativeApp && <>
           {/* CRM Pro */}
           <div className="m-card" style={{ padding: 16, marginBottom: 18, border: '1px solid rgba(139,92,246,0.4)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: isPro ? 12 : 10 }}>
@@ -112,6 +125,7 @@ export default function MobileCreditos() {
             <p style={{ fontSize: 14, fontWeight: 700, margin: '14px 0 2px' }}>Appointments</p>
             {PRODUCTS.appointment.packages.map(p => <PkgRow key={p.id} p={p} type="Appts" />)}
           </div>
+          </>}
 
           {/* Histórico */}
           {d.history.length > 0 && (

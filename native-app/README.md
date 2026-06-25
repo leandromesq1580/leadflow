@@ -62,10 +62,11 @@ crie/escolha a keystore, e suba o `.aab` no **Google Play Console**.
    habilitar **push nativo** (plugin `@capacitor/push-notifications` → token APNs → mandar
    pro `/api/push/subscribe`) e garantir experiência de app (splash, status bar, sem cara de
    navegador). Um CRM com funções reais + push costuma passar, mas não é garantido.
-2. **Guia 3.1.1 — In-App Purchase:** 🔴 o app vende **leads e assinatura CRM Pro via Stripe**.
-   A Apple pode exigir que venda digital consumida no app use o **pagamento dela (corte ~30%)**.
-   Opções: (a) usar IAP no iOS; (b) esconder a compra no app iOS e vender só no site; (c)
-   argumentar que é serviço B2B/multiplataforma. **Decidir antes de enviar.**
+2. **Guia 3.1.1 — In-App Purchase:** ✅ **resolvido (opção b).** A compra de leads e a
+   assinatura CRM Pro ficam **escondidas no app nativo** — `capacitor.config.json` injeta
+   `appendUserAgent: "Lead4ProApp"`, e `/m/creditos` detecta isso (`/Lead4ProApp/.test(UA)`)
+   pra ocultar os botões de compra/assinatura e mostrar só saldo + histórico + um aviso pra
+   comprar no site. Sem venda digital no app = sem exigência de IAP.
 3. **Guia 5.1.1(v) — exclusão de conta:** ✅ **já implementado** — *Configurações → Excluir
    minha conta* (`POST /api/account/delete`: remove o login + anonimiza o PII).
 
