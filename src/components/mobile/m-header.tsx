@@ -22,8 +22,8 @@ function BrandMark({ size = 28 }: { size?: number }) {
 
 export function MHeader({ userName }: { userName?: string }) {
   const pathname = usePathname()
-  // Esconde o cabeçalho de marca na thread de conversa (chat em tela cheia).
-  if (/^\/m\/whatsapp\/[^/]+$/.test(pathname)) return null
+  // Esconde o cabeçalho de marca nas telas de chat em tela cheia (conversa + AI).
+  if (/^\/m\/(whatsapp\/[^/]+|ai)$/.test(pathname)) return null
   return (
     <header className="m-header">
       <Link href="/m" className="m-brand">

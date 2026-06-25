@@ -12,15 +12,15 @@ export default function MobileMais() {
   const items: { icon: string; label: string; href?: string }[] = [
     { icon: 'gauge', label: L('Performance', 'Performance', 'Rendimiento'), href: '/m/performance' },
     { icon: 'calendar', label: 'Appointments' },
-    { icon: 'robot', label: L('Especialista AI', 'AI Specialist', 'Especialista IA') },
+    { icon: 'robot', label: L('Especialista AI', 'AI Specialist', 'Especialista IA'), href: '/m/ai' },
     { icon: 'notes', label: L('Notas', 'Notes', 'Notas'), href: '/m/notas' },
     { icon: 'template', label: 'Templates', href: '/m/templates' },
     { icon: 'bolt', label: L('Automações', 'Automations', 'Automatizaciones'), href: '/m/automacoes' },
     { icon: 'refresh', label: 'Sequences', href: '/m/sequences' },
     { icon: 'bell', label: L('Avisos', 'Reminders', 'Avisos'), href: '/m/avisos' },
-    { icon: 'users', label: L('Meu time', 'My team', 'Mi equipo') },
+    { icon: 'users', label: L('Meu time', 'My team', 'Mi equipo'), href: '/m/time' },
     { icon: 'gift', label: L('Indicações', 'Referrals', 'Referidos'), href: '/m/indicacoes' },
-    { icon: 'coin', label: L('Créditos & planos', 'Credits & plans', 'Créditos y planes') },
+    { icon: 'coin', label: L('Créditos & planos', 'Credits & plans', 'Créditos y planes'), href: '/m/creditos' },
     { icon: 'settings', label: L('Configurações', 'Settings', 'Configuración'), href: '/m/config' },
   ]
 

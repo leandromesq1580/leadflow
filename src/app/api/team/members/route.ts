@@ -55,13 +55,19 @@ export async function GET(request: NextRequest) {
 /** POST /api/team/members — Add a team member */
 export async function POST(request: NextRequest) {
   const body = await request.json()
-  const { auth_user_id, name, email, phone, whatsapp } = body
-  if (!auth_user_id || !name) return NextResponse.json({ error: 'Missing name or auth' }, { status: 400 })
-
-  const buyer = await getBuyerFromAuth(auth_user_id)
-  if (!buyer) return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
+  const { auth_user_id, buyer_id, name, email, phone, whatsapp } = body
+  if (!name || (!auth_user_id && !buyer_id)) return NextResponse.json({ error: 'Missing name or auth' }, { status: 400 })
 
   const db = createAdminClient()
+  // Aceita buyer_id direto (app mobile) ou auth_user_id (desktop).
+  let buyer: { id: string; is_agency?: boolean | null } | null = null
+  if (buyer_id) {
+    const { data } = await db.from('buyers').select('id, is_agency').eq('id', buyer_id).single()
+    buyer = data
+  } else {
+    buyer = await getBuyerFromAuth(auth_user_id)
+  }
+  if (!buyer) return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
 
   // Auto-enable agency mode on first member add
   if (!buyer.is_agency) {
