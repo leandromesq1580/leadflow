@@ -51,14 +51,9 @@ export default function MobileHome() {
       {/* Saudação + créditos */}
       <div style={{ borderRadius: 22, padding: 18, marginBottom: 18, position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 18px 40px -16px rgba(99,102,241,0.7)' }}>
         <div style={{ position: 'absolute', top: -36, right: -28, width: 130, height: 130, borderRadius: '50%', background: 'rgba(255,255,255,0.13)' }} />
-        <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.82)' }}>{greet},</p>
-            <p style={{ margin: '1px 0 0', fontSize: 21, fontWeight: 700, color: '#fff' }}>{d.first_name || ' '}</p>
-          </div>
-          <Link href="/m/mais" className="m-link" style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, color: '#fff', fontSize: 16 }}>
-            {getInitials(d.first_name || 'L')}
-          </Link>
+        <div style={{ position: 'relative' }}>
+          <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.82)' }}>{greet},</p>
+          <p style={{ margin: '1px 0 0', fontSize: 21, fontWeight: 700, color: '#fff' }}>{d.first_name || ' '}</p>
         </div>
         <div style={{ position: 'relative', marginTop: 16, display: 'flex', alignItems: 'baseline', gap: 8 }}>
           <span style={{ fontSize: 34, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{d.remaining_credits}</span>

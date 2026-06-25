@@ -31,6 +31,8 @@ const ICONS: Record<string, ReactNode> = {
   clock: <><circle cx="12" cy="12" r="8" /><path d="M12 8v4l3 2" /></>,
   gauge: <><path d="M4 18a8 8 0 1 1 16 0" /><path d="M12 18l4-5" /></>,
   logout: <><path d="M9 5H5v14h4" /><path d="M14 12H9M17 9l3 3-3 3" /></>,
+  check: <><path d="M5 12l5 5L20 7" /></>,
+  userPlus: <><circle cx="9" cy="8" r="3.2" /><path d="M3 20c0-3.3 2.7-5 6-5 1.2 0 2.3.2 3.2.7" /><path d="M17 14v6M14 17h6" /></>,
 }
 
 export function MIcon({

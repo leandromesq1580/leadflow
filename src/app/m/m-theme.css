@@ -36,9 +36,22 @@
 
 .m-scroll {
   position: relative; z-index: 1; min-height: 100dvh;
-  padding-top: calc(env(safe-area-inset-top) + 10px);
+  padding-top: 0;
   padding-bottom: calc(var(--m-nav-h) + env(safe-area-inset-bottom) + 20px);
 }
+
+/* cabeçalho de marca (sticky no topo) */
+.m-header {
+  position: sticky; top: 0; z-index: 40;
+  background: rgba(11, 11, 18, 0.82);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: calc(env(safe-area-inset-top) + 11px) 18px 11px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.m-brand { display: flex; align-items: center; gap: 9px; text-decoration: none; color: var(--m-text); }
+.m-brand-name { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; }
+.m-header-av { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; text-decoration: none; background: linear-gradient(135deg, #6366f1, #a78bfa); }
 .m-shell { max-width: 640px; margin: 0 auto; }
 .m-pad { padding-left: 18px; padding-right: 18px; }
 
@@ -78,3 +91,16 @@
 @keyframes m-spin { to { transform: rotate(360deg); } }
 
 .m-link { text-decoration: none; color: inherit; display: block; }
+
+/* chip de atribuir/redirecionar (delegar pra membro) */
+.m-assign { font-size: 11px; font-weight: 700; padding: 6px 11px; border-radius: 999px; white-space: nowrap; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 5px; }
+.m-assign.has { background: rgba(99, 102, 241, 0.22); color: #a5b4fc; }
+.m-assign.none { background: rgba(245, 158, 11, 0.16); color: #fbbf24; }
+
+/* bottom sheet */
+.m-sheet-ov { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); z-index: 60; display: flex; align-items: flex-end; }
+.m-sheet { width: 100%; max-width: 640px; margin: 0 auto; background: #15151f; border-radius: 22px 22px 0 0; border-top: 1px solid rgba(255, 255, 255, 0.1); padding: 8px 0 calc(env(safe-area-inset-bottom) + 16px); max-height: 72vh; overflow-y: auto; animation: m-sheet-up 0.22s ease; }
+@keyframes m-sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.m-sheet-grab { width: 38px; height: 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.2); margin: 7px auto 12px; }
+.m-sheet-item { display: flex; align-items: center; gap: 12px; padding: 13px 20px; cursor: pointer; }
+.m-sheet-item:active { background: rgba(255, 255, 255, 0.04); }

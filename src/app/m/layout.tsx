@@ -9,6 +9,7 @@ import { PrivacyProvider } from '@/lib/privacy-mode'
 import { PwaRegister } from '@/components/pwa-register'
 import { SuspendedAccount } from '@/components/dashboard/suspended-account'
 import { MobileBottomNav } from '@/components/mobile/bottom-nav'
+import { MHeader } from '@/components/mobile/m-header'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,7 +56,10 @@ export default async function MobileLayout({ children }: { children: React.React
       <PrivacyProvider>
         <div className="m-root m-tap">
           <div className="m-scroll">
-            <div className="m-shell">{children}</div>
+            <div className="m-shell">
+              <MHeader userName={buyer?.name || user.email || ''} />
+              {children}
+            </div>
           </div>
           <MobileBottomNav buyerId={buyer?.id} crmPlan={buyer?.crm_plan || 'free'} />
           {buyer?.id && <PwaRegister buyerId={buyer.id} />}

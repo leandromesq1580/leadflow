@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n-client'
 import { MIcon } from '@/components/mobile/icons'
+import { AssignSheet } from '@/components/mobile/assign-sheet'
 import { getInitials, statusLabel, timeAgo } from '@/lib/utils'
 
 interface Lead {
   id: string; name: string; email: string; phone: string; city: string; state: string
   status: string; interest: string; type: string; campaign_name: string; created_at: string
+  assigned_to_member?: string | null
   activities?: Array<{ id: string; action: string; notes?: string; created_at: string }>
 }
 
@@ -25,6 +27,9 @@ export default function MobileLeadDetail() {
   const id = params?.id as string
   const [lead, setLead] = useState<Lead | null>(null)
   const [err, setErr] = useState(false)
+  const [isAgency, setIsAgency] = useState(false)
+  const [members, setMembers] = useState<{ id: string; name: string }[]>([])
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -32,6 +37,10 @@ export default function MobileLeadDetail() {
       .then(r => (r.ok ? r.json() : Promise.reject()))
       .then(d => setLead(d.lead))
       .catch(() => setErr(true))
+    fetch('/api/m/team-context', { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d) { setIsAgency(!!d.is_agency); setMembers(d.members || []) } })
+      .catch(() => {})
   }, [id])
 
   const phoneDigits = (lead?.phone || '').replace(/\D/g, '')
@@ -77,6 +86,16 @@ export default function MobileLeadDetail() {
             </a>
           </div>
 
+          {/* Redirecionar pra membro do time (paridade com o AssignButton do desktop) */}
+          {isAgency && members.length > 0 && (
+            <button onClick={() => setSheetOpen(true)} className="m-tap" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 11, padding: '13px 16px', borderRadius: 15, background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: 'var(--m-text)', cursor: 'pointer', marginBottom: 22 }}>
+              <span style={{ color: '#a5b4fc', display: 'flex' }}><MIcon name="userPlus" size={18} /></span>
+              <span style={{ flex: 1, textAlign: 'left', fontSize: 14, fontWeight: 600 }}>{L('Redirecionar pra…', 'Reassign to…', 'Redirigir a…')}</span>
+              <span className="m-muted" style={{ fontSize: 13, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{members.find(m => m.id === lead.assigned_to_member)?.name || L('ninguém', 'no one', 'nadie')}</span>
+              <span className="m-faint" style={{ display: 'flex' }}><MIcon name="chevron" size={16} /></span>
+            </button>
+          )}
+
           {/* Detalhes */}
           <div className="m-card" style={{ padding: '3px 16px', marginBottom: 18 }}>
             {[
@@ -109,6 +128,18 @@ export default function MobileLeadDetail() {
                 </div>
               ))}
             </>
+          )}
+
+          {sheetOpen && (
+            <AssignSheet
+              leadId={lead.id}
+              leadName={lead.name}
+              members={members}
+              currentMemberId={lead.assigned_to_member}
+              locale={loc}
+              onClose={() => setSheetOpen(false)}
+              onDone={(mid) => setLead(prev => prev ? { ...prev, assigned_to_member: mid } : prev)}
+            />
           )}
         </div>
       )}
