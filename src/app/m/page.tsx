@@ -41,9 +41,9 @@ export default function MobileHome() {
   const greet = loc === 'en' ? 'Hello' : loc === 'es' ? 'Hola' : 'Olá'
   const stats = [
     { icon: 'flame', label: loc === 'en' ? 'Leads today' : loc === 'es' ? 'Leads hoy' : 'Leads hoje', value: d.leads_today, href: '/m/leads' },
-    { icon: 'coin', label: loc === 'en' ? 'Credits' : loc === 'es' ? 'Créditos' : 'Créditos', value: d.remaining_credits, href: '/m/em-breve?f=Cr%C3%A9ditos' },
+    { icon: 'coin', label: loc === 'en' ? 'Credits' : loc === 'es' ? 'Créditos' : 'Créditos', value: d.remaining_credits, href: '/m/creditos' },
     { icon: 'trend', label: loc === 'en' ? 'Conversion' : loc === 'es' ? 'Conversión' : 'Conversão', value: `${d.conversion_rate}%` },
-    { icon: 'calendar', label: 'Appointments', value: d.appointments_today, href: '/m/em-breve?f=Appointments' },
+    { icon: 'calendar', label: 'Appointments', value: d.appointments_today, href: '/m/appointments' },
   ]
 
   return (
