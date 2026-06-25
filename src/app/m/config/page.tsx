@@ -30,6 +30,20 @@ export default function MobileConfig() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [err, setErr] = useState('')
+  const [delOpen, setDelOpen] = useState(false)
+  const [delText, setDelText] = useState('')
+  const [deleting, setDeleting] = useState(false)
+
+  async function deleteAccount() {
+    if (deleting || delText.trim().toUpperCase() !== 'EXCLUIR') return
+    setDeleting(true)
+    try {
+      const r = await fetch('/api/account/delete', { method: 'POST' })
+      if (!r.ok) { const j = await r.json().catch(() => ({})); alert(j.error || L('Não consegui excluir agora.', "Couldn't delete now.", 'No pude eliminar.')); setDeleting(false); return }
+      try { const ref = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace('https://', '').split('.')[0]; document.cookie = `sb-${ref}-auth-token=; path=/; max-age=0; SameSite=Lax` } catch {}
+      window.location.href = '/m-login'
+    } catch { alert(L('Erro de conexão.', 'Connection error.', 'Error.')); setDeleting(false) }
+  }
 
   useEffect(() => {
     fetch('/api/m/settings', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => {
@@ -136,6 +150,30 @@ export default function MobileConfig() {
           <button onClick={save} disabled={saving} className="m-tap" style={{ width: '100%', height: 50, borderRadius: 14, background: saved ? 'rgba(16,185,129,0.9)' : 'var(--m-grad)', border: 'none', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
             {saving ? L('Salvando…', 'Saving…', 'Guardando…') : saved ? L('✓ Salvo', '✓ Saved', '✓ Guardado') : L('Salvar', 'Save', 'Guardar')}
           </button>
+
+          {/* Zona de perigo — exclusão de conta (App Store 5.1.1(v)) */}
+          <div style={{ marginTop: 26, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+            <button onClick={() => { setDelText(''); setDelOpen(true) }} className="m-tap" style={{ width: '100%', height: 46, borderRadius: 13, background: 'transparent', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              {L('Excluir minha conta', 'Delete my account', 'Eliminar mi cuenta')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {delOpen && (
+        <div className="m-sheet-ov" onClick={() => setDelOpen(false)}>
+          <div className="m-sheet" onClick={e => e.stopPropagation()} style={{ padding: '8px 20px calc(env(safe-area-inset-bottom) + 18px)' }}>
+            <div className="m-sheet-grab" style={{ marginLeft: 'auto', marginRight: 'auto' }} />
+            <p style={{ margin: '2px 0 8px', fontSize: 16, fontWeight: 700, color: '#f87171' }}>{L('Excluir conta', 'Delete account', 'Eliminar cuenta')}</p>
+            <p className="m-muted" style={{ fontSize: 13, lineHeight: 1.55, margin: '0 0 16px' }}>
+              {L('Isso é permanente: seu acesso é removido e seus dados pessoais são apagados. Para confirmar, digite EXCLUIR abaixo.', 'This is permanent: your access is removed and your personal data is erased. Type EXCLUIR to confirm.', 'Es permanente. Escribe EXCLUIR para confirmar.')}
+            </p>
+            <input className="m-input" value={delText} onChange={e => setDelText(e.target.value)} placeholder="EXCLUIR" autoCapitalize="characters" style={{ marginBottom: 14 }} />
+            <button onClick={deleteAccount} disabled={deleting || delText.trim().toUpperCase() !== 'EXCLUIR'} className="m-tap" style={{ width: '100%', height: 48, borderRadius: 14, background: '#ef4444', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: deleting || delText.trim().toUpperCase() !== 'EXCLUIR' ? 0.45 : 1 }}>
+              {deleting ? L('Excluindo…', 'Deleting…', 'Eliminando…') : L('Excluir permanentemente', 'Delete permanently', 'Eliminar')}
+            </button>
+            <button onClick={() => setDelOpen(false)} className="m-tap" style={{ width: '100%', height: 44, marginTop: 8, borderRadius: 12, background: 'transparent', border: 'none', color: 'var(--m-muted)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
+          </div>
         </div>
       )}
     </div>

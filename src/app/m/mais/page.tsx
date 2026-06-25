@@ -34,7 +34,7 @@ export default function MobileMais() {
       const ref = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace('https://', '').split('.')[0]
       document.cookie = `sb-${ref}-auth-token=; path=/; max-age=0; SameSite=Lax`
     } catch {}
-    window.location.href = '/login'
+    window.location.href = '/m-login'
   }
 
   return (

@@ -31,7 +31,7 @@ export const viewport: Viewport = {
 export default async function MobileLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerSupabase()
   const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) redirect('/login?redirect=/m')
+  if (error || !user) redirect('/m-login?redirect=/m')
 
   const db = createAdminClient()
   let { data: buyer } = await db

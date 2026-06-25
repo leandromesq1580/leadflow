@@ -1,0 +1,23 @@
+{
+  "name": "lead4pro-native",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Wrapper Capacitor (iOS/Android) do app Lead4Pro — carrega o PWA em lead4producers.com/m",
+  "scripts": {
+    "ios": "cap add ios && cap sync ios && cap open ios",
+    "android": "cap add android && cap sync android && cap open android",
+    "sync": "cap sync"
+  },
+  "dependencies": {
+    "@capacitor/app": "^6.0.2",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/push-notifications": "^6.0.4",
+    "@capacitor/splash-screen": "^6.0.3",
+    "@capacitor/status-bar": "^6.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/cli": "^6.2.0",
+    "@capacitor/ios": "^6.2.0"
+  }
+}

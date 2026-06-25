@@ -1,0 +1,35 @@
+{
+  "appId": "com.lead4pro.app",
+  "appName": "Lead4Pro",
+  "webDir": "www",
+  "backgroundColor": "#0b0b12",
+  "server": {
+    "url": "https://lead4producers.com/m",
+    "cleartext": false,
+    "allowNavigation": [
+      "lead4producers.com",
+      "*.lead4producers.com",
+      "checkout.stripe.com",
+      "*.stripe.com",
+      "*.supabase.co"
+    ]
+  },
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#0b0b12",
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "android": {
+    "backgroundColor": "#0b0b12"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 800,
+      "backgroundColor": "#0b0b12",
+      "showSpinner": false
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  }
+}
