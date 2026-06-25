@@ -26,5 +26,7 @@ export async function GET() {
     } catch {}
   }
 
-  return NextResponse.json({ is_agency: !!buyer.is_agency, members })
+  // buyer_id é o do PRÓPRIO usuário (resolvido pela sessão) — seguro expor ao cliente.
+  // Desbloqueia pipeline/whatsapp/tags/follow-ups/settings, que pedem buyer_id no fetch.
+  return NextResponse.json({ buyer_id: buyer.id, is_agency: !!buyer.is_agency, members })
 }
