@@ -9,7 +9,7 @@ export default function MobileMais() {
   const loc = t._locale
   const L = (pt: string, en: string, es: string) => (loc === 'en' ? en : loc === 'es' ? es : pt)
 
-  const items = [
+  const items: { icon: string; label: string; href?: string }[] = [
     { icon: 'gauge', label: L('Performance', 'Performance', 'Rendimiento') },
     { icon: 'calendar', label: 'Appointments' },
     { icon: 'robot', label: L('Especialista AI', 'AI Specialist', 'Especialista IA') },
@@ -21,7 +21,7 @@ export default function MobileMais() {
     { icon: 'users', label: L('Meu time', 'My team', 'Mi equipo') },
     { icon: 'gift', label: L('Indicações', 'Referrals', 'Referidos') },
     { icon: 'coin', label: L('Créditos & planos', 'Credits & plans', 'Créditos y planes') },
-    { icon: 'settings', label: L('Configurações', 'Settings', 'Configuración') },
+    { icon: 'settings', label: L('Configurações', 'Settings', 'Configuración'), href: '/m/config' },
   ]
 
   async function logout() {
@@ -43,7 +43,7 @@ export default function MobileMais() {
 
       <div className="m-card" style={{ padding: '6px 4px', marginBottom: 18 }}>
         {items.map((it, i) => (
-          <Link key={it.label} href={`/m/em-breve?f=${encodeURIComponent(it.label)}`} className="m-link m-tap"
+          <Link key={it.label} href={it.href || `/m/em-breve?f=${encodeURIComponent(it.label)}`} className="m-link m-tap"
             style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 12px', borderBottom: i < items.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
             <div className="m-icb"><MIcon name={it.icon} size={18} /></div>
             <span style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{it.label}</span>
