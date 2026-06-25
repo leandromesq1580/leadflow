@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { getInitials } from '@/lib/utils'
 
 // BrandMark — mesmo do desktop (tile escuro + raio âmbar).
@@ -20,6 +21,9 @@ function BrandMark({ size = 28 }: { size?: number }) {
 }
 
 export function MHeader({ userName }: { userName?: string }) {
+  const pathname = usePathname()
+  // Esconde o cabeçalho de marca na thread de conversa (chat em tela cheia).
+  if (/^\/m\/whatsapp\/[^/]+$/.test(pathname)) return null
   return (
     <header className="m-header">
       <Link href="/m" className="m-brand">

@@ -32,6 +32,9 @@ const ICONS: Record<string, ReactNode> = {
   gauge: <><path d="M4 18a8 8 0 1 1 16 0" /><path d="M12 18l4-5" /></>,
   logout: <><path d="M9 5H5v14h4" /><path d="M14 12H9M17 9l3 3-3 3" /></>,
   check: <><path d="M5 12l5 5L20 7" /></>,
+  send: <><path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4z" /></>,
+  tag: <><path d="M3 11.5V4a1 1 0 0 1 1-1h7.5L21 12.5 12.5 21z" /><circle cx="7.5" cy="7.5" r="1.3" /></>,
+  x: <><path d="M6 6l12 12M18 6 6 18" /></>,
   userPlus: <><circle cx="9" cy="8" r="3.2" /><path d="M3 20c0-3.3 2.7-5 6-5 1.2 0 2.3.2 3.2.7" /><path d="M17 14v6M14 17h6" /></>,
 }
 

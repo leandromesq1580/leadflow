@@ -32,6 +32,9 @@ export function MobileBottomNav({ buyerId, crmPlan }: { buyerId?: string; crmPla
   const wa = useWaUnread(buyerId)
   const loc = t._locale
 
+  // Esconde a nav na thread de conversa (o composer ocupa o rodapé).
+  if (/^\/m\/whatsapp\/[^/]+$/.test(pathname)) return null
+
   const items = [
     { href: '/m', label: loc === 'en' ? 'Home' : loc === 'es' ? 'Inicio' : 'Início', icon: 'home', active: pathname === '/m' },
     { href: '/m/leads', label: 'Leads', icon: 'target', active: pathname.startsWith('/m/leads') },
