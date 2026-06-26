@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createServerSupabase } from '@/lib/supabase/server'
 
 const MISSING_TABLE = /relation .*lead_forms.* does not exist|could not find the table/i
 
@@ -10,6 +11,9 @@ const MISSING_TABLE = /relation .*lead_forms.* does not exist|could not find the
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: leadId } = await params
+    const supabase = await createServerSupabase()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const db = createAdminClient()
     const { data, error } = await db
       .from('lead_forms')
@@ -33,6 +37,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: leadId } = await params
+    const supabase = await createServerSupabase()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const body = await request.json()
     const { buyer_id, data } = body
     if (!buyer_id) return NextResponse.json({ error: 'Missing buyer_id' }, { status: 400 })
@@ -62,6 +69,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: leadId } = await params
+    const supabase = await createServerSupabase()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const { form_id } = await request.json()
     if (!form_id) return NextResponse.json({ error: 'Missing form_id' }, { status: 400 })
     const db = createAdminClient()
