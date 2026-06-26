@@ -5,7 +5,7 @@ import { STARTER_PACKAGE_ID, hasPurchased } from '@/lib/starter'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { BuyButton } from './buy-button'
-import { CrmSubscribeButton } from './crm-subscribe-button'
+import { CrmPlansGrid } from '@/app/dashboard/planos/crm-plans-grid'
 import { BillingPortalButton } from '@/components/billing-portal-button'
 
 export const dynamic = 'force-dynamic'
@@ -43,30 +43,28 @@ export default async function CreditsPage({
       <h1 className="text-[24px] font-extrabold mb-1" style={{ color: '#1a1a2e' }}>Creditos & Planos</h1>
       <p className="text-[14px] mb-6" style={{ color: '#64748b' }}>Compre leads ou assine o CRM Pro</p>
 
-      {/* CRM Plan card */}
-      <div className="rounded-2xl p-6 mb-6 flex items-center justify-between" style={{
-        background: buyer?.crm_plan === 'pro' ? 'linear-gradient(135deg, #1e1b4b, #312e81)' : '#fff',
-        border: buyer?.crm_plan === 'pro' ? 'none' : '1px solid #e8ecf4',
-      }}>
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: buyer?.crm_plan === 'pro' ? '#a78bfa' : '#94a3b8' }}>Plano CRM</p>
-          <p className="text-[20px] font-extrabold" style={{ color: buyer?.crm_plan === 'pro' ? '#fff' : '#1a1a2e' }}>
-            {buyer?.crm_plan === 'pro' ? 'CRM Pro — $99/mes' : 'Gratis'}
-          </p>
-          <p className="text-[12px] mt-1" style={{ color: buyer?.crm_plan === 'pro' ? 'rgba(255,255,255,0.5)' : '#94a3b8' }}>
-            {buyer?.crm_plan === 'pro' ? 'Pipeline, Time, Follow-ups, Anexos — tudo ativo' : 'Pipeline e Time requerem plano CRM Pro'}
-          </p>
-        </div>
-        {buyer?.crm_plan !== 'pro' && (
-          <CrmSubscribeButton />
-        )}
-        {buyer?.crm_plan === 'pro' && (
+      {/* CRM Pro — assinante vê o status; quem não é vê a grade dos 4 planos (mensal/trimestral/semestral/anual) */}
+      {buyer?.crm_plan === 'pro' ? (
+        <div className="rounded-2xl p-6 mb-6 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #1e1b4b, #312e81)', border: 'none' }}>
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#a78bfa' }}>Plano CRM</p>
+            <p className="text-[20px] font-extrabold" style={{ color: '#fff' }}>CRM Pro</p>
+            <p className="text-[12px] mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Pipeline, Time, Follow-ups, Anexos — tudo ativo</p>
+          </div>
           <div className="flex items-center gap-3">
             <span className="px-4 py-2 rounded-xl text-[12px] font-bold" style={{ background: 'rgba(16,185,129,0.2)', color: '#34d399' }}>Ativo</span>
             <BillingPortalButton label="Gerenciar" />
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="mb-8">
+          <h2 className="text-[16px] font-bold mb-1" style={{ color: '#1a1a2e' }}>⚡ Assine o CRM Pro</h2>
+          <p className="text-[13px] mb-4" style={{ color: '#64748b' }}>
+            Pipeline, Time, Follow-ups e Anexos + <b>5 leads exclusivos por mês</b>. Quanto maior o compromisso, menor o $/mês.
+          </p>
+          <CrmPlansGrid />
+        </div>
+      )}
 
       {params.success && (
         <div className="mb-6 px-5 py-4 rounded-xl text-[14px] font-semibold" style={{ background: '#ecfdf5', color: '#10b981', border: '1px solid #a7f3d0' }}>
