@@ -7,6 +7,7 @@ import { WhatsAppInbox } from '@/components/whatsapp-inbox'
 import { AiScoreBadge } from '@/components/ai-score-badge'
 import { TimePicker } from '@/components/time-picker'
 import { usePrivacy } from '@/lib/privacy-mode'
+import { LeadFormsTab } from './lead-forms-tab'
 
 interface Props {
   leadId: string
@@ -33,7 +34,7 @@ interface Attachment {
 
 export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   const privacy = usePrivacy()
-  const [tab, setTab] = useState<'details' | 'inbox' | 'followups' | 'attachments'>('details')
+  const [tab, setTab] = useState<'details' | 'inbox' | 'followups' | 'attachments' | 'forms'>('details')
   const [lead, setLead] = useState<any>(null)
   const [followUps, setFollowUps] = useState<FollowUp[]>([])
   const [attachments, setAttachments] = useState<Attachment[]>([])
@@ -401,6 +402,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               { key: 'inbox', label: 'Conversa', icon: '💬' },
               { key: 'followups', label: `Follow-ups (${followUps.length})`, icon: '📌' },
               { key: 'attachments', label: `Anexos (${attachments.length})`, icon: '📎' },
+              { key: 'forms', label: 'Forms', icon: '📝' },
             ].map(t => (
               <button key={t.key} onClick={() => setTab(t.key as any)}
                 className="flex-1 py-2.5 rounded-lg text-[12px] font-bold transition-all"
@@ -886,6 +888,10 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                 </div>
               )}
             </div>
+          )}
+
+          {tab === 'forms' && (
+            <LeadFormsTab leadId={leadId} buyerId={buyerId} />
           )}
         </div>
       </div>
