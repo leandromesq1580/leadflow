@@ -7,7 +7,7 @@ import { MIcon } from '@/components/mobile/icons'
 import { PRODUCTS } from '@/lib/stripe'
 import { CRM_PLAN_LIST } from '@/lib/crm-plans'
 
-interface CreditsData { totalLeads: number; totalAppts: number; crm_plan: string; crm_subscription_status: string | null; starterEligible: boolean; history: Array<{ id: string; type: string; total_purchased: number; total_used: number; price_per_unit: number; purchased_at: string }> }
+interface CreditsData { totalLeads: number; totalAppts: number; crm_plan: string; crm_subscription_status: string | null; crm_plan_key: string | null; starterEligible: boolean; history: Array<{ id: string; type: string; total_purchased: number; total_used: number; price_per_unit: number; purchased_at: string }> }
 
 export default function MobileCreditos() {
   const t = useT()
@@ -41,8 +41,23 @@ export default function MobileCreditos() {
     setBusy(false)
   }
 
-  const isPro = d?.crm_plan === 'pro'
+  const isActive = d?.crm_subscription_status === 'active'
+  const currentPlanKey = d?.crm_plan_key || null
   const leadPkgs = PRODUCTS.lead.packages.filter(p => p.id !== 'lead_5' || d?.starterEligible)
+
+  async function changePlan(planKey: string) {
+    if (busy || planKey === currentPlanKey) return
+    const pl = CRM_PLAN_LIST.find(p => p.key === planKey)
+    if (!confirm(L(`Trocar para o plano ${pl?.label}? A diferença é calculada proporcionalmente (proração) — você não cancela nem perde o acesso.`, `Switch to ${pl?.label}? Prorated difference — no cancel, no loss of access.`, `¿Cambiar al plan ${pl?.label}? Diferencia prorrateada.`))) return
+    setBusy(true)
+    try {
+      const r = await fetch('/api/subscription/change', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plan: planKey }) })
+      const j = await r.json().catch(() => ({}))
+      if (r.ok) { window.location.reload(); return }
+      alert(j.error || L('Não consegui trocar de plano.', "Couldn't switch plan.", 'Error.'))
+    } catch { alert(L('Erro de conexão.', 'Connection error.', 'Error.')) }
+    setBusy(false)
+  }
 
   function PkgRow({ p, type }: { p: { id: string; quantity: number; totalDisplay: number; pricePerUnit: number }; type: string }) {
     return (
@@ -95,13 +110,25 @@ export default function MobileCreditos() {
           {!isNativeApp && <>
           {/* CRM Pro */}
           <div className="m-card" style={{ padding: 16, marginBottom: 18, border: '1px solid rgba(139,92,246,0.4)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: isPro ? 12 : 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
               <span style={{ color: '#c084fc', display: 'flex' }}><MIcon name="sparkle" size={18} /></span>
-              <p style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>CRM Pro</p>
-              {isPro && <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: '#34d399', background: 'rgba(52,211,153,0.15)', padding: '3px 10px', borderRadius: 999 }}>{L('Ativo', 'Active', 'Activo')}</span>}
+              <p style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>CRM Pro{isActive && currentPlanKey ? ` · ${CRM_PLAN_LIST.find(p => p.key === currentPlanKey)?.label || ''}` : ''}</p>
+              {isActive && <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: '#34d399', background: 'rgba(52,211,153,0.15)', padding: '3px 10px', borderRadius: 999 }}>{L('Ativo', 'Active', 'Activo')}</span>}
             </div>
-            {isPro
-              ? <button onClick={() => go('/api/billing/portal')} disabled={busy} className="m-tap" style={{ width: '100%', height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--m-text)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{L('Gerenciar assinatura', 'Manage subscription', 'Gestionar')}</button>
+            {isActive
+              ? <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <button onClick={() => go('/api/billing/portal')} disabled={busy} className="m-tap" style={{ width: '100%', height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--m-text)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{L('Gerenciar assinatura', 'Manage subscription', 'Gestionar')}</button>
+                <p className="m-muted" style={{ fontSize: 12, margin: '6px 0 0', fontWeight: 600 }}>{L('Trocar de plano', 'Change plan', 'Cambiar de plan')}</p>
+                {CRM_PLAN_LIST.map(pl => {
+                  const atual = pl.key === currentPlanKey
+                  return (
+                    <button key={pl.key} onClick={() => changePlan(pl.key)} disabled={busy || atual} className="m-tap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 14px', borderRadius: 12, background: atual ? 'rgba(52,211,153,0.12)' : 'rgba(255,255,255,0.05)', border: `1px solid ${atual ? 'rgba(52,211,153,0.4)' : 'rgba(255,255,255,0.1)'}`, color: 'var(--m-text)', cursor: atual ? 'default' : 'pointer', opacity: busy && !atual ? 0.6 : 1 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600 }}>{pl.label}{pl.savingsPct > 0 ? ` · -${pl.savingsPct}%` : ''}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: atual ? '#34d399' : '#a5b4fc' }}>{atual ? L('Atual', 'Current', 'Actual') : `$${pl.perMonth}/${L('mês', 'mo', 'mes')}`}</span>
+                    </button>
+                  )
+                })}
+              </div>
               : <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {CRM_PLAN_LIST.map(pl => (
                   <button key={pl.key} onClick={() => go('/api/checkout/subscription', { plan: pl.key })} disabled={busy} className="m-tap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 14px', borderRadius: 12, background: pl.highlight ? 'rgba(139,92,246,0.16)' : 'rgba(255,255,255,0.05)', border: `1px solid ${pl.highlight ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.1)'}`, color: 'var(--m-text)', cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>

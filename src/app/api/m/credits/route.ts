@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hasPurchased } from '@/lib/starter'
+import { getStripe } from '@/lib/stripe'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,7 +16,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const db = createAdminClient()
-  const { data: buyer } = await db.from('buyers').select('id, crm_plan, crm_subscription_status').eq('auth_user_id', user.id).single()
+  const { data: buyer } = await db.from('buyers').select('id, crm_plan, crm_subscription_status, crm_subscription_id').eq('auth_user_id', user.id).single()
   if (!buyer) return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
 
   let history: any[] = []
@@ -25,11 +26,18 @@ export async function GET() {
   let starterEligible = true
   try { starterEligible = !(await hasPurchased(db, buyer.id)) } catch {}
 
+  // Plano exato do assinante ativo (só existe no metadata da assinatura Stripe)
+  let crm_plan_key: string | null = null
+  if (buyer.crm_subscription_status === 'active' && buyer.crm_subscription_id) {
+    try { const sub = await getStripe().subscriptions.retrieve(buyer.crm_subscription_id); crm_plan_key = (sub.metadata?.plan as string) || null } catch {}
+  }
+
   return NextResponse.json({
     totalLeads: sum('lead'),
     totalAppts: sum('appointment'),
     crm_plan: buyer.crm_plan || 'free',
     crm_subscription_status: buyer.crm_subscription_status || null,
+    crm_plan_key,
     starterEligible,
     history,
   })

@@ -1,11 +1,13 @@
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { PRODUCTS } from '@/lib/stripe'
+import { PRODUCTS, getStripe } from '@/lib/stripe'
 import { STARTER_PACKAGE_ID, hasPurchased } from '@/lib/starter'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { BuyButton } from './buy-button'
 import { CrmPlansGrid } from '@/app/dashboard/planos/crm-plans-grid'
+import { CrmChangePlan } from './crm-change-plan'
+import { getCrmPlan } from '@/lib/crm-plans'
 import { BillingPortalButton } from '@/components/billing-portal-button'
 
 export const dynamic = 'force-dynamic'
@@ -21,7 +23,7 @@ export default async function CreditsPage({
   if (!user) redirect('/login')
 
   const db = createAdminClient()
-  const { data: buyer } = await db.from('buyers').select('id, crm_plan, crm_subscription_status').eq('auth_user_id', user.id).single()
+  const { data: buyer } = await db.from('buyers').select('id, crm_plan, crm_subscription_status, crm_subscription_id').eq('auth_user_id', user.id).single()
   if (!buyer) redirect('/login')
 
   const { data: credits } = await db
@@ -38,23 +40,39 @@ export default async function CreditsPage({
   const starterEligible = !(await hasPurchased(db, buyer.id))
   const leadPackages = PRODUCTS.lead.packages.filter(p => p.id !== STARTER_PACKAGE_ID || starterEligible)
 
+  // Plano exato do assinante (mensal/trimestral/… só existe no metadata da assinatura Stripe)
+  const isActiveSub = buyer.crm_subscription_status === 'active'
+  let currentPlanKey: string | null = null
+  if (isActiveSub && buyer.crm_subscription_id) {
+    try {
+      const sub = await getStripe().subscriptions.retrieve(buyer.crm_subscription_id)
+      currentPlanKey = (sub.metadata?.plan as string) || null
+    } catch {}
+  }
+  const currentPlanLabel = getCrmPlan(currentPlanKey)?.label || null
+
   return (
     <div className="max-w-[1040px]">
       <h1 className="text-[24px] font-extrabold mb-1" style={{ color: '#1a1a2e' }}>Creditos & Planos</h1>
       <p className="text-[14px] mb-6" style={{ color: '#64748b' }}>Compre leads ou assine o CRM Pro</p>
 
-      {/* CRM Pro — assinante vê o status; quem não é vê a grade dos 4 planos (mensal/trimestral/semestral/anual) */}
-      {buyer?.crm_plan === 'pro' ? (
-        <div className="rounded-2xl p-6 mb-6 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #1e1b4b, #312e81)', border: 'none' }}>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#a78bfa' }}>Plano CRM</p>
-            <p className="text-[20px] font-extrabold" style={{ color: '#fff' }}>CRM Pro</p>
-            <p className="text-[12px] mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Pipeline, Time, Follow-ups, Anexos — tudo ativo</p>
+      {/* CRM Pro — assinante ATIVO vê status + troca de plano; trial/free/expirado vê a grade dos 4 planos */}
+      {isActiveSub ? (
+        <div className="mb-8">
+          <div className="rounded-2xl p-6 mb-5 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #1e1b4b, #312e81)', border: 'none' }}>
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#a78bfa' }}>Plano CRM</p>
+              <p className="text-[20px] font-extrabold" style={{ color: '#fff' }}>CRM Pro{currentPlanLabel ? ` — ${currentPlanLabel}` : ''}</p>
+              <p className="text-[12px] mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Pipeline, Time, Follow-ups, Anexos — tudo ativo</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="px-4 py-2 rounded-xl text-[12px] font-bold" style={{ background: 'rgba(16,185,129,0.2)', color: '#34d399' }}>Ativo</span>
+              <BillingPortalButton label="Gerenciar" />
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="px-4 py-2 rounded-xl text-[12px] font-bold" style={{ background: 'rgba(16,185,129,0.2)', color: '#34d399' }}>Ativo</span>
-            <BillingPortalButton label="Gerenciar" />
-          </div>
+          <h2 className="text-[16px] font-bold mb-1" style={{ color: '#1a1a2e' }}>Trocar de plano</h2>
+          <p className="text-[13px] mb-4" style={{ color: '#64748b' }}>Mude entre os planos quando quiser — a diferença é calculada proporcionalmente (proração), sem perder o acesso.</p>
+          <CrmChangePlan currentPlan={currentPlanKey} />
         </div>
       ) : (
         <div className="mb-8">
