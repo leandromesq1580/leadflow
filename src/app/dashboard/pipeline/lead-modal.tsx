@@ -396,7 +396,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 mb-6 p-1 rounded-xl" style={{ background: '#f1f5f9' }}>
+          <div className="flex gap-1 mb-6 p-1 rounded-xl overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" style={{ background: '#f1f5f9' }}>
             {[
               { key: 'details', label: 'Detalhes', icon: '📋' },
               { key: 'inbox', label: 'Conversa', icon: '💬' },
@@ -405,7 +405,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               { key: 'forms', label: 'Forms', icon: '📝' },
             ].map(t => (
               <button key={t.key} onClick={() => setTab(t.key as any)}
-                className="flex-1 py-2.5 rounded-lg text-[12px] font-bold transition-all"
+                className="flex-1 whitespace-nowrap py-2.5 px-2 rounded-lg text-[11px] font-bold transition-all"
                 style={{
                   background: tab === t.key ? '#fff' : 'transparent',
                   color: tab === t.key ? '#6366f1' : '#94a3b8',
