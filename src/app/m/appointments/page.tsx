@@ -17,7 +17,7 @@ export default function MobileAppointments() {
   const [buyerId, setBuyerId] = useState<string | null>(null)
   const [events, setEvents] = useState<Ev[] | null>(null)
   const [err, setErr] = useState(false)
-  const [creating, setCreating] = useState<{ title: string; date: string; time: string } | null>(null)
+  const [creating, setCreating] = useState<{ title: string; date: string; time: string; color: string } | null>(null)
   const [busy, setBusy] = useState(false)
 
   const load = (bid: string) => {
@@ -57,7 +57,7 @@ export default function MobileAppointments() {
     setBusy(true)
     try {
       const start_at = new Date(`${creating.date}T${creating.time}:00`).toISOString()
-      await fetch('/api/calendar-items', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'event', title: creating.title, start_at }) })
+      await fetch('/api/calendar-items', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'event', title: creating.title, start_at, color: creating.color }) })
       if (buyerId) await load(buyerId)
       setCreating(null)
     } catch {}
@@ -69,7 +69,7 @@ export default function MobileAppointments() {
       <div className="m-pad" style={{ paddingTop: 6, display: 'flex', alignItems: 'center', gap: 12, height: 44 }}>
         <button onClick={() => router.push('/m')} className="m-tap" style={{ background: 'none', border: 'none', color: 'var(--m-text)', display: 'flex', cursor: 'pointer', padding: 0 }}><MIcon name="arrowLeft" size={24} /></button>
         <p style={{ margin: 0, flex: 1, fontSize: 20, fontWeight: 800 }}>Appointments</p>
-        <button onClick={() => setCreating({ title: '', date: '', time: '' })} className="m-tap" style={{ background: 'none', border: 'none', color: '#a5b4fc', display: 'flex', cursor: 'pointer', padding: 0 }}><MIcon name="plus" size={24} /></button>
+        <button onClick={() => setCreating({ title: '', date: '', time: '', color: '#10b981' })} className="m-tap" style={{ background: 'none', border: 'none', color: '#a5b4fc', display: 'flex', cursor: 'pointer', padding: 0 }}><MIcon name="plus" size={24} /></button>
       </div>
 
       <div className="m-pad" style={{ paddingTop: 6 }}>
@@ -114,6 +114,15 @@ export default function MobileAppointments() {
             <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
               <div style={{ flex: 1 }}><p className="m-muted" style={{ fontSize: 12, fontWeight: 600, margin: '0 0 6px' }}>{L('Data', 'Date', 'Fecha')}</p><input type="date" value={creating.date} onChange={e => setCreating({ ...creating, date: e.target.value })} className="m-input" style={{ colorScheme: 'dark', height: 44 }} /></div>
               <div style={{ flex: 1 }}><p className="m-muted" style={{ fontSize: 12, fontWeight: 600, margin: '0 0 6px' }}>{L('Hora', 'Time', 'Hora')}</p><input type="time" value={creating.time} onChange={e => setCreating({ ...creating, time: e.target.value })} className="m-input" style={{ colorScheme: 'dark', height: 44 }} /></div>
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <p className="m-muted" style={{ fontSize: 12, fontWeight: 600, margin: '0 0 8px' }}>{L('Cor', 'Color', 'Color')}</p>
+              <div style={{ display: 'flex', gap: 10 }}>
+                {['#0ea5e9', '#10b981', '#6366f1', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#14b8a6'].map(c => (
+                  <button key={c} type="button" onClick={() => setCreating({ ...creating, color: c })} aria-label={c}
+                    style={{ width: 28, height: 28, borderRadius: 999, background: c, border: 'none', cursor: 'pointer', boxShadow: creating.color === c ? '0 0 0 2px rgba(255,255,255,0.9)' : 'none', transform: creating.color === c ? 'scale(1.12)' : 'scale(1)', transition: 'all .12s' }} />
+                ))}
+              </div>
             </div>
             <button onClick={createEvent} disabled={busy || !creating.title.trim() || !creating.date || !creating.time} className="m-tap" style={{ width: '100%', height: 48, borderRadius: 14, background: 'var(--m-grad)', border: 'none', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: busy || !creating.title.trim() || !creating.date || !creating.time ? 0.5 : 1 }}>{busy ? L('Salvando…', 'Saving…', 'Guardando…') : L('Criar', 'Create', 'Crear')}</button>
           </div>

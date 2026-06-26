@@ -633,6 +633,8 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
   )
 }
 
+const ITEM_COLORS = ['#0ea5e9', '#10b981', '#6366f1', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#14b8a6']
+
 function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
   kind: 'event' | 'task'
   buyerId: string
@@ -651,7 +653,7 @@ function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
   const [error, setError] = useState('')
 
   const isEvent = kind === 'event'
-  const color = isEvent ? '#10b981' : '#0ea5e9'
+  const [color, setColor] = useState(isEvent ? '#10b981' : '#0ea5e9')
   const icon = isEvent ? '📆' : '☐'
   const label = isEvent ? 'Evento' : 'Tarefa'
 
@@ -754,6 +756,17 @@ function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
             <textarea value={description} onChange={e => setDescription(e.target.value)}
               rows={3}
               className="w-full mt-1 px-3 py-2 rounded-lg text-[13px] resize-none" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>Cor</label>
+            <div className="flex gap-2.5 mt-2">
+              {ITEM_COLORS.map(c => (
+                <button key={c} type="button" onClick={() => setColor(c)} aria-label={`Cor ${c}`}
+                  className="w-7 h-7 rounded-full"
+                  style={{ background: c, boxShadow: color === c ? `0 0 0 2px #fff, 0 0 0 4px ${c}` : 'none', transform: color === c ? 'scale(1.12)' : 'scale(1)', transition: 'all .12s', cursor: 'pointer' }} />
+              ))}
+            </div>
           </div>
         </div>
 
