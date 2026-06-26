@@ -400,8 +400,8 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
             {[
               { key: 'details', label: 'Detalhes', icon: '📋' },
               { key: 'inbox', label: 'Conversa', icon: '💬' },
-              { key: 'followups', label: `Follow-ups (${followUps.length})`, icon: '📌' },
-              { key: 'attachments', label: `Anexos (${attachments.length})`, icon: '📎' },
+              { key: 'followups', label: 'Follow-ups', icon: '📌', count: followUps.length },
+              { key: 'attachments', label: 'Anexos', icon: '📎', count: attachments.length },
               { key: 'forms', label: 'Forms', icon: '📝' },
             ].map(t => (
               <button key={t.key} onClick={() => setTab(t.key as any)}
@@ -411,7 +411,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                   color: tab === t.key ? '#6366f1' : '#94a3b8',
                   boxShadow: tab === t.key ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
                 }}>
-                {t.icon} {t.label}
+                {t.icon} {t.label}{(t as any).count > 0 ? <sup className="ml-0.5 text-[9px] font-extrabold" style={{ color: tab === t.key ? '#6366f1' : '#cbd5e1' }}>{(t as any).count}</sup> : null}
               </button>
             ))}
           </div>
