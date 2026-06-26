@@ -8,7 +8,7 @@ const HEALTH = ['Diabetes', 'Colesterol', 'Coração', 'Ansiedade/Depressão', '
 type FieldType = 'text' | 'email' | 'tel' | 'date' | 'area' | 'radio' | 'checks'
 interface Field { k: string; label: string; type?: FieldType; options?: string[]; req?: boolean }
 
-// Reproduz o Google Form "National Life Application - Life Insurance".
+// Formulário genérico de aplicação/cadastro de cliente (seguro de vida) — agnóstico de seguradora.
 const FIELDS: Field[] = [
   { k: 'email', label: '01 · Email', type: 'email', req: true },
   { k: 'nome_completo', label: '02 · Nome completo', req: true },
@@ -195,7 +195,7 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
         <button onClick={() => { setF(blank()); setShow(true) }}
           className="w-full py-4 rounded-xl text-[13px] font-bold mb-5"
           style={{ background: '#f0f4ff', color: '#6366f1', border: '1px dashed #c7d2fe' }}>
-          📝 Nova aplicação (National Life - Life Insurance)
+          📝 Nova aplicação
         </button>
       )}
 
