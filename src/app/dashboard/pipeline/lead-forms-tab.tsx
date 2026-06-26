@@ -2,36 +2,44 @@
 
 import { useState, useEffect } from 'react'
 
-const DOC_TYPES = ['Social', 'ITIN', 'Passaporte']
-const HEALTH = ['Diabetes', 'Colesterol', 'Coração', 'Ansiedade/Depressão', 'Câncer', 'Nenhuma das opções', 'Outro']
-
-type FieldType = 'text' | 'email' | 'tel' | 'date' | 'area' | 'radio' | 'checks'
-interface Field { k: string; label: string; type?: FieldType; options?: string[]; req?: boolean }
+type FieldType = 'text' | 'email' | 'tel' | 'date' | 'area' | 'radio'
+interface Field { k: string; label: string; type?: FieldType; options?: string[] }
 
 // Formulário genérico de aplicação/cadastro de cliente (seguro de vida) — agnóstico de seguradora.
+// NENHUM campo é obrigatório (o agente preenche o que tiver).
 const FIELDS: Field[] = [
-  { k: 'email', label: '01 · Email', type: 'email', req: true },
-  { k: 'nome_completo', label: '02 · Nome completo', req: true },
-  { k: 'data_nascimento', label: '03 · Data de nascimento', type: 'date', req: true },
-  { k: 'endereco', label: '04 · Endereço', req: true },
-  { k: 'telefone', label: '05 · Número de telefone', type: 'tel', req: true },
-  { k: 'tipo_documento', label: '06 · Tipo de documento', type: 'radio', options: DOC_TYPES, req: true },
-  { k: 'documento_id', label: '07 · ID do documento selecionado acima', req: true },
-  { k: 'beneficiarios', label: '08 · Beneficiários (nome completo | data nascimento | % da apólice)', type: 'area', req: true },
-  { k: 'peso_altura', label: '09 · Peso e altura', req: true },
-  { k: 'nome_banco', label: '10 · Nome do banco', req: true },
-  { k: 'routing_number', label: '11 · Routing number', req: true },
-  { k: 'account_number', label: '12 · Account number', req: true },
-  { k: 'problemas_saude', label: '13 · Já teve algum desses problemas?', type: 'checks', options: HEALTH, req: true },
-  { k: 'profissao_salario', label: '14 · Profissão e média de salário anual', req: true },
-  { k: 'pais_info', label: '15 · Pais (são vivos? que idade têm — ou que idade faleceram?)', req: true },
-  { k: 'melhor_dia_pagamento', label: '16 · Caso aprovado, melhor dia do mês p/ pagamento', req: false },
+  { k: 'nome_completo', label: 'Nome completo' },
+  { k: 'email', label: 'Email', type: 'email' },
+  { k: 'data_nascimento', label: 'Data de nascimento', type: 'date' },
+  { k: 'endereco', label: 'Endereço' },
+  { k: 'telefone', label: 'Telefone', type: 'tel' },
+  { k: 'ssn', label: 'Social Security (SSN)' },
+  { k: 'itin', label: 'ITIN number (se não tiver SSN)' },
+  { k: 'altura', label: 'Altura' },
+  { k: 'peso', label: 'Peso' },
+  { k: 'medico', label: 'Médico — nome, endereço, telefone e última vez que foi', type: 'area' },
+  { k: 'motivo_consulta', label: 'Motivo da consulta', type: 'area' },
+  { k: 'remedio', label: 'Toma remédio? Qual e pra quê?', type: 'area' },
+  { k: 'nome_banco', label: 'Banco (onde será descontado o pagamento)' },
+  { k: 'routing_number', label: 'Routing number' },
+  { k: 'account_number', label: 'Número da conta corrente' },
+  { k: 'melhor_dia_pagamento', label: 'Melhor dia do mês para pagamento' },
+  { k: 'beneficiarios', label: 'Beneficiários — de cada um: nome, telefone, email, SSN, data de nascimento', type: 'area' },
+  { k: 'empresa', label: 'Empresa onde trabalha' },
+  { k: 'profissao', label: 'Profissão' },
+  { k: 'tempo_trabalho', label: 'Há quanto tempo trabalha lá' },
+  { k: 'salario_anual', label: 'Quanto ganha por ano' },
+  { k: 'contatos_emergencia', label: '3 contatos de emergência (nome + telefone) — que NÃO morem na mesma casa', type: 'area' },
+  { k: 'pai_vivo', label: 'Pai vivo?', type: 'radio', options: ['Sim', 'Não'] },
+  { k: 'mae_viva', label: 'Mãe viva?', type: 'radio', options: ['Sim', 'Não'] },
+  { k: 'pais_idade', label: 'Idade atual dos pais (se vivos)' },
+  { k: 'pais_falecidos', label: 'Se falecido(s): que idade faleceu e qual a causa', type: 'area' },
 ]
 
 interface DocRef { path: string; name: string }
 function blank(): Record<string, any> {
-  const o: Record<string, any> = { problemas_saude: [], driver_license: null, passport: null }
-  for (const f of FIELDS) if (!(f.k in o)) o[f.k] = ''
+  const o: Record<string, any> = { driver_license: null, passport: null }
+  for (const f of FIELDS) o[f.k] = ''
   return o
 }
 
@@ -59,10 +67,6 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
   }
 
   const set = (k: string, v: any) => setF(p => ({ ...p, [k]: v }))
-  const toggleHealth = (opt: string) => setF(p => {
-    const cur: string[] = p.problemas_saude || []
-    return { ...p, problemas_saude: cur.includes(opt) ? cur.filter(x => x !== opt) : [...cur, opt] }
-  })
 
   async function uploadDoc(slot: 'driver_license' | 'passport', file: File | undefined) {
     if (!file) return
@@ -97,12 +101,8 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
   }
 
   async function submit() {
-    const missing = FIELDS.filter(x => x.req).filter(x => {
-      const v = f[x.k]
-      return x.type === 'checks' ? !(Array.isArray(v) && v.length) : !String(v || '').trim()
-    })
-    if (missing.length) { alert(`Preencha os campos obrigatórios:\n• ${missing.map(m => m.label).join('\n• ')}`); return }
-    if (!f.driver_license) { alert('Anexe a Driver\'s License ou ID (obrigatório).'); return }
+    const hasAny = FIELDS.some(x => String(f[x.k] || '').trim()) || f.driver_license || f.passport
+    if (!hasAny) { alert('Preencha ao menos um campo antes de salvar.'); return }
     setSaving(true)
     try {
       const r = await fetch(`/api/leads/${leadId}/forms`, {
@@ -127,30 +127,12 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
       return (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {field.options!.map(opt => (
-            <button key={opt} type="button" onClick={() => set(field.k, opt)}
-              style={{ padding: '7px 14px', borderRadius: 9, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            <button key={opt} type="button" onClick={() => set(field.k, v === opt ? '' : opt)}
+              style={{ padding: '7px 18px', borderRadius: 9, fontSize: 12, fontWeight: 600, cursor: 'pointer',
                 border: `1px solid ${v === opt ? '#6366f1' : '#e8ecf4'}`, background: v === opt ? '#eef2ff' : '#fff', color: v === opt ? '#6366f1' : '#64748b' }}>
               {opt}
             </button>
           ))}
-        </div>
-      )
-    }
-    if (field.type === 'checks') {
-      const arr: string[] = v || []
-      return (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-          {field.options!.map(opt => {
-            const on = arr.includes(opt)
-            return (
-              <button key={opt} type="button" onClick={() => toggleHealth(opt)}
-                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 10px', borderRadius: 9, fontSize: 12, fontWeight: 600, cursor: 'pointer', textAlign: 'left',
-                  border: `1px solid ${on ? '#6366f1' : '#e8ecf4'}`, background: on ? '#eef2ff' : '#fff', color: on ? '#4f46e5' : '#64748b' }}>
-                <span style={{ width: 15, height: 15, borderRadius: 4, border: `1.5px solid ${on ? '#6366f1' : '#cbd5e1'}`, background: on ? '#6366f1' : '#fff', color: '#fff', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{on ? '✓' : ''}</span>
-                {opt}
-              </button>
-            )
-          })}
         </div>
       )
     }
@@ -160,11 +142,11 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
     return <input type={field.type || 'text'} value={v || ''} onChange={e => set(field.k, e.target.value)} style={inStyle} />
   }
 
-  function docInput(slot: 'driver_license' | 'passport', label: string, req: boolean) {
+  function docInput(slot: 'driver_license' | 'passport', label: string) {
     const cur: DocRef | null = f[slot]
     return (
       <div>
-        <label style={lblStyle}>{label}{req && <span style={{ color: '#ef4444' }}> *</span>}</label>
+        <label style={lblStyle}>{label}</label>
         {cur ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 11px', borderRadius: 10, border: '1px solid #c7d2fe', background: '#f0f4ff' }}>
             <span style={{ fontSize: 13, color: '#4f46e5', fontWeight: 600, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📎 {cur.name}</span>
@@ -174,7 +156,7 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
           <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px', borderRadius: 10, border: '1px dashed #c7d2fe', background: '#f0f4ff', color: '#6366f1', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
             <input type="file" style={{ display: 'none' }} accept=".pdf,.jpg,.jpeg,.png,.webp" disabled={uploading === slot}
               onChange={e => uploadDoc(slot, e.target.files?.[0])} />
-            {uploading === slot ? 'Enviando...' : '📎 Anexar documento (PDF ou imagem)'}
+            {uploading === slot ? 'Enviando...' : '📎 Anexar (PDF ou foto)'}
           </label>
         )}
       </div>
@@ -201,17 +183,18 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
 
       {show && (
         <div style={{ border: '1px solid #e8ecf4', borderRadius: 14, padding: 16, marginBottom: 18, background: '#fafbff' }}>
-          <p style={{ fontSize: 14, fontWeight: 800, color: '#1a1a2e', margin: '0 0 14px' }}>Nova aplicação · cadastro do cliente</p>
+          <p style={{ fontSize: 14, fontWeight: 800, color: '#1a1a2e', margin: '0 0 4px' }}>Nova aplicação · cadastro do cliente</p>
+          <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 14px' }}>Nenhum campo é obrigatório — preencha o que tiver.</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
             {FIELDS.map(field => (
               <div key={field.k}>
-                <label style={lblStyle}>{field.label}{field.req && <span style={{ color: '#ef4444' }}> *</span>}</label>
+                <label style={lblStyle}>{field.label}</label>
                 {renderField(field)}
               </div>
             ))}
             <div style={{ height: 1, background: '#e8ecf4', margin: '2px 0' }} />
-            {docInput('driver_license', "Driver's License ou ID", true)}
-            {docInput('passport', 'Foto do Passaporte (se não for cidadão)', false)}
+            {docInput('driver_license', "Foto da Driver's License ou ID")}
+            {docInput('passport', 'Foto do Passaporte')}
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 18 }}>
             <button onClick={submit} disabled={saving}
@@ -252,11 +235,11 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
                 {open && (
                   <div style={{ padding: '4px 14px 14px', borderTop: '1px solid #f1f5f9' }}>
                     {FIELDS.map(field => {
-                      const val = field.type === 'checks' ? (data[field.k] || []).join(', ') : data[field.k]
+                      const val = data[field.k]
                       if (!val) return null
                       return (
                         <div key={field.k} style={{ display: 'flex', gap: 8, padding: '5px 0', borderBottom: '1px solid #f8fafc' }}>
-                          <span style={{ fontSize: 11, color: '#94a3b8', width: 150, flexShrink: 0 }}>{field.label.replace(/^\d+\s·\s/, '')}</span>
+                          <span style={{ fontSize: 11, color: '#94a3b8', width: 160, flexShrink: 0 }}>{field.label}</span>
                           <span style={{ fontSize: 12, color: '#1a1a2e', fontWeight: 500, whiteSpace: 'pre-wrap' }}>{val}</span>
                         </div>
                       )
