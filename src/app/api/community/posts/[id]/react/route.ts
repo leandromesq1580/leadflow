@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCommunityContext } from '@/lib/community-access'
+import { getCommunityContext, notifyCommunity } from '@/lib/community-access'
 
 /**
  * POST /api/community/posts/[id]/react — alterna o "curtir" do membro no post.
@@ -31,6 +31,11 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
       reacted = true
+    }
+
+    if (reacted) {
+      const { data: post } = await db.from('community_posts').select('buyer_id').eq('id', id).single()
+      await notifyCommunity(db, { recipientId: post?.buyer_id, actorId: me.id, actorName: me.name, type: 'reaction', postId: id })
     }
 
     const { count, error: cErr } = await db

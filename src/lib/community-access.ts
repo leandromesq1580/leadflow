@@ -42,3 +42,21 @@ export async function getCommunityContext(): Promise<{
     allowed,
   }
 }
+
+/** Cria uma notificação pro destinatário. No-op se for pra si mesmo ou se a tabela ainda não existe. */
+export async function notifyCommunity(
+  db: ReturnType<typeof createAdminClient>,
+  opts: { recipientId?: string | null; actorId: string; actorName: string; type: 'comment' | 'reaction'; postId: string; preview?: string },
+) {
+  if (!opts.recipientId || opts.recipientId === opts.actorId) return
+  try {
+    await db.from('community_notifications').insert({
+      recipient_id: opts.recipientId,
+      actor_id: opts.actorId,
+      actor_name: opts.actorName,
+      type: opts.type,
+      post_id: opts.postId,
+      preview: opts.preview ? opts.preview.slice(0, 120) : null,
+    })
+  } catch {}
+}

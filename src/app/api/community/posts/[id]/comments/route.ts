@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCommunityContext } from '@/lib/community-access'
+import { getCommunityContext, notifyCommunity } from '@/lib/community-access'
 
 const MISSING_TABLE = /relation .*community_comments.* does not exist|could not find the table/i
 
@@ -57,6 +57,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+    // notifica o autor do post (no-op se for o próprio)
+    const { data: post } = await db.from('community_posts').select('buyer_id').eq('id', id).single()
+    await notifyCommunity(db, { recipientId: post?.buyer_id, actorId: me.id, actorName: me.name, type: 'comment', postId: id, preview: text })
+
     return NextResponse.json({ comment: { ...row, can_delete: true } })
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || 'Failed' }, { status: 500 })

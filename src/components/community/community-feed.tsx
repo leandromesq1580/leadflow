@@ -23,6 +23,8 @@ interface Post {
 }
 interface Me { id: string; name: string; isAdmin: boolean }
 interface Comment { id: string; author_name: string | null; body: string; created_at: string; can_delete: boolean; buyer_id: string | null }
+interface Notif { id: string; actor_name: string | null; type: string; post_id: string | null; preview: string | null; read: boolean; created_at: string }
+interface Rank { buyer_id: string; name: string; count: number; total: number }
 
 const CHANNEL_LABEL: Record<Channel, string> = { fechamento: 'Fechamento', follow_up: 'Follow-up', vitorias: 'Vitórias', geral: 'Geral' }
 
@@ -78,6 +80,12 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
   const [comments, setComments] = useState<Record<string, Comment[]>>({})
   const [draft, setDraft] = useState('')
 
+  // notificações + ranking
+  const [notifs, setNotifs] = useState<Notif[]>([])
+  const [unread, setUnread] = useState(0)
+  const [notifOpen, setNotifOpen] = useState(false)
+  const [ranking, setRanking] = useState<Rank[]>([])
+
   const load = useCallback(async () => {
     setLoading(true)
     setErr('')
@@ -94,6 +102,30 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
   }, [channel])
 
   useEffect(() => { load() }, [load])
+
+  const loadMeta = useCallback(async () => {
+    try {
+      const [n, r] = await Promise.all([
+        fetch('/api/community/notifications', { cache: 'no-store' }).then(x => x.json()).catch(() => ({})),
+        fetch('/api/community/ranking', { cache: 'no-store' }).then(x => x.json()).catch(() => ({})),
+      ])
+      setNotifs(n.items || []); setUnread(n.unread || 0); setRanking(r.top || [])
+    } catch {}
+  }, [])
+  useEffect(() => {
+    loadMeta()
+    const t = setInterval(loadMeta, 60000)
+    return () => clearInterval(t)
+  }, [loadMeta])
+
+  async function openNotifs() {
+    const wasClosed = !notifOpen
+    setNotifOpen(o => !o)
+    if (wasClosed && unread > 0) {
+      setUnread(0); setNotifs(prev => prev.map(n => ({ ...n, read: true })))
+      try { await fetch('/api/community/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) }) } catch {}
+    }
+  }
 
   async function react(p: Post) {
     const snap = { reacted: p.reacted, reaction_count: p.reaction_count }
@@ -145,7 +177,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
       const d = await r.json().catch(() => ({}))
       if (!r.ok) { setErr(d.error || 'Erro ao publicar.'); setPosting(false); return }
       setPosts(prev => sortFeed([d.post, ...prev]))
-      setOpen(false); setCbody(''); setCsale(''); setCage(''); setCproduct(''); setCimage(''); setCpreview(''); setCkind('post'); setCchannel('geral'); setErr('')
+      setOpen(false); setCbody(''); setCsale(''); setCage(''); setCproduct(''); setCimage(''); setCpreview(''); setCkind('post'); setCchannel('geral'); setErr(''); loadMeta()
     } catch { setErr('Erro de conexão.') }
     setPosting(false)
   }
@@ -216,12 +248,48 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
 
   return (
     <div>
+      {/* sino de notificações */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10, position: 'relative' }}>
+        <button onClick={openNotifs} aria-label="notificações" style={{ position: 'relative', border: `1px solid ${T.border}`, background: T.card, borderRadius: 999, width: 38, height: 38, cursor: 'pointer', fontSize: 17 }}>
+          🔔
+          {unread > 0 && <span style={{ position: 'absolute', top: -4, right: -4, background: '#ef4444', color: '#fff', borderRadius: 999, minWidth: 18, height: 18, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{unread > 9 ? '9+' : unread}</span>}
+        </button>
+        {notifOpen && (
+          <div style={{ position: 'absolute', top: 44, right: 0, width: 300, maxHeight: 360, overflowY: 'auto', background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, zIndex: 20, boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}>
+            <p style={{ margin: 0, padding: '10px 14px', borderBottom: `1px solid ${T.border}`, fontSize: 13, fontWeight: 700, color: T.text }}>Notificações</p>
+            {notifs.length === 0 ? (
+              <p style={{ margin: 0, padding: '18px 14px', fontSize: 13, color: T.muted, textAlign: 'center' }}>Nada por aqui ainda.</p>
+            ) : notifs.map(n => (
+              <div key={n.id} style={{ padding: '10px 14px', borderBottom: `1px solid ${T.border}`, fontSize: 13, color: dark ? '#d6d8de' : '#334155', background: n.read ? 'transparent' : T.accentBg }}>
+                <span style={{ fontWeight: 600, color: T.text }}>{n.actor_name || 'Alguém'}</span> {n.type === 'comment' ? 'comentou no seu post' : 'reagiu no seu post'}{n.preview ? `: “${n.preview}”` : ''}
+                <span style={{ display: 'block', color: T.muted, fontSize: 11, marginTop: 2 }}>{ago(n.created_at)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* canais */}
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 14 }}>
         {([['', 'Tudo'], ['fechamento', 'Fechamento'], ['follow_up', 'Follow-up'], ['vitorias', 'Vitórias']] as const).map(([v, label]) => (
           <span key={v} style={chip(channel === v)} onClick={() => setChannel(v as any)}>{label}</span>
         ))}
       </div>
+
+      {/* ranking do mês */}
+      {ranking.length > 0 && (
+        <div style={card}>
+          <p style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 700, color: T.text }}>🏆 Top fechadores do mês</p>
+          {ranking.slice(0, 5).map((r, i) => (
+            <div key={r.buyer_id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '5px 0' }}>
+              <span style={{ width: 20, fontSize: 13, fontWeight: 700, color: i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : i === 2 ? '#b45309' : T.muted }}>{i + 1}º</span>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: T.accentBg, color: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{initials(r.name)}</div>
+              <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+              <span style={{ fontSize: 12, color: T.muted, whiteSpace: 'nowrap' }}>{r.count} {r.count === 1 ? 'venda' : 'vendas'}{r.total > 0 ? ` · ${money(r.total)}` : ''}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* erro global sempre visível (load, excluir, comentar, etc.) */}
       {err && (
