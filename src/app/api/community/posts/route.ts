@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCommunityContext } from '@/lib/community-access'
+import { getCommunityContext, notifyMentions } from '@/lib/community-access'
 
 const MISSING_TABLE = /relation .*community_posts.* does not exist|could not find the table/i
 const CHANNELS = ['fechamento', 'follow_up', 'vitorias', 'geral']
-const KINDS = ['sacada', 'win', 'post']
+const KINDS = ['sacada', 'win', 'post', 'poll']
 
 function sanitizeWin(data: any) {
   const out: Record<string, any> = {}
@@ -15,9 +15,19 @@ function sanitizeWin(data: any) {
   return out
 }
 
+function sanitizePoll(data: any) {
+  const raw = Array.isArray(data?.poll?.options) ? data.poll.options : []
+  const options = raw
+    .map((o: any) => (typeof o === 'string' ? o.trim().slice(0, 80) : ''))
+    .filter((o: string) => o)
+    .slice(0, 4)
+  if (options.length < 2) return null
+  return { options }
+}
+
 /**
  * GET /api/community/posts?channel=  — feed da comunidade (fixados primeiro).
- * Devolve { allowed, me, posts[] } com contagem de reações/comentários e flags.
+ * Devolve posts com reações por emoji, minhas reações, contagem de comentários e (em enquetes) votos.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -42,34 +52,59 @@ export async function GET(request: NextRequest) {
     }
 
     const ids = (posts || []).map(p => p.id)
-    const rxCount: Record<string, number> = {}
+    const reactionsByPost: Record<string, Record<string, number>> = {}
+    const myReactionsByPost: Record<string, string[]> = {}
     const cmCount: Record<string, number> = {}
-    let myReacted = new Set<string>()
+    const pollVotesByPost: Record<string, Record<number, number>> = {}
+    const myPollVote: Record<string, number> = {}
     if (ids.length) {
-      // Contagens via COUNT no banco (nao traz linhas -> imune ao cap de 1000 do PostgREST).
-      // 'reacted' so com as reacoes do proprio membro (conjunto pequeno, nunca trunca).
-      // Em escala alta, trocar os head-counts por uma RPC/view agregada.
-      const [mine, counts] = await Promise.all([
-        db.from('community_reactions').select('post_id').eq('buyer_id', me.id).in('post_id', ids),
+      // Reações em linhas (precisa do kind por emoji); comentários por COUNT no banco; votos das enquetes.
+      // Em escala muito alta, trocar o fetch de reações por uma RPC/view agregada (cap de 1000 do PostgREST).
+      const pollIds = (posts || []).filter(p => p.kind === 'poll').map(p => p.id)
+      const [rx, comments, votes] = await Promise.all([
+        db.from('community_reactions').select('post_id, buyer_id, kind').in('post_id', ids),
         Promise.all(ids.map(async (id) => {
-          const [rc, cc] = await Promise.all([
-            db.from('community_reactions').select('id', { count: 'exact', head: true }).eq('post_id', id),
-            db.from('community_comments').select('id', { count: 'exact', head: true }).eq('post_id', id),
-          ])
-          return { id, rc: rc.count || 0, cc: cc.count || 0 }
+          const { count } = await db.from('community_comments').select('id', { count: 'exact', head: true }).eq('post_id', id)
+          return { id, count: count || 0 }
         })),
+        pollIds.length
+          ? db.from('community_poll_votes').select('post_id, buyer_id, option_index').in('post_id', pollIds)
+          : Promise.resolve({ data: [] as any[] }),
       ])
-      myReacted = new Set((mine.data || []).map((r: any) => r.post_id))
-      for (const c of counts) { rxCount[c.id] = c.rc; cmCount[c.id] = c.cc }
+      for (const r of (rx.data || [])) {
+        const pid = r.post_id as string
+        if (!reactionsByPost[pid]) reactionsByPost[pid] = {}
+        reactionsByPost[pid][r.kind] = (reactionsByPost[pid][r.kind] || 0) + 1
+        if (r.buyer_id === me.id) {
+          if (!myReactionsByPost[pid]) myReactionsByPost[pid] = []
+          myReactionsByPost[pid].push(r.kind)
+        }
+      }
+      for (const c of comments) cmCount[c.id] = c.count
+      for (const v of ((votes as any)?.data || [])) {
+        const pid = v.post_id as string
+        if (!pollVotesByPost[pid]) pollVotesByPost[pid] = {}
+        pollVotesByPost[pid][v.option_index] = (pollVotesByPost[pid][v.option_index] || 0) + 1
+        if (v.buyer_id === me.id) myPollVote[pid] = v.option_index
+      }
     }
 
-    const enriched = (posts || []).map(p => ({
-      ...p,
-      reaction_count: rxCount[p.id] || 0,
-      reacted: myReacted.has(p.id),
-      comment_count: cmCount[p.id] || 0,
-      can_delete: me.isAdmin || p.buyer_id === me.id,
-    }))
+    const enriched = (posts || []).map(p => {
+      const reactions = reactionsByPost[p.id] || {}
+      const total = Object.values(reactions).reduce((a, b) => a + b, 0)
+      const mine = myReactionsByPost[p.id] || []
+      return {
+        ...p,
+        reactions,
+        my_reactions: mine,
+        reaction_count: total,
+        reacted: mine.length > 0,
+        comment_count: cmCount[p.id] || 0,
+        poll_counts: pollVotesByPost[p.id] || {},
+        my_poll_vote: p.id in myPollVote ? myPollVote[p.id] : null,
+        can_delete: me.isAdmin || p.buyer_id === me.id,
+      }
+    })
 
     return NextResponse.json({ allowed: true, me, posts: enriched })
   } catch (err: any) {
@@ -79,7 +114,7 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/community/posts — cria post. Autor = buyer da sessão (não confia no client).
- * Body: { kind, channel, title, body, data }. 'sacada' só admin. 'win' → canal vitórias.
+ * Body: { kind, channel, title, body, data }. 'sacada' só admin. 'win' → vitórias. 'poll' → enquete.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -103,7 +138,14 @@ export async function POST(request: NextRequest) {
     const data: Record<string, any> = kind === 'win' ? sanitizeWin(body?.data) : {}
     if (imagePath) data.image_path = imagePath
 
-    const hasContent = !!text || !!imagePath || (kind === 'win' && !!data.sale_value)
+    let poll = null
+    if (kind === 'poll') {
+      poll = sanitizePoll(body?.data)
+      if (!poll) return NextResponse.json({ error: 'A enquete precisa de pelo menos 2 opções.' }, { status: 400 })
+      data.poll = poll
+    }
+
+    const hasContent = !!text || !!imagePath || (kind === 'win' && !!data.sale_value) || (kind === 'poll' && !!poll)
     if (!hasContent) {
       return NextResponse.json({ error: kind === 'win' ? 'Informe o valor da venda, escreva algo, ou anexe uma imagem.' : 'Escreva algo ou anexe uma imagem.' }, { status: 400 })
     }
@@ -126,9 +168,15 @@ export async function POST(request: NextRequest) {
       if (MISSING_TABLE.test(error.message)) {
         return NextResponse.json({ error: 'A tabela community_posts ainda não existe. Rode supabase/migrations/022_community.sql no Supabase.' }, { status: 503 })
       }
+      if (/check constraint|kind_check/i.test(error.message)) {
+        return NextResponse.json({ error: 'Enquetes precisam da migration 024 (supabase/migrations/024_community_threads_polls.sql).' }, { status: 503 })
+      }
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
-    return NextResponse.json({ post: { ...row, reaction_count: 0, reacted: false, comment_count: 0, can_delete: true } })
+
+    await notifyMentions(db, { body: text, actorId: me.id, actorName: me.name, postId: row.id })
+
+    return NextResponse.json({ post: { ...row, reactions: {}, my_reactions: [], reaction_count: 0, reacted: false, comment_count: 0, poll_counts: {}, my_poll_vote: null, can_delete: true } })
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || 'Failed' }, { status: 500 })
   }

@@ -46,7 +46,7 @@ export async function getCommunityContext(): Promise<{
 /** Cria uma notificação pro destinatário. No-op se for pra si mesmo ou se a tabela ainda não existe. */
 export async function notifyCommunity(
   db: ReturnType<typeof createAdminClient>,
-  opts: { recipientId?: string | null; actorId: string; actorName: string; type: 'comment' | 'reaction'; postId: string; preview?: string },
+  opts: { recipientId?: string | null; actorId: string; actorName: string; type: 'comment' | 'reaction' | 'mention'; postId: string; preview?: string },
 ) {
   if (!opts.recipientId || opts.recipientId === opts.actorId) return
   try {
@@ -58,5 +58,26 @@ export async function notifyCommunity(
       post_id: opts.postId,
       preview: opts.preview ? opts.preview.slice(0, 120) : null,
     })
+  } catch {}
+}
+
+/** Procura @Nome no texto, casa com nomes de membros e notifica os mencionados (menos o autor). */
+export async function notifyMentions(
+  db: ReturnType<typeof createAdminClient>,
+  opts: { body?: string; actorId: string; actorName: string; postId: string },
+) {
+  const body = (opts.body || '').toLowerCase()
+  if (!body.includes('@')) return
+  try {
+    const { data } = await db.from('buyers').select('id, name').not('name', 'is', null).limit(500)
+    const seen = new Set<string>()
+    for (const m of data || []) {
+      const name = (m.name || '').trim()
+      if (name.length < 3 || m.id === opts.actorId || seen.has(m.id)) continue
+      if (body.includes('@' + name.toLowerCase())) {
+        seen.add(m.id)
+        await notifyCommunity(db, { recipientId: m.id, actorId: opts.actorId, actorName: opts.actorName, type: 'mention', postId: opts.postId, preview: opts.body })
+      }
+    }
   } catch {}
 }
