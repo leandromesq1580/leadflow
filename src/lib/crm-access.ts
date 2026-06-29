@@ -29,6 +29,7 @@ export function isAppointmentOnly(buyer: CrmAccessBuyer | null | undefined): boo
 /** Rotas liberadas pro perfil appointment-only. Todo o resto = UpsellGate. */
 export const APPOINTMENT_ALLOWED_ROUTES = [
   '/dashboard/appointments',
+  '/dashboard/community',
   '/dashboard/credits',
   '/dashboard/settings',
 ]
@@ -54,6 +55,7 @@ export function isLeadOnly(buyer: CrmAccessBuyer | null | undefined): boolean {
 /** Rotas liberadas pro perfil lead-only. Todo o resto = UpsellGate. */
 export const LEAD_ALLOWED_ROUTES = [
   '/dashboard/leads',
+  '/dashboard/community',
   '/dashboard/credits',
   '/dashboard/settings',
 ]

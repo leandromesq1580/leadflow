@@ -10,6 +10,7 @@ export default function MobileMais() {
   const L = (pt: string, en: string, es: string) => (loc === 'en' ? en : loc === 'es' ? es : pt)
 
   const items: { icon: string; label: string; href?: string }[] = [
+    { icon: 'message', label: L('Comunidade', 'Community', 'Comunidad'), href: '/m/comunidade' },
     { icon: 'gauge', label: L('Performance', 'Performance', 'Rendimiento'), href: '/m/performance' },
     { icon: 'calendar', label: 'Appointments', href: '/m/appointments' },
     { icon: 'robot', label: L('Especialista AI', 'AI Specialist', 'Especialista IA'), href: '/m/ai' },
