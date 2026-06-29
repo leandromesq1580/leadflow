@@ -36,7 +36,10 @@ export async function GET(request: NextRequest) {
     const { db, me, allowed } = ctx
     if (!allowed) return NextResponse.json({ allowed: false, me })
 
-    const channel = request.nextUrl.searchParams.get('channel')
+    const sp = request.nextUrl.searchParams
+    const channel = sp.get('channel')
+    const sort = sp.get('sort') === 'top' ? 'top' : 'recent'
+    const search = (sp.get('q') || '').replace(/[,()*]/g, ' ').trim().slice(0, 80)
     let q = db
       .from('community_posts')
       .select('*')
@@ -44,6 +47,7 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(60)
     if (channel && CHANNELS.includes(channel)) q = q.eq('channel', channel)
+    if (search) q = q.or(`body.ilike.*${search}*,title.ilike.*${search}*,author_name.ilike.*${search}*`)
 
     const { data: posts, error } = await q
     if (error) {
@@ -106,7 +110,15 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({ allowed: true, me, posts: enriched })
+    let result = enriched
+    if (sort === 'top') {
+      result = [...enriched].sort((a, b) =>
+        (Number(b.pinned) - Number(a.pinned)) ||
+        ((b.reaction_count + b.comment_count) - (a.reaction_count + a.comment_count)) ||
+        (new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))
+    }
+
+    return NextResponse.json({ allowed: true, me, posts: result })
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || 'Failed' }, { status: 500 })
   }

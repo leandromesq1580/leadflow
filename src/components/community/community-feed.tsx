@@ -73,6 +73,11 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
   const [channel, setChannel] = useState<'' | Channel>('')
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
+  const [sort, setSort] = useState<'recent' | 'top'>('recent')
+  const [searchInput, setSearchInput] = useState('')
+  const [search, setSearch] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editDraft, setEditDraft] = useState('')
 
   // composer
   const [open, setOpen] = useState(false)
@@ -104,7 +109,11 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
     setLoading(true)
     setErr('')
     try {
-      const r = await fetch(`/api/community/posts${channel ? `?channel=${channel}` : ''}`, { cache: 'no-store' })
+      const qs = new URLSearchParams()
+      if (channel) qs.set('channel', channel)
+      if (sort === 'top') qs.set('sort', 'top')
+      if (search) qs.set('q', search)
+      const r = await fetch(`/api/community/posts${qs.toString() ? `?${qs}` : ''}`, { cache: 'no-store' })
       const d = await r.json().catch(() => ({}))
       if (!r.ok) { setErr(d.error || 'Erro ao carregar.'); setLoading(false); return }
       setMe(d.me || null)
@@ -113,9 +122,13 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
       setPosts(d.posts || [])
     } catch { setErr('Erro de conexão.') }
     setLoading(false)
-  }, [channel])
+  }, [channel, sort, search])
 
   useEffect(() => { load() }, [load])
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput.trim()), 350)
+    return () => clearTimeout(t)
+  }, [searchInput])
 
   const loadMeta = useCallback(async () => {
     try {
@@ -275,6 +288,16 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
     } catch { setPosts(snap) }
   }
 
+  async function saveEdit(p: Post) {
+    const text = editDraft
+    setPosts(prev => prev.map(x => x.id === p.id ? { ...x, body: text || null } : x))
+    setEditingId(null)
+    try {
+      const r = await fetch(`/api/community/posts/${p.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: text }) })
+      if (!r.ok) { const d = await r.json().catch(() => ({})); setErr(d.error || 'Erro ao editar.') }
+    } catch { setErr('Erro de conexão.') }
+  }
+
   const card: React.CSSProperties = { background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: '14px 16px', marginBottom: 12 }
   const chip = (active: boolean): React.CSSProperties => ({ cursor: 'pointer', border: `1px solid ${active ? T.accent : T.border}`, background: active ? T.accentBg : T.chip, color: active ? T.accent : T.muted, borderRadius: 999, padding: '6px 13px', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' })
   const inputStyle: React.CSSProperties = { width: '100%', background: T.input, border: `1px solid ${T.border}`, borderRadius: 10, padding: '9px 11px', fontSize: 14, color: T.text, outline: 'none' }
@@ -331,6 +354,13 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
         {([['', 'Tudo'], ['fechamento', 'Fechamento'], ['follow_up', 'Follow-up'], ['vitorias', 'Vitórias']] as const).map(([v, label]) => (
           <span key={v} style={chip(channel === v)} onClick={() => setChannel(v as any)}>{label}</span>
         ))}
+      </div>
+
+      {/* ordenar + buscar */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
+        <span style={chip(sort === 'recent')} onClick={() => setSort('recent')}>Recentes</span>
+        <span style={chip(sort === 'top')} onClick={() => setSort('top')}>🔥 Em alta</span>
+        <input style={{ ...inputStyle, flex: 1, minWidth: 150 }} placeholder="Buscar na comunidade…" value={searchInput} onChange={e => setSearchInput(e.target.value)} />
       </div>
 
       {/* ranking do mês */}
@@ -458,7 +488,17 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
             </div>
 
             {p.title && <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 600, color: T.text }}>{p.title}</p>}
-            {p.body && <p style={{ margin: '0 0 10px', fontSize: 14, color: bodyColor, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{renderBody(p.body, T.accent)}</p>}
+            {editingId === p.id ? (
+              <div style={{ marginBottom: 10 }}>
+                <textarea style={{ ...inputStyle, minHeight: 70, resize: 'vertical' }} value={editDraft} onChange={e => setEditDraft(e.target.value)} />
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 6 }}>
+                  <button style={ghostBtn} onClick={() => setEditingId(null)}>Cancelar</button>
+                  <button style={btn} onClick={() => saveEdit(p)}>Salvar</button>
+                </div>
+              </div>
+            ) : (
+              p.body && <p style={{ margin: '0 0 10px', fontSize: 14, color: bodyColor, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{renderBody(p.body, T.accent)}</p>
+            )}
 
             {p.data?.image_path && (
               <img src={`/api/community/image?path=${encodeURIComponent(p.data.image_path)}`} alt="" loading="lazy" style={{ width: '100%', maxHeight: 460, objectFit: 'cover', borderRadius: 10, border: `1px solid ${T.border}`, marginBottom: 10, display: 'block' }} />
@@ -503,6 +543,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
               <button style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, border: `1px solid ${T.border}`, background: 'transparent', color: T.muted, borderRadius: 999, padding: '4px 10px', fontSize: 13, fontWeight: 600 }} onClick={() => toggleComments(p)}>💬 {p.comment_count > 0 ? p.comment_count : ''}</button>
               <div style={{ flex: 1 }} />
               {me?.isAdmin && <button style={{ ...ghostBtn, padding: '4px 9px', fontSize: 12 }} onClick={() => pin(p)}>{p.pinned ? 'Desafixar' : 'Fixar'}</button>}
+              {p.can_delete && editingId !== p.id && <button style={{ cursor: 'pointer', border: 'none', background: 'transparent', color: T.muted, fontSize: 12, padding: '4px 6px' }} onClick={() => { setEditingId(p.id); setEditDraft(p.body || '') }}>Editar</button>}
               {p.can_delete && <button style={{ cursor: 'pointer', border: 'none', background: 'transparent', color: T.muted, fontSize: 12, padding: '4px 6px' }} onClick={() => del(p)}>Excluir</button>}
             </div>
 
