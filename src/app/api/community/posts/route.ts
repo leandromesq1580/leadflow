@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
   try {
     const ctx = await getCommunityContext()
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const { db, me, allowed } = ctx
-    if (!allowed) return NextResponse.json({ allowed: false, me })
+    const { db, me, allowed, banned } = ctx
+    if (!allowed) return NextResponse.json({ allowed: false, banned, me })
 
     const sp = request.nextUrl.searchParams
     const channel = sp.get('channel')

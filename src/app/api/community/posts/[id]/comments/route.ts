@@ -81,3 +81,30 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: err?.message || 'Failed' }, { status: 500 })
   }
 }
+
+/**
+ * DELETE /api/community/posts/[id]/comments — remove um comentário (autor ou admin). Body: { comment_id }.
+ * Apaga também as respostas (parent_id cascade na migration 024).
+ */
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params
+    const ctx = await getCommunityContext()
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { db, me, allowed } = ctx
+    if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+    const { comment_id } = await request.json().catch(() => ({}))
+    if (!comment_id) return NextResponse.json({ error: 'Missing comment_id' }, { status: 400 })
+
+    const { data: c } = await db.from('community_comments').select('buyer_id').eq('id', comment_id).eq('post_id', id).single()
+    if (!c) return NextResponse.json({ error: 'Comentário não encontrado.' }, { status: 404 })
+    if (!me.isAdmin && c.buyer_id !== me.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+    const { error } = await db.from('community_comments').delete().eq('id', comment_id)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ ok: true })
+  } catch (err: any) {
+    return NextResponse.json({ error: err?.message || 'Failed' }, { status: 500 })
+  }
+}

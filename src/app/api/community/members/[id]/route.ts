@@ -31,9 +31,16 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         if (Number.isFinite(v) && v > 0) salesTotal += v
       }
     }
+    let banned = false
+    try {
+      const { data: ban } = await db.from('community_bans').select('buyer_id').eq('buyer_id', id).maybeSingle()
+      banned = !!ban
+    } catch {}
+
     return NextResponse.json({
       id,
       name: buyer?.name || 'Membro',
+      banned,
       stats: { posts: list.length, wins, salesTotal },
       posts: list,
     })

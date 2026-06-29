@@ -68,6 +68,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
 
   const [me, setMe] = useState<Me | null>(null)
   const [allowed, setAllowed] = useState<boolean | null>(null)
+  const [banned, setBanned] = useState(false)
   const [needsMigration, setNeedsMigration] = useState(false)
   const [posts, setPosts] = useState<Post[]>([])
   const [channel, setChannel] = useState<'' | Channel>('')
@@ -128,6 +129,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
       if (!r.ok) { setErr(d.error || 'Erro ao carregar.'); setLoading(false); return }
       setMe(d.me || null)
       setAllowed(d.allowed !== false)
+      setBanned(!!d.banned)
       setNeedsMigration(!!d.needsMigration)
       setPosts(d.posts || [])
     } catch { setErr('Erro de conexão.') }
@@ -320,6 +322,22 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
     } catch { setPosts(snap) }
   }
 
+  async function toggleBan(targetId: string, currentlyBanned: boolean) {
+    try {
+      const r = await fetch(`/api/community/members/${targetId}/ban`, { method: currentlyBanned ? 'DELETE' : 'POST', headers: { 'Content-Type': 'application/json' }, body: currentlyBanned ? undefined : JSON.stringify({}) })
+      const d = await r.json().catch(() => ({}))
+      if (r.ok) { setProfile((pf: any) => pf ? { ...pf, banned: !currentlyBanned } : pf); load() }
+      else setErr(d.error || 'Erro ao bloquear.')
+    } catch { setErr('Erro de conexão.') }
+  }
+
+  async function delComment(p: Post, commentId: string) {
+    if (!confirm('Remover este comentário?')) return
+    setComments(prev => ({ ...prev, [p.id]: (prev[p.id] || []).filter(c => c.id !== commentId && c.parent_id !== commentId) }))
+    setPosts(prev => prev.map(x => x.id === p.id ? { ...x, comment_count: Math.max(0, x.comment_count - 1) } : x))
+    try { await fetch(`/api/community/posts/${p.id}/comments`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ comment_id: commentId }) }) } catch {}
+  }
+
   async function saveEdit(p: Post) {
     const text = editDraft
     setPosts(prev => prev.map(x => x.id === p.id ? { ...x, body: text || null } : x))
@@ -367,12 +385,24 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ margin: 0, fontSize: 13 }}><span onClick={() => c.buyer_id && setProfileId(c.buyer_id)} style={{ fontWeight: 600, color: T.text, cursor: c.buyer_id ? 'pointer' : 'default' }}>{c.author_name || 'Membro'}</span> <span style={{ color: T.muted, fontSize: 11 }}>· {ago(c.created_at)}</span></p>
         <p style={{ margin: 0, fontSize: 13, color: bodyColor, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{renderBody(c.body, T.accent)}</p>
-        {!isReply && <button onClick={() => { setReplyTo({ commentId: c.id, name: c.author_name || 'Membro' }) }} style={{ border: 'none', background: 'transparent', color: T.muted, fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '2px 0', marginTop: 1 }}>Responder</button>}
+        <div style={{ display: 'flex', gap: 12, marginTop: 1 }}>
+          {!isReply && <button onClick={() => { setReplyTo({ commentId: c.id, name: c.author_name || 'Membro' }) }} style={{ border: 'none', background: 'transparent', color: T.muted, fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '2px 0' }}>Responder</button>}
+          {c.can_delete && <button onClick={() => delComment(p, c.id)} style={{ border: 'none', background: 'transparent', color: T.muted, fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '2px 0' }}>Excluir</button>}
+        </div>
       </div>
     </div>
   )
 
   if (allowed === false) {
+    if (banned) {
+      return (
+        <div style={{ ...card, textAlign: 'center', padding: '32px 20px' }}>
+          <div style={{ fontSize: 30, marginBottom: 8 }}>🚫</div>
+          <p style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: T.text }}>Seu acesso à comunidade foi removido</p>
+          <p style={{ margin: 0, fontSize: 14, color: T.muted, lineHeight: 1.5 }}>Um administrador bloqueou seu acesso à comunidade. Se achar que foi engano, fale com o suporte.</p>
+        </div>
+      )
+    }
     return (
       <div style={{ ...card, textAlign: 'center', padding: '32px 20px' }}>
         <div style={{ fontSize: 30, marginBottom: 8 }}>🔒</div>
@@ -642,6 +672,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
                 {profile?.stats && <p style={{ margin: 0, fontSize: 12, color: T.muted }}>{profile.stats.posts} {profile.stats.posts === 1 ? 'post' : 'posts'} · {profile.stats.wins} {profile.stats.wins === 1 ? 'vitória' : 'vitórias'}{profile.stats.salesTotal > 0 ? ` · ${money(profile.stats.salesTotal)} vendidos` : ''}</p>}
               </div>
               {profileId && me && profileId !== me.id && <button onClick={() => openConversation(profileId, profile?.name || 'Membro')} style={{ ...btn, padding: '6px 12px' }}>Mensagem</button>}
+              {me?.isAdmin && profileId !== me.id && <button onClick={() => toggleBan(profileId!, !!profile?.banned)} style={{ ...ghostBtn, padding: '6px 11px', color: profile?.banned ? T.accent : '#ef4444', borderColor: profile?.banned ? T.border : '#fecaca' }}>{profile?.banned ? '↺ Desbloquear' : '🚫 Bloquear'}</button>}
               <button onClick={() => setProfileId(null)} style={{ ...ghostBtn, padding: '6px 11px' }}>Fechar</button>
             </div>
             {!profile ? (

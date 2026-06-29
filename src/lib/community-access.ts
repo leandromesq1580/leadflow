@@ -31,15 +31,27 @@ export async function getCommunityContext(): Promise<{
   if (!buyer) return null
 
   const isAdmin = !!buyer.is_admin
-  const allowed =
+
+  // Banido da comunidade? (admin nunca é banido). Tolera tabela inexistente (migration 026).
+  let banned = false
+  if (!isAdmin) {
+    try {
+      const { data: ban } = await db.from('community_bans').select('buyer_id').eq('buyer_id', buyer.id).maybeSingle()
+      banned = !!ban
+    } catch {}
+  }
+
+  const allowed = !banned && (
     isAdmin ||
     buyer.crm_subscription_status === 'active' ||
     (await hasPurchased(db, buyer.id))
+  )
 
   return {
     db,
     me: { id: buyer.id, name: buyer.name || 'Membro', isAdmin },
     allowed,
+    banned,
   }
 }
 
