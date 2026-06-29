@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCommunityContext } from '@/lib/community-access'
+import { getStripe } from '@/lib/stripe'
 
 // Ferramenta admin pra BANIR/REATIVAR um cliente no sistema inteiro (anti-fraude).
 // Ban = is_active=false (bloqueia plataforma + checkout) + auth ban (bloqueia login)
@@ -65,6 +66,23 @@ export async function POST(request: NextRequest) {
       result.community = suspend ? 'bloqueado' : 'liberado'
     } catch {
       result.community = 'skip'
+    }
+
+    // 4) cancelar a assinatura no Stripe (só se pedido) — cancelamento imediato, sem reembolso
+    if (body?.cancelSub) {
+      try {
+        const { data: b2 } = await db.from('buyers').select('crm_subscription_id').eq('id', buyerId).single()
+        const subId = b2?.crm_subscription_id
+        if (subId) {
+          await getStripe().subscriptions.cancel(subId)
+          await db.from('buyers').update({ crm_subscription_status: 'canceled' }).eq('id', buyerId)
+          result.subscription = `cancelada (${subId})`
+        } else {
+          result.subscription = 'sem assinatura ativa registrada'
+        }
+      } catch (e: any) {
+        result.subscription = `erro: ${e?.message || e}`
+      }
     }
 
     return NextResponse.json({ ok: true, ...result })
