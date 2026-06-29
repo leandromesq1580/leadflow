@@ -53,24 +53,20 @@ export async function createServerSupabase() {
     }
   )
 
-  // Monkey-patch auth.getUser to decode JWT locally
+  // getUser DEVE validar a ASSINATURA do JWT no servidor de auth do Supabase
+  // (rejeita token forjado/expirado). Antes isto decodificava o payload localmente
+  // SEM verificar a assinatura -> qualquer token com um `sub` valido passava (bypass
+  // critico de auth/pagante/admin em TODA rota). Agora o wrapper so injeta o
+  // accessToken do cookie no getUser() sem-argumento que os callers usam; a validacao
+  // REAL e feita pelo getUser(token) original, que chama o endpoint /user do GoTrue.
   const originalGetUser = supabase.auth.getUser.bind(supabase.auth)
-  supabase.auth.getUser = async () => {
-    if (!accessToken) {
+  supabase.auth.getUser = (async (jwt?: string) => {
+    const token = jwt || accessToken
+    if (!token) {
       return { data: { user: null }, error: { message: 'No auth cookie' } } as any
     }
-    try {
-      const payload = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())
-      return {
-        data: {
-          user: { id: payload.sub, email: payload.email, role: payload.role }
-        },
-        error: null,
-      } as any
-    } catch {
-      return { data: { user: null }, error: { message: 'Invalid token' } } as any
-    }
-  }
+    return originalGetUser(token)
+  }) as typeof supabase.auth.getUser
 
   return supabase
 }
