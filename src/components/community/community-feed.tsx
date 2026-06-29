@@ -78,6 +78,8 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
   const [search, setSearch] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editDraft, setEditDraft] = useState('')
+  const [profileId, setProfileId] = useState<string | null>(null)
+  const [profile, setProfile] = useState<any>(null)
 
   // composer
   const [open, setOpen] = useState(false)
@@ -129,6 +131,13 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
     const t = setTimeout(() => setSearch(searchInput.trim()), 350)
     return () => clearTimeout(t)
   }, [searchInput])
+  useEffect(() => {
+    if (!profileId) { setProfile(null); return }
+    let cancelled = false
+    setProfile(null)
+    fetch(`/api/community/members/${profileId}`, { cache: 'no-store' }).then(r => r.json()).then(d => { if (!cancelled) setProfile(d) }).catch(() => {})
+    return () => { cancelled = true }
+  }, [profileId])
 
   const loadMeta = useCallback(async () => {
     try {
@@ -308,7 +317,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
     <div key={c.id} style={{ display: 'flex', gap: 8, marginBottom: 10, marginLeft: isReply ? 36 : 0 }}>
       <div style={{ width: 28, height: 28, borderRadius: '50%', background: T.tag, color: T.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{initials(c.author_name)}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ margin: 0, fontSize: 13 }}><span style={{ fontWeight: 600, color: T.text }}>{c.author_name || 'Membro'}</span> <span style={{ color: T.muted, fontSize: 11 }}>· {ago(c.created_at)}</span></p>
+        <p style={{ margin: 0, fontSize: 13 }}><span onClick={() => c.buyer_id && setProfileId(c.buyer_id)} style={{ fontWeight: 600, color: T.text, cursor: c.buyer_id ? 'pointer' : 'default' }}>{c.author_name || 'Membro'}</span> <span style={{ color: T.muted, fontSize: 11 }}>· {ago(c.created_at)}</span></p>
         <p style={{ margin: 0, fontSize: 13, color: bodyColor, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{renderBody(c.body, T.accent)}</p>
         {!isReply && <button onClick={() => { setReplyTo({ commentId: c.id, name: c.author_name || 'Membro' }) }} style={{ border: 'none', background: 'transparent', color: T.muted, fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '2px 0', marginTop: 1 }}>Responder</button>}
       </div>
@@ -476,9 +485,9 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
         return (
           <div key={p.id} style={card}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: p.kind === 'win' ? T.winBg : T.accentBg, color: p.kind === 'win' ? T.winText : T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{initials(p.author_name)}</div>
+              <div onClick={() => p.buyer_id && setProfileId(p.buyer_id)} style={{ width: 36, height: 36, borderRadius: '50%', background: p.kind === 'win' ? T.winBg : T.accentBg, color: p.kind === 'win' ? T.winText : T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0, cursor: p.buyer_id ? 'pointer' : 'default' }}>{initials(p.author_name)}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: T.text }}>{p.author_name || 'Membro'}</p>
+                <p onClick={() => p.buyer_id && setProfileId(p.buyer_id)} style={{ margin: 0, fontSize: 14, fontWeight: 600, color: T.text, cursor: p.buyer_id ? 'pointer' : 'default' }}>{p.author_name || 'Membro'}</p>
                 <p style={{ margin: 0, fontSize: 12, color: T.muted }}>{p.pinned && '📌 '}{ago(p.created_at)}</p>
               </div>
               {p.kind === 'win' && <span style={{ background: T.winBg, color: T.winText, fontSize: 12, fontWeight: 600, padding: '3px 9px', borderRadius: 999 }}>🏆 vitória</span>}
@@ -570,6 +579,32 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
           </div>
         )
       })}
+
+      {profileId && (
+        <div onClick={() => setProfileId(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 50, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 16px', overflowY: 'auto' }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 520, background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: 18, marginBottom: 40 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+              <div style={{ width: 48, height: 48, borderRadius: '50%', background: T.accentBg, color: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 700, flexShrink: 0 }}>{initials(profile?.name)}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: 17, fontWeight: 700, color: T.text }}>{profile?.name || '…'}</p>
+                {profile?.stats && <p style={{ margin: 0, fontSize: 12, color: T.muted }}>{profile.stats.posts} {profile.stats.posts === 1 ? 'post' : 'posts'} · {profile.stats.wins} {profile.stats.wins === 1 ? 'vitória' : 'vitórias'}{profile.stats.salesTotal > 0 ? ` · ${money(profile.stats.salesTotal)} vendidos` : ''}</p>}
+              </div>
+              <button onClick={() => setProfileId(null)} style={{ ...ghostBtn, padding: '6px 11px' }}>Fechar</button>
+            </div>
+            {!profile ? (
+              <p style={{ color: T.muted, fontSize: 13, textAlign: 'center', padding: '14px 0' }}>Carregando…</p>
+            ) : (profile.posts || []).length === 0 ? (
+              <p style={{ color: T.muted, fontSize: 13, textAlign: 'center', padding: '14px 0' }}>Ainda não postou nada.</p>
+            ) : (profile.posts || []).map((pp: any) => (
+              <div key={pp.id} style={{ borderTop: `1px solid ${T.border}`, padding: '10px 0' }}>
+                <p style={{ margin: '0 0 3px', fontSize: 12, color: T.muted }}>{pp.kind === 'win' ? '🏆 vitória' : pp.kind === 'sacada' ? '💡 sacada' : pp.kind === 'poll' ? '📊 enquete' : (CHANNEL_LABEL[pp.channel as Channel] || 'post')} · {ago(pp.created_at)}</p>
+                {pp.body && <p style={{ margin: 0, fontSize: 13, color: bodyColor, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{pp.body}</p>}
+                {pp.kind === 'win' && pp.data?.sale_value ? <p style={{ margin: '2px 0 0', fontSize: 12, color: T.win, fontWeight: 600 }}>{money(pp.data.sale_value)}{pp.data.product ? ` · ${pp.data.product}` : ''}</p> : null}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
