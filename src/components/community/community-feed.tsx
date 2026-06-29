@@ -81,6 +81,14 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
   const [profileId, setProfileId] = useState<string | null>(null)
   const [profile, setProfile] = useState<any>(null)
 
+  // DM 1-a-1
+  const [dmOpen, setDmOpen] = useState(false)
+  const [dmConvs, setDmConvs] = useState<any[]>([])
+  const [dmUnread, setDmUnread] = useState(0)
+  const [dmActive, setDmActive] = useState<{ id: string; name: string } | null>(null)
+  const [dmMessages, setDmMessages] = useState<any[]>([])
+  const [dmDraft, setDmDraft] = useState('')
+
   // composer
   const [open, setOpen] = useState(false)
   const [ckind, setCkind] = useState<Kind>('post')
@@ -141,13 +149,28 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
 
   const loadMeta = useCallback(async () => {
     try {
-      const [n, r] = await Promise.all([
+      const [n, r, dm] = await Promise.all([
         fetch('/api/community/notifications', { cache: 'no-store' }).then(x => x.json()).catch(() => ({})),
         fetch('/api/community/ranking', { cache: 'no-store' }).then(x => x.json()).catch(() => ({})),
+        fetch('/api/community/dm', { cache: 'no-store' }).then(x => x.json()).catch(() => ({})),
       ])
       setNotifs(n.items || []); setUnread(n.unread || 0); setRanking(r.top || [])
+      setDmConvs(dm.conversations || []); setDmUnread(dm.unread || 0)
     } catch {}
   }, [])
+
+  const loadConversation = useCallback(async (otherId: string) => {
+    try {
+      const r = await fetch(`/api/community/dm/${otherId}`, { cache: 'no-store' })
+      const d = await r.json().catch(() => ({}))
+      setDmMessages(d.messages || [])
+    } catch {}
+  }, [])
+  useEffect(() => {
+    if (!dmOpen || !dmActive) return
+    const t = setInterval(() => loadConversation(dmActive.id), 6000)
+    return () => clearInterval(t)
+  }, [dmOpen, dmActive, loadConversation])
   useEffect(() => {
     loadMeta()
     const t = setInterval(loadMeta, 60000)
@@ -307,6 +330,31 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
     } catch { setErr('Erro de conexão.') }
   }
 
+  async function loadDmList() {
+    try {
+      const r = await fetch('/api/community/dm', { cache: 'no-store' })
+      const d = await r.json().catch(() => ({}))
+      setDmConvs(d.conversations || []); setDmUnread(d.unread || 0)
+    } catch {}
+  }
+  function openConversation(id: string, name: string) {
+    setProfileId(null); setDmActive({ id, name }); setDmMessages([]); setDmDraft(''); setDmOpen(true)
+    setDmUnread(u => Math.max(0, u - (dmConvs.find(c => c.otherId === id)?.unread || 0)))
+    loadConversation(id)
+  }
+  async function sendDm() {
+    if (!dmActive) return
+    const text = dmDraft.trim()
+    if (!text) return
+    setDmDraft('')
+    try {
+      const r = await fetch(`/api/community/dm/${dmActive.id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: text }) })
+      const d = await r.json().catch(() => ({}))
+      if (r.ok && d.message) setDmMessages(prev => [...prev, d.message])
+      else { setErr(d.error || 'Erro ao enviar a mensagem.'); setDmDraft(text) }
+    } catch { setErr('Erro de conexão.'); setDmDraft(text) }
+  }
+
   const card: React.CSSProperties = { background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: '14px 16px', marginBottom: 12 }
   const chip = (active: boolean): React.CSSProperties => ({ cursor: 'pointer', border: `1px solid ${active ? T.accent : T.border}`, background: active ? T.accentBg : T.chip, color: active ? T.accent : T.muted, borderRadius: 999, padding: '6px 13px', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' })
   const inputStyle: React.CSSProperties = { width: '100%', background: T.input, border: `1px solid ${T.border}`, borderRadius: 10, padding: '9px 11px', fontSize: 14, color: T.text, outline: 'none' }
@@ -337,8 +385,12 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
 
   return (
     <div>
-      {/* sino de notificações */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10, position: 'relative' }}>
+      {/* mensagens + sino */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 10, position: 'relative' }}>
+        <button onClick={() => { setDmActive(null); setDmOpen(true); loadDmList() }} aria-label="mensagens" style={{ position: 'relative', border: `1px solid ${T.border}`, background: T.card, borderRadius: 999, width: 38, height: 38, cursor: 'pointer', fontSize: 16 }}>
+          ✉️
+          {dmUnread > 0 && <span style={{ position: 'absolute', top: -4, right: -4, background: '#ef4444', color: '#fff', borderRadius: 999, minWidth: 18, height: 18, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{dmUnread > 9 ? '9+' : dmUnread}</span>}
+        </button>
         <button onClick={openNotifs} aria-label="notificações" style={{ position: 'relative', border: `1px solid ${T.border}`, background: T.card, borderRadius: 999, width: 38, height: 38, cursor: 'pointer', fontSize: 17 }}>
           🔔
           {unread > 0 && <span style={{ position: 'absolute', top: -4, right: -4, background: '#ef4444', color: '#fff', borderRadius: 999, minWidth: 18, height: 18, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{unread > 9 ? '9+' : unread}</span>}
@@ -589,6 +641,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
                 <p style={{ margin: 0, fontSize: 17, fontWeight: 700, color: T.text }}>{profile?.name || '…'}</p>
                 {profile?.stats && <p style={{ margin: 0, fontSize: 12, color: T.muted }}>{profile.stats.posts} {profile.stats.posts === 1 ? 'post' : 'posts'} · {profile.stats.wins} {profile.stats.wins === 1 ? 'vitória' : 'vitórias'}{profile.stats.salesTotal > 0 ? ` · ${money(profile.stats.salesTotal)} vendidos` : ''}</p>}
               </div>
+              {profileId && me && profileId !== me.id && <button onClick={() => openConversation(profileId, profile?.name || 'Membro')} style={{ ...btn, padding: '6px 12px' }}>Mensagem</button>}
               <button onClick={() => setProfileId(null)} style={{ ...ghostBtn, padding: '6px 11px' }}>Fechar</button>
             </div>
             {!profile ? (
@@ -602,6 +655,54 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
                 {pp.kind === 'win' && pp.data?.sale_value ? <p style={{ margin: '2px 0 0', fontSize: 12, color: T.win, fontWeight: 600 }}>{money(pp.data.sale_value)}{pp.data.product ? ` · ${pp.data.product}` : ''}</p> : null}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {dmOpen && (
+        <div onClick={() => { setDmOpen(false); setDmActive(null) }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 55, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 16px', overflowY: 'auto' }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 480, background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, display: 'flex', flexDirection: 'column', maxHeight: '78vh', overflow: 'hidden' }}>
+            {dmActive ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: `1px solid ${T.border}` }}>
+                  <button onClick={() => { setDmActive(null); loadDmList() }} style={{ ...ghostBtn, padding: '4px 11px' }}>←</button>
+                  <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: T.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{dmActive.name}</p>
+                  <button onClick={() => { setDmOpen(false); setDmActive(null) }} style={{ ...ghostBtn, padding: '4px 10px' }}>Fechar</button>
+                </div>
+                <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8, minHeight: 220 }}>
+                  {dmMessages.length === 0 ? (
+                    <p style={{ color: T.muted, fontSize: 13, textAlign: 'center', margin: 'auto' }}>Sem mensagens ainda. Diga oi 👋</p>
+                  ) : dmMessages.map(m => (
+                    <div key={m.id} style={{ alignSelf: m.mine ? 'flex-end' : 'flex-start', maxWidth: '78%', background: m.mine ? T.accent : T.tag, color: m.mine ? '#ffffff' : T.text, borderRadius: 12, padding: '7px 11px', fontSize: 13, lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>{m.body}</div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 8, padding: '12px 16px', borderTop: `1px solid ${T.border}` }}>
+                  <input style={{ ...inputStyle, flex: 1 }} placeholder="Mensagem…" value={dmDraft} onChange={e => setDmDraft(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') sendDm() }} />
+                  <button style={btn} onClick={sendDm}>Enviar</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: `1px solid ${T.border}` }}>
+                  <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: T.text }}>Mensagens</p>
+                  <button onClick={() => setDmOpen(false)} style={{ ...ghostBtn, padding: '4px 10px' }}>Fechar</button>
+                </div>
+                <div style={{ overflowY: 'auto', maxHeight: '62vh' }}>
+                  {dmConvs.length === 0 ? (
+                    <p style={{ color: T.muted, fontSize: 13, textAlign: 'center', padding: '24px 16px', lineHeight: 1.5 }}>Nenhuma conversa ainda.<br />Abra o perfil de um membro e toque em “Mensagem”.</p>
+                  ) : dmConvs.map(c => (
+                    <div key={c.otherId} onClick={() => openConversation(c.otherId, c.name)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', borderBottom: `1px solid ${T.border}`, cursor: 'pointer' }}>
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: T.accentBg, color: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{initials(c.name)}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: T.text }}>{c.name}</p>
+                        <p style={{ margin: 0, fontSize: 12, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.last}</p>
+                      </div>
+                      {c.unread > 0 && <span style={{ background: '#ef4444', color: '#fff', borderRadius: 999, minWidth: 18, height: 18, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>{c.unread}</span>}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
