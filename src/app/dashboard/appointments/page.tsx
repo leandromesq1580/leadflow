@@ -506,6 +506,17 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
     onChanged()
   }
 
+  async function changeColor(c: string) {
+    setBusy(true)
+    const r = await fetch(endpointBase, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ color: c }),
+    })
+    setBusy(false)
+    if (r.ok) onChanged()
+    else alert('Erro ao mudar a cor')
+  }
+
   async function del() {
     if (!confirm('Deletar este item? Ação não pode ser desfeita.')) return
     setBusy(true)
@@ -588,6 +599,19 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
           <div className="rounded-xl p-4 mb-3" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
             <p className="text-[11px] font-bold uppercase mb-1" style={{ color: '#94a3b8' }}>📍 Local</p>
             <p className="text-[13px]" style={{ color: '#1a1a2e' }}>{event.location}</p>
+          </div>
+        )}
+
+        {(event.kind === 'task' || event.kind === 'event') && (
+          <div className="rounded-xl p-4 mb-3" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
+            <p className="text-[11px] font-bold uppercase mb-2" style={{ color: '#94a3b8' }}>Cor</p>
+            <div className="flex gap-2.5">
+              {ITEM_COLORS.map(c => (
+                <button key={c} type="button" disabled={busy} onClick={() => changeColor(c)} aria-label={`Cor ${c}`}
+                  className="w-7 h-7 rounded-full"
+                  style={{ background: c, boxShadow: event.color === c ? `0 0 0 2px #fff, 0 0 0 4px ${c}` : 'none', transform: event.color === c ? 'scale(1.12)' : 'scale(1)', transition: 'all .12s', cursor: 'pointer' }} />
+              ))}
+            </div>
           </div>
         )}
 
