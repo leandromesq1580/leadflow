@@ -9,7 +9,9 @@ import { getCommunityContext } from '@/lib/community-access'
 const BRIDGE_URL = (process.env.WA_BRIDGE_URL || 'http://62.146.229.13:3457').trim().replace(/\/$/, '')
 const BRIDGE_KEY = (process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026').trim()
 
-async function computeRecipients(db: any) {
+type Recipient = { id: string; name: string; phone: string }
+
+async function computeRecipients(db: any): Promise<Recipient[]> {
   const { data: buyers } = await db
     .from('buyers')
     .select('id, name, phone, whatsapp, crm_subscription_status')
@@ -24,7 +26,7 @@ async function computeRecipients(db: any) {
   }
   return (buyers || [])
     .filter((b: any) => b.crm_subscription_status === 'active' || purchased.has(b.id))
-    .map((b: any) => ({ id: b.id, name: b.name, phone: String(b.phone || b.whatsapp || '').trim() }))
+    .map((b: any): Recipient => ({ id: String(b.id), name: String(b.name || ''), phone: String(b.phone || b.whatsapp || '').trim() }))
 }
 
 async function sendViaBridge(phone: string, message: string): Promise<boolean> {
