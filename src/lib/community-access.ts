@@ -17,6 +17,7 @@ export async function getCommunityContext(): Promise<{
   db: ReturnType<typeof createAdminClient>
   me: CommunityMe
   allowed: boolean
+  banned: boolean
 } | null> {
   const supabase = await createServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
