@@ -1,10 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
-import { createRemoteJWKSet, jwtVerify, decodeJwt } from 'jose'
+import { importJWK, jwtVerify, decodeJwt } from 'jose'
 
-// JWKS (chaves publicas ES256) do projeto Supabase — o jose busca uma vez e cacheia.
-const SUPABASE_ISSUER = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1`
-const JWKS = createRemoteJWKSet(new URL(`${SUPABASE_ISSUER}/.well-known/jwks.json`))
+// Chave publica ES256 do projeto Supabase (de /auth/v1/.well-known/jwks.json).
+// EMBUTIDA de proposito: o fetch remoto do JWKS falhava no runtime serverless da Vercel
+// (rejeitava ate tokens validos -> outage). Sem fetch = deterministico. Se o Supabase
+// rotacionar a chave de assinatura, atualizar aqui (kid 99cf0db7-7dc6-4478-ba39-7dc9dc1d1228).
+const SUPABASE_JWK = { alg: 'ES256', crv: 'P-256', kty: 'EC', x: 'Z4RSq9i-ZAc19QhbZn1fH_zos0S4TSODZIFMPEMGWmM', y: 'EteZoBLM4JNggWbMGvQyYTmxokjL27GaZgvyf7WuEjM' }
+let _supabaseKey: ReturnType<typeof importJWK> | null = null
+function supabaseKey() {
+  if (!_supabaseKey) _supabaseKey = importJWK(SUPABASE_JWK, 'ES256')
+  return _supabaseKey
+}
 
 export async function createServerSupabase() {
   const cookieStore = await cookies()
@@ -70,12 +77,13 @@ export async function createServerSupabase() {
       return { data: { user: null }, error: { message: 'No auth cookie' } } as any
     }
     try {
+      const key = await supabaseKey()
       let payload: any
       try {
-        ;({ payload } = await jwtVerify(token, JWKS, { issuer: SUPABASE_ISSUER }))
+        ;({ payload } = await jwtVerify(token, key))
       } catch (e: any) {
         // Assinatura ja validada acima; so estourou por expiracao -> aceita o payload.
-        // Qualquer outro erro (assinatura invalida/forjada, issuer errado) -> rejeita.
+        // Qualquer outro erro (assinatura invalida/forjada) -> rejeita.
         if (e?.code === 'ERR_JWT_EXPIRED') payload = decodeJwt(token)
         else throw e
       }
