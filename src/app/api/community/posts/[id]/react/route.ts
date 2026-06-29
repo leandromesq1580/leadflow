@@ -33,12 +33,15 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       reacted = true
     }
 
-    const { count } = await db
+    const { count, error: cErr } = await db
       .from('community_reactions')
       .select('id', { count: 'exact', head: true })
       .eq('post_id', id)
       .eq('kind', 'like')
 
+    // Se a recontagem falhar, devolve so 'reacted' — o client mantem o incremento
+    // otimista em vez de zerar a contagem na tela.
+    if (cErr) return NextResponse.json({ reacted })
     return NextResponse.json({ reacted, count: count || 0 })
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || 'Failed' }, { status: 500 })

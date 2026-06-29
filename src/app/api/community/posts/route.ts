@@ -42,22 +42,32 @@ export async function GET(request: NextRequest) {
     }
 
     const ids = (posts || []).map(p => p.id)
-    let reactions: any[] = []
-    let comments: any[] = []
+    const rxCount: Record<string, number> = {}
+    const cmCount: Record<string, number> = {}
+    let myReacted = new Set<string>()
     if (ids.length) {
-      const [rx, cm] = await Promise.all([
-        db.from('community_reactions').select('post_id, buyer_id').in('post_id', ids),
-        db.from('community_comments').select('post_id').in('post_id', ids),
+      // Contagens via COUNT no banco (nao traz linhas -> imune ao cap de 1000 do PostgREST).
+      // 'reacted' so com as reacoes do proprio membro (conjunto pequeno, nunca trunca).
+      // Em escala alta, trocar os head-counts por uma RPC/view agregada.
+      const [mine, counts] = await Promise.all([
+        db.from('community_reactions').select('post_id').eq('buyer_id', me.id).in('post_id', ids),
+        Promise.all(ids.map(async (id) => {
+          const [rc, cc] = await Promise.all([
+            db.from('community_reactions').select('id', { count: 'exact', head: true }).eq('post_id', id),
+            db.from('community_comments').select('id', { count: 'exact', head: true }).eq('post_id', id),
+          ])
+          return { id, rc: rc.count || 0, cc: cc.count || 0 }
+        })),
       ])
-      reactions = rx.data || []
-      comments = cm.data || []
+      myReacted = new Set((mine.data || []).map((r: any) => r.post_id))
+      for (const c of counts) { rxCount[c.id] = c.rc; cmCount[c.id] = c.cc }
     }
 
     const enriched = (posts || []).map(p => ({
       ...p,
-      reaction_count: reactions.filter(r => r.post_id === p.id).length,
-      reacted: reactions.some(r => r.post_id === p.id && r.buyer_id === me.id),
-      comment_count: comments.filter(c => c.post_id === p.id).length,
+      reaction_count: rxCount[p.id] || 0,
+      reacted: myReacted.has(p.id),
+      comment_count: cmCount[p.id] || 0,
       can_delete: me.isAdmin || p.buyer_id === me.id,
     }))
 
@@ -92,8 +102,8 @@ export async function POST(request: NextRequest) {
     if (kind !== 'win' && !text) {
       return NextResponse.json({ error: 'Escreva algo antes de publicar.' }, { status: 400 })
     }
-    if (kind === 'win' && !text && !Object.keys(data).length) {
-      return NextResponse.json({ error: 'Conte algo sobre a venda.' }, { status: 400 })
+    if (kind === 'win' && !text && !(data as any).sale_value) {
+      return NextResponse.json({ error: 'Informe o valor da venda ou escreva algo sobre ela.' }, { status: 400 })
     }
 
     const { data: row, error } = await db

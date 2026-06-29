@@ -41,6 +41,10 @@ function money(n?: number) {
   if (!n) return ''
   return '$' + n.toLocaleString('en-US')
 }
+// Mesma ordem do servidor: fixados primeiro, depois mais recentes.
+function sortFeed(list: Post[]) {
+  return [...list].sort((a, b) => (Number(b.pinned) - Number(a.pinned)) || (new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))
+}
 
 export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' }) {
   const dark = theme === 'dark'
@@ -76,7 +80,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
     setErr('')
     try {
       const r = await fetch(`/api/community/posts${channel ? `?channel=${channel}` : ''}`, { cache: 'no-store' })
-      const d = await r.json()
+      const d = await r.json().catch(() => ({}))
       if (!r.ok) { setErr(d.error || 'Erro ao carregar.'); setLoading(false); return }
       setMe(d.me || null)
       setAllowed(d.allowed !== false)
@@ -89,12 +93,21 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
   useEffect(() => { load() }, [load])
 
   async function react(p: Post) {
+    const snap = { reacted: p.reacted, reaction_count: p.reaction_count }
     setPosts(prev => prev.map(x => x.id === p.id ? { ...x, reacted: !x.reacted, reaction_count: x.reaction_count + (x.reacted ? -1 : 1) } : x))
     try {
       const r = await fetch(`/api/community/posts/${p.id}/react`, { method: 'POST' })
-      const d = await r.json()
-      if (r.ok) setPosts(prev => prev.map(x => x.id === p.id ? { ...x, reacted: d.reacted, reaction_count: d.count } : x))
-    } catch {}
+      const d = await r.json().catch(() => ({}))
+      if (r.ok) {
+        setPosts(prev => prev.map(x => x.id === p.id ? {
+          ...x,
+          reacted: typeof d.reacted === 'boolean' ? d.reacted : x.reacted,
+          reaction_count: typeof d.count === 'number' ? d.count : x.reaction_count,
+        } : x))
+      } else {
+        setPosts(prev => prev.map(x => x.id === p.id ? { ...x, ...snap } : x))
+      }
+    } catch { setPosts(prev => prev.map(x => x.id === p.id ? { ...x, ...snap } : x)) }
   }
 
   async function submit() {
@@ -110,9 +123,9 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
         payload.body = cbody
       }
       const r = await fetch('/api/community/posts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-      const d = await r.json()
+      const d = await r.json().catch(() => ({}))
       if (!r.ok) { setErr(d.error || 'Erro ao publicar.'); setPosting(false); return }
-      setPosts(prev => [d.post, ...prev])
+      setPosts(prev => sortFeed([d.post, ...prev]))
       setOpen(false); setCbody(''); setCsale(''); setCage(''); setCproduct(''); setCkind('post'); setCchannel('geral'); setErr('')
     } catch { setErr('Erro de conexão.') }
     setPosting(false)
@@ -124,7 +137,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
     if (!comments[p.id]) {
       try {
         const r = await fetch(`/api/community/posts/${p.id}/comments`, { cache: 'no-store' })
-        const d = await r.json()
+        const d = await r.json().catch(() => ({}))
         if (r.ok) setComments(prev => ({ ...prev, [p.id]: d.comments || [] }))
       } catch {}
     }
@@ -133,26 +146,36 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
   async function addComment(p: Post) {
     const text = draft.trim()
     if (!text) return
-    setDraft('')
     try {
       const r = await fetch(`/api/community/posts/${p.id}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: text }) })
-      const d = await r.json()
-      if (r.ok) {
+      const d = await r.json().catch(() => ({}))
+      if (r.ok && d.comment) {
         setComments(prev => ({ ...prev, [p.id]: [...(prev[p.id] || []), d.comment] }))
         setPosts(prev => prev.map(x => x.id === p.id ? { ...x, comment_count: x.comment_count + 1 } : x))
+        setDraft('')  // limpa SÓ no sucesso — texto preservado se falhar
+      } else {
+        setErr(d.error || 'Não consegui enviar o comentário. Tente de novo.')
       }
-    } catch {}
+    } catch { setErr('Erro de conexão.') }
   }
 
   async function del(p: Post) {
     if (!confirm('Remover esta publicação?')) return
+    const snap = posts
     setPosts(prev => prev.filter(x => x.id !== p.id))
-    try { await fetch(`/api/community/posts/${p.id}`, { method: 'DELETE' }) } catch {}
+    try {
+      const r = await fetch(`/api/community/posts/${p.id}`, { method: 'DELETE' })
+      if (!r.ok) { setPosts(snap); setErr('Não consegui remover. Tente de novo.') }
+    } catch { setPosts(snap); setErr('Erro de conexão.') }
   }
 
   async function pin(p: Post) {
-    setPosts(prev => prev.map(x => x.id === p.id ? { ...x, pinned: !x.pinned } : x))
-    try { await fetch(`/api/community/posts/${p.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pinned: !p.pinned }) }) } catch {}
+    const snap = posts
+    setPosts(prev => sortFeed(prev.map(x => x.id === p.id ? { ...x, pinned: !x.pinned } : x)))
+    try {
+      const r = await fetch(`/api/community/posts/${p.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pinned: !p.pinned }) })
+      if (!r.ok) setPosts(snap)
+    } catch { setPosts(snap) }
   }
 
   const card: React.CSSProperties = { background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: '14px 16px', marginBottom: 12 }
@@ -180,6 +203,14 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
           <span key={v} style={chip(channel === v)} onClick={() => setChannel(v as any)}>{label}</span>
         ))}
       </div>
+
+      {/* erro global sempre visível (load, excluir, comentar, etc.) */}
+      {err && (
+        <div style={{ ...card, marginBottom: 12, padding: '10px 14px', background: dark ? '#2a1416' : '#fef2f2', border: `1px solid ${dark ? '#5b2326' : '#fecaca'}`, color: '#ef4444', fontSize: 13, display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+          <span>{err}</span>
+          <span style={{ cursor: 'pointer', opacity: 0.7 }} onClick={() => setErr('')}>✕</span>
+        </div>
+      )}
 
       {/* compositor */}
       {!open ? (
@@ -216,7 +247,6 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
             </>
           )}
 
-          {err && <p style={{ color: '#ef4444', fontSize: 13, margin: '8px 0 0' }}>{err}</p>}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
             <button style={ghostBtn} onClick={() => { setOpen(false); setErr('') }}>Cancelar</button>
             <button style={{ ...btn, opacity: posting ? 0.6 : 1 }} onClick={submit} disabled={posting}>{posting ? 'Publicando…' : 'Publicar'}</button>
@@ -230,10 +260,12 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
       ) : needsMigration ? (
         <div style={{ ...card, color: T.muted, fontSize: 13 }}>A tabela da comunidade ainda não foi criada. Rode <code>supabase/migrations/022_community.sql</code> no Supabase.</div>
       ) : posts.length === 0 ? (
-        <div style={{ ...card, textAlign: 'center', padding: '28px 20px', color: T.muted }}>
-          <div style={{ fontSize: 26, marginBottom: 6 }}>🤝</div>
-          <p style={{ margin: 0, fontSize: 14 }}>Ainda não tem nada por aqui. Seja o primeiro a compartilhar uma vitória.</p>
-        </div>
+        err ? null : (
+          <div style={{ ...card, textAlign: 'center', padding: '28px 20px', color: T.muted }}>
+            <div style={{ fontSize: 26, marginBottom: 6 }}>🤝</div>
+            <p style={{ margin: 0, fontSize: 14 }}>Ainda não tem nada por aqui. Seja o primeiro a compartilhar uma vitória.</p>
+          </div>
+        )
       ) : posts.map(p => (
         <div key={p.id} style={card}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
