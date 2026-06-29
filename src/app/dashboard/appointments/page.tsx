@@ -246,9 +246,9 @@ function EventPill({ event, onClick, compact }: { event: CalendarEvent; onClick:
       <button onClick={onClick}
         className={`w-full text-left ${compact ? 'px-1.5 py-0.5' : 'px-2 py-1.5'} rounded text-[10px] font-semibold hover:opacity-80 flex items-center gap-1 truncate`}
         style={{
-          background: event.completed ? '#f1f5f9' : '#e0f2fe',
-          color: event.completed ? '#94a3b8' : '#0369a1',
-          border: `1px dashed ${event.completed ? '#cbd5e1' : '#38bdf8'}`,
+          background: event.completed ? '#f1f5f9' : event.color + '18',
+          color: event.completed ? '#94a3b8' : event.color,
+          border: `1px dashed ${event.completed ? '#cbd5e1' : event.color}`,
           textDecoration: event.completed ? 'line-through' : 'none',
         }}
         title={event.title}>
