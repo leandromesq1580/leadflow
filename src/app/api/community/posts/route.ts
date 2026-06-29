@@ -98,12 +98,14 @@ export async function POST(request: NextRequest) {
     if (!CHANNELS.includes(channel)) channel = 'geral'
 
     const text = typeof body?.body === 'string' ? body.body.trim().slice(0, 4000) : ''
-    const data = kind === 'win' ? sanitizeWin(body?.data) : {}
-    if (kind !== 'win' && !text) {
-      return NextResponse.json({ error: 'Escreva algo antes de publicar.' }, { status: 400 })
-    }
-    if (kind === 'win' && !text && !(data as any).sale_value) {
-      return NextResponse.json({ error: 'Informe o valor da venda ou escreva algo sobre ela.' }, { status: 400 })
+    const imagePath = typeof body?.data?.image_path === 'string' && body.data.image_path.startsWith('community/')
+      ? body.data.image_path.slice(0, 300) : undefined
+    const data: Record<string, any> = kind === 'win' ? sanitizeWin(body?.data) : {}
+    if (imagePath) data.image_path = imagePath
+
+    const hasContent = !!text || !!imagePath || (kind === 'win' && !!data.sale_value)
+    if (!hasContent) {
+      return NextResponse.json({ error: kind === 'win' ? 'Informe o valor da venda, escreva algo, ou anexe uma imagem.' : 'Escreva algo ou anexe uma imagem.' }, { status: 400 })
     }
 
     const { data: row, error } = await db

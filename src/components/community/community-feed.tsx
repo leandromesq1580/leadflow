@@ -13,7 +13,7 @@ interface Post {
   channel: Channel
   title: string | null
   body: string | null
-  data: { sale_value?: number; lead_age_days?: number; product?: string }
+  data: { sale_value?: number; lead_age_days?: number; product?: string; image_path?: string }
   pinned: boolean
   created_at: string
   reaction_count: number
@@ -68,6 +68,9 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
   const [csale, setCsale] = useState('')
   const [cage, setCage] = useState('')
   const [cproduct, setCproduct] = useState('')
+  const [cimage, setCimage] = useState('')      // path no storage (community/...)
+  const [cpreview, setCpreview] = useState('')  // object URL local pra preview
+  const [cuploading, setCuploading] = useState(false)
   const [posting, setPosting] = useState(false)
 
   // comments
@@ -110,11 +113,26 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
     } catch { setPosts(prev => prev.map(x => x.id === p.id ? { ...x, ...snap } : x)) }
   }
 
+  async function uploadImage(file: File) {
+    setCuploading(true); setErr('')
+    setCpreview(URL.createObjectURL(file))
+    try {
+      const fd = new FormData(); fd.append('file', file)
+      const r = await fetch('/api/community/upload', { method: 'POST', body: fd })
+      const d = await r.json().catch(() => ({}))
+      if (r.ok && d.path) setCimage(d.path)
+      else { setErr(d.error || 'Erro ao enviar a imagem.'); setCpreview('') }
+    } catch { setErr('Erro de conexão ao enviar a imagem.'); setCpreview('') }
+    setCuploading(false)
+  }
+
+  function clearImage() { setCimage(''); setCpreview('') }
+
   async function submit() {
-    if (posting) return
+    if (posting || cuploading) return
     setPosting(true)
     try {
-      const payload: any = { kind: ckind }
+      const payload: any = { kind: ckind, data: {} }
       if (ckind === 'win') {
         payload.body = cbody
         payload.data = { sale_value: csale ? Number(csale.replace(/[^\d.]/g, '')) : undefined, lead_age_days: cage ? Number(cage) : undefined, product: cproduct || undefined }
@@ -122,11 +140,12 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
         payload.channel = cchannel
         payload.body = cbody
       }
+      if (cimage) payload.data = { ...payload.data, image_path: cimage }
       const r = await fetch('/api/community/posts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       const d = await r.json().catch(() => ({}))
       if (!r.ok) { setErr(d.error || 'Erro ao publicar.'); setPosting(false); return }
       setPosts(prev => sortFeed([d.post, ...prev]))
-      setOpen(false); setCbody(''); setCsale(''); setCage(''); setCproduct(''); setCkind('post'); setCchannel('geral'); setErr('')
+      setOpen(false); setCbody(''); setCsale(''); setCage(''); setCproduct(''); setCimage(''); setCpreview(''); setCkind('post'); setCchannel('geral'); setErr('')
     } catch { setErr('Erro de conexão.') }
     setPosting(false)
   }
@@ -247,9 +266,25 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
             </>
           )}
 
+          {/* anexar imagem — qualquer tipo de post */}
+          <div style={{ marginTop: 10 }}>
+            {cpreview ? (
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <img src={cpreview} alt="" style={{ maxHeight: 130, maxWidth: '100%', borderRadius: 10, border: `1px solid ${T.border}`, display: 'block' }} />
+                {cuploading && <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)', color: '#fff', fontSize: 13, borderRadius: 10 }}>enviando…</span>}
+                <button onClick={clearImage} aria-label="remover imagem" style={{ position: 'absolute', top: 5, right: 5, border: 'none', background: 'rgba(0,0,0,0.6)', color: '#fff', borderRadius: 999, width: 22, height: 22, cursor: 'pointer', fontSize: 12, lineHeight: '22px', padding: 0 }}>✕</button>
+              </div>
+            ) : (
+              <label style={{ ...ghostBtn, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                🖼️ Imagem
+                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f); e.currentTarget.value = '' }} />
+              </label>
+            )}
+          </div>
+
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
-            <button style={ghostBtn} onClick={() => { setOpen(false); setErr('') }}>Cancelar</button>
-            <button style={{ ...btn, opacity: posting ? 0.6 : 1 }} onClick={submit} disabled={posting}>{posting ? 'Publicando…' : 'Publicar'}</button>
+            <button style={ghostBtn} onClick={() => { setOpen(false); setErr(''); clearImage() }}>Cancelar</button>
+            <button style={{ ...btn, opacity: (posting || cuploading) ? 0.6 : 1 }} onClick={submit} disabled={posting || cuploading}>{posting ? 'Publicando…' : 'Publicar'}</button>
           </div>
         </div>
       )}
@@ -281,6 +316,10 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
 
           {p.title && <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 600, color: T.text }}>{p.title}</p>}
           {p.body && <p style={{ margin: '0 0 10px', fontSize: 14, color: dark ? '#d6d8de' : '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{p.body}</p>}
+
+          {p.data?.image_path && (
+            <img src={`/api/community/image?path=${encodeURIComponent(p.data.image_path)}`} alt="" loading="lazy" style={{ width: '100%', maxHeight: 460, objectFit: 'cover', borderRadius: 10, border: `1px solid ${T.border}`, marginBottom: 10, display: 'block' }} />
+          )}
 
           {p.kind === 'win' && (p.data?.sale_value || p.data?.lead_age_days || p.data?.product) && (
             <div style={{ background: T.winBg, borderRadius: 10, padding: '11px 14px', display: 'flex', gap: 20, flexWrap: 'wrap', marginBottom: 10 }}>
