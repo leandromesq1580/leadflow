@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCommunityContext, notifyMentions } from '@/lib/community-access'
 
 const MISSING_TABLE = /relation .*community_posts.* does not exist|could not find the table/i
-const CHANNELS = ['fechamento', 'follow_up', 'vitorias', 'geral']
-const KINDS = ['sacada', 'win', 'post', 'poll']
+const CHANNELS = ['fechamento', 'follow_up', 'vitorias', 'geral', 'avisos']
+const KINDS = ['sacada', 'win', 'post', 'poll', 'aviso']
 
 function sanitizeWin(data: any) {
   const out: Record<string, any> = {}
@@ -137,11 +137,11 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const kind = KINDS.includes(body?.kind) ? body.kind : 'post'
-    if (kind === 'sacada' && !me.isAdmin) {
-      return NextResponse.json({ error: 'Apenas o admin pode publicar uma Sacada.' }, { status: 403 })
+    if ((kind === 'sacada' || kind === 'aviso') && !me.isAdmin) {
+      return NextResponse.json({ error: 'Apenas o admin pode publicar isso.' }, { status: 403 })
     }
 
-    let channel = kind === 'win' ? 'vitorias' : body?.channel
+    let channel = kind === 'win' ? 'vitorias' : kind === 'aviso' ? 'avisos' : body?.channel
     if (!CHANNELS.includes(channel)) channel = 'geral'
 
     const text = typeof body?.body === 'string' ? body.body.trim().slice(0, 4000) : ''

@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react'
 
-type Kind = 'sacada' | 'win' | 'post' | 'poll'
-type Channel = 'fechamento' | 'follow_up' | 'vitorias' | 'geral'
+type Kind = 'sacada' | 'win' | 'post' | 'poll' | 'aviso'
+type Channel = 'fechamento' | 'follow_up' | 'vitorias' | 'geral' | 'avisos'
 
 interface Post {
   id: string
@@ -30,7 +30,7 @@ interface Comment { id: string; author_name: string | null; body: string; create
 interface Notif { id: string; actor_name: string | null; type: string; post_id: string | null; preview: string | null; read: boolean; created_at: string }
 interface Rank { buyer_id: string; name: string; count: number; total: number }
 
-const CHANNEL_LABEL: Record<Channel, string> = { fechamento: 'Fechamento', follow_up: 'Follow-up', vitorias: 'Vitórias', geral: 'Geral' }
+const CHANNEL_LABEL: Record<Channel, string> = { fechamento: 'Fechamento', follow_up: 'Follow-up', vitorias: 'Vitórias', geral: 'Geral', avisos: 'Avisos' }
 const REACTIONS: { kind: string; emoji: string }[] = [
   { kind: 'like', emoji: '👍' }, { kind: 'fire', emoji: '🔥' }, { kind: 'clap', emoji: '👏' }, { kind: 'party', emoji: '🎉' },
 ]
@@ -442,7 +442,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
 
       {/* canais */}
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 14 }}>
-        {([['', 'Tudo'], ['fechamento', 'Fechamento'], ['follow_up', 'Follow-up'], ['vitorias', 'Vitórias']] as const).map(([v, label]) => (
+        {([['', 'Tudo'], ['avisos', '📢 Avisos'], ['fechamento', 'Fechamento'], ['follow_up', 'Follow-up'], ['vitorias', 'Vitórias']] as const).map(([v, label]) => (
           <span key={v} style={chip(channel === v)} onClick={() => setChannel(v as any)}>{label}</span>
         ))}
       </div>
@@ -486,7 +486,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
       ) : (
         <div style={card}>
           <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-            {([['win', '🏆 Vitória'], ['post', '💬 Pergunta'], ['poll', '📊 Enquete'], ...(me?.isAdmin ? [['sacada', '💡 Sacada']] : [])] as [Kind, string][]).map(([k, label]) => (
+            {([['win', '🏆 Vitória'], ['post', '💬 Pergunta'], ['poll', '📊 Enquete'], ...(me?.isAdmin ? [['sacada', '💡 Sacada'], ['aviso', '📢 Aviso']] : [])] as [Kind, string][]).map(([k, label]) => (
               <span key={k} style={chip(ckind === k)} onClick={() => setCkind(k)}>{label}</span>
             ))}
           </div>
@@ -518,12 +518,14 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
             </>
           ) : (
             <>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-                {(['fechamento', 'follow_up', 'geral'] as Channel[]).map(c => (
-                  <span key={c} style={chip(cchannel === c)} onClick={() => setCchannel(c)}>{CHANNEL_LABEL[c]}</span>
-                ))}
-              </div>
-              <textarea style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }} placeholder={ckind === 'sacada' ? 'Sua sacada da semana…  (use @nome pra mencionar)' : 'Sua pergunta ou comentário…  (use @nome pra mencionar)'} value={cbody} onChange={e => setCbody(e.target.value)} />
+              {ckind !== 'aviso' && (
+                <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+                  {(['fechamento', 'follow_up', 'geral'] as Channel[]).map(c => (
+                    <span key={c} style={chip(cchannel === c)} onClick={() => setCchannel(c)}>{CHANNEL_LABEL[c]}</span>
+                  ))}
+                </div>
+              )}
+              <textarea style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }} placeholder={ckind === 'aviso' ? 'Escreva o aviso oficial pra comunidade…' : ckind === 'sacada' ? 'Sua sacada da semana…  (use @nome pra mencionar)' : 'Sua pergunta ou comentário…  (use @nome pra mencionar)'} value={cbody} onChange={e => setCbody(e.target.value)} />
             </>
           )}
 
@@ -565,7 +567,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
       ) : posts.map(p => {
         const pollTotal = Object.values(p.poll_counts || {}).reduce((a, b) => a + b, 0)
         return (
-          <div key={p.id} style={card}>
+          <div key={p.id} style={p.kind === 'aviso' ? { ...card, border: '1.5px solid #f59e0b', background: dark ? '#241a06' : '#fffbeb' } : card}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
               <div onClick={() => p.buyer_id && setProfileId(p.buyer_id)} style={{ width: 36, height: 36, borderRadius: '50%', background: p.kind === 'win' ? T.winBg : T.accentBg, color: p.kind === 'win' ? T.winText : T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0, cursor: p.buyer_id ? 'pointer' : 'default' }}>{initials(p.author_name)}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -575,6 +577,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
               {p.kind === 'win' && <span style={{ background: T.winBg, color: T.winText, fontSize: 12, fontWeight: 600, padding: '3px 9px', borderRadius: 999 }}>🏆 vitória</span>}
               {p.kind === 'sacada' && <span style={{ background: T.accentBg, color: T.accent, fontSize: 12, fontWeight: 600, padding: '3px 9px', borderRadius: 999 }}>💡 sacada</span>}
               {p.kind === 'poll' && <span style={{ background: T.accentBg, color: T.accent, fontSize: 12, fontWeight: 600, padding: '3px 9px', borderRadius: 999 }}>📊 enquete</span>}
+              {p.kind === 'aviso' && <span style={{ background: '#fef3c7', color: '#b45309', fontSize: 12, fontWeight: 700, padding: '3px 9px', borderRadius: 999 }}>📢 aviso</span>}
               {p.kind === 'post' && <span style={{ background: T.tag, color: T.muted, fontSize: 12, padding: '3px 9px', borderRadius: 999 }}>{CHANNEL_LABEL[p.channel]}</span>}
             </div>
 
