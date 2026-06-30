@@ -6,6 +6,8 @@ import { getCommunityContext } from '@/lib/community-access'
 // com intervalo entre mensagens. Envio só com mode:'send' + confirm:true.
 // ⚠️ Sai pelo bridge global (mesmo número das notificações de lead) — usar com parcimônia.
 
+export const maxDuration = 60 // envio de imagem é mais lento; dá folga pro lote não cortar no meio
+
 const BRIDGE_URL = (process.env.WA_BRIDGE_URL || 'http://62.146.229.13:3457').trim().replace(/\/$/, '')
 const BRIDGE_KEY = (process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026').trim()
 
