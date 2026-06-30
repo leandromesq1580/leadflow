@@ -78,6 +78,44 @@ function useUpcomingMeetings(buyerId?: string): number {
   return count
 }
 
+function useCommunityUnread(buyerId?: string): number {
+  const [count, setCount] = useState(0)
+
+  const load = async () => {
+    if (!buyerId) return
+    try {
+      const r = await fetch('/api/community/notifications?count=1', { cache: 'no-store' })
+      if (!r.ok) return
+      const d = await r.json()
+      setCount(d.unread || 0)
+    } catch {}
+  }
+
+  useEffect(() => {
+    if (!buyerId) return
+    load()
+    // Fallback poll lento (30s) + evento disparado quando o sino é lido na Comunidade.
+    const t = setInterval(load, 30000)
+    const onChange = () => load()
+    if (typeof window !== 'undefined') window.addEventListener('community-unread-changed', onChange)
+    return () => {
+      clearInterval(t)
+      if (typeof window !== 'undefined') window.removeEventListener('community-unread-changed', onChange)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buyerId])
+
+  // Realtime: nova notificação pro membro → recarrega o contador (best-effort; poll cobre se a tabela não estiver no realtime).
+  useRealtime(
+    'community_notifications',
+    'INSERT',
+    buyerId ? `recipient_id=eq.${buyerId}` : null,
+    () => load(),
+  )
+
+  return count
+}
+
 // Lead4Pro brand mark — dark rounded tile + amber gradient bolt
 function BrandMark({ size = 32 }: { size?: number }) {
   return (
@@ -101,6 +139,7 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan }: SidebarP
   const leadOnly = type === 'buyer' && crmPlan === 'lead_only'
   const waUnread = useWhatsAppUnread(type === 'buyer' ? buyerId : undefined)
   const upcomingMeetings = useUpcomingMeetings(type === 'buyer' ? buyerId : undefined)
+  const communityUnread = useCommunityUnread(type === 'buyer' ? buyerId : undefined)
 
   const buyerLinks = [
     { href: '/dashboard', label: t.sidebar.overview, icon: '📊' },
@@ -172,6 +211,7 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan }: SidebarP
             const locked = (apptOnly && !appointmentCanAccess(link.href)) || (leadOnly && !leadCanAccess(link.href))
             const showBadge = !locked && link.href === '/dashboard/whatsapp' && waUnread > 0
             const showApptBadge = !locked && link.href === '/dashboard/appointments' && upcomingMeetings > 0
+            const showCommunityBadge = !locked && link.href === '/dashboard/community' && communityUnread > 0
             return (
               <Link
                 key={link.href}
@@ -197,6 +237,12 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan }: SidebarP
                   <span className="text-[10px] font-extrabold text-white rounded-full flex items-center justify-center"
                     style={{ background: '#6366f1', minWidth: 18, height: 18, padding: '0 5px', boxShadow: '0 1px 3px rgba(99,102,241,0.35)' }}>
                     {upcomingMeetings > 99 ? '99+' : upcomingMeetings}
+                  </span>
+                )}
+                {showCommunityBadge && (
+                  <span className="text-[10px] font-extrabold text-white rounded-full flex items-center justify-center"
+                    style={{ background: '#ef4444', minWidth: 18, height: 18, padding: '0 5px', boxShadow: '0 1px 3px rgba(239,68,68,0.35)' }}>
+                    {communityUnread > 99 ? '99+' : communityUnread}
                   </span>
                 )}
               </Link>

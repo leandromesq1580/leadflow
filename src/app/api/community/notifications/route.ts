@@ -6,12 +6,26 @@ const MISSING_TABLE = /relation .*community_notifications.* does not exist|could
 /**
  * GET /api/community/notifications — minhas notificações (recentes) + contagem de não lidas.
  */
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     const ctx = await getCommunityContext()
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const { db, me, allowed } = ctx
     if (!allowed) return NextResponse.json({ items: [], unread: 0 })
+
+    // Modo leve: só a contagem de não-lidas (usado pelo badge do menu lateral).
+    if (request.nextUrl.searchParams.get('count') === '1') {
+      const { count, error } = await db
+        .from('community_notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('recipient_id', me.id)
+        .eq('read', false)
+      if (error) {
+        if (MISSING_TABLE.test(error.message)) return NextResponse.json({ unread: 0, needsMigration: true })
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+      return NextResponse.json({ unread: count || 0 })
+    }
 
     const { data, error } = await db
       .from('community_notifications')

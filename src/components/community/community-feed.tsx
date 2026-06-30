@@ -184,6 +184,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
     setNotifOpen(o => !o)
     if (wasClosed && unread > 0) {
       setUnread(0); setNotifs(prev => prev.map(n => ({ ...n, read: true })))
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('community-unread-changed'))
       try { await fetch('/api/community/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) }) } catch {}
     }
   }
