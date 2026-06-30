@@ -595,7 +595,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
             )}
 
             {p.data?.image_path && (
-              <img src={`/api/community/image?path=${encodeURIComponent(p.data.image_path)}`} alt="" loading="lazy" style={{ width: '100%', maxHeight: 460, objectFit: 'cover', borderRadius: 10, border: `1px solid ${T.border}`, marginBottom: 10, display: 'block' }} />
+              <img src={`/api/community/image?path=${encodeURIComponent(p.data.image_path)}`} alt="" loading="lazy" style={{ width: '100%', height: 'auto', borderRadius: 10, border: `1px solid ${T.border}`, marginBottom: 10, display: 'block' }} />
             )}
 
             {p.kind === 'poll' && p.data?.poll?.options && (
