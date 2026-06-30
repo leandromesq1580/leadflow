@@ -53,10 +53,24 @@ function money(n?: number) {
 function sortFeed(list: Post[]) {
   return [...list].sort((a, b) => (Number(b.pinned) - Number(a.pinned)) || (new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))
 }
-// Destaca @menções no texto (visual; a notificação é casada no servidor).
+// Destaca @menções e torna URLs clicáveis (visual; a notificação é casada no servidor).
 function renderBody(text: string, accent: string): React.ReactNode {
-  return text.split(/(@[\p{L}\d._-]+)/gu).map((part, i) =>
-    part.startsWith('@') ? <span key={i} style={{ color: accent, fontWeight: 600 }}>{part}</span> : part)
+  return text.split(/(\bhttps?:\/\/[^\s]+|\bwww\.[^\s]+|@[\p{L}\d._-]+)/gu).map((part, i) => {
+    if (!part) return null
+    if (/^https?:\/\//i.test(part) || /^www\./i.test(part)) {
+      // Tira pontuação no fim que provavelmente não faz parte da URL (ex: "veja https://x.com.")
+      const trail = (part.match(/[.,;:!?)\]]+$/) || [''])[0]
+      const core = trail ? part.slice(0, part.length - trail.length) : part
+      const href = /^https?:\/\//i.test(core) ? core : `https://${core}`
+      return (
+        <span key={i}>
+          <a href={href} target="_blank" rel="noopener noreferrer nofollow" style={{ color: accent, fontWeight: 600, textDecoration: 'underline', overflowWrap: 'anywhere' }}>{core}</a>{trail}
+        </span>
+      )
+    }
+    if (part.startsWith('@')) return <span key={i} style={{ color: accent, fontWeight: 600 }}>{part}</span>
+    return part
+  })
 }
 
 export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' }) {
