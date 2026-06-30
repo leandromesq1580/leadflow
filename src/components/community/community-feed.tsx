@@ -432,7 +432,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
               <p style={{ margin: 0, padding: '18px 14px', fontSize: 13, color: T.muted, textAlign: 'center' }}>Nada por aqui ainda.</p>
             ) : notifs.map(n => (
               <div key={n.id} style={{ padding: '10px 14px', borderBottom: `1px solid ${T.border}`, fontSize: 13, color: bodyColor, background: n.read ? 'transparent' : T.accentBg }}>
-                <span style={{ fontWeight: 600, color: T.text }}>{n.actor_name || 'Alguém'}</span> {n.type === 'comment' ? 'comentou no seu post' : n.type === 'mention' ? 'mencionou você' : 'reagiu no seu post'}{n.preview ? `: “${n.preview}”` : ''}
+                <span style={{ fontWeight: 600, color: T.text }}>{n.actor_name || 'Alguém'}</span> {n.type === 'comment' ? 'comentou no seu post' : n.type === 'mention' ? 'mencionou você' : n.type === 'aviso' ? 'publicou um aviso 📢' : 'reagiu no seu post'}{n.preview ? `: “${n.preview}”` : ''}
                 <span style={{ display: 'block', color: T.muted, fontSize: 11, marginTop: 2 }}>{ago(n.created_at)}</span>
               </div>
             ))}

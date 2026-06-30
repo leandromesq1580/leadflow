@@ -94,3 +94,33 @@ export async function notifyMentions(
     }
   } catch {}
 }
+
+/** Notifica TODOS os membros pagantes (menos banidos e menos o autor) — usado ao publicar um aviso. */
+export async function notifyAviso(
+  db: ReturnType<typeof createAdminClient>,
+  opts: { postId: string; actorId: string; actorName: string; preview?: string },
+) {
+  try {
+    const [subs, pays, creds, bans] = await Promise.all([
+      db.from('buyers').select('id').eq('crm_subscription_status', 'active'),
+      db.from('payments').select('buyer_id').eq('status', 'completed'),
+      db.from('credits').select('buyer_id, stripe_payment_id'),
+      db.from('community_bans').select('buyer_id'),
+    ])
+    const ids = new Set<string>()
+    for (const b of subs.data || []) ids.add(b.id)
+    for (const p of pays.data || []) ids.add(p.buyer_id)
+    for (const c of creds.data || []) {
+      const sid = c.stripe_payment_id ? String(c.stripe_payment_id) : ''
+      if (sid && !sid.startsWith('manual:')) ids.add(c.buyer_id)
+    }
+    const banned = new Set<string>((bans.data || []).map((b: any) => b.buyer_id))
+    const recipients = [...ids].filter(id => id !== opts.actorId && !banned.has(id))
+    if (!recipients.length) return
+    const preview = opts.preview ? opts.preview.slice(0, 120) : null
+    const rows = recipients.map(rid => ({ recipient_id: rid, actor_id: opts.actorId, actor_name: opts.actorName, type: 'aviso', post_id: opts.postId, preview }))
+    for (let i = 0; i < rows.length; i += 200) {
+      await db.from('community_notifications').insert(rows.slice(i, i + 200))
+    }
+  } catch {}
+}

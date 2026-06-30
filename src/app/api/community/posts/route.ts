@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCommunityContext, notifyMentions } from '@/lib/community-access'
+import { getCommunityContext, notifyMentions, notifyAviso } from '@/lib/community-access'
 
 const MISSING_TABLE = /relation .*community_posts.* does not exist|could not find the table/i
 const CHANNELS = ['fechamento', 'follow_up', 'vitorias', 'geral', 'avisos']
@@ -187,6 +187,7 @@ export async function POST(request: NextRequest) {
     }
 
     await notifyMentions(db, { body: text, actorId: me.id, actorName: me.name, postId: row.id })
+    if (kind === 'aviso') await notifyAviso(db, { postId: row.id, actorId: me.id, actorName: me.name, preview: text })
 
     return NextResponse.json({ post: { ...row, reactions: {}, my_reactions: [], reaction_count: 0, reacted: false, comment_count: 0, poll_counts: {}, my_poll_vote: null, can_delete: true } })
   } catch (err: any) {
