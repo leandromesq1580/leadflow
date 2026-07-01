@@ -53,8 +53,9 @@ export async function POST(request: NextRequest) {
       productId = fresh.id
     }
 
-    // Troca o preço do item da assinatura existente (preço inline no MESMO produto),
-    // com proração: credita o tempo não usado e cobra a diferença na próxima fatura.
+    // Planos são "à vista a cada X meses" → a troca REINICIA o ciclo AGORA e FATURA na hora
+    // (billing_cycle_anchor:'now' força uma fatura imediata do novo plano, com crédito proporcional
+    // do tempo não usado do plano antigo). Sem isso a cobrança ia só pra próxima fatura.
     await stripe.subscriptions.update(sub.id, {
       items: [{
         id: item.id,
@@ -65,7 +66,9 @@ export async function POST(request: NextRequest) {
           recurring: { interval: plan.interval, interval_count: plan.intervalCount },
         },
       }],
+      billing_cycle_anchor: 'now',
       proration_behavior: 'create_prorations',
+      payment_behavior: 'error_if_incomplete',
       metadata: { ...sub.metadata, plan: plan.key, interval: plan.interval },
     })
 
