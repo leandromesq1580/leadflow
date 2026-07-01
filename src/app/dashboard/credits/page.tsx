@@ -82,9 +82,15 @@ export default async function CreditsPage({
               <BillingPortalButton label="Gerenciar" />
             </div>
           </div>
-          <h2 className="text-[16px] font-bold mb-1" style={{ color: '#1a1a2e' }}>Trocar de plano</h2>
-          <p className="text-[13px] mb-4" style={{ color: '#64748b' }}>Mude entre os planos quando quiser — a diferença é calculada proporcionalmente (proração), sem perder o acesso.</p>
-          <CrmChangePlan currentPlan={currentPlanKey} />
+          {buyer.crm_subscription_id ? (
+            <>
+              <h2 className="text-[16px] font-bold mb-1" style={{ color: '#1a1a2e' }}>Trocar de plano</h2>
+              <p className="text-[13px] mb-4" style={{ color: '#64748b' }}>Mude entre os planos quando quiser — a diferença é calculada proporcionalmente (proração), sem perder o acesso.</p>
+              <CrmChangePlan currentPlan={currentPlanKey} />
+            </>
+          ) : (
+            <p className="text-[13px]" style={{ color: '#64748b' }}>Seu CRM Pro é cortesia / gerenciado manualmente — sem cobrança nem troca de plano por aqui.</p>
+          )}
         </div>
       ) : (
         <div className="mb-8">
