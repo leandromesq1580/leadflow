@@ -37,6 +37,18 @@ export async function POST(request: NextRequest) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session
 
+      // UPGRADE de plano CRM: o cliente pagou a diferença via checkout (uma NOVA assinatura do
+      // novo plano foi criada e será sincronizada pelo handler customer.subscription.created).
+      // Aqui só CANCELAMOS a assinatura ANTIGA.
+      if (session.metadata?.kind === 'crm_upgrade') {
+        const oldSubId = session.metadata.old_subscription_id
+        if (oldSubId) {
+          try { await getStripe().subscriptions.cancel(oldSubId) } catch (e: any) { console.error('[Stripe Webhook] cancelar sub antiga falhou:', e?.message) }
+          console.log(`[Stripe Webhook] CRM upgrade: assinatura antiga ${oldSubId} cancelada`)
+        }
+        break
+      }
+
       const buyerId = session.metadata?.buyer_id
       const productType = session.metadata?.product_type as 'lead' | 'appointment'
       const quantity = parseInt(session.metadata?.quantity || '0', 10)
@@ -183,6 +195,13 @@ export async function POST(request: NextRequest) {
       const sub = event.data.object as Stripe.Subscription
       const buyerId = sub.metadata?.buyer_id
       if (buyerId) {
+        // Só zera a conta se a sub deletada ainda for a ATUAL do buyer — evita marcar como
+        // cancelado quando um UPGRADE cancela a sub antiga e o buyer já migrou pra uma nova.
+        const { data: b } = await supabase.from('buyers').select('crm_subscription_id').eq('id', buyerId).single()
+        if (b?.crm_subscription_id && b.crm_subscription_id !== sub.id) {
+          console.log(`[Stripe Webhook] delete da sub antiga ${sub.id} ignorado; buyer já em ${b.crm_subscription_id}`)
+          break
+        }
         await supabase.from('buyers').update({
           crm_plan: 'free',
           crm_subscription_status: 'cancelled',

@@ -11,20 +11,16 @@ export function CrmChangePlan({ currentPlan }: { currentPlan: string | null }) {
 
   async function change(plan: CrmPlan) {
     if (plan.key === currentPlan || loading) return
-    const ok = confirm(
-      `Trocar para o plano ${plan.label} (${fmtMonth(plan.perMonth)}/mês, cobrado ${fmtTotal(plan.amountCents)} a cada ${plan.months} ${plan.months === 1 ? 'mês' : 'meses'})?\n\n` +
-      `A diferença é calculada proporcionalmente (proração) — você não perde o acesso nem precisa cancelar.`
-    )
-    if (!ok) return
     setLoading(plan.key)
     try {
-      const r = await fetch('/api/subscription/change', {
+      const r = await fetch('/api/subscription/upgrade-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan: plan.key }),
       })
       const d = await r.json()
-      if (r.ok) { window.location.reload(); return }
+      if (r.ok && d.url) { window.location.href = d.url; return }   // upgrade → checkout pra pagar a diferença
+      if (r.ok && d.switched) { window.location.reload(); return }  // downgrade → aplicado na hora
       alert(d.error || 'Não foi possível trocar de plano.')
     } catch {
       alert('Falha de conexão. Tente de novo.')
