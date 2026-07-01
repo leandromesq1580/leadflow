@@ -11,6 +11,11 @@ import { getCrmPlan } from '@/lib/crm-plans'
  */
 export async function POST(request: NextRequest) {
   try {
+    // ⛔ DESATIVADO: trocava o plano por PRORAÇÃO silenciosa (cobrava centavos). As trocas agora
+    // passam por /api/subscription/upgrade-checkout (upgrade paga a diferença num checkout).
+    // Mantido só pra devolver erro claro a clientes com JS antigo em cache (recarregar a página).
+    return NextResponse.json({ error: 'Atualize a página (Ctrl/Cmd + Shift + R) e clique em trocar de novo — o novo fluxo abre um checkout pra pagar a diferença.' }, { status: 410 })
+
     const body = await request.json().catch(() => ({}))
     const plan = getCrmPlan(body.plan)
     if (!plan) return NextResponse.json({ error: 'Plano inválido' }, { status: 400 })
