@@ -102,7 +102,7 @@ export default function MobileCreditos() {
           {isNativeApp && (
             <div className="m-card" style={{ padding: 16, marginBottom: 18 }}>
               <p className="m-muted" style={{ fontSize: 13, lineHeight: 1.55, margin: 0, textAlign: 'center' }}>
-                {L('Para comprar leads ou assinar o CRM Pro, acesse lead4producers.com pelo navegador.', 'To buy leads or subscribe to CRM Pro, visit lead4producers.com in your browser.', 'Para comprar leads o suscribir, visita lead4producers.com en el navegador.')}
+                {L('Seus créditos e plano são gerenciados na sua conta Lead4Pro.', 'Your credits and plan are managed in your Lead4Pro account.', 'Tus créditos y plan se gestionan en tu cuenta Lead4Pro.')}
               </p>
             </div>
           )}
