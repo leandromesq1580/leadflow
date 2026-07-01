@@ -43,9 +43,13 @@ export default async function CreditsPage({
   // Plano exato do assinante (mensal/trimestral/… só existe no metadata da assinatura Stripe)
   const isActiveSub = buyer.crm_subscription_status === 'active'
   let currentPlanKey: string | null = null
+  let cancelAtEnd = false
+  let periodEndTs: number | null = null
   if (isActiveSub && buyer.crm_subscription_id) {
     try {
-      const sub = await getStripe().subscriptions.retrieve(buyer.crm_subscription_id)
+      const sub: any = await getStripe().subscriptions.retrieve(buyer.crm_subscription_id)
+      cancelAtEnd = !!sub.cancel_at_period_end
+      periodEndTs = sub.current_period_end || sub.items?.data?.[0]?.current_period_end || null
       const meta = sub.metadata?.plan as string | undefined
       if (meta && getCrmPlan(meta)) {
         currentPlanKey = meta
@@ -62,6 +66,7 @@ export default async function CreditsPage({
     } catch {}
   }
   const currentPlanLabel = getCrmPlan(currentPlanKey)?.label || null
+  const cancelDateStr = cancelAtEnd && periodEndTs ? new Date(periodEndTs * 1000).toLocaleDateString('pt-BR') : null
 
   return (
     <div className="max-w-[1040px]">
@@ -75,10 +80,14 @@ export default async function CreditsPage({
             <div>
               <p className="text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#a78bfa' }}>Plano CRM</p>
               <p className="text-[20px] font-extrabold" style={{ color: '#fff' }}>CRM Pro{currentPlanLabel ? ` — ${currentPlanLabel}` : ''}</p>
-              <p className="text-[12px] mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Pipeline, Time, Follow-ups, Anexos — tudo ativo</p>
+              <p className="text-[12px] mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>{cancelDateStr ? `Cancelada — acesso até ${cancelDateStr}, sem renovação` : 'Pipeline, Time, Follow-ups, Anexos — tudo ativo'}</p>
             </div>
             <div className="flex items-center gap-3">
-              <span className="px-4 py-2 rounded-xl text-[12px] font-bold" style={{ background: 'rgba(16,185,129,0.2)', color: '#34d399' }}>Ativo</span>
+              {cancelDateStr ? (
+                <span className="px-4 py-2 rounded-xl text-[12px] font-bold text-center" style={{ background: 'rgba(245,158,11,0.18)', color: '#fbbf24' }}>Cancela em {cancelDateStr}</span>
+              ) : (
+                <span className="px-4 py-2 rounded-xl text-[12px] font-bold" style={{ background: 'rgba(16,185,129,0.2)', color: '#34d399' }}>Ativo</span>
+              )}
               <BillingPortalButton label="Gerenciar" />
             </div>
           </div>
