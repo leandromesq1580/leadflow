@@ -44,8 +44,9 @@ export async function POST(request: NextRequest) {
     // reusa o produto da assinatura atual.
     const productId = typeof item.price.product === 'string' ? item.price.product : item.price.product.id
 
-    // Mantém o nome do produto alinhado ao novo plano (aparece na fatura). Cosmético, best-effort.
-    try { await stripe.products.update(productId, { name: `Lead4Producers CRM Pro — ${plan.label}` }) } catch {}
+    // O produto da assinatura pode ter sido ARQUIVADO no Stripe (active:false) — nesse caso o Stripe
+    // BARRA criar o price_data novo ("product is inactive"). Reativa aqui (auto-cura) e alinha o nome.
+    await stripe.products.update(productId, { active: true, name: `Lead4Producers CRM Pro — ${plan.label}` })
 
     // Troca o preço do item da assinatura existente (preço inline no MESMO produto),
     // com proração: credita o tempo não usado e cobra a diferença na próxima fatura.
