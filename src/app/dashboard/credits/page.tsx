@@ -85,7 +85,7 @@ export default async function CreditsPage({
           {buyer.crm_subscription_id ? (
             <>
               <h2 className="text-[16px] font-bold mb-1" style={{ color: '#1a1a2e' }}>Trocar de plano</h2>
-              <p className="text-[13px] mb-4" style={{ color: '#64748b' }}>Mude entre os planos quando quiser — a diferença é calculada proporcionalmente (proração), sem perder o acesso.</p>
+              <p className="text-[13px] mb-4" style={{ color: '#64748b' }}>Ao subir de plano, você paga só a diferença num checkout seguro e o novo ciclo começa na hora. Ao descer, a mudança vale já.</p>
               <CrmChangePlan currentPlan={currentPlanKey} />
             </>
           ) : (
