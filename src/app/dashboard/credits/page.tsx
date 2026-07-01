@@ -7,7 +7,7 @@ import { redirect } from 'next/navigation'
 import { BuyButton } from './buy-button'
 import { CrmPlansGrid } from '@/app/dashboard/planos/crm-plans-grid'
 import { CrmChangePlan } from './crm-change-plan'
-import { getCrmPlan } from '@/lib/crm-plans'
+import { getCrmPlan, CRM_PLAN_LIST } from '@/lib/crm-plans'
 import { BillingPortalButton } from '@/components/billing-portal-button'
 
 export const dynamic = 'force-dynamic'
@@ -46,7 +46,19 @@ export default async function CreditsPage({
   if (isActiveSub && buyer.crm_subscription_id) {
     try {
       const sub = await getStripe().subscriptions.retrieve(buyer.crm_subscription_id)
-      currentPlanKey = (sub.metadata?.plan as string) || null
+      const meta = sub.metadata?.plan as string | undefined
+      if (meta && getCrmPlan(meta)) {
+        currentPlanKey = meta
+      } else {
+        // Fallback robusto: deriva o plano do PREÇO real (valor + intervalo + contagem)
+        // quando o metadata está ausente (subs antigas/manuais). Assim o card "atual"
+        // sempre aparece e não deixa "trocar" pro próprio plano.
+        const price: any = sub.items?.data?.[0]?.price
+        const amount = price?.unit_amount
+        const interval = price?.recurring?.interval
+        const count = price?.recurring?.interval_count || 1
+        currentPlanKey = CRM_PLAN_LIST.find(p => p.amountCents === amount && p.interval === interval && p.intervalCount === count)?.key || null
+      }
     } catch {}
   }
   const currentPlanLabel = getCrmPlan(currentPlanKey)?.label || null
