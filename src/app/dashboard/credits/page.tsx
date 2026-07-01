@@ -8,9 +8,6 @@ import { BuyButton } from './buy-button'
 import { CrmPlansGrid } from '@/app/dashboard/planos/crm-plans-grid'
 import { CrmChangePlan } from './crm-change-plan'
 import { getCrmPlan, CRM_PLAN_LIST } from '@/lib/crm-plans'
-
-// Sempre renderiza ao vivo (lê a assinatura atual do Stripe) — nunca serve plano em cache.
-export const dynamic = 'force-dynamic'
 import { BillingPortalButton } from '@/components/billing-portal-button'
 
 export const dynamic = 'force-dynamic'
