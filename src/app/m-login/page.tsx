@@ -65,10 +65,22 @@ function LoginForm() {
   )
 }
 
+// Branded loading state — server-rendered so it paints instantly from HTML (no JS needed).
+// Turns a slow WebView/network load into "Lead4Pro is loading" instead of a black screen.
+function BrandedLoader() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+      <div style={{ width: 64, height: 64, borderRadius: 20, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 24, fontWeight: 800, boxShadow: '0 16px 38px -10px rgba(99,102,241,0.8)' }}>L4</div>
+      <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#fff' }}>Lead4Pro</p>
+      <div className="m-spin" />
+    </div>
+  )
+}
+
 export default function MobileLogin() {
   return (
     <div className="m-root m-tap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 22px', minHeight: '100dvh' }}>
-      <Suspense fallback={<div className="m-spin" />}>
+      <Suspense fallback={<BrandedLoader />}>
         <LoginForm />
       </Suspense>
     </div>
