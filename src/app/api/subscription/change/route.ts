@@ -40,13 +40,18 @@ export async function POST(request: NextRequest) {
     }
     const item = sub.items.data[0]
     if (!item?.id) return NextResponse.json({ error: 'Item da assinatura não encontrado.' }, { status: 400 })
-    // price_data de assinatura exige um Product EXISTENTE (não product_data inline) —
-    // reusa o produto da assinatura atual.
-    const productId = typeof item.price.product === 'string' ? item.price.product : item.price.product.id
-
-    // O produto da assinatura pode ter sido ARQUIVADO no Stripe (active:false) — nesse caso o Stripe
-    // BARRA criar o price_data novo ("product is inactive"). Reativa aqui (auto-cura) e alinha o nome.
-    await stripe.products.update(productId, { active: true, name: `Lead4Producers CRM Pro — ${plan.label}` })
+    // price_data de assinatura exige um Product EXISTENTE e ATIVO. Reusa o da assinatura SE ativo.
+    // Se estiver ARQUIVADO — ou foi AUTO-CRIADO pelo Stripe (product_data no checkout), que não pode
+    // ser reativado/editado ("created by Stripe automatically") — cria um produto PRÓPRIO ativo.
+    let productId = typeof item.price.product === 'string' ? item.price.product : item.price.product.id
+    let prodActive = false
+    try { prodActive = (await stripe.products.retrieve(productId)).active } catch {}
+    if (prodActive) {
+      try { await stripe.products.update(productId, { name: `Lead4Producers CRM Pro — ${plan.label}` }) } catch {}
+    } else {
+      const fresh = await stripe.products.create({ name: `Lead4Producers CRM Pro — ${plan.label}` })
+      productId = fresh.id
+    }
 
     // Troca o preço do item da assinatura existente (preço inline no MESMO produto),
     // com proração: credita o tempo não usado e cobra a diferença na próxima fatura.
