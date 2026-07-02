@@ -35,6 +35,7 @@ export default function ArchivedLeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [reactivating, setReactivating] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
   const [search, setSearch] = useState('')
 
   async function load() {
@@ -64,6 +65,24 @@ export default function ArchivedLeadsPage() {
       setLeads(ls => ls.filter(l => l.id !== leadId))
     } finally {
       setReactivating(null)
+    }
+  }
+
+  async function deleteForever(l: Lead) {
+    const label = l.name?.trim() || 'este lead'
+    if (!confirm(`EXCLUIR DEFINITIVAMENTE "${label}"?\n\nIsso apaga o lead com todas as mensagens, formulários, anexos e histórico.\n\n⚠️ NÃO dá pra desfazer.`)) return
+    if (!confirm(`Última confirmação: excluir "${label}" pra sempre?`)) return
+    setDeleting(l.id)
+    try {
+      const r = await fetch(`/api/leads/${l.id}`, { method: 'DELETE' })
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({ error: 'Erro desconhecido' }))
+        alert('Erro ao excluir: ' + (d.error || r.status))
+        return
+      }
+      setLeads(ls => ls.filter(x => x.id !== l.id))
+    } finally {
+      setDeleting(null)
     }
   }
 
@@ -203,6 +222,28 @@ export default function ArchivedLeadsPage() {
                       <path d="M3 3v5h5" />
                     </svg>
                     Reativar
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => deleteForever(l)}
+                disabled={deleting === l.id || reactivating === l.id}
+                title="Excluir definitivamente — não dá pra desfazer"
+                className="px-4 py-2 rounded-xl text-[12px] font-bold transition-all hover:shadow-sm disabled:opacity-50 flex items-center gap-1.5 flex-shrink-0"
+                style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}
+              >
+                {deleting === l.id ? (
+                  'Excluindo...'
+                ) : (
+                  <>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 6h18" />
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      <line x1="10" y1="11" x2="10" y2="17" />
+                      <line x1="14" y1="11" x2="14" y2="17" />
+                    </svg>
+                    Excluir
                   </>
                 )}
               </button>

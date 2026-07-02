@@ -166,3 +166,56 @@ export async function PATCH(
 
   return NextResponse.json({ lead: data })
 }
+
+/**
+ * DELETE /api/leads/[id] — exclusão DEFINITIVA. Só lead JÁ ARQUIVADO (força o fluxo de 2 passos)
+ * e só pelo dono (assigned_to) ou admin. Apaga os anexos do storage e a linha do lead —
+ * as tabelas filhas (mensagens, follow-ups, forms, pipeline etc.) caem por ON DELETE CASCADE.
+ */
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+  const supabase = await createServerSupabase()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const db = createAdminClient()
+  const { data: buyer } = await db
+    .from('buyers')
+    .select('id, is_admin')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!buyer) return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
+
+  const { data: lead } = await db
+    .from('leads')
+    .select('id, archived, assigned_to')
+    .eq('id', id)
+    .single()
+  if (!lead) return NextResponse.json({ error: 'Lead não encontrado' }, { status: 404 })
+  if (!lead.archived) {
+    return NextResponse.json({ error: 'Arquive o lead antes de excluir definitivamente.' }, { status: 400 })
+  }
+  if (!buyer.is_admin && lead.assigned_to !== buyer.id) {
+    return NextResponse.json({ error: 'Só o dono do lead (ou admin) pode excluir.' }, { status: 403 })
+  }
+
+  // Anexos: o cascade apaga as linhas, mas NÃO os arquivos do bucket — remove antes.
+  try {
+    const { data: atts } = await db.from('lead_attachments').select('file_path').eq('lead_id', id)
+    const paths = (atts || []).map((a: any) => a.file_path).filter(Boolean)
+    if (paths.length) await db.storage.from('lead-attachments').remove(paths)
+  } catch {}
+
+  // Conversas do lead são SET NULL (ficariam órfãs) — exclusão definitiva apaga junto.
+  // Itens de calendário só desvinculam (agenda é do usuário, não do lead).
+  try { await db.from('whatsapp_messages').delete().eq('lead_id', id) } catch {}
+  try { await db.from('sms_messages').delete().eq('lead_id', id) } catch {}
+
+  const { error } = await db.from('leads').delete().eq('id', id)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  return NextResponse.json({ ok: true, deleted: id })
+}
