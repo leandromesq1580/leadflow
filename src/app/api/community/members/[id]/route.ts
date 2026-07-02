@@ -13,7 +13,16 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const { db, allowed } = ctx
     if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-    const { data: buyer } = await db.from('buyers').select('id, name').eq('id', id).single()
+    // Perfil com bio/foto (migration 028); se as colunas ainda não existem, cai no básico.
+    let buyer: any = null
+    {
+      const r1 = await db.from('buyers').select('id, name, community_bio, community_avatar_path').eq('id', id).single()
+      buyer = r1.data
+      if (!buyer && r1.error) {
+        const r2 = await db.from('buyers').select('id, name').eq('id', id).single()
+        buyer = r2.data
+      }
+    }
     const { data: posts } = await db
       .from('community_posts')
       .select('id, kind, channel, body, data, created_at')
@@ -40,6 +49,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({
       id,
       name: buyer?.name || 'Membro',
+      bio: buyer?.community_bio || null,
+      avatar_path: buyer?.community_avatar_path || null,
       banned,
       stats: { posts: list.length, wins, salesTotal },
       posts: list,

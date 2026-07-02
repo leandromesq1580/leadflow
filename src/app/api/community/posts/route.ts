@@ -93,12 +93,21 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Foto de perfil dos autores (tolerante à migration 028 ausente — cai nas iniciais).
+    const avatarByBuyer: Record<string, string> = {}
+    const authorIds = [...new Set((posts || []).map(p => p.buyer_id).filter(Boolean))]
+    if (authorIds.length) {
+      const { data: avs } = await db.from('buyers').select('id, community_avatar_path').in('id', authorIds)
+      for (const a of (avs || []) as any[]) if (a.community_avatar_path) avatarByBuyer[a.id] = a.community_avatar_path
+    }
+
     const enriched = (posts || []).map(p => {
       const reactions = reactionsByPost[p.id] || {}
       const total = Object.values(reactions).reduce((a, b) => a + b, 0)
       const mine = myReactionsByPost[p.id] || []
       return {
         ...p,
+        author_avatar: (p.buyer_id && avatarByBuyer[p.buyer_id]) || null,
         reactions,
         my_reactions: mine,
         reaction_count: total,

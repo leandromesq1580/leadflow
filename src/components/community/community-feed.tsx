@@ -24,9 +24,10 @@ interface Post {
   poll_counts?: Record<string, number>
   my_poll_vote?: number | null
   can_delete: boolean
+  author_avatar?: string | null
 }
 interface Me { id: string; name: string; isAdmin: boolean }
-interface Comment { id: string; author_name: string | null; body: string; created_at: string; can_delete: boolean; buyer_id: string | null; parent_id?: string | null }
+interface Comment { id: string; author_name: string | null; body: string; created_at: string; can_delete: boolean; buyer_id: string | null; parent_id?: string | null; author_avatar?: string | null }
 interface Notif { id: string; actor_name: string | null; type: string; post_id: string | null; preview: string | null; read: boolean; created_at: string }
 interface Rank { buyer_id: string; name: string; count: number; total: number }
 
@@ -37,6 +38,12 @@ const REACTIONS: { kind: string; emoji: string }[] = [
 
 function initials(name?: string | null) {
   return (name || 'M').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+}
+// Avatar: foto do perfil se tiver, senão as iniciais.
+function Av({ name, path, size, bg, fg, onClick }: { name?: string | null; path?: string | null; size: number; bg: string; fg: string; onClick?: () => void }) {
+  const base: React.CSSProperties = { width: size, height: size, borderRadius: '50%', flexShrink: 0, cursor: onClick ? 'pointer' : 'default' }
+  if (path) return <img src={`/api/community/image?path=${encodeURIComponent(path)}`} alt="" onClick={onClick} style={{ ...base, objectFit: 'cover', display: 'block' }} />
+  return <div onClick={onClick} style={{ ...base, background: bg, color: fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: Math.round(size * 0.36), fontWeight: 700 }}>{initials(name)}</div>
 }
 function ago(iso: string) {
   const s = (Date.now() - new Date(iso).getTime()) / 1000
@@ -130,6 +137,15 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
   const [notifOpen, setNotifOpen] = useState(false)
   const [ranking, setRanking] = useState<Rank[]>([])
 
+  // meu perfil (foto + nome + bio)
+  const [myProfile, setMyProfile] = useState<{ name: string; bio: string | null; avatar_path: string | null } | null>(null)
+  const [profileEdit, setProfileEdit] = useState(false)
+  const [peName, setPeName] = useState('')
+  const [peBio, setPeBio] = useState('')
+  const [peAvatar, setPeAvatar] = useState('')
+  const [peUploading, setPeUploading] = useState(false)
+  const [peSaving, setPeSaving] = useState(false)
+
   const load = useCallback(async () => {
     setLoading(true)
     setErr('')
@@ -165,13 +181,15 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
 
   const loadMeta = useCallback(async () => {
     try {
-      const [n, r, dm] = await Promise.all([
+      const [n, r, dm, prof] = await Promise.all([
         fetch('/api/community/notifications', { cache: 'no-store' }).then(x => x.json()).catch(() => ({})),
         fetch('/api/community/ranking', { cache: 'no-store' }).then(x => x.json()).catch(() => ({})),
         fetch('/api/community/dm', { cache: 'no-store' }).then(x => x.json()).catch(() => ({})),
+        fetch('/api/community/profile', { cache: 'no-store' }).then(x => x.json()).catch(() => ({})),
       ])
       setNotifs(n.items || []); setUnread(n.unread || 0); setRanking(r.top || [])
       setDmConvs(dm.conversations || []); setDmUnread(dm.unread || 0)
+      if (prof && prof.name) setMyProfile({ name: prof.name, bio: prof.bio || null, avatar_path: prof.avatar_path || null })
     } catch {}
   }, [])
 
@@ -192,6 +210,38 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
     const t = setInterval(loadMeta, 60000)
     return () => clearInterval(t)
   }, [loadMeta])
+
+  function openProfileEdit() {
+    setPeName(myProfile?.name || me?.name || '')
+    setPeBio(myProfile?.bio || '')
+    setPeAvatar(myProfile?.avatar_path || '')
+    setProfileEdit(true)
+  }
+
+  async function uploadAvatar(file: File) {
+    setPeUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const r = await fetch('/api/community/upload', { method: 'POST', body: fd })
+      const d = await r.json().catch(() => ({}))
+      if (r.ok && d.path) setPeAvatar(d.path)
+      else alert(d.error || 'Falha no upload da foto.')
+    } catch { alert('Falha no upload da foto.') }
+    setPeUploading(false)
+  }
+
+  async function saveProfile() {
+    if (peSaving) return
+    setPeSaving(true)
+    try {
+      const r = await fetch('/api/community/profile', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: peName, bio: peBio, avatar_path: peAvatar }) })
+      const d = await r.json().catch(() => ({}))
+      if (r.ok) { setProfileEdit(false); loadMeta(); load() }
+      else alert(d.error || 'Não foi possível salvar o perfil.')
+    } catch { alert('Falha de conexão.') }
+    setPeSaving(false)
+  }
 
   async function openNotifs() {
     const wasClosed = !notifOpen
@@ -396,7 +446,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
 
   const renderComment = (c: Comment, p: Post, isReply: boolean) => (
     <div key={c.id} style={{ display: 'flex', gap: 8, marginBottom: 10, marginLeft: isReply ? 36 : 0 }}>
-      <div style={{ width: 28, height: 28, borderRadius: '50%', background: T.tag, color: T.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{initials(c.author_name)}</div>
+      <Av name={c.author_name} path={c.author_avatar} size={28} bg={T.tag} fg={T.muted} onClick={c.buyer_id ? () => setProfileId(c.buyer_id) : undefined} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ margin: 0, fontSize: 13 }}><span onClick={() => c.buyer_id && setProfileId(c.buyer_id)} style={{ fontWeight: 600, color: T.text, cursor: c.buyer_id ? 'pointer' : 'default' }}>{c.author_name || 'Membro'}</span> <span style={{ color: T.muted, fontSize: 11 }}>· {ago(c.created_at)}</span></p>
         <p style={{ margin: 0, fontSize: 13, color: bodyColor, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{renderBody(c.body, T.accent)}</p>
@@ -430,8 +480,11 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
 
   return (
     <div>
-      {/* mensagens + sino */}
+      {/* perfil + mensagens + sino */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 10, position: 'relative' }}>
+        <button onClick={openProfileEdit} aria-label="meu perfil" title="Meu perfil" style={{ border: `1px solid ${T.border}`, background: T.card, borderRadius: 999, width: 38, height: 38, cursor: 'pointer', fontSize: 16, padding: 0, overflow: 'hidden' }}>
+          {myProfile?.avatar_path ? <img src={`/api/community/image?path=${encodeURIComponent(myProfile.avatar_path)}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : '👤'}
+        </button>
         <button onClick={() => { setDmActive(null); setDmOpen(true); loadDmList() }} aria-label="mensagens" style={{ position: 'relative', border: `1px solid ${T.border}`, background: T.card, borderRadius: 999, width: 38, height: 38, cursor: 'pointer', fontSize: 16 }}>
           ✉️
           {dmUnread > 0 && <span style={{ position: 'absolute', top: -4, right: -4, background: '#ef4444', color: '#fff', borderRadius: 999, minWidth: 18, height: 18, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{dmUnread > 9 ? '9+' : dmUnread}</span>}
@@ -494,7 +547,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
       {/* compositor */}
       {!open ? (
         <div style={{ ...card, display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 36, height: 36, borderRadius: '50%', background: T.accentBg, color: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{initials(me?.name)}</div>
+          <Av name={me?.name} path={myProfile?.avatar_path} size={36} bg={T.accentBg} fg={T.accent} />
           <button style={{ flex: 1, textAlign: 'left', background: T.input, border: `1px solid ${T.border}`, borderRadius: 999, padding: '9px 14px', color: T.muted, fontSize: 14, cursor: 'pointer' }} onClick={() => { setCkind('post'); setOpen(true) }}>Compartilhe uma vitória ou tire uma dúvida…</button>
           <button style={{ ...btn, padding: '9px 13px', whiteSpace: 'nowrap' }} onClick={() => { setCkind('win'); setOpen(true) }}>🏆 Venda</button>
         </div>
@@ -584,7 +637,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
         return (
           <div key={p.id} style={p.kind === 'aviso' ? { ...card, border: '1.5px solid #f59e0b', background: dark ? '#241a06' : '#fffbeb' } : card}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-              <div onClick={() => p.buyer_id && setProfileId(p.buyer_id)} style={{ width: 36, height: 36, borderRadius: '50%', background: p.kind === 'win' ? T.winBg : T.accentBg, color: p.kind === 'win' ? T.winText : T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0, cursor: p.buyer_id ? 'pointer' : 'default' }}>{initials(p.author_name)}</div>
+              <Av name={p.author_name} path={p.author_avatar} size={36} bg={p.kind === 'win' ? T.winBg : T.accentBg} fg={p.kind === 'win' ? T.winText : T.accent} onClick={p.buyer_id ? () => setProfileId(p.buyer_id) : undefined} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p onClick={() => p.buyer_id && setProfileId(p.buyer_id)} style={{ margin: 0, fontSize: 14, fontWeight: 600, color: T.text, cursor: p.buyer_id ? 'pointer' : 'default' }}>{p.author_name || 'Membro'}</p>
                 <p style={{ margin: 0, fontSize: 12, color: T.muted }}>{p.pinned && '📌 '}{ago(p.created_at)}</p>
@@ -684,7 +737,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
         <div onClick={() => setProfileId(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 50, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 16px', overflowY: 'auto' }}>
           <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 520, background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: 18, marginBottom: 40 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-              <div style={{ width: 48, height: 48, borderRadius: '50%', background: T.accentBg, color: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 700, flexShrink: 0 }}>{initials(profile?.name)}</div>
+              <Av name={profile?.name} path={profile?.avatar_path} size={48} bg={T.accentBg} fg={T.accent} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ margin: 0, fontSize: 17, fontWeight: 700, color: T.text }}>{profile?.name || '…'}</p>
                 {profile?.stats && <p style={{ margin: 0, fontSize: 12, color: T.muted }}>{profile.stats.posts} {profile.stats.posts === 1 ? 'post' : 'posts'} · {profile.stats.wins} {profile.stats.wins === 1 ? 'vitória' : 'vitórias'}{profile.stats.salesTotal > 0 ? ` · ${money(profile.stats.salesTotal)} vendidos` : ''}</p>}
@@ -693,6 +746,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
               {me?.isAdmin && profileId !== me.id && <button onClick={() => toggleBan(profileId!, !!profile?.banned)} style={{ ...ghostBtn, padding: '6px 11px', color: profile?.banned ? T.accent : '#ef4444', borderColor: profile?.banned ? T.border : '#fecaca' }}>{profile?.banned ? '↺ Desbloquear' : '🚫 Bloquear'}</button>}
               <button onClick={() => setProfileId(null)} style={{ ...ghostBtn, padding: '6px 11px' }}>Fechar</button>
             </div>
+            {profile?.bio && <p style={{ margin: '0 0 12px', fontSize: 13.5, color: bodyColor, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{profile.bio}</p>}
             {!profile ? (
               <p style={{ color: T.muted, fontSize: 13, textAlign: 'center', padding: '14px 0' }}>Carregando…</p>
             ) : (profile.posts || []).length === 0 ? (
@@ -704,6 +758,37 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
                 {pp.kind === 'win' && pp.data?.sale_value ? <p style={{ margin: '2px 0 0', fontSize: 12, color: T.win, fontWeight: 600 }}>{money(pp.data.sale_value)}{pp.data.product ? ` · ${pp.data.product}` : ''}</p> : null}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {profileEdit && (
+        <div onClick={() => setProfileEdit(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 60, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 16px', overflowY: 'auto' }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 440, background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: 18, marginBottom: 40 }}>
+            <p style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 700, color: T.text }}>Meu perfil</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
+              {peAvatar ? (
+                <img src={`/api/community/image?path=${encodeURIComponent(peAvatar)}`} alt="" style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', border: `1px solid ${T.border}`, flexShrink: 0 }} />
+              ) : (
+                <div style={{ width: 72, height: 72, borderRadius: '50%', background: T.accentBg, color: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, flexShrink: 0 }}>{initials(peName || me?.name)}</div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ ...ghostBtn, padding: '7px 12px', cursor: 'pointer', textAlign: 'center' as const }}>
+                  {peUploading ? 'Enviando…' : '📷 Trocar foto'}
+                  <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadAvatar(f); e.target.value = '' }} />
+                </label>
+                {peAvatar && <button onClick={() => setPeAvatar('')} style={{ ...ghostBtn, padding: '7px 12px', color: '#ef4444' }}>Remover foto</button>}
+              </div>
+            </div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: T.muted, marginBottom: 4 }}>Nome</label>
+            <input style={{ ...inputStyle, marginBottom: 10 }} value={peName} onChange={e => setPeName(e.target.value)} maxLength={60} />
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: T.muted, marginBottom: 4 }}>Bio — conte quem você é</label>
+            <textarea style={{ ...inputStyle, minHeight: 80, resize: 'vertical' as const, marginBottom: 4 }} placeholder="Ex: Agente em Orlando/FL, foco em seguro de vida e IUL. Conta sua história, sua região e seu diferencial." value={peBio} onChange={e => setPeBio(e.target.value)} maxLength={300} />
+            <p style={{ margin: '0 0 12px', fontSize: 11, color: T.muted, textAlign: 'right' }}>{peBio.length}/300</p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => setProfileEdit(false)} style={ghostBtn}>Cancelar</button>
+              <button onClick={saveProfile} disabled={peSaving || peUploading} style={{ ...btn, opacity: peSaving || peUploading ? 0.6 : 1 }}>{peSaving ? 'Salvando…' : 'Salvar perfil'}</button>
+            </div>
           </div>
         </div>
       )}

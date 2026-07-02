@@ -24,9 +24,17 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       if (MISSING_TABLE.test(error.message)) return NextResponse.json({ comments: [] })
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+    // Foto de perfil dos autores (tolerante à migration 028 ausente — cai nas iniciais).
+    const avatarByBuyer: Record<string, string> = {}
+    const authorIds = [...new Set((data || []).map(c => c.buyer_id).filter(Boolean))]
+    if (authorIds.length) {
+      const { data: avs } = await db.from('buyers').select('id, community_avatar_path').in('id', authorIds)
+      for (const a of (avs || []) as any[]) if (a.community_avatar_path) avatarByBuyer[a.id] = a.community_avatar_path
+    }
     const comments = (data || []).map(c => ({
       id: c.id, buyer_id: c.buyer_id, author_name: c.author_name, body: c.body,
       created_at: c.created_at, parent_id: c.parent_id ?? null,
+      author_avatar: (c.buyer_id && avatarByBuyer[c.buyer_id]) || null,
       can_delete: me.isAdmin || c.buyer_id === me.id,
     }))
     return NextResponse.json({ comments })
