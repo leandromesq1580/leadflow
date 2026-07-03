@@ -169,7 +169,7 @@ export default function TreinamentoPage() {
             {chatMsgs.length === 0 && (
               <div>
                 <p className="text-[13px] mb-3" style={{ color: '#64748b' }}>Oi! 👋 Sou o tutor do Lead4Pro. Me pergunta qualquer coisa sobre a plataforma — por exemplo:</p>
-                {['Como conecto meu WhatsApp?', 'Como movo um lead na pipeline?', 'Como criar uma automação?', 'Como agendar um follow-up?'].map(s => (
+                {['Como fazer um bom primeiro atendimento?', 'Dicas pra fechar mais vendas 🔥', 'Como conecto meu WhatsApp?', 'Como criar uma automação?'].map(s => (
                   <button key={s} onClick={() => askTutor(s)}
                     className="block w-full text-left px-3 py-2 mb-2 rounded-xl text-[13px] font-semibold transition-all hover:shadow-sm"
                     style={{ background: '#eef2ff', color: '#4f46e5', border: '1px solid #e0e7ff', cursor: 'pointer' }}>
@@ -178,17 +178,34 @@ export default function TreinamentoPage() {
                 ))}
               </div>
             )}
-            {chatMsgs.map((m, i) => (
-              <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '88%' }}>
-                <div className="px-3.5 py-2.5 rounded-2xl text-[13.5px]" style={{
-                  background: m.role === 'user' ? '#6366f1' : '#f1f5f9',
-                  color: m.role === 'user' ? '#fff' : '#1e293b',
-                  whiteSpace: 'pre-wrap', lineHeight: 1.55,
-                  borderBottomRightRadius: m.role === 'user' ? 6 : 16,
-                  borderBottomLeftRadius: m.role === 'user' ? 16 : 6,
-                }}>{m.content}</div>
-              </div>
-            ))}
+            {chatMsgs.map((m, i) => {
+              // Linhas "👉 " no fim da resposta viram chips clicáveis de próxima pergunta.
+              const lines = m.content.split('\n')
+              const sugs = m.role === 'assistant' ? lines.filter(l => l.trim().startsWith('👉')).map(l => l.trim().replace(/^👉\s*/, '')) : []
+              const text = m.role === 'assistant' ? lines.filter(l => !l.trim().startsWith('👉')).join('\n').trim() : m.content
+              return (
+                <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '88%' }}>
+                  <div className="px-3.5 py-2.5 rounded-2xl text-[13.5px]" style={{
+                    background: m.role === 'user' ? '#6366f1' : '#f1f5f9',
+                    color: m.role === 'user' ? '#fff' : '#1e293b',
+                    whiteSpace: 'pre-wrap', lineHeight: 1.55,
+                    borderBottomRightRadius: m.role === 'user' ? 6 : 16,
+                    borderBottomLeftRadius: m.role === 'user' ? 16 : 6,
+                  }}>{text}</div>
+                  {sugs.length > 0 && i === chatMsgs.length - 1 && !chatBusy && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                      {sugs.map((s, k) => (
+                        <button key={k} onClick={() => askTutor(s)}
+                          className="text-left px-3 py-2 rounded-xl text-[12.5px] font-semibold transition-all hover:shadow-sm"
+                          style={{ background: '#eef2ff', color: '#4f46e5', border: '1px solid #e0e7ff', cursor: 'pointer' }}>
+                          👉 {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
             {chatBusy && <div className="px-3.5 py-2.5 rounded-2xl text-[13px]" style={{ background: '#f1f5f9', color: '#94a3b8', alignSelf: 'flex-start' }}>digitando…</div>}
           </div>
           <div className="flex gap-2 p-3" style={{ borderTop: '1px solid #e8ecf4' }}>
