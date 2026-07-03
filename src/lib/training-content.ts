@@ -4,7 +4,9 @@
  * Vídeo novo na pasta que ainda não estiver aqui aparece sozinho na seção "Novas aulas".
  */
 
-export type TrainingVideo = { id: string; title: string }
+// media 'drive' (padrão): id = fileId do Google Drive. media 'storage': id = path no bucket
+// lead-attachments (community/training/...), com poster opcional — servidos via /api/training/media.
+export type TrainingVideo = { id: string; title: string; media?: 'drive' | 'storage'; poster?: string }
 export type TrainingModule = { key: string; icon: string; title: string; desc: string; videos: TrainingVideo[] }
 
 export const TRAINING_MODULES: TrainingModule[] = [
@@ -14,6 +16,7 @@ export const TRAINING_MODULES: TrainingModule[] = [
     title: 'Primeiros passos',
     desc: 'Conheça o painel e deixe sua conta redonda antes de atacar os leads.',
     videos: [
+      { id: 'community/training/conheca-treinamento-zoe.mp4', title: 'Conheça o Treinamento e a Zoe', media: 'storage', poster: 'community/training/conheca-treinamento-zoe.jpg' },
       { id: '1ItLCqmg3g9tppkFNEfiwdhmdVT9nA60c', title: 'Visão geral da plataforma' },
       { id: '1cOCg0zl3KLmkhE73CdNGTVmY0qI_19Gr', title: 'Configurações da sua conta' },
       { id: '14JX3vzeN6Mem5hwBp4LHfgj6ZOLThYD6', title: 'Avisos e lembretes' },

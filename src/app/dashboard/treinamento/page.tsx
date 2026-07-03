@@ -57,7 +57,7 @@ export default function TreinamentoPage() {
       <div style={{ position: 'relative', aspectRatio: '16/9', background: 'linear-gradient(135deg, #1e1b4b, #312e81)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {!broken[v.id] ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={`https://drive.google.com/thumbnail?id=${v.id}&sz=w640`} alt="" loading="lazy"
+          <img src={v.media === 'storage' ? (v.poster ? `/api/training/media?path=${encodeURIComponent(v.poster)}` : '') : `https://drive.google.com/thumbnail?id=${v.id}&sz=w640`} alt="" loading="lazy"
             onError={() => setBroken(b => ({ ...b, [v.id]: true }))}
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         ) : (
@@ -128,12 +128,18 @@ export default function TreinamentoPage() {
               <button onClick={() => setPlaying(null)} className="px-3 py-1.5 rounded-lg text-[13px] font-bold" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff' }}>✕ Fechar</button>
             </div>
             <div style={{ aspectRatio: '16/9', background: '#000', borderRadius: 12, overflow: 'hidden' }}>
-              <iframe
-                src={`https://drive.google.com/file/d/${playing.id}/preview`}
-                allow="autoplay; fullscreen"
-                allowFullScreen
-                style={{ width: '100%', height: '100%', border: 0 }}
-              />
+              {playing.media === 'storage' ? (
+                <video controls autoPlay playsInline
+                  src={`/api/training/media?path=${encodeURIComponent(playing.id)}`}
+                  style={{ width: '100%', height: '100%', border: 0, background: '#000' }} />
+              ) : (
+                <iframe
+                  src={`https://drive.google.com/file/d/${playing.id}/preview`}
+                  allow="autoplay; fullscreen"
+                  allowFullScreen
+                  style={{ width: '100%', height: '100%', border: 0 }}
+                />
+              )}
             </div>
           </div>
         </div>
