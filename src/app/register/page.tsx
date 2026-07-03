@@ -97,8 +97,8 @@ export default function RegisterPage() {
                 className="w-full px-4 py-3.5 rounded-xl text-[14px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
             </div>
             <div>
-              <label className="block text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>Telefone / WhatsApp</label>
-              <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 (407) 555-1234"
+              <label className="block text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>Telefone / WhatsApp <span style={{ fontWeight: 500, color: '#94a3b8' }}>(opcional)</span></label>
+              <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 (407) 555-1234 (opcional)"
                 className="w-full px-4 py-3.5 rounded-xl text-[14px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
             </div>
             <div>

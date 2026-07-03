@@ -25,7 +25,8 @@ export default function MobileCreditos() {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.search.includes('success=true')) setSuccess(true)
-    if (typeof navigator !== 'undefined' && /Lead4ProApp/i.test(navigator.userAgent)) setIsNativeApp(true)
+    // Detecta o app nativo por 2 sinais (robusto): User-Agent injetado OU a bridge window.Capacitor.
+    if (typeof window !== 'undefined' && (/Lead4ProApp/i.test(navigator.userAgent) || !!(window as any).Capacitor)) setIsNativeApp(true)
     fetch('/api/m/credits', { cache: 'no-store' }).then(r => (r.ok ? r.json() : Promise.reject())).then(setD).catch(() => setErr(true))
   }, [])
 
