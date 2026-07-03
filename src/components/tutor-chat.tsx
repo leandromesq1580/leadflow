@@ -36,20 +36,23 @@ export function TutorChat({ offsetBottom = 24 }: { offsetBottom?: number }) {
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} aria-label="Pergunte ao Tutor"
-        className="flex items-center gap-2 px-5 py-3.5 rounded-full text-[14px] font-bold text-white transition-all hover:shadow-xl"
+      <button onClick={() => setOpen(true)} aria-label="Pergunte à Zoe"
+        className="flex items-center gap-2.5 pl-1.5 pr-5 py-1.5 rounded-full text-[14px] font-bold text-white transition-all hover:shadow-xl"
         style={{ position: 'fixed', right: 20, bottom: offsetBottom, zIndex: 70, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 8px 24px rgba(99,102,241,0.4)', border: 'none', cursor: 'pointer' }}>
-        🤖 Tutor
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/zoe.jpg" alt="Zoe" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.85)', display: 'block' }} />
+        Zoe
       </button>
     )
   }
 
   return (
     <div style={{ position: 'fixed', right: 20, bottom: offsetBottom, zIndex: 70, width: 'min(400px, calc(100vw - 32px))', height: `min(560px, calc(100vh - ${offsetBottom + 76}px))`, background: '#fff', border: '1px solid #e8ecf4', borderRadius: 18, boxShadow: '0 20px 60px rgba(15,23,42,0.25)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div className="flex items-center gap-2 px-4 py-3" style={{ background: 'linear-gradient(135deg,#1e1b4b,#312e81)' }}>
-        <span style={{ fontSize: 20 }}>🤖</span>
+      <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: 'linear-gradient(135deg,#1e1b4b,#312e81)' }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/zoe.jpg" alt="Zoe" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.35)', display: 'block' }} />
         <div className="flex-1">
-          <p className="text-[14px] font-bold text-white m-0">Tutor da plataforma</p>
+          <p className="text-[14px] font-bold text-white m-0">Zoe · Lead4Pro</p>
           <p className="text-[11px] m-0" style={{ color: 'rgba(255,255,255,0.6)' }}>Plataforma · atendimento · fechamento · life insurance</p>
         </div>
         <button onClick={() => setOpen(false)} className="px-2.5 py-1 rounded-lg text-[13px] font-bold" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', cursor: 'pointer' }}>✕</button>
@@ -57,7 +60,7 @@ export function TutorChat({ offsetBottom = 24 }: { offsetBottom?: number }) {
       <div style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {msgs.length === 0 && (
           <div>
-            <p className="text-[13px] mb-3" style={{ color: '#64748b' }}>Oi! 👋 Sou o tutor do Lead4Pro. Pergunta como usar a plataforma, peça dicas de atendimento e fechamento, ou tire dúvidas de life insurance:</p>
+            <p className="text-[13px] mb-3" style={{ color: '#64748b' }}>Oi! 👋 Eu sou a <b>Zoe</b>, sua tutora aqui no Lead4Pro. Pergunta como usar a plataforma, peça dicas de atendimento e fechamento, ou tire dúvidas de life insurance:</p>
             {['Como fazer um bom primeiro atendimento?', 'Dicas pra fechar mais vendas 🔥', 'Como conecto meu WhatsApp?', 'Como criar uma automação?'].map(s => (
               <button key={s} onClick={() => ask(s)}
                 className="block w-full text-left px-3 py-2 mb-2 rounded-xl text-[13px] font-semibold transition-all hover:shadow-sm"
@@ -95,7 +98,7 @@ export function TutorChat({ offsetBottom = 24 }: { offsetBottom?: number }) {
             </div>
           )
         })}
-        {busy && <div className="px-3.5 py-2.5 rounded-2xl text-[13px]" style={{ background: '#f1f5f9', color: '#94a3b8', alignSelf: 'flex-start' }}>digitando…</div>}
+        {busy && <div className="px-3.5 py-2.5 rounded-2xl text-[13px]" style={{ background: '#f1f5f9', color: '#94a3b8', alignSelf: 'flex-start' }}>Zoe está digitando…</div>}
       </div>
       <div className="flex gap-2 p-3" style={{ borderTop: '1px solid #e8ecf4' }}>
         <input value={draft} onChange={e => setDraft(e.target.value)}
