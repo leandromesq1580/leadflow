@@ -8,6 +8,7 @@ import { ImpersonationBanner } from '@/components/dashboard/impersonation-banner
 import { SuspendedAccount } from '@/components/dashboard/suspended-account'
 import { MetaPixel } from '@/components/meta-pixel'
 import { TutorChat } from '@/components/tutor-chat'
+import { MobileNav } from '@/components/dashboard/mobile-nav'
 import { ResumeCheckout } from '@/components/resume-checkout'
 import { cookies } from 'next/headers'
 import { isTrialActive, trialDaysRemaining, isAppointmentOnly, isLeadOnly } from '@/lib/crm-access'
@@ -76,6 +77,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </AppointmentGate>
         </main>
         {buyer?.id && <PwaRegister buyerId={buyer.id} />}
+        <MobileNav userName={buyer?.name || user!.email || ''} isAgency={buyer?.is_agency || false} buyerId={buyer?.id} crmPlan={buyer?.crm_plan || 'free'} isAdmin={!!buyer?.is_admin} />
         <TutorChat />
         <MetaPixel />
         <ResumeCheckout />
