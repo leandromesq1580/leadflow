@@ -10,6 +10,7 @@ import { PwaRegister } from '@/components/pwa-register'
 import { SuspendedAccount } from '@/components/dashboard/suspended-account'
 import { MobileBottomNav } from '@/components/mobile/bottom-nav'
 import { MHeader } from '@/components/mobile/m-header'
+import { TutorChat } from '@/components/tutor-chat'
 
 export const dynamic = 'force-dynamic'
 
@@ -62,6 +63,7 @@ export default async function MobileLayout({ children }: { children: React.React
             </div>
           </div>
           <MobileBottomNav buyerId={buyer?.id} crmPlan={buyer?.crm_plan || 'free'} />
+          <TutorChat offsetBottom={92} />
           {buyer?.id && <PwaRegister buyerId={buyer.id} />}
         </div>
       </PrivacyProvider>
