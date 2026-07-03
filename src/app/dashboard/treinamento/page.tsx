@@ -17,10 +17,11 @@ export default function TreinamentoPage() {
   const [done, setDone] = useState<Record<string, boolean>>({})
 
   const hasCurated = TRAINING_MODULES.some(m => m.videos.length > 0)
+  const curatedIds = useMemo(() => new Set(TRAINING_MODULES.flatMap(m => m.videos.map(v => v.id))), [])
 
   useEffect(() => {
     try { setDone(JSON.parse(localStorage.getItem('l4p_training_done') || '{}')) } catch {}
-    if (hasCurated) { setLoading(false); return }
+    // Busca a pasta sempre: vídeo novo que ainda não está em módulo vira "Novas aulas".
     fetch('/api/training', { cache: 'no-store' })
       .then(r => r.json())
       .then(d => {
@@ -29,7 +30,9 @@ export default function TreinamentoPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [hasCurated])
+  }, [])
+
+  const extras = useMemo(() => autoVideos.filter(v => !curatedIds.has(v.id)), [autoVideos, curatedIds])
 
   function markDone(id: string) {
     setDone(prev => {
@@ -40,13 +43,13 @@ export default function TreinamentoPage() {
   }
 
   const totalLessons = useMemo(
-    () => (hasCurated ? TRAINING_MODULES.reduce((a, m) => a + m.videos.length, 0) : autoVideos.length),
-    [hasCurated, autoVideos],
+    () => (hasCurated ? TRAINING_MODULES.reduce((a, m) => a + m.videos.length, 0) + extras.length : autoVideos.length),
+    [hasCurated, autoVideos, extras],
   )
   const doneCount = useMemo(() => {
-    const ids = hasCurated ? TRAINING_MODULES.flatMap(m => m.videos.map(v => v.id)) : autoVideos.map(v => v.id)
+    const ids = hasCurated ? [...TRAINING_MODULES.flatMap(m => m.videos.map(v => v.id)), ...extras.map(v => v.id)] : autoVideos.map(v => v.id)
     return ids.filter(id => done[id]).length
-  }, [hasCurated, autoVideos, done])
+  }, [hasCurated, autoVideos, extras, done])
 
   const card = (v: TrainingVideo, idx: number) => (
     <button key={v.id} onClick={() => { setPlaying(v); markDone(v.id) }} className="text-left rounded-2xl overflow-hidden transition-all hover:shadow-lg"
@@ -85,15 +88,26 @@ export default function TreinamentoPage() {
       {loading ? (
         <p className="text-[13px]" style={{ color: '#94a3b8' }}>Carregando aulas…</p>
       ) : hasCurated ? (
-        TRAINING_MODULES.filter(m => m.videos.length > 0).map(m => (
-          <div key={m.key} className="mb-8">
-            <h2 className="text-[17px] font-extrabold mb-1" style={{ color: '#1a1a2e' }}>{m.icon} {m.title}</h2>
-            <p className="text-[13px] mb-4" style={{ color: '#64748b' }}>{m.desc}</p>
-            <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
-              {m.videos.map((v, i) => card(v, i))}
+        <>
+          {TRAINING_MODULES.filter(m => m.videos.length > 0).map(m => (
+            <div key={m.key} className="mb-8">
+              <h2 className="text-[17px] font-extrabold mb-1" style={{ color: '#1a1a2e' }}>{m.icon} {m.title}</h2>
+              <p className="text-[13px] mb-4" style={{ color: '#64748b' }}>{m.desc}</p>
+              <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+                {m.videos.map((v, i) => card(v, i))}
+              </div>
             </div>
-          </div>
-        ))
+          ))}
+          {extras.length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-[17px] font-extrabold mb-1" style={{ color: '#1a1a2e' }}>🆕 Novas aulas</h2>
+              <p className="text-[13px] mb-4" style={{ color: '#64748b' }}>Acabaram de chegar — em breve entram num módulo.</p>
+              <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+                {extras.map((v, i) => card(v, i))}
+              </div>
+            </div>
+          )}
+        </>
       ) : autoVideos.length > 0 ? (
         <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
           {autoVideos.map((v, i) => card(v, i))}

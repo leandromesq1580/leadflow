@@ -25,14 +25,19 @@ function decodeName(raw: string): string {
 
 function parseVideos(html: string): Video[] {
   const seen = new Map<string, string>()
-  // O HTML da pasta pública embute JSON (às vezes com aspas escapadas):
-  // ["<fileId>",["<parent>"],"<nome>","video/mp4",...
-  const patterns = [
+  // Formato REAL da pasta pública (validado 2026-07-01): a lista vem renderizada no HTML
+  // com data-id="<fileId>" ... data-tooltip="<nome> Video".
+  const domPat = /data-id="([-\w]{25,44})"[^>]*data-tooltip="([^"]+?)\s+(?:Video|Vídeo)"/g
+  let m: RegExpExecArray | null
+  while ((m = domPat.exec(html)) !== null) {
+    if (!seen.has(m[1])) seen.set(m[1], decodeName(m[2]))
+  }
+  // Fallback: JSON embutido ["<fileId>",["<parent>"],"<nome>","video/mp4",...
+  const jsonPats = [
     /\["([-\w]{25,44})",\["[-\w]{25,44}"\],"((?:[^"\\]|\\.)+?)","(video\/[^"]+)"/g,
     /\\"([-\w]{25,44})\\",\[\\"[-\w]{25,44}\\"\],\\"((?:[^"\\]|\\[^"])+?)\\",\\"(video\/[^"\\]+)\\"/g,
   ]
-  for (const re of patterns) {
-    let m: RegExpExecArray | null
+  for (const re of jsonPats) {
     while ((m = re.exec(html)) !== null) {
       if (!seen.has(m[1])) seen.set(m[1], decodeName(m[2]))
     }
