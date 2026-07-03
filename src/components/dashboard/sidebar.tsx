@@ -160,6 +160,7 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan }: SidebarP
     { href: '/dashboard/referral', label: t.sidebar.referral, icon: '🎁' },
     { href: '/dashboard/credits', label: t.sidebar.credits, icon: '💳' },
     { href: '/dashboard/settings', label: t.sidebar.settings, icon: '⚙️' },
+    { href: '/dashboard/treinamento', label: t._locale === 'en' ? 'Training' : t._locale === 'es' ? 'Entrenamiento' : 'Treinamento', icon: '🎓' },
   ]
 
   const adminLinks = [

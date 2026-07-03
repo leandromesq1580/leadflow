@@ -32,6 +32,7 @@ export const APPOINTMENT_ALLOWED_ROUTES = [
   '/dashboard/community',
   '/dashboard/credits',
   '/dashboard/settings',
+  '/dashboard/treinamento',
 ]
 
 /** True se a rota e acessivel pelo perfil appointment-only. */
@@ -58,6 +59,7 @@ export const LEAD_ALLOWED_ROUTES = [
   '/dashboard/community',
   '/dashboard/credits',
   '/dashboard/settings',
+  '/dashboard/treinamento',
 ]
 
 /** True se a rota e acessivel pelo perfil lead-only. */
