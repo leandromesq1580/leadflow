@@ -147,6 +147,7 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan }: SidebarP
     { href: '/dashboard/leads', label: t.sidebar.leads, icon: '🎯' },
     { href: '/dashboard/pipeline', label: t.sidebar.pipeline, icon: '📋' },
     { href: '/dashboard/community', label: t._locale === 'en' ? 'Community' : t._locale === 'es' ? 'Comunidad' : 'Comunidade', icon: '🤝' },
+    { href: '/dashboard/treinamento', label: t._locale === 'en' ? 'Training' : t._locale === 'es' ? 'Entrenamiento' : 'Treinamento', icon: '🎓' },
     { href: '/dashboard/notas', label: t._locale === 'en' ? 'Notes' : 'Notas', icon: '🗒️' },
     { href: '/dashboard/whatsapp', label: t.sidebar.whatsapp, icon: '💬' },
     // Appointments logo abaixo do WhatsApp
@@ -160,7 +161,6 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan }: SidebarP
     { href: '/dashboard/referral', label: t.sidebar.referral, icon: '🎁' },
     { href: '/dashboard/credits', label: t.sidebar.credits, icon: '💳' },
     { href: '/dashboard/settings', label: t.sidebar.settings, icon: '⚙️' },
-    { href: '/dashboard/treinamento', label: t._locale === 'en' ? 'Training' : t._locale === 'es' ? 'Entrenamiento' : 'Treinamento', icon: '🎓' },
   ]
 
   const adminLinks = [
