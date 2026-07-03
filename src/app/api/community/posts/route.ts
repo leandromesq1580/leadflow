@@ -58,19 +58,16 @@ export async function GET(request: NextRequest) {
     const ids = (posts || []).map(p => p.id)
     const reactionsByPost: Record<string, Record<string, number>> = {}
     const myReactionsByPost: Record<string, string[]> = {}
-    const cmCount: Record<string, number> = {}
+    const commentsByPost: Record<string, any[]> = {}
     const pollVotesByPost: Record<string, Record<number, number>> = {}
     const myPollVote: Record<string, number> = {}
     if (ids.length) {
-      // Reações em linhas (precisa do kind por emoji); comentários por COUNT no banco; votos das enquetes.
-      // Em escala muito alta, trocar o fetch de reações por uma RPC/view agregada (cap de 1000 do PostgREST).
+      // Reações em linhas (precisa do kind por emoji); COMENTÁRIOS COMPLETOS numa query só
+      // (o feed mostra tudo aberto); votos das enquetes.
       const pollIds = (posts || []).filter(p => p.kind === 'poll').map(p => p.id)
-      const [rx, comments, votes] = await Promise.all([
+      const [rx, cm, votes] = await Promise.all([
         db.from('community_reactions').select('post_id, buyer_id, kind').in('post_id', ids),
-        Promise.all(ids.map(async (id) => {
-          const { count } = await db.from('community_comments').select('id', { count: 'exact', head: true }).eq('post_id', id)
-          return { id, count: count || 0 }
-        })),
+        db.from('community_comments').select('*').in('post_id', ids).order('created_at', { ascending: true }).limit(2000),
         pollIds.length
           ? db.from('community_poll_votes').select('post_id, buyer_id, option_index').in('post_id', pollIds)
           : Promise.resolve({ data: [] as any[] }),
@@ -84,7 +81,10 @@ export async function GET(request: NextRequest) {
           myReactionsByPost[pid].push(r.kind)
         }
       }
-      for (const c of comments) cmCount[c.id] = c.count
+      for (const c of (cm.data || []) as any[]) {
+        if (!commentsByPost[c.post_id]) commentsByPost[c.post_id] = []
+        commentsByPost[c.post_id].push(c)
+      }
       for (const v of ((votes as any)?.data || [])) {
         const pid = v.post_id as string
         if (!pollVotesByPost[pid]) pollVotesByPost[pid] = {}
@@ -93,9 +93,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Foto de perfil dos autores (tolerante à migration 028 ausente — cai nas iniciais).
+    // Foto de perfil dos autores de POSTS e de COMENTÁRIOS (tolerante à migration 028 ausente).
     const avatarByBuyer: Record<string, string> = {}
-    const authorIds = [...new Set((posts || []).map(p => p.buyer_id).filter(Boolean))]
+    const authorIds = [...new Set([
+      ...(posts || []).map(p => p.buyer_id),
+      ...Object.values(commentsByPost).flat().map((c: any) => c.buyer_id),
+    ].filter(Boolean))]
     if (authorIds.length) {
       const { data: avs } = await db.from('buyers').select('id, community_avatar_path').in('id', authorIds)
       for (const a of (avs || []) as any[]) if (a.community_avatar_path) avatarByBuyer[a.id] = a.community_avatar_path
@@ -105,6 +108,12 @@ export async function GET(request: NextRequest) {
       const reactions = reactionsByPost[p.id] || {}
       const total = Object.values(reactions).reduce((a, b) => a + b, 0)
       const mine = myReactionsByPost[p.id] || []
+      const pcomments = (commentsByPost[p.id] || []).map((c: any) => ({
+        id: c.id, buyer_id: c.buyer_id, author_name: c.author_name, body: c.body,
+        created_at: c.created_at, parent_id: c.parent_id ?? null,
+        author_avatar: (c.buyer_id && avatarByBuyer[c.buyer_id]) || null,
+        can_delete: me.isAdmin || c.buyer_id === me.id,
+      }))
       return {
         ...p,
         author_avatar: (p.buyer_id && avatarByBuyer[p.buyer_id]) || null,
@@ -112,7 +121,8 @@ export async function GET(request: NextRequest) {
         my_reactions: mine,
         reaction_count: total,
         reacted: mine.length > 0,
-        comment_count: cmCount[p.id] || 0,
+        comments: pcomments,
+        comment_count: pcomments.length,
         poll_counts: pollVotesByPost[p.id] || {},
         my_poll_vote: p.id in myPollVote ? myPollVote[p.id] : null,
         can_delete: me.isAdmin || p.buyer_id === me.id,
@@ -156,8 +166,11 @@ export async function POST(request: NextRequest) {
     const text = typeof body?.body === 'string' ? body.body.trim().slice(0, 4000) : ''
     const imagePath = typeof body?.data?.image_path === 'string' && body.data.image_path.startsWith('community/')
       ? body.data.image_path.slice(0, 300) : undefined
+    const videoPath = typeof body?.data?.video_path === 'string' && body.data.video_path.startsWith('community/')
+      ? body.data.video_path.slice(0, 300) : undefined
     const data: Record<string, any> = kind === 'win' ? sanitizeWin(body?.data) : {}
     if (imagePath) data.image_path = imagePath
+    if (videoPath) data.video_path = videoPath
 
     let poll = null
     if (kind === 'poll') {
@@ -166,9 +179,9 @@ export async function POST(request: NextRequest) {
       data.poll = poll
     }
 
-    const hasContent = !!text || !!imagePath || (kind === 'win' && !!data.sale_value) || (kind === 'poll' && !!poll)
+    const hasContent = !!text || !!imagePath || !!videoPath || (kind === 'win' && !!data.sale_value) || (kind === 'poll' && !!poll)
     if (!hasContent) {
-      return NextResponse.json({ error: kind === 'win' ? 'Informe o valor da venda, escreva algo, ou anexe uma imagem.' : 'Escreva algo ou anexe uma imagem.' }, { status: 400 })
+      return NextResponse.json({ error: kind === 'win' ? 'Informe o valor da venda, escreva algo, ou anexe uma imagem/vídeo.' : 'Escreva algo ou anexe uma imagem/vídeo.' }, { status: 400 })
     }
 
     const { data: row, error } = await db

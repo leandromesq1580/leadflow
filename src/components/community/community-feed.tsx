@@ -13,7 +13,8 @@ interface Post {
   channel: Channel
   title: string | null
   body: string | null
-  data: { sale_value?: number; lead_age_days?: number; product?: string; image_path?: string; poll?: { options: string[] } }
+  data: { sale_value?: number; lead_age_days?: number; product?: string; image_path?: string; video_path?: string; poll?: { options: string[] } }
+  comments?: Comment[]
   pinned: boolean
   created_at: string
   reaction_count: number
@@ -123,13 +124,15 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
   const [cimage, setCimage] = useState('')
   const [cpreview, setCpreview] = useState('')
   const [cuploading, setCuploading] = useState(false)
+  const [cvideo, setCvideo] = useState('')
+  const [cvideoName, setCvideoName] = useState('')
+  const [cvideoUploading, setCvideoUploading] = useState(false)
   const [posting, setPosting] = useState(false)
 
-  // comments + threads
-  const [openComments, setOpenComments] = useState<string | null>(null)
+  // comments + threads (sempre abertos; rascunho POR post)
   const [comments, setComments] = useState<Record<string, Comment[]>>({})
-  const [draft, setDraft] = useState('')
-  const [replyTo, setReplyTo] = useState<{ commentId: string; name: string } | null>(null)
+  const [drafts, setDrafts] = useState<Record<string, string>>({})
+  const [replyTo, setReplyTo] = useState<{ postId: string; commentId: string; name: string } | null>(null)
 
   // notificações + ranking
   const [notifs, setNotifs] = useState<Notif[]>([])
@@ -168,6 +171,10 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
       setBanned(!!d.banned)
       setNeedsMigration(!!d.needsMigration)
       setPosts(d.posts || [])
+      // Comentários vêm embutidos no feed (sempre visíveis, sem clique)
+      const cm: Record<string, Comment[]> = {}
+      for (const p of (d.posts || [])) cm[p.id] = p.comments || []
+      setComments(cm)
     } catch { setErr('Erro de conexão.') }
     setLoading(false)
   }, [channel, sort, search])
@@ -325,8 +332,26 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
   }
 
   function clearImage() { setCimage(''); setCpreview('') }
+  function clearVideo() { setCvideo(''); setCvideoName('') }
   function resetComposer() {
-    setOpen(false); setCbody(''); setCsale(''); setCage(''); setCproduct(''); setCpoll(['', '']); setCimage(''); setCpreview(''); setCkind('post'); setCchannel('geral')
+    setOpen(false); setCbody(''); setCsale(''); setCage(''); setCproduct(''); setCpoll(['', '']); setCimage(''); setCpreview(''); setCvideo(''); setCvideoName(''); setCkind('post'); setCchannel('geral')
+  }
+
+  // Vídeo sobe DIRETO pro storage (URL assinada) — não passa pelo servidor (limite de 4.5MB).
+  async function uploadVideo(file: File) {
+    if (file.size > 200 * 1024 * 1024) { setErr('Vídeo muito grande (máx 200MB).'); return }
+    setCvideoUploading(true)
+    setErr('')
+    try {
+      const r = await fetch('/api/community/upload-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mime: file.type }) })
+      const d = await r.json().catch(() => ({}))
+      if (!r.ok || !d.signedUrl) { setErr(d.error || 'Falha ao preparar o upload.'); setCvideoUploading(false); return }
+      const up = await fetch(d.signedUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file })
+      if (!up.ok) { setErr('Falha no upload do vídeo — tenta de novo.'); setCvideoUploading(false); return }
+      setCvideo(d.path)
+      setCvideoName(file.name)
+    } catch { setErr('Falha no upload do vídeo.') }
+    setCvideoUploading(false)
   }
 
   async function submit() {
@@ -346,6 +371,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
         payload.body = cbody
       }
       if (cimage) payload.data = { ...payload.data, image_path: cimage }
+      if (cvideo) payload.data = { ...payload.data, video_path: cvideo }
       const r = await fetch('/api/community/posts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       const d = await r.json().catch(() => ({}))
       if (!r.ok) { setErr(d.error || 'Erro ao publicar.'); setPosting(false); return }
@@ -355,30 +381,18 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
     setPosting(false)
   }
 
-  async function toggleComments(p: Post) {
-    setReplyTo(null); setDraft('')
-    if (openComments === p.id) { setOpenComments(null); return }
-    setOpenComments(p.id)
-    if (!comments[p.id]) {
-      try {
-        const r = await fetch(`/api/community/posts/${p.id}/comments`, { cache: 'no-store' })
-        const d = await r.json().catch(() => ({}))
-        if (r.ok) setComments(prev => ({ ...prev, [p.id]: d.comments || [] }))
-      } catch {}
-    }
-  }
-
   async function addComment(p: Post) {
-    const text = draft.trim()
+    const text = (drafts[p.id] || '').trim()
     if (!text) return
-    const parent_id = replyTo?.commentId || undefined
+    const parent_id = replyTo?.postId === p.id ? replyTo.commentId : undefined
     try {
       const r = await fetch(`/api/community/posts/${p.id}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: text, parent_id }) })
       const d = await r.json().catch(() => ({}))
       if (r.ok && d.comment) {
-        setComments(prev => ({ ...prev, [p.id]: [...(prev[p.id] || []), d.comment] }))
+        const mine = { ...d.comment, author_avatar: d.comment.author_avatar || myProfile?.avatar_path || null }
+        setComments(prev => ({ ...prev, [p.id]: [...(prev[p.id] || []), mine] }))
         setPosts(prev => prev.map(x => x.id === p.id ? { ...x, comment_count: x.comment_count + 1 } : x))
-        setDraft(''); setReplyTo(null)
+        setDrafts(prev => ({ ...prev, [p.id]: '' })); setReplyTo(null)
       } else {
         setErr(d.error || 'Não consegui enviar o comentário. Tente de novo.')
       }
@@ -468,7 +482,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
         <p style={{ margin: 0, fontSize: 13 }}><span onClick={() => c.buyer_id && setProfileId(c.buyer_id)} style={{ fontWeight: 600, color: T.text, cursor: c.buyer_id ? 'pointer' : 'default' }}>{c.author_name || 'Membro'}</span> <span style={{ color: T.muted, fontSize: 11 }}>· {ago(c.created_at)}</span></p>
         <p style={{ margin: 0, fontSize: 13, color: bodyColor, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{renderBody(c.body, T.accent)}</p>
         <div style={{ display: 'flex', gap: 12, marginTop: 1 }}>
-          {!isReply && <button onClick={() => { setReplyTo({ commentId: c.id, name: c.author_name || 'Membro' }) }} style={{ border: 'none', background: 'transparent', color: T.muted, fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '2px 0' }}>Responder</button>}
+          {!isReply && <button onClick={() => { setReplyTo({ postId: p.id, commentId: c.id, name: c.author_name || 'Membro' }) }} style={{ border: 'none', background: 'transparent', color: T.muted, fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '2px 0' }}>Responder</button>}
           {c.can_delete && <button onClick={() => delComment(p, c.id)} style={{ border: 'none', background: 'transparent', color: T.muted, fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '2px 0' }}>Excluir</button>}
         </div>
       </div>
@@ -631,11 +645,24 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
                 <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f); e.currentTarget.value = '' }} />
               </label>
             )}
+            {cvideoUploading ? (
+              <span style={{ ...ghostBtn, display: 'inline-flex', alignItems: 'center', gap: 6, opacity: 0.8 }}>⏳ Enviando vídeo… (pode demorar)</span>
+            ) : cvideo ? (
+              <span style={{ ...ghostBtn, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                🎥 {cvideoName.slice(0, 26) || 'vídeo anexado'}
+                <span onClick={clearVideo} style={{ cursor: 'pointer', fontWeight: 700 }}>✕</span>
+              </span>
+            ) : (
+              <label style={{ ...ghostBtn, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                🎥 Vídeo
+                <input type="file" accept="video/mp4,video/quicktime,video/webm" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadVideo(f); e.currentTarget.value = '' }} />
+              </label>
+            )}
           </div>
 
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
             <button style={ghostBtn} onClick={() => { resetComposer(); setErr('') }}>Cancelar</button>
-            <button style={{ ...btn, opacity: (posting || cuploading) ? 0.6 : 1 }} onClick={submit} disabled={posting || cuploading}>{posting ? 'Publicando…' : 'Publicar'}</button>
+            <button style={{ ...btn, opacity: (posting || cuploading || cvideoUploading) ? 0.6 : 1 }} onClick={submit} disabled={posting || cuploading || cvideoUploading}>{posting ? 'Publicando…' : cvideoUploading ? 'Aguardando vídeo…' : 'Publicar'}</button>
           </div>
         </div>
       )}
@@ -682,6 +709,11 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
               p.body && <p style={{ margin: '0 0 10px', fontSize: 14, color: bodyColor, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{renderBody(p.body, T.accent)}</p>
             )}
 
+            {p.data?.video_path && (
+              <video controls preload="metadata" playsInline
+                src={`/api/community/image?path=${encodeURIComponent(p.data.video_path)}`}
+                style={{ width: '100%', maxHeight: 480, borderRadius: 10, border: `1px solid ${T.border}`, marginBottom: 10, display: 'block', background: '#000' }} />
+            )}
             {p.data?.image_path && (
               <img src={`/api/community/image?path=${encodeURIComponent(p.data.image_path)}`} alt="" loading="lazy" style={{ width: '100%', height: 'auto', borderRadius: 10, border: `1px solid ${T.border}`, marginBottom: 10, display: 'block' }} />
             )}
@@ -722,33 +754,32 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
                   <button key={kind} onClick={() => react(p, kind)} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, border: `1px solid ${mine ? T.accent : T.border}`, background: mine ? T.accentBg : 'transparent', color: mine ? T.accent : T.muted, borderRadius: 999, padding: '4px 9px', fontSize: 13, fontWeight: 600 }}>{emoji}{count > 0 ? ` ${count}` : ''}</button>
                 )
               })}
-              <button style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, border: `1px solid ${T.border}`, background: 'transparent', color: T.muted, borderRadius: 999, padding: '4px 10px', fontSize: 13, fontWeight: 600 }} onClick={() => toggleComments(p)}>💬 {p.comment_count > 0 ? p.comment_count : ''}</button>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: T.muted, padding: '4px 4px', fontSize: 13, fontWeight: 600 }}>💬 {p.comment_count > 0 ? p.comment_count : ''}</span>
               <div style={{ flex: 1 }} />
               {me?.isAdmin && <button style={{ ...ghostBtn, padding: '4px 9px', fontSize: 12 }} onClick={() => pin(p)}>{p.pinned ? 'Desafixar' : 'Fixar'}</button>}
               {p.can_delete && editingId !== p.id && <button style={{ cursor: 'pointer', border: 'none', background: 'transparent', color: T.muted, fontSize: 12, padding: '4px 6px' }} onClick={() => { setEditingId(p.id); setEditDraft(p.body || '') }}>Editar</button>}
               {p.can_delete && <button style={{ cursor: 'pointer', border: 'none', background: 'transparent', color: T.muted, fontSize: 12, padding: '4px 6px' }} onClick={() => del(p)}>Excluir</button>}
             </div>
 
-            {openComments === p.id && (
-              <div style={{ marginTop: 12, borderTop: `1px solid ${T.border}`, paddingTop: 12 }}>
-                {(comments[p.id] || []).filter(c => !c.parent_id).map(c => (
-                  <div key={c.id}>
-                    {renderComment(c, p, false)}
-                    {(comments[p.id] || []).filter(rc => rc.parent_id === c.id).map(rc => renderComment(rc, p, true))}
-                  </div>
-                ))}
-                {replyTo && (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 12, color: T.muted, marginBottom: 6 }}>
-                    <span>respondendo a <span style={{ fontWeight: 600, color: T.text }}>{replyTo.name}</span></span>
-                    <span style={{ cursor: 'pointer' }} onClick={() => setReplyTo(null)}>✕</span>
-                  </div>
-                )}
-                <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                  <input style={{ ...inputStyle, flex: 1 }} placeholder={replyTo ? `Responder a ${replyTo.name}…` : 'Escreva um comentário…  (use @nome)'} value={draft} onChange={e => setDraft(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') addComment(p) }} />
-                  <button style={btn} onClick={() => addComment(p)}>Enviar</button>
+            {/* Comentários SEMPRE visíveis (sem clique) */}
+            <div style={{ marginTop: 12, borderTop: `1px solid ${T.border}`, paddingTop: 12 }}>
+              {(comments[p.id] || []).filter(c => !c.parent_id).map(c => (
+                <div key={c.id}>
+                  {renderComment(c, p, false)}
+                  {(comments[p.id] || []).filter(rc => rc.parent_id === c.id).map(rc => renderComment(rc, p, true))}
                 </div>
+              ))}
+              {replyTo?.postId === p.id && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 12, color: T.muted, marginBottom: 6 }}>
+                  <span>respondendo a <span style={{ fontWeight: 600, color: T.text }}>{replyTo.name}</span></span>
+                  <span style={{ cursor: 'pointer' }} onClick={() => setReplyTo(null)}>✕</span>
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                <input style={{ ...inputStyle, flex: 1 }} placeholder={replyTo?.postId === p.id ? `Responder a ${replyTo.name}…` : 'Escreva um comentário…  (use @nome)'} value={drafts[p.id] || ''} onChange={e => setDrafts(prev => ({ ...prev, [p.id]: e.target.value }))} onKeyDown={e => { if (e.key === 'Enter') addComment(p) }} />
+                <button style={btn} onClick={() => addComment(p)}>Enviar</button>
               </div>
-            )}
+            </div>
           </div>
         )
       })}
