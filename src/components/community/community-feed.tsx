@@ -137,6 +137,12 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
   const [notifOpen, setNotifOpen] = useState(false)
   const [ranking, setRanking] = useState<Rank[]>([])
 
+  // integrantes da comunidade
+  const [membersOpen, setMembersOpen] = useState(false)
+  const [members, setMembers] = useState<{ id: string; name: string; isAdmin: boolean; bio: string | null; avatar_path: string | null }[]>([])
+  const [membersLoading, setMembersLoading] = useState(false)
+  const [memberSearch, setMemberSearch] = useState('')
+
   // meu perfil (foto + nome + bio)
   const [myProfile, setMyProfile] = useState<{ name: string; bio: string | null; avatar_path: string | null } | null>(null)
   const [profileEdit, setProfileEdit] = useState(false)
@@ -210,6 +216,17 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
     const t = setInterval(loadMeta, 60000)
     return () => clearInterval(t)
   }, [loadMeta])
+
+  async function openMembers() {
+    setMemberSearch('')
+    setMembersOpen(true)
+    setMembersLoading(true)
+    try {
+      const d = await fetch('/api/community/members', { cache: 'no-store' }).then(r => r.json())
+      setMembers(d.members || [])
+    } catch {}
+    setMembersLoading(false)
+  }
 
   function openProfileEdit() {
     setPeName(myProfile?.name || me?.name || '')
@@ -482,6 +499,9 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
     <div>
       {/* perfil + mensagens + sino */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 10, position: 'relative' }}>
+        <button onClick={openMembers} aria-label="integrantes" title="Integrantes da comunidade" style={{ border: `1px solid ${T.border}`, background: T.card, borderRadius: 999, width: 38, height: 38, cursor: 'pointer', fontSize: 16 }}>
+          👥
+        </button>
         <button onClick={openProfileEdit} aria-label="meu perfil" title="Meu perfil" style={{ border: `1px solid ${T.border}`, background: T.card, borderRadius: 999, width: 38, height: 38, cursor: 'pointer', fontSize: 16, padding: 0, overflow: 'hidden' }}>
           {myProfile?.avatar_path ? <img src={`/api/community/image?path=${encodeURIComponent(myProfile.avatar_path)}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : '👤'}
         </button>
@@ -758,6 +778,43 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
                 {pp.kind === 'win' && pp.data?.sale_value ? <p style={{ margin: '2px 0 0', fontSize: 12, color: T.win, fontWeight: 600 }}>{money(pp.data.sale_value)}{pp.data.product ? ` · ${pp.data.product}` : ''}</p> : null}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {membersOpen && (
+        <div onClick={() => setMembersOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 58, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 16px', overflowY: 'auto' }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 480, background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, display: 'flex', flexDirection: 'column', maxHeight: '78vh', overflow: 'hidden', marginBottom: 40 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '13px 16px', borderBottom: `1px solid ${T.border}` }}>
+              <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: T.text, flex: 1 }}>👥 Integrantes {members.length > 0 && <span style={{ color: T.muted, fontWeight: 600, fontSize: 13 }}>· {members.length}</span>}</p>
+              <button onClick={() => setMembersOpen(false)} style={{ ...ghostBtn, padding: '5px 10px' }}>Fechar</button>
+            </div>
+            <div style={{ padding: '10px 16px 0' }}>
+              <input style={{ ...inputStyle }} placeholder="Buscar integrante…" value={memberSearch} onChange={e => setMemberSearch(e.target.value)} />
+            </div>
+            <div style={{ overflowY: 'auto', padding: '8px 16px 14px' }}>
+              {membersLoading ? (
+                <p style={{ color: T.muted, fontSize: 13, textAlign: 'center', padding: '18px 0' }}>Carregando…</p>
+              ) : members.filter(m => !memberSearch.trim() || m.name.toLowerCase().includes(memberSearch.trim().toLowerCase())).map(m => (
+                <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: `1px solid ${T.border}` }}>
+                  <Av name={m.name} path={m.avatar_path} size={38} bg={T.accentBg} fg={T.accent} onClick={() => { setMembersOpen(false); setProfileId(m.id) }} />
+                  <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => { setMembersOpen(false); setProfileId(m.id) }}>
+                    <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: T.text, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {m.name}
+                      {m.isAdmin && <span style={{ background: T.accentBg, color: T.accent, fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999 }}>ADMIN</span>}
+                      {me && m.id === me.id && <span style={{ background: T.tag, color: T.muted, fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999 }}>você</span>}
+                    </p>
+                    {m.bio && <p style={{ margin: 0, fontSize: 12, color: T.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.bio}</p>}
+                  </div>
+                  {me && m.id !== me.id && (
+                    <button onClick={() => { setMembersOpen(false); openConversation(m.id, m.name) }} style={{ ...ghostBtn, padding: '6px 11px', whiteSpace: 'nowrap' }}>💬 Mensagem</button>
+                  )}
+                </div>
+              ))}
+              {!membersLoading && members.length > 0 && members.filter(m => !memberSearch.trim() || m.name.toLowerCase().includes(memberSearch.trim().toLowerCase())).length === 0 && (
+                <p style={{ color: T.muted, fontSize: 13, textAlign: 'center', padding: '18px 0' }}>Ninguém com esse nome.</p>
+              )}
+            </div>
           </div>
         </div>
       )}
