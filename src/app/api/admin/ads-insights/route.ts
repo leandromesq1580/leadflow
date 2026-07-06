@@ -30,6 +30,9 @@ export async function GET(request: NextRequest) {
     date_preset: period,
     limit: '100',
     access_token: token,
+    // Campanhas de RECRUTAMENTO ficam FORA da contabilidade de leads (filtro na própria Meta,
+    // vale pra todas as abas — inclusive breakdown Por Estado, que agrega campanhas).
+    filtering: JSON.stringify([{ field: 'campaign.name', operator: 'NOT_CONTAIN', value: 'RECRUT' }]),
   })
 
   if (breakdown) {
@@ -49,8 +52,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: raw.error.message }, { status: 400 })
     }
 
+    // Cinto e suspensório: além do filtering na Meta, descarta qualquer linha de recrutamento.
+    const isRecruitment = (r: any) => /recrut/i.test(String(r.campaign_name || r.name || ''))
+
     // Process rows
-    const rows = (raw.data || []).map((row: any) => {
+    const rows = (raw.data || []).filter((row: any) => !isRecruitment(row)).map((row: any) => {
       const spend = parseFloat(row.spend || '0')
       const impressions = parseInt(row.impressions || '0')
       const clicks = parseInt(row.clicks || '0')
