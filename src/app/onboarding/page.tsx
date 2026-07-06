@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 const US_STATES = [
@@ -31,6 +31,9 @@ export default function OnboardingPage() {
   const [states, setStates] = useState<string[]>([])
   const [avail, setAvail] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
+  // App nativo (iOS/Android) não vê a etapa de compra/assinatura (Guia 3.1.1) — vai direto pro app.
+  const [isNative] = useState(() => typeof window !== 'undefined' && (/Lead4ProApp/i.test(navigator.userAgent) || !!(window as any).Capacitor))
+  useEffect(() => { if (isNative) router.replace('/m') }, [isNative])
 
   function toggleState(code: string) {
     setStates(prev => prev.includes(code) ? prev.filter(s => s !== code) : [...prev, code])
@@ -102,6 +105,8 @@ export default function OnboardingPage() {
     }
     setStep(s => Math.min(TOTAL_STEPS, s + 1))
   }
+
+  if (isNative) return <div style={{ minHeight: '100dvh', background: '#0b0b12' }} />
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12" style={{ background: 'linear-gradient(160deg, #0f0a2e 0%, #1e1b4b 50%, #312e81 100%)' }}>

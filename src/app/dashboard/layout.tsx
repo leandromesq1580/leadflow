@@ -10,7 +10,7 @@ import { MetaPixel } from '@/components/meta-pixel'
 import { TutorChat } from '@/components/tutor-chat'
 import { MobileNav } from '@/components/dashboard/mobile-nav'
 import { ResumeCheckout } from '@/components/resume-checkout'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { isTrialActive, trialDaysRemaining, isAppointmentOnly, isLeadOnly } from '@/lib/crm-access'
 import { AppointmentGate } from '@/components/dashboard/appointment-gate'
 import { LeadGate } from '@/components/dashboard/lead-gate'
@@ -30,6 +30,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (error || !user) shouldRedirect = true
 
   if (shouldRedirect) redirect('/login')
+
+  // App nativo iOS/Android (WebView) NÃO pode acessar compra/assinatura fora do IAP (Guia 3.1.1).
+  // O app vive só na rota /m (onde a compra fica escondida). Se o WebView cair no dashboard/onboarding
+  // desktop (ex.: após cadastro), mandamos de volta pro app. Detecta pelo User-Agent Lead4ProApp.
+  const _ua = (await headers()).get('user-agent') || ''
+  if (/Lead4ProApp/i.test(_ua)) redirect('/m')
 
   const db = createAdminClient()
   let { data: buyer } = await db
