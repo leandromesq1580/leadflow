@@ -88,6 +88,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Manda sua pergunta.' }, { status: 400 })
     }
 
+    // App nativo iOS/Android (App Store 3.1.1): a Zoe NÃO pode mencionar preço,
+    // compra, assinatura ou checkout dentro do app — nem por texto (conta como
+    // call-to-action de compra externa pra Apple).
+    const ua = request.headers.get('user-agent') || ''
+    const isNativeApp = /Lead4ProApp/i.test(ua) || request.cookies.has('l4p_app')
+    const system = isNativeApp
+      ? GUIA + `\n\nREGRA ABSOLUTA (o usuário está no app iOS/Android): NUNCA mencione preços, valores, planos pagos, compra de créditos/leads, assinatura, upgrade, checkout, pagamento ou como contratar. Se perguntarem sobre isso, responda apenas: "Seus créditos e plano são gerenciados na sua conta Lead4Pro" e volte o foco pra como usar a plataforma e vender mais. Sem exceções.`
+      : GUIA
+
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
@@ -95,7 +104,7 @@ export async function POST(request: NextRequest) {
         model: 'gpt-4o-mini',
         temperature: 0.65,
         max_tokens: 900,
-        messages: [{ role: 'system', content: GUIA }, ...messages],
+        messages: [{ role: 'system', content: system }, ...messages],
       }),
     })
     const data: any = await res.json().catch(() => null)

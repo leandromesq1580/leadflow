@@ -24,9 +24,32 @@ const LEGACY_HOSTS = new Set([
 
 const LOCALE_SEGMENTS = new Set(['en', 'es'])
 
+// Rotas que o app nativo PODE ver (experiência mobile + auth + privacidade).
+// Tudo fora disso redireciona pro /m — nenhuma página com compra/checkout é alcançável.
+const NATIVE_APP_ALLOW = /^\/(m($|\/)|m-login($|\/)|register($|\/)|reset-password($|\/)|privacy($|\/))/
+
 export function proxy(request: NextRequest) {
   const host = (request.headers.get('host') || '').toLowerCase()
   const { pathname, search } = request.nextUrl
+
+  // ─────────────────────────────────────────────────────────────
+  // 0) Cerca do app nativo iOS/Android (App Store 3.1.1)
+  //    O app (WebView, UA "Lead4ProApp") vive SÓ na rota /m. Landing,
+  //    dashboard, onboarding e qualquer página com CTA de compra ficam
+  //    inalcançáveis — já levamos 3 rejeições 3.1.1 por páginas soltas.
+  //    Cookie l4p_app mantém a cerca se o UA se perder numa navegação.
+  // ─────────────────────────────────────────────────────────────
+  const _ua = request.headers.get('user-agent') || ''
+  const uaIsApp = /Lead4ProApp/i.test(_ua)
+  const isNativeApp = uaIsApp || request.cookies.has('l4p_app')
+  if (isNativeApp) {
+    const allowed = NATIVE_APP_ALLOW.test(pathname)
+    const res = allowed ? NextResponse.next() : NextResponse.redirect(new URL('/m', request.url))
+    if (uaIsApp && !request.cookies.has('l4p_app')) {
+      res.cookies.set('l4p_app', '1', { maxAge: 60 * 60 * 24 * 365, sameSite: 'lax', path: '/' })
+    }
+    return res
+  }
 
   // ─────────────────────────────────────────────────────────────
   // 1) wdtusa.group — rewrite "/" → "/wdtgroup" (transparent)
