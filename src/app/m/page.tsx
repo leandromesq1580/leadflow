@@ -23,6 +23,9 @@ export default function MobileHome() {
   const loc = t._locale
   const [d, setD] = useState<HomeData | null>(null)
   const [err, setErr] = useState(false)
+  // App nativo (App Store 3.1.1/3.1.3(f)): não exibir "Créditos" como moeda no app —
+  // o saldo já aparece como "leads disponíveis" no hero; no lugar mostramos leads novos.
+  const [isNative] = useState(() => typeof window !== 'undefined' && (/Lead4ProApp/i.test(navigator.userAgent) || !!(window as any).Capacitor))
 
   useEffect(() => {
     fetch('/api/home', { cache: 'no-store' })
@@ -41,7 +44,9 @@ export default function MobileHome() {
   const greet = loc === 'en' ? 'Hello' : loc === 'es' ? 'Hola' : 'Olá'
   const stats = [
     { icon: 'flame', label: loc === 'en' ? 'Leads today' : loc === 'es' ? 'Leads hoy' : 'Leads hoje', value: d.leads_today, href: '/m/leads' },
-    { icon: 'coin', label: loc === 'en' ? 'Credits' : loc === 'es' ? 'Créditos' : 'Créditos', value: d.remaining_credits, href: '/m/creditos' },
+    isNative
+      ? { icon: 'target', label: loc === 'en' ? 'New leads' : loc === 'es' ? 'Leads nuevos' : 'Leads novos', value: d.new_leads, href: '/m/leads' }
+      : { icon: 'coin', label: loc === 'en' ? 'Credits' : loc === 'es' ? 'Créditos' : 'Créditos', value: d.remaining_credits, href: '/m/creditos' },
     { icon: 'trend', label: loc === 'en' ? 'Conversion' : loc === 'es' ? 'Conversión' : 'Conversão', value: `${d.conversion_rate}%` },
     { icon: 'calendar', label: 'Appointments', value: d.appointments_today, href: '/m/appointments' },
   ]
