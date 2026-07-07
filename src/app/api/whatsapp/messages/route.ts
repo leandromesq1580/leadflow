@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { assertBuyerOwnsLead } from '@/lib/lead-ownership'
 import { getBridgeForBuyer } from '@/lib/wa-bridge'
+import { callerBuyer, canActAs } from '@/lib/api-auth'
 
 /** GET /api/whatsapp/messages?lead_id=X&buyer_id=Y — thread pra lead (com validacao de ownership) */
 export async function GET(request: NextRequest) {
@@ -15,10 +16,18 @@ export async function GET(request: NextRequest) {
 
   const db = createAdminClient()
 
-  // 🔒 Se esta pedindo thread especifica de um lead, buyer_id e dono atual precisam bater
-  if (leadId && buyerId) {
-    const own = await assertBuyerOwnsLead(db, buyerId, leadId)
-    if (!own.ok) return NextResponse.json({ error: own.reason || 'Acesso negado' }, { status: 403 })
+  // 🔒 Exige sessão. Antes: abrir thread por ?lead_id= (sem buyer_id) NÃO validava nada.
+  const caller = await callerBuyer(db)
+  if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  if (leadId) {
+    // Só o dono ATUAL do lead (ou admin) lê a conversa dele.
+    if (!caller.isAdmin) {
+      const own = await assertBuyerOwnsLead(db, caller.id, leadId)
+      if (!own.ok) return NextResponse.json({ error: own.reason || 'Acesso negado' }, { status: 403 })
+    }
+  } else if (buyerId) {
+    if (!canActAs(caller, buyerId)) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
   }
 
   let query = db.from('whatsapp_messages').select('*').order('sent_at', { ascending: true })
@@ -71,6 +80,11 @@ export async function POST(request: NextRequest) {
     if (!lead_id || !buyer_id || (!body.trim() && !fileBuffer)) {
       return NextResponse.json({ error: 'Missing fields — precisa lead_id, buyer_id, e body OU file' }, { status: 400 })
     }
+
+    // 🔒 Só o próprio buyer (ou admin) manda em nome dele — não dá pra enviar como outra conta.
+    const caller = await callerBuyer(db)
+    if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!canActAs(caller, buyer_id)) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
 
     // 🔒 Bloqueia envio por quem nao e mais dono do lead
     const own = await assertBuyerOwnsLead(db, buyer_id, lead_id)
@@ -210,6 +224,14 @@ export async function PATCH(request: NextRequest) {
   if (!lead_id && !buyer_id) return NextResponse.json({ error: 'Missing' }, { status: 400 })
 
   const db = createAdminClient()
+  const caller = await callerBuyer(db)
+  if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (lead_id && !caller.isAdmin) {
+    const own = await assertBuyerOwnsLead(db, caller.id, lead_id)
+    if (!own.ok) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
+  }
+  if (buyer_id && !canActAs(caller, buyer_id)) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
+
   let query = db.from('whatsapp_messages').update({ read_at: new Date().toISOString() })
     .eq('direction', 'in').is('read_at', null)
   if (lead_id) query = query.eq('lead_id', lead_id)

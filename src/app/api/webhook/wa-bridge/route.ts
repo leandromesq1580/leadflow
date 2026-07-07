@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { wa_message_id, from, to, body, type, has_media, media_url, media_type, direction, push_name } = await request.json()
+    const { wa_message_id, from, to, body, type, has_media, media_url, media_type, direction, push_name, bridge_owner_buyer_id } = await request.json()
     if (!wa_message_id || !from) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
     }
@@ -71,6 +71,28 @@ export async function POST(request: NextRequest) {
 
     if (!contactPhone) return NextResponse.json({ skipped: 'no_contact' })
 
+    // 🔒 ÂNCORA DE SEGURANÇA: DONO da bridge que capturou a mensagem (a bridge manda no
+    // payload). Uma conversa SÓ pode ser atribuída a um lead DESTE dono — nunca cruza contas.
+    // Sem dono identificado, descarta (melhor perder 1 msg do que vazar conversa de terceiro).
+    const bridgeOwner = (typeof bridge_owner_buyer_id === 'string' && bridge_owner_buyer_id.trim())
+      ? bridge_owner_buyer_id.trim()
+      : recipientBuyerId
+    if (!bridgeOwner) {
+      console.log('[WA Inbox] sem dono de bridge identificado — descartado (anti-vazamento)')
+      return NextResponse.json({ skipped: 'no_bridge_owner' })
+    }
+
+    // Conta de VENDAS (prospect chegando pela página de vendas). Usada abaixo.
+    const NEW_CLIENT_BUYER = '2b1971f5-cfa4-4256-bd9e-44c14cd61ffc'
+
+    // "Atendimento a clientes" só vale na bridge da EMPRESA (vendas ou admin). Numa bridge de
+    // cliente comum, papo com outro comprador NÃO vira atendimento — seria vazar conversa privada.
+    let bridgeOwnerIsCompany = bridgeOwner === NEW_CLIENT_BUYER
+    if (!bridgeOwnerIsCompany) {
+      const { data: bo } = await db.from('buyers').select('is_admin').eq('id', bridgeOwner).maybeSingle()
+      bridgeOwnerIsCompany = !!bo?.is_admin
+    }
+
     // 👥 É um CLIENTE (comprador cadastrado)? Atendimento a clientes é um canal
     // SEPARADO do de leads (mesmo número, mas caixas distintas; só admins veem).
     // Tem prioridade: se o contato é um buyer, a conversa é de cliente, não lead.
@@ -83,7 +105,7 @@ export async function POST(request: NextRequest) {
       const p2 = String(b.whatsapp || '').replace(/\D/g, '').slice(-10)
       return cph10.length === 10 && (p1 === cph10 || p2 === cph10)
     })
-    if (clientBuyer) {
+    if (clientBuyer && bridgeOwnerIsCompany) {
       const { data: dupC } = await db.from('client_messages').select('id').eq('wa_message_id', wa_message_id).maybeSingle()
       if (dupC) return NextResponse.json({ skipped: 'duplicate_client' })
       await db.from('client_messages').insert({
@@ -119,8 +141,7 @@ export async function POST(request: NextRequest) {
       // NÃO conta nas métricas (dashboard filtra esse buyer) e NÃO avisa o grupo;
       // já nasce com notified_at (fora da reconciliação/spam). Só na 1ª mensagem —
       // as próximas casam esse lead e caem no fluxo normal de inbox.
-      const NEW_CLIENT_BUYER = '2b1971f5-cfa4-4256-bd9e-44c14cd61ffc'
-      if (!isOut && recipientBuyerId === NEW_CLIENT_BUYER) {
+      if (!isOut && bridgeOwner === NEW_CLIENT_BUYER) {
         const nowIso = new Date().toISOString()
         // Dedup anti-corrida: 2 msgs do MESMO numero novo chegando juntas criavam 2
         // leads "Novo cliente". Re-checa o telefone exato AGORA (a checagem de
@@ -212,10 +233,18 @@ export async function POST(request: NextRequest) {
       if (c.assigned_to_member && memberBuyerId) score += 100
       const t = c.assigned_at || c.created_at
       if (t) score += new Date(t).getTime() / 1e10
-      return { ...c, ownerBuyerId, score }
+      return { ...c, memberBuyerId, ownerBuyerId, score }
     }).sort((a, b) => b.score - a.score)
 
-    const match = enriched[0]
+    // 🔒 ESCOPO: só aceita lead que pertence ao DONO DA BRIDGE (dele direto OU delegado a um
+    // membro DELE). Se o contato não é lead dele, é conversa pessoal / de outra conta → NÃO
+    // grava. Era EXATAMENTE aqui que a conversa de um cliente caía na caixa de outro.
+    const owned = enriched.filter(c => c.assigned_to === bridgeOwner || c.memberBuyerId === bridgeOwner)
+    if (owned.length === 0) {
+      console.log(`[WA Inbox] contato ${contactPhone} nao e lead do dono da bridge ${bridgeOwner} — descartado`)
+      return NextResponse.json({ skipped: 'not_owner_lead' })
+    }
+    const match = owned[0]
 
     if (!match.ownerBuyerId) {
       console.log(`[WA Inbox] Lead ${match.id} sem owner valido — skip`)

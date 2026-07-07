@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { callerBuyer, canActAs } from '@/lib/api-auth'
 
 interface Conversation {
   lead_id: string
@@ -23,6 +24,11 @@ export async function GET(request: NextRequest) {
   if (!buyerId) return NextResponse.json({ error: 'Missing buyer_id' }, { status: 400 })
 
   const db = createAdminClient()
+
+  // 🔒 Só o próprio dono (ou admin) lê o inbox dele. Antes: qualquer um passava ?buyer_id=X.
+  const caller = await callerBuyer(db)
+  if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!canActAs(caller, buyerId)) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
 
   // Pega TODAS as mensagens do buyer (limit alto, ordena do mais recente pro mais antigo)
   const { data: messages, error } = await db
