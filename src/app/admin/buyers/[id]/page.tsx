@@ -22,7 +22,10 @@ export default async function BuyerDetailPage({ params }: { params: Promise<{ id
   const { data: states } = await db.from('buyer_states').select('state_code').eq('buyer_id', id)
   const { data: availability } = await db.from('buyer_availability').select('day_type, period').eq('buyer_id', id)
   const { data: credits } = await db.from('credits').select('*').eq('buyer_id', id).order('purchased_at', { ascending: false })
-  const { data: leads } = await db.from('leads').select('id, name, city, state, status, created_at').eq('assigned_to', id).not('meta_lead_id', 'is', null).order('created_at', { ascending: false }).limit(10)
+  // Total REAL de leads recebidos (count separado — a lista abaixo é limitada só pra exibição).
+  // Bug antigo: o título usava leads.length, que era capado pelo .limit() → mostrava "(10)" mesmo com 15.
+  const { count: leadsCount } = await db.from('leads').select('id', { count: 'exact', head: true }).eq('assigned_to', id).not('meta_lead_id', 'is', null)
+  const { data: leads } = await db.from('leads').select('id, name, city, state, status, created_at').eq('assigned_to', id).not('meta_lead_id', 'is', null).order('created_at', { ascending: false }).limit(50)
   const { data: appointments } = await db.from('appointments').select('*, lead:leads(name, phone)').eq('buyer_id', id).order('scheduled_at', { ascending: false }).limit(5)
 
   const leadCredits = credits?.filter(c => c.type === 'lead') || []
@@ -115,7 +118,10 @@ export default async function BuyerDetailPage({ params }: { params: Promise<{ id
       {/* Leads */}
       <div className="rounded-2xl overflow-hidden mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
         <div className="px-6 py-4" style={{ borderBottom: '1px solid #e8ecf4' }}>
-          <h2 className="text-[15px] font-bold" style={{ color: '#1a1a2e' }}>Leads Recebidos ({leads?.length || 0})</h2>
+          <h2 className="text-[15px] font-bold" style={{ color: '#1a1a2e' }}>Leads Recebidos ({leadsCount ?? leads?.length ?? 0})</h2>
+          {typeof leadsCount === 'number' && leads && leadsCount > leads.length && (
+            <p className="text-[11px] mt-0.5" style={{ color: '#94a3b8' }}>mostrando os {leads.length} mais recentes de {leadsCount}</p>
+          )}
         </div>
         {leads && leads.length > 0 ? (
           <div>
