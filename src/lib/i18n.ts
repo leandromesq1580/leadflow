@@ -217,7 +217,7 @@ export const messages = {
     },
     pricing: {
       title: 'Preços diretos',
-      subtitle: 'Conta grátis pra sempre. Compre pacotes de leads e appointments. Assine o CRM quando quiser escalar.',
+      subtitle: 'Conta grátis pra sempre. Compre pacotes de leads. Assine o CRM quando quiser escalar.',
       pkg: {
         leadsLabel: 'Pacotes de Leads Exclusivos',
         leadsNote: 'Recém-convertidos, exclusivos (1:1) e entregues no seu WhatsApp em ~5 min.',
@@ -733,7 +733,7 @@ export const messages = {
     },
     pricing: {
       title: 'Straight pricing',
-      subtitle: 'Free account forever. Buy lead and appointment packages. Subscribe to the CRM when you want to scale.',
+      subtitle: 'Free account forever. Buy lead packages. Subscribe to the CRM when you want to scale.',
       pkg: {
         leadsLabel: 'Exclusive Lead Packages',
         leadsNote: 'Freshly converted, exclusive (1:1), delivered to your WhatsApp in ~5 min.',
@@ -1249,7 +1249,7 @@ export const messages = {
     },
     pricing: {
       title: 'Precios directos',
-      subtitle: 'Cuenta gratis para siempre. Compra paquetes de leads y appointments. Suscríbete al CRM cuando quieras escalar.',
+      subtitle: 'Cuenta gratis para siempre. Compra paquetes de leads. Suscríbete al CRM cuando quieras escalar.',
       pkg: {
         leadsLabel: 'Paquetes de Leads Exclusivos',
         leadsNote: 'Recién convertidos, exclusivos (1:1) y entregados a tu WhatsApp en ~5 min.',
