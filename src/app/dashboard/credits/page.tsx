@@ -117,16 +117,19 @@ export default async function CreditsPage({
         </div>
       )}
 
-      {/* Balance */}
-      <div className="grid grid-cols-2 gap-4 mb-8">
+      {/* Balance — o card de appointment só aparece pra quem AINDA tem saldo pago (fulfillment) */}
+      <div className={`grid ${totalAppts > 0 ? 'grid-cols-2' : 'grid-cols-1'} gap-4 mb-8`}>
         <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
           <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Leads Disponiveis</p>
           <p className="text-[32px] font-extrabold mt-1" style={{ color: '#6366f1' }}>{totalLeads}</p>
         </div>
-        <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-          <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Appointments Disponiveis</p>
-          <p className="text-[32px] font-extrabold mt-1" style={{ color: '#f59e0b' }}>{totalAppts}</p>
-        </div>
+        {totalAppts > 0 && (
+          <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+            <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Appointments Disponiveis</p>
+            <p className="text-[32px] font-extrabold mt-1" style={{ color: '#f59e0b' }}>{totalAppts}</p>
+            <p className="text-[11px] mt-1" style={{ color: '#94a3b8' }}>Saldo já pago — será entregue normalmente.</p>
+          </div>
+        )}
       </div>
 
       {/* Lead Packages */}
@@ -158,19 +161,6 @@ export default async function CreditsPage({
             <p className="text-[32px] font-extrabold mt-1" style={{ color: '#1a1a2e' }}>${pkg.totalDisplay}</p>
             <p className="text-[12px]" style={{ color: '#94a3b8' }}>${pkg.pricePerUnit}/lead</p>
             <BuyButton packageId={pkg.id} color="#64748b" />
-          </div>
-        ))}
-      </div>
-
-      {/* Appointment Packages */}
-      <h2 className="text-[16px] font-bold mb-4" style={{ color: '#1a1a2e' }}>📅 Pacotes de Appointments</h2>
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        {PRODUCTS.appointment.packages.map((pkg) => (
-          <div key={pkg.id} className="rounded-2xl p-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-            <p className="text-[13px] font-medium" style={{ color: '#64748b' }}>{pkg.quantity} Appointments</p>
-            <p className="text-[32px] font-extrabold mt-1" style={{ color: '#1a1a2e' }}>${pkg.totalDisplay}</p>
-            <p className="text-[12px]" style={{ color: '#94a3b8' }}>${pkg.pricePerUnit}/appointment</p>
-            <BuyButton packageId={pkg.id} color="#f59e0b" />
           </div>
         ))}
       </div>

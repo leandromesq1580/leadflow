@@ -87,17 +87,19 @@ export default function MobileCreditos() {
           {success && <div style={{ padding: '11px 14px', borderRadius: 12, background: 'rgba(16,185,129,0.14)', border: '1px solid rgba(16,185,129,0.3)', color: '#34d399', fontSize: 13, fontWeight: 600, marginBottom: 14, textAlign: 'center' }}>{L('Compra confirmada! Saldo atualizado em instantes.', 'Purchase confirmed! Balance updating shortly.', '¡Compra confirmada!')}</div>}
 
           {/* Saldos */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 11, marginBottom: 18 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: d.totalAppts > 0 ? '1fr 1fr' : '1fr', gap: 11, marginBottom: 18 }}>
             <div className="m-card" style={{ padding: 16 }}>
               <div className="m-icb" style={{ marginBottom: 10 }}><MIcon name="coin" size={18} /></div>
               <p style={{ margin: 0, fontSize: 26, fontWeight: 800 }}>{d.totalLeads}</p>
               <p className="m-muted" style={{ margin: '1px 0 0', fontSize: 12 }}>{L('Leads disponíveis', 'Leads available', 'Leads')}</p>
             </div>
-            <div className="m-card" style={{ padding: 16 }}>
-              <div className="m-icb" style={{ marginBottom: 10, background: 'linear-gradient(135deg,rgba(245,158,11,0.25),rgba(236,72,153,0.2))', color: '#fbbf24' }}><MIcon name="calendar" size={18} /></div>
-              <p style={{ margin: 0, fontSize: 26, fontWeight: 800 }}>{d.totalAppts}</p>
-              <p className="m-muted" style={{ margin: '1px 0 0', fontSize: 12 }}>Appointments</p>
-            </div>
+            {d.totalAppts > 0 && (
+              <div className="m-card" style={{ padding: 16 }}>
+                <div className="m-icb" style={{ marginBottom: 10, background: 'linear-gradient(135deg,rgba(245,158,11,0.25),rgba(236,72,153,0.2))', color: '#fbbf24' }}><MIcon name="calendar" size={18} /></div>
+                <p style={{ margin: 0, fontSize: 26, fontWeight: 800 }}>{d.totalAppts}</p>
+                <p className="m-muted" style={{ margin: '1px 0 0', fontSize: 12 }}>Appointments</p>
+              </div>
+            )}
           </div>
 
           {isNativeApp && (
@@ -148,10 +150,6 @@ export default function MobileCreditos() {
           <div className="m-card" style={{ padding: '4px 16px', marginBottom: 14 }}>
             <p style={{ fontSize: 14, fontWeight: 700, margin: '14px 0 2px' }}>{L('Leads frios', 'Cold leads', 'Leads fríos')}</p>
             {PRODUCTS.cold_lead.packages.map(p => <PkgRow key={p.id} p={p} type={L('Frios', 'Cold', 'Fríos')} />)}
-          </div>
-          <div className="m-card" style={{ padding: '4px 16px', marginBottom: 18 }}>
-            <p style={{ fontSize: 14, fontWeight: 700, margin: '14px 0 2px' }}>Appointments</p>
-            {PRODUCTS.appointment.packages.map(p => <PkgRow key={p.id} p={p} type="Appts" />)}
           </div>
           </>}
 

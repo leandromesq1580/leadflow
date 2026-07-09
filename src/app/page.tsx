@@ -476,27 +476,6 @@ export default async function LandingPage() {
             ))}
           </div>
 
-          {/* ===== PACOTES DE APPOINTMENTS ===== */}
-          <div className="text-center mb-2">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-extrabold" style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa' }}>📅 {t.pricing.pkg.apptLabel}</span>
-          </div>
-          <p className="text-center text-[13px] mb-7 max-w-xl mx-auto" style={{ color: '#94a3b8' }}>{t.pricing.pkg.apptNote}</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-4 max-w-2xl mx-auto">
-            {[
-              { id: 'appt_10', qty: 10, total: 480, per: 48 },
-              { id: 'appt_25', qty: 25, total: 1100, per: 44, tag: t.pricing.pkg.best },
-            ].map((p, i) => (
-              <div key={i} className="rounded-2xl p-6 relative text-center" style={{ background: '#fff', border: p.tag ? '2px solid #ea580c' : '1px solid #e8ecf4', boxShadow: p.tag ? '0 14px 40px rgba(234,88,12,0.18)' : '0 4px 12px rgba(0,0,0,0.04)' }}>
-                {p.tag && <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap" style={{ background: '#ea580c', color: '#fff' }}>{p.tag}</span>}
-                <p className="text-[15px] font-bold" style={{ color: '#64748b' }}>{p.qty} {t.pricing.pkg.unitAppts}</p>
-                <p className="text-[38px] font-extrabold leading-none my-2" style={{ color: '#1a1a2e' }}>${p.total}</p>
-                <p className="text-[13px] font-bold mb-5" style={{ color: '#ea580c' }}>${p.per}{t.pricing.pkg.perAppt}</p>
-                <BuyCheckoutCta block packageId={p.id} label={t.pricing.pkg.buy} />
-              </div>
-            ))}
-          </div>
-          <p className="text-center text-[12px] mb-16" style={{ color: '#94a3b8' }}>{t.pricing.pkg.cold}</p>
-
           {/* ===== CRM (grátis / Pro) ===== */}
           <div className="text-center mb-6">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-extrabold" style={{ background: '#f1f5f9', color: '#475569' }}>⚡ {t.pricing.pkg.crmLabel}</span>

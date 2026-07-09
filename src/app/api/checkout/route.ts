@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getStripe, PRODUCTS } from '@/lib/stripe'
+import { getStripe, PRODUCTS, type ProductType } from '@/lib/stripe'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { STARTER_PACKAGE_ID, hasPurchased } from '@/lib/starter'
@@ -8,15 +8,21 @@ export async function POST(request: NextRequest) {
   try {
     const { packageId } = await request.json()
 
+    // 🚫 Appointments não são mais vendidos (jul/2026). Bloqueia qualquer tentativa de
+    // checkout de pacote de appointment mesmo que venha por request forjado/link antigo.
+    if (typeof packageId === 'string' && packageId.startsWith('appt')) {
+      return NextResponse.json({ error: 'Appointments não estão mais disponíveis para compra.' }, { status: 400 })
+    }
+
     // Find package
     let selectedPackage = null
-    let productType: 'lead' | 'appointment' | null = null
+    let productType: ProductType | null = null
 
     for (const [type, product] of Object.entries(PRODUCTS)) {
       const pkg = product.packages.find((p) => p.id === packageId)
       if (pkg) {
         selectedPackage = pkg
-        productType = type as 'lead' | 'appointment'
+        productType = type as ProductType
         break
       }
     }
@@ -63,7 +69,7 @@ export async function POST(request: NextRequest) {
             currency: 'usd',
             product_data: {
               name: `${PRODUCTS[productType].name} — ${selectedPackage.quantity}x`,
-              description: `${selectedPackage.quantity} ${productType === 'lead' ? 'leads exclusivos' : 'appointments agendados'} · ${buyer.name || buyer.email}`,
+              description: `${selectedPackage.quantity} ${productType === 'cold_lead' ? 'leads frios' : 'leads exclusivos'} · ${buyer.name || buyer.email}`,
             },
             unit_amount: selectedPackage.unitPriceCents,
           },

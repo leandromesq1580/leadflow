@@ -10,10 +10,11 @@ interface Props {
   buyerName: string
 }
 
+// Appointment NÃO é mais ofertado como plano — botão removido da seleção.
+// (Grant de créditos "Appointments" continua disponível pra entregar saldo já pago.)
 const TIERS = [
   { v: 'free', label: 'Free' },
   { v: 'lead_only', label: '🎯 Lead Only' },
-  { v: 'appointment', label: '📅 Appointment' },
   { v: 'pro', label: '⚡ CRM Pro' },
 ]
 

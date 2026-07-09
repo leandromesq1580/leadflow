@@ -38,13 +38,9 @@ export const PRODUCTS = {
       { id: 'cold_100', quantity: 100, unitPriceCents: 300, totalDisplay: 300, label: '100 Leads Frios — $300', pricePerUnit: 3 },
     ],
   },
-  appointment: {
-    name: 'Appointment Agendado',
-    packages: [
-      { id: 'appt_10', quantity: 10, unitPriceCents: 4800, totalDisplay: 480, label: '10 Appointments — $480', pricePerUnit: 48 },
-      { id: 'appt_25', quantity: 25, unitPriceCents: 4400, totalDisplay: 1100, label: '25 Appointments — $1,100', pricePerUnit: 44 },
-    ],
-  },
+  // Appointments NÃO são mais vendidos (decisão de produto, jul/2026). Nenhum pacote de
+  // appointment é ofertado. O rastreio/entrega dos créditos já pagos segue no webhook
+  // (string 'appointment') e na agenda — só a VENDA foi removida.
 } as const
 
 export type ProductType = keyof typeof PRODUCTS
