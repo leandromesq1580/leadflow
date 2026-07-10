@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { SendMessageModal } from '@/components/send-message-modal'
 import { TagPicker } from '@/components/tag-picker'
 import { WhatsAppInbox } from '@/components/whatsapp-inbox'
+import { callLead } from '@/components/voice/softphone'
 import { AiScoreBadge } from '@/components/ai-score-badge'
 import { TimePicker } from '@/components/time-picker'
 import { usePrivacy } from '@/lib/privacy-mode'
@@ -375,6 +376,14 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                 {privacy.mask(lead.phone, 'phone')} {lead.state && `· ${lead.state}`}
               </p>
             </div>
+            {lead.phone && (
+              <button onClick={() => callLead(lead.phone, lead.name, leadId)}
+                title="Ligar pelo navegador com número local (DDD do lead)"
+                className="px-4 py-2.5 rounded-xl text-[12px] font-bold text-white flex items-center gap-1.5 flex-shrink-0"
+                style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
+                📞 Ligar
+              </button>
+            )}
             <button onClick={() => setShowSendMsg(true)}
               className="px-4 py-2.5 rounded-xl text-[12px] font-bold text-white flex items-center gap-1.5 flex-shrink-0"
               style={{ background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 4px 14px rgba(16,185,129,0.3)' }}>
