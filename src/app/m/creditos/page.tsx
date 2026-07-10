@@ -104,8 +104,17 @@ export default function MobileCreditos() {
 
           {isNativeApp && (
             <div className="m-card" style={{ padding: 16, marginBottom: 18 }}>
-              <p className="m-muted" style={{ fontSize: 13, lineHeight: 1.55, margin: 0, textAlign: 'center' }}>
+              <p className="m-muted" style={{ fontSize: 13, lineHeight: 1.55, margin: '0 0 14px', textAlign: 'center' }}>
                 {L('Seus créditos e plano são gerenciados na sua conta Lead4Pro.', 'Your credits and plan are managed in your Lead4Pro account.', 'Tus créditos y plan se gestionan en tu cuenta Lead4Pro.')}
+              </p>
+              {/* Link-out permitido na loja dos EUA (App Store 3.1.1, pós-Epic): botão que
+                  abre o NAVEGADOR PADRÃO via wdtusa.group (fora do allowNavigation → Safari). */}
+              <a href="https://wdtusa.group/l4p-billing" target="_blank" rel="noopener noreferrer" className="m-tap"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: 46, borderRadius: 13, background: 'var(--m-grad)', color: '#fff', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
+                {L('Gerenciar créditos e plano no site', 'Manage credits & plan on our website', 'Gestionar créditos y plan en el sitio')}
+              </a>
+              <p className="m-faint" style={{ fontSize: 11, margin: '8px 0 0', textAlign: 'center' }}>
+                {L('Abre no navegador · lead4producers.com', 'Opens in your browser · lead4producers.com', 'Se abre en el navegador · lead4producers.com')}
               </p>
             </div>
           )}

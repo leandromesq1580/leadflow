@@ -55,6 +55,13 @@ export function proxy(request: NextRequest) {
   // 1) wdtusa.group — rewrite "/" → "/wdtgroup" (transparent)
   // ─────────────────────────────────────────────────────────────
   if (WDT_HOSTS.has(host)) {
+    // Link-out do app iOS (App Store 3.1.1, loja dos EUA): o app aponta pra cá porque
+    // wdtusa.group NÃO está no allowNavigation do Capacitor → abre no NAVEGADOR PADRÃO
+    // (Safari), como a regra do storefront americano exige. Daqui mandamos pro billing.
+    if (pathname === '/l4p-billing') {
+      return NextResponse.redirect(new URL('https://lead4producers.com/dashboard/credits'), 302)
+    }
+
     // Already targeting /wdtgroup — leave it alone.
     if (pathname === '/wdtgroup' || pathname.startsWith('/wdtgroup/')) {
       return NextResponse.next()
