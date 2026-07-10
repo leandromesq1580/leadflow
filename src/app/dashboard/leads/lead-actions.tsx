@@ -212,6 +212,11 @@ function ImportCsvModal({ onClose }: { onClose: () => void }) {
                 <br/>Aceita também: nome, telefone, whatsapp, estado, cidade, interesse, obs
                 <br/>Separadores aceitos: vírgula, ponto-e-vírgula ou tab
               </p>
+              <a href="/modelo-importacao-leads.csv" download
+                className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all hover:brightness-95"
+                style={{ background: '#0369a1', color: '#fff' }}>
+                📥 Baixar modelo de planilha (CSV)
+              </a>
             </div>
 
             <div className="mb-4">
