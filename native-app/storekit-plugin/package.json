@@ -1,0 +1,8 @@
+{
+  "name": "l4p-storekit",
+  "version": "1.0.0",
+  "description": "Minimal StoreKit 2 subscription plugin for Lead4Pro",
+  "files": ["ios/", "L4pStorekit.podspec"],
+  "capacitor": { "ios": { "src": "ios" } },
+  "license": "MIT"
+}

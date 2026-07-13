@@ -22,13 +22,61 @@ export default function MobileCreditos() {
   // No app nativo (iOS/Android) a compra fica ESCONDIDA — evita rejeição da Apple
   // por In-App Purchase (Guia 3.1.1). Detecta pelo User-Agent injetado pelo Capacitor.
   const [isNativeApp, setIsNativeApp] = useState(false)
+  // Assinatura via Apple (IAP) — exigência da App Store 3.1.1: o CRM Pro precisa ser
+  // comprável no app via In-App Purchase. Plugin nativo StoreKitPlugin (build ≥6).
+  const [aplPrice, setAplPrice] = useState<string | null>(null)
+  const [aplBusy, setAplBusy] = useState(false)
+  const SK = () => (typeof window !== 'undefined' ? (window as any).Capacitor?.Plugins?.StoreKitPlugin : null)
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.search.includes('success=true')) setSuccess(true)
     // Detecta o app nativo por 2 sinais (robusto): User-Agent injetado OU a bridge window.Capacitor.
     if (typeof window !== 'undefined' && (/Lead4ProApp/i.test(navigator.userAgent) || !!(window as any).Capacitor)) setIsNativeApp(true)
     fetch('/api/m/credits', { cache: 'no-store' }).then(r => (r.ok ? r.json() : Promise.reject())).then(setD).catch(() => setErr(true))
+    SK()?.getProduct?.().then((p: any) => { if (p?.displayPrice) setAplPrice(p.displayPrice) }).catch(() => {})
   }, [])
+
+  // Sincroniza entitlement Apple → backend (renovações/restores) depois que os dados carregam
+  useEffect(() => {
+    if (!d || d.crm_subscription_status === 'active') return
+    SK()?.entitlement?.().then(async (r: any) => {
+      if (r?.active && r.jws) {
+        const res = await fetch('/api/iap/apple', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jws: r.jws }) })
+        if (res.ok) window.location.reload()
+      }
+    }).catch(() => {})
+  }, [d])
+
+  async function appleSubscribe() {
+    if (aplBusy) return
+    setAplBusy(true)
+    try {
+      const r = await SK()?.purchase?.()
+      if (r?.status === 'success' && r.jws) {
+        const res = await fetch('/api/iap/apple', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jws: r.jws }) })
+        if (res.ok) { window.location.reload(); return }
+        alert(L('Compra feita, mas não consegui ativar. Toque em "Restaurar compras".', 'Purchased, but activation failed. Tap "Restore purchases".', 'Error al activar.'))
+      } else if (r?.status !== 'cancelled') {
+        alert(L('Compra não concluída.', 'Purchase not completed.', 'Compra no completada.'))
+      }
+    } catch { alert(L('App Store indisponível agora.', 'App Store unavailable right now.', 'App Store no disponible.')) }
+    setAplBusy(false)
+  }
+
+  async function appleRestore() {
+    if (aplBusy) return
+    setAplBusy(true)
+    try {
+      await SK()?.restore?.()
+      const r = await SK()?.entitlement?.()
+      if (r?.active && r.jws) {
+        const res = await fetch('/api/iap/apple', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jws: r.jws }) })
+        if (res.ok) { window.location.reload(); return }
+      }
+      alert(L('Nenhuma assinatura ativa encontrada.', 'No active subscription found.', 'No se encontró suscripción.'))
+    } catch { alert(L('Não consegui restaurar agora.', "Couldn't restore right now.", 'Error.')) }
+    setAplBusy(false)
+  }
 
   async function go(endpoint: string, body?: any) {
     if (busy) return
@@ -103,18 +151,45 @@ export default function MobileCreditos() {
           </div>
 
           {isNativeApp && (
-            <div className="m-card" style={{ padding: 16, marginBottom: 18 }}>
-              <p className="m-muted" style={{ fontSize: 13, lineHeight: 1.55, margin: '0 0 14px', textAlign: 'center' }}>
-                {L('Seus créditos e plano são gerenciados na sua conta Lead4Pro.', 'Your credits and plan are managed in your Lead4Pro account.', 'Tus créditos y plan se gestionan en tu cuenta Lead4Pro.')}
-              </p>
-              {/* Link-out permitido na loja dos EUA (App Store 3.1.1, pós-Epic): botão que
-                  abre o NAVEGADOR PADRÃO via wdtusa.group (fora do allowNavigation → Safari). */}
-              <a href="https://wdtusa.group/l4p-billing" target="_blank" rel="noopener noreferrer" className="m-tap"
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: 46, borderRadius: 13, background: 'var(--m-grad)', color: '#fff', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
-                {L('Gerenciar créditos e plano no site', 'Manage credits & plan on our website', 'Gestionar créditos y plan en el sitio')}
-              </a>
-              <p className="m-faint" style={{ fontSize: 11, margin: '8px 0 0', textAlign: 'center' }}>
-                {L('Abre no navegador · lead4producers.com', 'Opens in your browser · lead4producers.com', 'Se abre en el navegador · lead4producers.com')}
+            <div className="m-card" style={{ padding: 16, marginBottom: 18, border: isActive ? undefined : '1px solid rgba(139,92,246,0.4)' }}>
+              {isActive ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ color: '#c084fc', display: 'flex' }}><MIcon name="sparkle" size={18} /></span>
+                    <p style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>CRM Pro</p>
+                    <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: '#34d399', background: 'rgba(52,211,153,0.15)', padding: '3px 10px', borderRadius: 999 }}>{L('Ativo', 'Active', 'Activo')}</span>
+                  </div>
+                  <p className="m-muted" style={{ fontSize: 12, margin: '10px 0 0', lineHeight: 1.5 }}>
+                    {L('Sua assinatura está ativa. Assinaturas feitas pelo App Store são gerenciadas nos Ajustes do iPhone.', 'Your subscription is active. App Store subscriptions are managed in iPhone Settings.', 'Suscripción activa.')}
+                  </p>
+                </>
+              ) : (
+                <>
+                  {/* Paywall IAP (App Store 3.1.1): assinatura comprável via Apple.
+                      3.1.2: título + preço/período + links de Termos e Privacidade. */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <span style={{ color: '#c084fc', display: 'flex' }}><MIcon name="sparkle" size={18} /></span>
+                    <p style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>CRM Pro</p>
+                  </div>
+                  <p style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 800 }}>{aplPrice || '$99.99'}<span className="m-muted" style={{ fontSize: 13, fontWeight: 600 }}>/{L('mês', 'month', 'mes')}</span></p>
+                  <p className="m-muted" style={{ fontSize: 12, margin: '0 0 12px', lineHeight: 1.5 }}>
+                    {L('Pipeline, time, sequências e automações. Renovação automática mensal; cancele quando quiser nos Ajustes.', 'Pipeline, team, sequences and automations. Auto-renews monthly; cancel anytime in Settings.', 'Pipeline, equipo, secuencias y automatizaciones. Renovación mensual.')}
+                  </p>
+                  <button onClick={appleSubscribe} disabled={aplBusy} className="m-tap" style={{ width: '100%', height: 48, borderRadius: 13, background: 'var(--m-grad)', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: aplBusy ? 0.6 : 1 }}>
+                    {aplBusy ? L('Abrindo…', 'Opening…', 'Abriendo…') : L('Assinar pelo App Store', 'Subscribe via App Store', 'Suscribir por App Store')}
+                  </button>
+                  <button onClick={appleRestore} disabled={aplBusy} className="m-tap" style={{ width: '100%', height: 38, marginTop: 6, borderRadius: 12, background: 'transparent', border: 'none', color: 'var(--m-muted)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    {L('Restaurar compras', 'Restore purchases', 'Restaurar compras')}
+                  </button>
+                  <p className="m-faint" style={{ fontSize: 10.5, margin: '6px 0 0', textAlign: 'center' }}>
+                    <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>{L('Termos de Uso', 'Terms of Use', 'Términos')}</a>
+                    {' · '}
+                    <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>{L('Privacidade', 'Privacy Policy', 'Privacidad')}</a>
+                  </p>
+                </>
+              )}
+              <p className="m-muted" style={{ fontSize: 12, lineHeight: 1.55, margin: '14px 0 0', textAlign: 'center' }}>
+                {L('Seus créditos de leads são gerenciados na sua conta Lead4Pro.', 'Your lead credits are managed in your Lead4Pro account.', 'Tus créditos se gestionan en tu cuenta Lead4Pro.')}
               </p>
             </div>
           )}
