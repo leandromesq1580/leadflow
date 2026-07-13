@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 const AD_ACCOUNT_ID = 'act_2374409502997954'
-const LEAD_PRICE = 22 // selling price per lead
+const LEAD_PRICE = 28 // selling price per lead (âncora jul/2026)
 
 /**
  * GET /api/admin/ads-insights — Fetch Meta Ads campaign data

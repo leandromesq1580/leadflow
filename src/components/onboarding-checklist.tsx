@@ -27,7 +27,7 @@ export async function OnboardingChecklist({ buyerId }: Props) {
   const items = [
     { done: true, label: 'Conta criada', desc: 'Welcome aboard!', href: null },
     { done: hasStates, label: 'Configure seus estados', desc: 'Pra receber leads dos estados onde tem licenca', href: '/dashboard/settings' },
-    { done: hasCredits, label: 'Compre seu primeiro pacote', desc: 'Comece com 10 leads exclusivos por $220', href: '/dashboard/credits' },
+    { done: hasCredits, label: 'Compre seu primeiro pacote', desc: 'Comece com 10 leads exclusivos por $280', href: '/dashboard/credits' },
     { done: hasCrm, label: 'Ative o CRM Pro', desc: 'Pipeline + Time + Follow-ups por $99/mes', href: '/dashboard/credits' },
     { done: hasTeam, label: 'Monte seu time (opcional)', desc: 'Adicione agentes e distribua leads automaticamente', href: '/dashboard/team' },
   ]

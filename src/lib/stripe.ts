@@ -22,12 +22,12 @@ export const PRODUCTS = {
   lead: {
     name: 'Lead Exclusivo',
     packages: [
-      // Starter — entrada baixa pra reduzir barreira ($99). Sem desconto: $19.80/lead.
-      // Objetivo: agente novo testar o sistema com o equivalente a 1 apolice fechada.
-      { id: 'lead_5', quantity: 5, unitPriceCents: 1980, totalDisplay: 99, label: 'Starter — 5 Leads $99', pricePerUnit: 19.80 },
-      { id: 'lead_10', quantity: 10, unitPriceCents: 2200, totalDisplay: 220, label: '10 Leads — $220', pricePerUnit: 22 },
-      { id: 'lead_25', quantity: 25, unitPriceCents: 2000, totalDisplay: 500, label: '25 Leads — $500', pricePerUnit: 20 },
-      { id: 'lead_50', quantity: 50, unitPriceCents: 1800, totalDisplay: 900, label: '50 Leads — $900', pricePerUnit: 18 },
+      // Âncora $28/lead (jul/2026). Starter = isca de 1ª compra ($25/lead, -10,7%).
+      // Objetivo do Starter: agente novo testar o sistema com o equivalente a 1 apolice fechada.
+      { id: 'lead_5', quantity: 5, unitPriceCents: 2500, totalDisplay: 125, label: 'Starter — 5 Leads $125', pricePerUnit: 25 },
+      { id: 'lead_10', quantity: 10, unitPriceCents: 2800, totalDisplay: 280, label: '10 Leads — $280', pricePerUnit: 28 },
+      { id: 'lead_25', quantity: 25, unitPriceCents: 2600, totalDisplay: 650, label: '25 Leads — $650', pricePerUnit: 26 },
+      { id: 'lead_50', quantity: 50, unitPriceCents: 2300, totalDisplay: 1150, label: '50 Leads — $1,150', pricePerUnit: 23 },
     ],
   },
   cold_lead: {

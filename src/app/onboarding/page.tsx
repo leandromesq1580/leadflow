@@ -304,8 +304,8 @@ export default function OnboardingPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-[16px] font-extrabold text-white">$220</p>
-                    <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>$22/lead</p>
+                    <p className="text-[16px] font-extrabold text-white">$280</p>
+                    <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>$28/lead</p>
                   </div>
                 </div>
               </button>

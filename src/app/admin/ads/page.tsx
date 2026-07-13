@@ -105,7 +105,7 @@ export default function AdsPage() {
           <div className="rounded-xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
             <p className="text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>Receita (vendas)</p>
             <p className="text-[28px] font-extrabold" style={{ color: '#10b981' }}>${fmt(t.revenue)}</p>
-            <p className="text-[12px] font-semibold" style={{ color: '#94a3b8' }}>{t.leads} × $22/lead</p>
+            <p className="text-[12px] font-semibold" style={{ color: '#94a3b8' }}>{t.leads} × $28/lead</p>
           </div>
           <div className="rounded-xl p-5" style={{ background: t.margin >= 0 ? '#f0fdf4' : '#fef2f2', border: `1px solid ${t.margin >= 0 ? '#bbf7d0' : '#fecaca'}` }}>
             <p className="text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>Margem</p>
