@@ -249,22 +249,33 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   }
 
   async function addFollowUp() {
-    if (!fuDesc.trim()) return
-    // Reuniao exige data + hora
-    if (fuType === 'meeting' && (!fuDate || !fuTime)) {
-      alert('Reunião precisa de data e hora pra aparecer no calendário.')
+    // Reunião: a substância é a data/hora — descrição é OPCIONAL (default "Reunião").
+    // Demais tipos: exigem descrição, mas com AVISO (nunca falha em silêncio).
+    if (fuType === 'meeting') {
+      if (!fuDate || !fuTime) {
+        alert('Reunião precisa de data e hora pra aparecer no calendário.')
+        return
+      }
+    } else if (!fuDesc.trim()) {
+      alert('Escreva o que aconteceu ou precisa ser feito.')
       return
     }
+    const description = fuDesc.trim() || (fuType === 'meeting' ? 'Reunião' : '')
     let scheduled_at: string | null = null
     if (fuDate) {
       const time = fuTime || '09:00'
       scheduled_at = new Date(`${fuDate}T${time}:00`).toISOString()
     }
-    await fetch(`/api/leads/${leadId}/follow-ups`, {
+    const res = await fetch(`/api/leads/${leadId}/follow-ups`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ buyer_id: buyerId, type: fuType, description: fuDesc, scheduled_at }),
+      body: JSON.stringify({ buyer_id: buyerId, type: fuType, description, scheduled_at }),
     })
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}))
+      alert('Não consegui salvar a reunião: ' + (e.error || 'erro no servidor'))
+      return
+    }
     // Reunião com confirmação marcada → manda WhatsApp pro lead com a data/hora.
     if (fuType === 'meeting' && fuSendConfirm && fuConfirmMsg.trim() && lead?.phone) {
       try {
@@ -743,7 +754,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                   <div className="flex gap-2 justify-end">
                     <button onClick={() => setShowNewFU(false)} className="px-4 py-2 text-[12px] font-semibold rounded-lg" style={{ color: '#94a3b8' }}>Cancelar</button>
                     <button onClick={addFollowUp}
-                      disabled={!fuDesc.trim() || (fuType === 'meeting' && (!fuDate || !fuTime))}
+                      disabled={fuType === 'meeting' ? (!fuDate || !fuTime) : !fuDesc.trim()}
                       className="px-5 py-2 rounded-lg text-[12px] font-bold text-white disabled:opacity-40"
                       style={{ background: '#6366f1' }}>Salvar</button>
                   </div>
