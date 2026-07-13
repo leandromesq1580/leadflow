@@ -33,9 +33,9 @@ export const PRODUCTS = {
   cold_lead: {
     name: 'Lead Frio',
     packages: [
-      { id: 'cold_25', quantity: 25, unitPriceCents: 500, totalDisplay: 125, label: '25 Leads Frios — $125', pricePerUnit: 5 },
-      { id: 'cold_50', quantity: 50, unitPriceCents: 400, totalDisplay: 200, label: '50 Leads Frios — $200', pricePerUnit: 4 },
-      { id: 'cold_100', quantity: 100, unitPriceCents: 300, totalDisplay: 300, label: '100 Leads Frios — $300', pricePerUnit: 3 },
+      { id: 'cold_25', quantity: 25, unitPriceCents: 600, totalDisplay: 150, label: '25 Leads Frios — $150', pricePerUnit: 6 },
+      { id: 'cold_50', quantity: 50, unitPriceCents: 500, totalDisplay: 250, label: '50 Leads Frios — $250', pricePerUnit: 5 },
+      { id: 'cold_100', quantity: 100, unitPriceCents: 400, totalDisplay: 400, label: '100 Leads Frios — $400', pricePerUnit: 4 },
     ],
   },
   // Appointments NÃO são mais vendidos (decisão de produto, jul/2026). Nenhum pacote de
