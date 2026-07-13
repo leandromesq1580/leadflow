@@ -7,7 +7,7 @@ import { MIcon } from '@/components/mobile/icons'
 import { PRODUCTS } from '@/lib/stripe'
 import { CRM_PLAN_LIST } from '@/lib/crm-plans'
 
-interface CreditsData { totalLeads: number; totalAppts: number; crm_plan: string; crm_subscription_status: string | null; crm_plan_key: string | null; starterEligible: boolean; history: Array<{ id: string; type: string; total_purchased: number; total_used: number; price_per_unit: number; purchased_at: string }> }
+interface CreditsData { totalLeads: number; totalAppts: number; crm_plan: string; crm_subscription_status: string | null; crm_plan_key: string | null; history: Array<{ id: string; type: string; total_purchased: number; total_used: number; price_per_unit: number; purchased_at: string }> }
 
 export default function MobileCreditos() {
   const t = useT()
@@ -44,7 +44,7 @@ export default function MobileCreditos() {
 
   const isActive = d?.crm_subscription_status === 'active'
   const currentPlanKey = d?.crm_plan_key || null
-  const leadPkgs = PRODUCTS.lead.packages.filter(p => p.id !== 'lead_5' || d?.starterEligible)
+  const leadPkgs = PRODUCTS.lead.packages
 
   async function changePlan(planKey: string) {
     if (busy || planKey === currentPlanKey) return
@@ -64,7 +64,7 @@ export default function MobileCreditos() {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <div>
-          <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{p.quantity} {type}{p.id === 'lead_5' ? ' · Starter' : ''}</p>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{p.quantity} {type}</p>
           <p className="m-muted" style={{ margin: '1px 0 0', fontSize: 12 }}>${p.pricePerUnit}/{L('cada', 'each', 'cada')}</p>
         </div>
         <button onClick={() => go('/api/checkout', { packageId: p.id })} disabled={busy} className="m-tap" style={{ display: 'flex', alignItems: 'center', gap: 6, height: 38, padding: '0 14px', borderRadius: 11, background: 'var(--m-grad)', border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>${p.totalDisplay}</button>

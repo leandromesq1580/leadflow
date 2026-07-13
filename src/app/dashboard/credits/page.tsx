@@ -1,7 +1,6 @@
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { PRODUCTS, getStripe } from '@/lib/stripe'
-import { STARTER_PACKAGE_ID, hasPurchased } from '@/lib/starter'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { BuyButton } from './buy-button'
@@ -36,9 +35,7 @@ export default async function CreditsPage({
   const totalLeads = allCredits.filter(c => c.type === 'lead').reduce((s, c) => s + c.total_purchased - c.total_used, 0)
   const totalAppts = allCredits.filter(c => c.type === 'appointment').reduce((s, c) => s + c.total_purchased - c.total_used, 0)
 
-  // Starter só aparece pra quem nunca comprou (oferta de 1ª compra)
-  const starterEligible = !(await hasPurchased(db, buyer.id))
-  const leadPackages = PRODUCTS.lead.packages.filter(p => p.id !== STARTER_PACKAGE_ID || starterEligible)
+  const leadPackages = PRODUCTS.lead.packages
 
   // Plano exato do assinante (mensal/trimestral/… só existe no metadata da assinatura Stripe)
   const isActiveSub = buyer.crm_subscription_status === 'active'
@@ -136,16 +133,12 @@ export default async function CreditsPage({
       <h2 className="text-[16px] font-bold mb-4" style={{ color: '#1a1a2e' }}>📋 Pacotes de Leads Exclusivos</h2>
       <div className="grid grid-cols-3 gap-4 mb-8">
         {leadPackages.map((pkg) => {
-          const isStarter = pkg.id === STARTER_PACKAGE_ID
           return (
-            <div key={pkg.id} className="rounded-2xl p-6 relative" style={{ background: '#fff', border: isStarter ? '2px solid #10b981' : '1px solid #e8ecf4' }}>
-              {isStarter && (
-                <span className="absolute -top-3 left-5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold text-white" style={{ background: '#10b981' }}>SÓ NA 1ª COMPRA</span>
-              )}
+            <div key={pkg.id} className="rounded-2xl p-6 relative" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
               <p className="text-[13px] font-medium" style={{ color: '#64748b' }}>{pkg.quantity} Leads</p>
               <p className="text-[32px] font-extrabold mt-1" style={{ color: '#1a1a2e' }}>${pkg.totalDisplay}</p>
               <p className="text-[12px]" style={{ color: '#94a3b8' }}>${pkg.pricePerUnit}/lead</p>
-              <BuyButton packageId={pkg.id} color={isStarter ? '#10b981' : '#6366f1'} />
+              <BuyButton packageId={pkg.id} color="#6366f1" />
             </div>
           )
         })}

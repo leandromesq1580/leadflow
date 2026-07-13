@@ -72,7 +72,7 @@ export default function OnboardingPage() {
     })
   }
 
-  async function finishOnboarding(action: 'free' | 'starter' | 'leads' | 'crm') {
+  async function finishOnboarding(action: 'free' | 'leads' | 'crm') {
     setSaving(true)
     const authId = getAuthId()
     if (authId) {
@@ -86,8 +86,6 @@ export default function OnboardingPage() {
 
     if (action === 'free') {
       window.location.href = '/dashboard'
-    } else if (action === 'starter') {
-      window.location.href = '/dashboard/credits'
     } else if (action === 'leads') {
       window.location.href = '/dashboard/credits'
     } else if (action === 'crm') {
@@ -269,25 +267,6 @@ export default function OnboardingPage() {
                     <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Conhecer o sistema, comprar depois</p>
                   </div>
                   <span className="text-[12px] font-bold" style={{ color: 'rgba(255,255,255,0.4)' }}>$0</span>
-                </div>
-              </button>
-
-              {/* Starter — entrada mais acessível */}
-              <button onClick={() => finishOnboarding('starter')} disabled={saving}
-                className="w-full text-left p-4 rounded-xl transition-all disabled:opacity-50"
-                style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.35)' }}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded text-white" style={{ background: '#10b981' }}>COMECE AQUI</span>
-                    <div>
-                      <p className="text-[14px] font-bold text-white">Pacote Starter</p>
-                      <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>5 leads exclusivos — 1 apólice fechada já paga</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[16px] font-extrabold text-white">$99</p>
-                    <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>pacote único</p>
-                  </div>
                 </div>
               </button>
 

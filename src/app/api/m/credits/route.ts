@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { hasPurchased } from '@/lib/starter'
 import { getStripe } from '@/lib/stripe'
 
 export const dynamic = 'force-dynamic'
@@ -23,8 +22,6 @@ export async function GET() {
   try { const { data } = await db.from('credits').select('id, type, total_purchased, total_used, price_per_unit, purchased_at').eq('buyer_id', buyer.id).order('purchased_at', { ascending: false }); history = data || [] } catch {}
 
   const sum = (type: string) => history.filter(c => c.type === type).reduce((s, c) => s + ((c.total_purchased || 0) - (c.total_used || 0)), 0)
-  let starterEligible = true
-  try { starterEligible = !(await hasPurchased(db, buyer.id)) } catch {}
 
   // Plano exato do assinante ativo (só existe no metadata da assinatura Stripe)
   let crm_plan_key: string | null = null
@@ -38,7 +35,6 @@ export async function GET() {
     crm_plan: buyer.crm_plan || 'free',
     crm_subscription_status: buyer.crm_subscription_status || null,
     crm_plan_key,
-    starterEligible,
     history,
   })
 }
