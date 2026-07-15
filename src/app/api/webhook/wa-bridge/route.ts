@@ -255,6 +255,29 @@ export async function POST(request: NextRequest) {
     const inboxBuyerId = match.ownerBuyerId
     const notifyBuyerId = match.ownerBuyerId
 
+    // 🔁 DEDUP DE SAÍDA: o app (/api/whatsapp/messages) já grava a mensagem que ELE
+    // enviou. Em contato @lid/grupo a bridge não devolve ack → a linha do app fica com
+    // wa_message_id NULL. Quando o message_create chega aqui (id real), em vez de inserir
+    // uma 2ª linha (DUPLICATA no inbox), ATUALIZA a linha do app. Casa por lead+texto
+    // (imune ao formato @lid/@c.us). Só saída.
+    if (isOut && wa_message_id) {
+      const { data: pending } = await db
+        .from('whatsapp_messages')
+        .select('id')
+        .eq('lead_id', match.id)
+        .eq('direction', 'out')
+        .is('wa_message_id', null)
+        .eq('body', body || '')
+        .gte('sent_at', new Date(Date.now() - 5 * 60 * 1000).toISOString())
+        .order('sent_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (pending) {
+        await db.from('whatsapp_messages').update({ wa_message_id, status: 'sent' }).eq('id', pending.id)
+        return NextResponse.json({ merged: pending.id })
+      }
+    }
+
     await db.from('whatsapp_messages').insert({
       buyer_id: inboxBuyerId,
       lead_id: match.id,
