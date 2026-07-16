@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
   if (lead.assigned_to === to_buyer_id) return NextResponse.json({ error: 'Lead ja pertence a esse agente' }, { status: 400 })
 
   const { data: toBuyer } = await db.from('buyers')
-    .select('id, name, email, phone, notification_email, notification_sms, is_admin')
+    .select('id, name, email, phone, notification_phone_2, notification_email, notification_sms, is_admin')
     .eq('id', to_buyer_id).single()
   if (!toBuyer) return NextResponse.json({ error: 'Agente destino nao encontrado' }, { status: 404 })
 

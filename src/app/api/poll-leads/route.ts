@@ -224,7 +224,7 @@ export async function GET(request: Request) {
         const ids = [...new Set(missedLeads.map((l: any) => l.assigned_to))]
         const { data: bs } = await supabase
           .from('buyers')
-          .select('id, name, email, phone, notification_email, notification_sms')
+          .select('id, name, email, phone, notification_phone_2, notification_email, notification_sms')
           .in('id', ids)
         const bmap = new Map((bs || []).map((b: any) => [b.id, b]))
         for (const lead of missedLeads) {

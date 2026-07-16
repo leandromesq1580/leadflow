@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}))
   const db = createAdminClient()
 
-  let query = db.from('leads').select('*, buyer:assigned_to(id, name, email, phone, whatsapp, notification_email, notification_sms)').not('assigned_to', 'is', null)
+  let query = db.from('leads').select('*, buyer:assigned_to(id, name, email, phone, whatsapp, notification_phone_2, notification_email, notification_sms)').not('assigned_to', 'is', null)
 
   if (body.lead_ids?.length) {
     query = query.in('id', body.lead_ids)

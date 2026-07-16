@@ -119,6 +119,11 @@ interface Buyer {
   name: string
   email: string
   phone: string
+  /**
+   * 2º número (opcional) que TAMBÉM recebe o alerta de Novo Lead.
+   * Só destinatário — não conecta bridge/QR. Envio best-effort (ver abaixo).
+   */
+  notification_phone_2?: string | null
 }
 
 interface Lead {
@@ -218,7 +223,9 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead): Promi
 
   // WhatsApp notification to BUYER
   let buyerOk = false
-  if (buyer.phone) {
+  const onlyDigits = (s: string | null | undefined) => String(s || '').replace(/\D/g, '')
+  const phone2 = String(buyer.notification_phone_2 || '').trim()
+  if (buyer.phone || phone2) {
     const whatsappMsg = `🎯 *Novo Lead — Lead4Producers!*
 
 📋 *${lead.name}*
@@ -237,7 +244,24 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead): Promi
     // A bridge própria do comprador é pra ELE falar com os leads dele, não pra
     // receber alerta da plataforma. (Self-message só se o comprador for o número
     // da própria bridge global — aí o bridge ainda devolve success, não trava.)
-    buyerOk = await sendWhatsApp(buyer.phone, whatsappMsg)
+    if (buyer.phone) buyerOk = await sendWhatsApp(buyer.phone, whatsappMsg)
+
+    // 2º NÚMERO (opcional): recebe o MESMO alerta de Novo Lead.
+    // 3 blindagens, todas de propósito:
+    //  (a) BEST-EFFORT — o resultado é IGNORADO. Se a falha dele contasse pra
+    //      buyerOk/notified_at, a reconciliação reenviaria o lead a cada 2min
+    //      = o loop de spam (150 msgs) que já aconteceu. NUNCA acoplar.
+    //  (b) Pula se for o MESMO número do principal (senão o cara recebe 2x no
+    //      mesmo aparelho). Compara só dígitos: "+1 786…" == "1786…".
+    //  (c) Não conecta bridge nenhuma — sai pela bridge GLOBAL, igual o principal.
+    if (phone2 && onlyDigits(phone2) !== onlyDigits(buyer.phone)) {
+      try {
+        const ok2 = await sendWhatsApp(phone2, whatsappMsg)
+        if (!ok2) console.warn(`[Notify] 2o numero (${phone2}) nao entregou — ignorado de proposito (nao afeta notified_at)`)
+      } catch (e: any) {
+        console.warn('[Notify] 2o numero falhou (ignorado de proposito):', e?.message)
+      }
+    }
   }
 
   // 🔒 GARANTIA: o GRUPO é o registro autoritativo de "lead processado + time

@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { buyer_id, auth_user_id, name, phone, whatsapp, cal_link, notification_email, notification_sms, states, availability, is_agency, team_distribution_mode } = body
+    const { buyer_id, auth_user_id, name, phone, whatsapp, notification_phone_2, cal_link, notification_email, notification_sms, states, availability, is_agency, team_distribution_mode } = body
 
     const db = createAdminClient()
 
@@ -41,6 +41,8 @@ export async function POST(request: NextRequest) {
     if (name !== undefined) updateData.name = name
     if (phone !== undefined) updateData.phone = phone
     if (whatsapp !== undefined) updateData.whatsapp = whatsapp
+    // 2º número de notificação (só destinatário — não conecta bridge). '' → null.
+    if (notification_phone_2 !== undefined) updateData.notification_phone_2 = String(notification_phone_2 || '').trim() || null
     if (cal_link !== undefined) updateData.cal_link = cal_link
     if (notification_email !== undefined) updateData.notification_email = notification_email
     if (notification_sms !== undefined) updateData.notification_sms = notification_sms

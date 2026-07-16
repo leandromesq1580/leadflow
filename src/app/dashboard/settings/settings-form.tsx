@@ -11,6 +11,7 @@ interface Buyer {
   name: string
   phone: string
   whatsapp: string
+  notification_phone_2?: string | null
   cal_link: string
   notification_email: boolean
   notification_sms: boolean
@@ -45,6 +46,7 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
   const [name, setName] = useState(buyer.name || '')
   const [phone, setPhone] = useState(buyer.phone || '')
   const [whatsapp, setWhatsapp] = useState(buyer.whatsapp || '')
+  const [notifPhone2, setNotifPhone2] = useState(buyer.notification_phone_2 || '')
   const [calLink, setCalLink] = useState(buyer.cal_link || '')
   const [notifEmail, setNotifEmail] = useState(buyer.notification_email)
   const [notifSms, setNotifSms] = useState(buyer.notification_sms)
@@ -87,6 +89,7 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
         body: JSON.stringify({
           buyer_id: buyer.id,
           name, phone, whatsapp, cal_link: calLink,
+          notification_phone_2: notifPhone2.trim() || null,
           notification_email: notifEmail, notification_sms: notifSms,
           states,
           availability: avail.map(a => {
@@ -150,6 +153,17 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
             <label className="block text-[12px] font-bold mb-1" style={{ color: '#64748b' }}>{t.settings.whatsapp}</label>
             <input type="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)}
               className="w-full px-4 py-3 rounded-xl text-[14px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
+          </div>
+          <div>
+            <label className="block text-[12px] font-bold mb-1" style={{ color: '#64748b' }}>
+              2º número para notificações <span style={{ fontWeight: 500, color: '#94a3b8' }}>(opcional)</span>
+            </label>
+            <input type="tel" value={notifPhone2} onChange={(e) => setNotifPhone2(e.target.value)}
+              placeholder="+1 407 555 0100"
+              className="w-full px-4 py-3 rounded-xl text-[14px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
+            <p className="text-[11px] mt-1" style={{ color: '#94a3b8' }}>
+              Recebe o mesmo alerta de <b>Novo Lead</b> que o seu telefone principal. <b>Não precisa conectar WhatsApp</b> — só precisa ser um número que tenha WhatsApp.
+            </p>
           </div>
           <div>
             <label className="block text-[12px] font-bold mb-1" style={{ color: '#64748b' }}>Cal.com Link</label>
