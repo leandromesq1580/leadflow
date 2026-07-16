@@ -276,22 +276,13 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
       alert('Não consegui salvar a reunião: ' + (e.error || 'erro no servidor'))
       return
     }
-    // Reunião com confirmação marcada → manda WhatsApp pro lead com a data/hora.
-    if (fuType === 'meeting' && fuSendConfirm && fuConfirmMsg.trim() && lead?.phone) {
-      try {
-        const r = await fetch('/api/templates/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ override_body: fuConfirmMsg.trim(), lead_id: leadId, buyer_id: buyerId }),
-        })
-        if (!r.ok) {
-          const e = await r.json().catch(() => ({}))
-          alert('Reunião salva, mas a confirmação NÃO foi enviada: ' + (e.error || 'erro ao enviar'))
-        }
-      } catch {
-        alert('Reunião salva, mas falhou ao enviar a confirmação no WhatsApp.')
-      }
-    }
+    // ✅ SALVOU no banco. Fecha e atualiza a lista AGORA.
+    // BUG QUE ISSO CORRIGE: antes, o envio da confirmação vinha ANTES daqui e SEM
+    // timeout. Se a bridge travasse (e /api/templates/send ainda tem retry interno),
+    // o `await` nunca voltava → a tela ficava aberta com os dados → parecia que
+    // "NÃO SALVOU", mas o follow-up já estava gravado. Envio NUNCA bloqueia a UI.
+    const enviarConfirmacao = fuType === 'meeting' && fuSendConfirm && !!fuConfirmMsg.trim() && !!lead?.phone
+    const confirmBody = fuConfirmMsg.trim()
     setFuDesc('')
     setFuDate('')
     setFuTime('')
@@ -301,6 +292,25 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
     setFuConfirmEdited(false)
     setShowNewFU(false)
     loadFollowUps()
+
+    // Confirmação pro lead: best-effort, COM timeout. Falhar/demorar aqui não
+    // desfaz nada — a reunião já está salva e visível na lista.
+    if (enviarConfirmacao) {
+      try {
+        const r = await fetch('/api/templates/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ override_body: confirmBody, lead_id: leadId, buyer_id: buyerId }),
+          signal: AbortSignal.timeout(20000),
+        })
+        if (!r.ok) {
+          const e = await r.json().catch(() => ({}))
+          alert('Reunião salva ✅ — mas a confirmação no WhatsApp NÃO foi enviada: ' + (e.error || 'erro ao enviar'))
+        }
+      } catch {
+        alert('Reunião salva ✅ — mas a confirmação no WhatsApp demorou demais. Mande manualmente se precisar.')
+      }
+    }
   }
 
   async function completeFollowUp(fuId: string) {

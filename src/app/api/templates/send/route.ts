@@ -44,10 +44,13 @@ export async function POST(request: NextRequest) {
     let lastStatus = 500
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
+        // TIMEOUT obrigatório: sem ele, uma bridge travada penduraria este fetch
+        // pra sempre (× 3 tentativas) e a tela do usuário ficava esperando.
         const res = await fetch(`${sb.url}/send`, {
           method: 'POST',
           headers: { apikey: sb.key, 'Content-Type': 'application/json' },
           body: JSON.stringify({ number: cleanPhone, message: body }),
+          signal: AbortSignal.timeout(15000),
         })
         if (res.ok) { sendRes = await res.json().catch(() => ({ id: null })); break }
         const err = await res.json().catch(() => ({ error: 'Falha desconhecida' }))
