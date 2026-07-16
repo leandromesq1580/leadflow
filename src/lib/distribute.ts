@@ -329,10 +329,15 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
   // disponibilidade configurada = disponível 24/7. Se ninguém disponível agora,
   // o lead fica pendente (assigned_to=null) e o cron reprocessa até abrir a janela.
   const eligibleIds = eligible.map(b => b.id)
-  const [statesRes, availRes] = await Promise.all([
+  const [statesRes, availRes0] = await Promise.all([
     supabase.from('buyer_states').select('buyer_id, state_code').in('buyer_id', eligibleIds),
-    supabase.from('buyer_availability').select('buyer_id, day_type, period').in('buyer_id', eligibleIds),
+    // `hours` = granularidade de 1h (migration 030). Se a coluna não existe ainda,
+    // refaz sem ela → isAvailableNow trata como período inteiro (comportamento antigo).
+    supabase.from('buyer_availability').select('buyer_id, day_type, period, hours').in('buyer_id', eligibleIds),
   ])
+  const availRes = availRes0.error
+    ? await supabase.from('buyer_availability').select('buyer_id, day_type, period').in('buyer_id', eligibleIds)
+    : availRes0
   const statesByBuyer: Record<string, string[]> = {}
   for (const r of statesRes.data || []) (statesByBuyer[r.buyer_id] ||= []).push(r.state_code)
   const availByBuyer: Record<string, { day_type: string; period: string }[]> = {}

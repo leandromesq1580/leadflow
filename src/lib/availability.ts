@@ -15,7 +15,27 @@
 
 export type DayType = 'weekday' | 'saturday' | 'sunday' | 'holiday'
 export type Period = 'morning' | 'afternoon' | 'evening'
-export interface AvailabilityRow { day_type: string; period: string }
+/**
+ * `hours` = granularidade OPCIONAL de 1 hora dentro do período.
+ *  - null / [] → período INTEIRO (comportamento original, retrocompatível)
+ *  - [8,10]    → só 8h e 10h daquele período
+ */
+export interface AvailabilityRow { day_type: string; period: string; hours?: number[] | null }
+
+/** Horas (locais) que cada período cobre — fonte única pra UI e validação. */
+export const PERIOD_HOURS: Record<Period, number[]> = {
+  morning: [8, 9, 10, 11],
+  afternoon: [12, 13, 14, 15, 16, 17],
+  evening: [18, 19, 20],
+}
+
+/** Mantém só horas válidas do período (defesa contra payload adulterado). */
+export function sanitizeHours(period: string, hours: unknown): number[] {
+  const allowed = PERIOD_HOURS[period as Period]
+  if (!allowed || !Array.isArray(hours)) return []
+  const set = new Set(allowed)
+  return [...new Set(hours.map(Number).filter(h => Number.isInteger(h) && set.has(h)))].sort((a, b) => a - b)
+}
 
 /** Estado (US) → fuso IANA principal. */
 const STATE_TZ: Record<string, string> = {
@@ -91,7 +111,13 @@ export function currentWindow(tz: string, now: Date = new Date()): { day_type: D
 export function isAvailableNow(rows: AvailabilityRow[] | null | undefined, tz: string, now: Date = new Date()): boolean {
   // Sem config = disponível sempre (não penaliza quem nunca configurou).
   if (!rows || rows.length === 0) return true
-  const { day_type, period } = currentWindow(tz, now)
+  const { day_type, period, hour } = currentWindow(tz, now)
   if (!period) return false // madrugada: ninguém marca esse período
-  return rows.some(r => r.day_type === day_type && r.period === period)
+  const row = rows.find(r => r.day_type === day_type && r.period === period)
+  if (!row) return false
+  // Granularidade por hora: só restringe se o comprador escolheu horas.
+  // Vazio/null = período inteiro (retrocompatível com quem só marcou o bloco).
+  const hrs = Array.isArray(row.hours) ? row.hours.map(Number).filter(Number.isFinite) : []
+  if (hrs.length === 0) return true
+  return hrs.includes(hour)
 }

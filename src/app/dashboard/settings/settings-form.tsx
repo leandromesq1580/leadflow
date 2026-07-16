@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { WaConnectCard } from '@/components/wa-connect-card'
 import { useT } from '@/lib/i18n-client'
+import { PERIOD_HOURS } from '@/lib/availability'
 
 interface Buyer {
   id: string
@@ -19,6 +20,8 @@ interface Props {
   buyer: Buyer
   activeStates: string[]
   activeAvailability: string[]
+  /** { 'weekday_morning': [8,10] } — só pros períodos com hora escolhida. Vazio = período inteiro. */
+  activeAvailabilityHours?: Record<string, number[]>
   allStates: string[]
 }
 
@@ -36,7 +39,7 @@ const STATE_NAMES: Record<string, string> = {
   WI:'Wisconsin',WY:'Wyoming',DC:'Washington DC'
 }
 
-export function SettingsForm({ buyer, activeStates, activeAvailability, allStates }: Props) {
+export function SettingsForm({ buyer, activeStates, activeAvailability, activeAvailabilityHours, allStates }: Props) {
   const router = useRouter()
   const t = useT()
   const [name, setName] = useState(buyer.name || '')
@@ -47,6 +50,7 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, allState
   const [notifSms, setNotifSms] = useState(buyer.notification_sms)
   const [states, setStates] = useState<string[]>(activeStates)
   const [avail, setAvail] = useState<string[]>(activeAvailability)
+  const [availHours, setAvailHours] = useState<Record<string, number[]>>(activeAvailabilityHours || {})
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -56,7 +60,19 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, allState
   }
 
   function toggleAvail(key: string) {
-    setAvail(prev => prev.includes(key) ? prev.filter(a => a !== key) : [...prev, key])
+    const wasOn = avail.includes(key)
+    setAvail(prev => wasOn ? prev.filter(a => a !== key) : [...prev, key])
+    // Desligou o período → some com as horas dele (senão salvaria hora de período inativo).
+    if (wasOn) setAvailHours(prev => { const n = { ...prev }; delete n[key]; return n })
+  }
+
+  /** Liga/desliga 1 hora dentro do período. Nenhuma hora marcada = período INTEIRO. */
+  function toggleHour(key: string, h: number) {
+    setAvailHours(prev => {
+      const cur = prev[key] || []
+      const next = cur.includes(h) ? cur.filter(x => x !== h) : [...cur, h].sort((a, b) => a - b)
+      return { ...prev, [key]: next }
+    })
   }
 
   async function save() {
@@ -75,7 +91,9 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, allState
           states,
           availability: avail.map(a => {
             const [day_type, period] = a.split('_')
-            return { day_type, period }
+            // hours vazio → null = período inteiro (retrocompatível).
+            const hours = availHours[a] || []
+            return { day_type, period, hours: hours.length ? hours : null }
           }),
         }),
       })
@@ -205,6 +223,45 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, allState
                     )
                   })}
                 </div>
+
+                {/* Granularidade opcional de 1h: aparece só nos períodos ATIVOS.
+                    Nenhuma hora marcada = período inteiro (padrão de sempre). */}
+                {PERIOD_KEYS.filter(pk => avail.includes(`${dayKey}_${pk}`)).map(pk => {
+                  const key = `${dayKey}_${pk}`
+                  const hrs = availHours[key] || []
+                  const pLabel = pk === 'morning' ? t.settings.morning : pk === 'afternoon' ? t.settings.afternoon : t.settings.evening
+                  return (
+                    <div key={key} className="mt-2 ml-1 pl-3" style={{ borderLeft: '2px solid #eef2ff' }}>
+                      <p className="text-[11px] mb-1.5" style={{ color: '#94a3b8' }}>
+                        {pLabel} · {hrs.length === 0
+                          ? <span style={{ color: '#6366f1', fontWeight: 600 }}>período todo</span>
+                          : <span style={{ color: '#4338ca', fontWeight: 600 }}>{hrs.length}h escolhida{hrs.length > 1 ? 's' : ''}</span>}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {PERIOD_HOURS[pk].map(h => {
+                          const on = hrs.includes(h)
+                          return (
+                            <button key={h} onClick={() => toggleHour(key, h)} type="button"
+                              className="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all"
+                              style={{
+                                background: on ? '#4338ca' : '#fff',
+                                color: on ? '#fff' : '#64748b',
+                                border: `1px solid ${on ? '#4338ca' : '#e8ecf4'}`,
+                              }}>
+                              {h}h
+                            </button>
+                          )
+                        })}
+                        {hrs.length > 0 && (
+                          <button type="button" onClick={() => setAvailHours(prev => ({ ...prev, [key]: [] }))}
+                            className="px-2 py-1 text-[11px] font-semibold" style={{ color: '#6366f1' }}>
+                            limpar (período todo)
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             )
           })}

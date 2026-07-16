@@ -24,9 +24,22 @@ export default async function SettingsPage() {
   const { data: states } = await db.from('buyer_states').select('state_code').eq('buyer_id', buyer.id)
   const activeStates = states?.map(s => s.state_code) || []
 
-  // Get buyer's availability
-  const { data: availability } = await db.from('buyer_availability').select('day_type, period').eq('buyer_id', buyer.id)
-  const activeAvailability = availability?.map(a => `${a.day_type}_${a.period}`) || []
+  // Get buyer's availability. `hours` (migration 030) é a granularidade opcional de 1h;
+  // se a coluna ainda não existe, cai no select antigo = período inteiro.
+  let availability: Array<{ day_type: string; period: string; hours?: number[] | null }> = []
+  const withHours = await db.from('buyer_availability').select('day_type, period, hours').eq('buyer_id', buyer.id)
+  if (withHours.error) {
+    const fb = await db.from('buyer_availability').select('day_type, period').eq('buyer_id', buyer.id)
+    availability = (fb.data as any) || []
+  } else {
+    availability = (withHours.data as any) || []
+  }
+  const activeAvailability = availability.map(a => `${a.day_type}_${a.period}`)
+  // { 'weekday_morning': [8,10] } — só pros que têm hora escolhida.
+  const activeAvailabilityHours: Record<string, number[]> = {}
+  for (const a of availability) {
+    if (Array.isArray(a.hours) && a.hours.length) activeAvailabilityHours[`${a.day_type}_${a.period}`] = a.hours.map(Number)
+  }
 
   return (
     <div className="max-w-3xl">
@@ -37,6 +50,7 @@ export default async function SettingsPage() {
         buyer={buyer}
         activeStates={activeStates}
         activeAvailability={activeAvailability}
+        activeAvailabilityHours={activeAvailabilityHours}
         allStates={US_STATES}
       />
     </div>
