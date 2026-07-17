@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n-client'
 import { MIcon } from '@/components/mobile/icons'
+import { EventSheet, type AgendaEvent } from '@/components/mobile/event-sheet'
 
-interface Ev { id: string; kind: string; title: string; subtitle?: string; start: string; status?: string; lead_id?: string | null; lead_name?: string | null; color?: string; completed?: boolean }
+interface Ev { id: string; raw_id: string; kind: 'appointment' | 'followup' | 'event' | 'task'; title: string; subtitle?: string; start: string; status?: string; lead_id?: string | null; lead_name?: string | null; lead_phone?: string | null; color?: string; completed?: boolean; description?: string | null; location?: string | null }
 
 export default function MobileAppointments() {
   const t = useT()
@@ -19,6 +19,7 @@ export default function MobileAppointments() {
   const [err, setErr] = useState(false)
   const [creating, setCreating] = useState<{ title: string; date: string; time: string; color: string } | null>(null)
   const [busy, setBusy] = useState(false)
+  const [selected, setSelected] = useState<Ev | null>(null)
 
   const load = (bid: string) => {
     const from = new Date(); from.setHours(0, 0, 0, 0)
@@ -99,7 +100,9 @@ export default function MobileAppointments() {
                   <span style={{ color: 'var(--m-faint)', display: 'flex' }}><MIcon name={kindIcon(e.kind)} size={18} /></span>
                 </div>
               )
-              return e.lead_id ? <Link key={e.id} href={`/m/leads/${e.lead_id}`} className="m-link m-tap">{inner}</Link> : <div key={e.id}>{inner}</div>
+              // Toca no item → abre o detalhe com as ações (concluir/reagendar/no-show/deletar).
+              // Antes o card só linkava pro lead (ou nem isso) e a agenda era read-only.
+              return <div key={e.id} className="m-tap" style={{ cursor: 'pointer' }} onClick={() => setSelected(e)}>{inner}</div>
             })}
           </div>
         ))}
@@ -127,6 +130,15 @@ export default function MobileAppointments() {
             <button onClick={createEvent} disabled={busy || !creating.title.trim() || !creating.date || !creating.time} className="m-tap" style={{ width: '100%', height: 48, borderRadius: 14, background: 'var(--m-grad)', border: 'none', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: busy || !creating.title.trim() || !creating.date || !creating.time ? 0.5 : 1 }}>{busy ? L('Salvando…', 'Saving…', 'Guardando…') : L('Criar', 'Create', 'Crear')}</button>
           </div>
         </div>
+      )}
+
+      {selected && (
+        <EventSheet
+          event={selected as AgendaEvent}
+          locale={loc}
+          onClose={() => setSelected(null)}
+          onChanged={() => { if (buyerId) { setEvents(null); load(buyerId) } }}
+        />
       )}
     </div>
   )

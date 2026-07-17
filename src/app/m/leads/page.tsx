@@ -1,14 +1,19 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n-client'
 import { MIcon } from '@/components/mobile/icons'
 import { AssignSheet } from '@/components/mobile/assign-sheet'
+import { NewLeadSheet } from '@/components/mobile/new-lead-sheet'
 import { timeAgo, getInitials, statusLabel } from '@/lib/utils'
 
 interface Lead { id: string; name: string; phone: string; city: string; state: string; status: string; interest: string; type: string; created_at: string; assigned_to_member?: string | null }
 interface Member { id: string; name: string }
+
+// Quantos leads por página. Antes o app pedia limit=100 fixo e sem offset —
+// quem tinha mais de 100 leads simplesmente não enxergava os antigos no celular.
+const PAGE = 100
 
 function avatarBg(name: string) {
   const h = ((name?.charCodeAt(0) || 65) * 37) % 360
@@ -27,17 +32,39 @@ export default function MobileLeads() {
   const [isAgency, setIsAgency] = useState(false)
   const [members, setMembers] = useState<Member[]>([])
   const [sheetLead, setSheetLead] = useState<Lead | null>(null)
+  const [total, setTotal] = useState<number | null>(null)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [newOpen, setNewOpen] = useState(false)
 
   useEffect(() => {
-    fetch('/api/leads?limit=100', { cache: 'no-store' })
+    fetch(`/api/leads?limit=${PAGE}&offset=0`, { cache: 'no-store' })
       .then(r => (r.ok ? r.json() : Promise.reject()))
-      .then(d => setLeads(d.leads || []))
+      .then(d => { setLeads(d.leads || []); setTotal(typeof d.total === 'number' ? d.total : null) })
       .catch(() => setErr(true))
     fetch('/api/m/team-context', { cache: 'no-store' })
       .then(r => (r.ok ? r.json() : null))
       .then(d => { if (d) { setIsAgency(!!d.is_agency); setMembers(d.members || []) } })
       .catch(() => {})
   }, [])
+
+  const loaded = leads?.length || 0
+  const hasMore = total !== null && loaded < total
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return
+    setLoadingMore(true)
+    try {
+      const r = await fetch(`/api/leads?limit=${PAGE}&offset=${loaded}`, { cache: 'no-store' })
+      const d = await r.json()
+      // dedup por id: o append pode repetir se um lead novo entrar entre as páginas
+      setLeads(prev => {
+        const seen = new Set((prev || []).map(l => l.id))
+        return [...(prev || []), ...((d.leads || []) as Lead[]).filter(l => !seen.has(l.id))]
+      })
+      if (typeof d.total === 'number') setTotal(d.total)
+    } catch {}
+    setLoadingMore(false)
+  }, [loadingMore, hasMore, loaded])
 
   const memberName = (id?: string | null) => members.find(m => m.id === id)?.name || null
   const canAssign = isAgency && members.length > 0
@@ -64,10 +91,23 @@ export default function MobileLeads() {
     setLeads(prev => (prev || []).map(l => l.id === sheetLead.id ? { ...l, assigned_to_member: memberId } : l))
   }
 
+  function onCreated(lead: Lead) {
+    setLeads(prev => [lead, ...(prev || [])])
+    setTotal(t => (t === null ? t : t + 1))
+  }
+
   return (
     <div>
       <div className="m-pad" style={{ paddingTop: 8, paddingBottom: 14 }}>
-        <p style={{ margin: '0 0 14px', fontSize: 20, fontWeight: 800 }}>{L('Meus leads', 'My leads', 'Mis leads')}</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '0 0 14px' }}>
+          <p style={{ margin: 0, flex: 1, fontSize: 20, fontWeight: 800 }}>{L('Meus leads', 'My leads', 'Mis leads')}</p>
+          {/* "+" no cabeçalho (mesmo padrão da agenda) — cadastrar lead na hora.
+              Header em vez de FAB pra não colidir com o botão flutuante da Zoe. */}
+          <button onClick={() => setNewOpen(true)} aria-label={L('Novo lead', 'New lead', 'Nuevo lead')} className="m-tap"
+            style={{ width: 38, height: 38, borderRadius: 12, border: 'none', cursor: 'pointer', background: 'var(--m-grad)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 6px 16px -6px rgba(99,102,241,0.7)' }}>
+            <MIcon name="plus" size={22} />
+          </button>
+        </div>
         <div style={{ position: 'relative' }}>
           <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--m-faint)', display: 'flex' }}><MIcon name="search" size={18} /></span>
           <input className="m-input" value={q} onChange={e => setQ(e.target.value)} placeholder={L('Buscar lead...', 'Search lead...', 'Buscar lead...')} style={{ paddingLeft: 40 }} />
@@ -107,7 +147,35 @@ export default function MobileLeads() {
             </div>
           )
         })}
+
+        {/* Busca/filtro rodam sobre o que já foi carregado — avisa quando ainda há leads no servidor */}
+        {leads && hasMore && (q.trim() || filter !== 'all') && (
+          <p className="m-faint" style={{ textAlign: 'center', fontSize: 11.5, margin: '2px 0 12px', lineHeight: 1.5 }}>
+            {L(`Buscando entre ${loaded} de ${total} leads. Carregue mais pra incluir os antigos.`,
+               `Searching ${loaded} of ${total} leads. Load more to include older ones.`,
+               `Buscando entre ${loaded} de ${total} leads.`)}
+          </p>
+        )}
+
+        {leads && hasMore && (
+          <button onClick={loadMore} disabled={loadingMore} className="m-tap"
+            style={{ width: '100%', height: 46, marginBottom: 10, borderRadius: 13, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--m-border)', color: 'var(--m-text)', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', opacity: loadingMore ? 0.6 : 1 }}>
+            {loadingMore
+              ? L('Carregando…', 'Loading…', 'Cargando…')
+              : L(`Carregar mais (${loaded} de ${total})`, `Load more (${loaded} of ${total})`, `Cargar más (${loaded} de ${total})`)}
+          </button>
+        )}
+
+        {leads && !hasMore && total !== null && total > PAGE && (
+          <p className="m-faint" style={{ textAlign: 'center', fontSize: 11.5, margin: '2px 0 10px' }}>
+            {L(`Todos os ${total} leads carregados.`, `All ${total} leads loaded.`, `Los ${total} leads cargados.`)}
+          </p>
+        )}
       </div>
+
+      {newOpen && (
+        <NewLeadSheet locale={loc} onClose={() => setNewOpen(false)} onCreated={onCreated} />
+      )}
 
       {sheetLead && (
         <AssignSheet
