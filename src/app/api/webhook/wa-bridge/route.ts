@@ -261,17 +261,25 @@ export async function POST(request: NextRequest) {
     // uma 2ª linha (DUPLICATA no inbox), ATUALIZA a linha do app. Casa por lead+texto
     // (imune ao formato @lid/@c.us). Só saída.
     if (isOut && wa_message_id) {
-      const { data: pending } = await db
-        .from('whatsapp_messages')
-        .select('id')
-        .eq('lead_id', match.id)
-        .eq('direction', 'out')
-        .is('wa_message_id', null)
-        .eq('body', body || '')
-        .gte('sent_at', new Date(Date.now() - 5 * 60 * 1000).toISOString())
-        .order('sent_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+      const findTwin = async () => {
+        const { data } = await db
+          .from('whatsapp_messages')
+          .select('id')
+          .eq('lead_id', match.id)
+          .eq('direction', 'out')
+          .is('wa_message_id', null)
+          .eq('body', body || '')
+          .gte('sent_at', new Date(Date.now() - 5 * 60 * 1000).toISOString())
+          .order('sent_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        return data
+      }
+      // RE-CHECAGEM (fecha a CORRIDA): se o message_create chega ANTES do app commitar
+      // a linha NULL, a 1ª busca não acha e sobrava duplicata. Espera 2s e tenta de novo
+      // — o insert do app aterrissa nesse meio-tempo. Só depois disso é que insere.
+      let pending = await findTwin()
+      if (!pending) { await new Promise(r => setTimeout(r, 2000)); pending = await findTwin() }
       if (pending) {
         await db.from('whatsapp_messages').update({ wa_message_id, status: 'sent' }).eq('id', pending.id)
         return NextResponse.json({ merged: pending.id })
