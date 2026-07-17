@@ -61,7 +61,6 @@ async function sendWhatsApp(phone: string, message: string, bridge?: { url: stri
  * for finalmente distribuído, o sendLeadNotificationEmail avisa "entregue pra X".
  */
 export async function notifyGroupLeadPending(lead: { name: string; phone: string; state?: string | null; interest?: string | null }) {
-  const adminGroupId = process.env.WHATSAPP_ADMIN_GROUP || '120363403347083071@g.us'
   const msg = `🔔 *NOVO LEAD RECEBIDO* (aguardando distribuição)
 
 📋 *${lead.name}*
@@ -70,12 +69,11 @@ export async function notifyGroupLeadPending(lead: { name: string; phone: string
 💡 ${lead.interest || 'Seguro de vida'}
 
 ⏳ Nenhum comprador disponível agora (estado/horário). Será entregue automaticamente quando a janela abrir.`
-  await sendWhatsApp(adminGroupId, msg) // bridge global do grupo
+  await notifyAdmins(msg) // grupo + direto (grupo sozinho NAO entrega — ver notifyAdmins)
 }
 
 /** Avisa o GRUPO de controle que um CLIENTE (comprador) mandou mensagem. */
 export async function notifyGroupClientMessage(clientName: string | null, fromPhone: string, body: string) {
-  const adminGroupId = process.env.WHATSAPP_ADMIN_GROUP || '120363403347083071@g.us'
   const msg = `👥 *MENSAGEM DE CLIENTE*
 
 🧑‍💼 *${clientName || 'Cliente'}*
@@ -84,19 +82,18 @@ export async function notifyGroupClientMessage(clientName: string | null, fromPh
 💬 "${body.slice(0, 400)}"
 
 ➡️ Responda em Admin → Atendimento a Clientes`
-  await sendWhatsApp(adminGroupId, msg)
+  await notifyAdmins(msg) // grupo + direto
 }
 
 /** Avisa o GRUPO de controle que um lead respondeu o SMS em massa. */
 export async function notifyGroupSmsReply(leadName: string | null, fromPhone: string, body: string) {
-  const adminGroupId = process.env.WHATSAPP_ADMIN_GROUP || '120363403347083071@g.us'
   const msg = `📩 *RESPOSTA DE SMS*
 
 👤 *${leadName || 'Número não cadastrado'}*
 📞 +${fromPhone}
 
 💬 "${body.slice(0, 400)}"`
-  await sendWhatsApp(adminGroupId, msg)
+  await notifyAdmins(msg) // grupo + direto
 }
 
 /** Avisa o GRUPO de controle sobre uma NOVA COMPRA (pacote de leads/appointments ou assinatura). */
@@ -375,7 +372,6 @@ export async function checkBridgeHealthAndAlert(): Promise<boolean> {
 export async function checkAllBridgesAndAlert(): Promise<{ checked: number; down: number; alerts: number }> {
   const { createAdminClient } = await import('@/lib/supabase/admin')
   const db = createAdminClient()
-  const adminGroupId = process.env.WHATSAPP_ADMIN_GROUP || '120363403347083071@g.us'
 
   const { data: buyers } = await db
     .from('buyers')
@@ -415,10 +411,13 @@ export async function checkAllBridgesAndAlert(): Promise<{ checked: number; down
       const ph = b.wa_bridge_phone ? ` (${b.wa_bridge_phone})` : ''
       try {
         if (state === 'down') {
-          await sendWhatsApp(adminGroupId, `⚠️ WhatsApp de *${who}*${ph} DESCONECTOU. Peça pra reconectar: Configurações → Conectar WhatsApp → escanear o QR. Enquanto isso, as mensagens dele falham.`)
+          // ALARME DE INCÊNDIO: tem que chegar. Só-grupo ficou MUDO em 2026-07-14/16
+          // (piroli, Davi Vaz e Leonel caíram e o alerta se perdeu no grupo) — por
+          // isso ninguém soube que estava tudo quebrado. Agora vai no direto também.
+          await notifyAdmins(`⚠️ WhatsApp de *${who}*${ph} DESCONECTOU. Peça pra reconectar: Configurações → Conectar WhatsApp → escanear o QR. Enquanto isso, as mensagens dele falham.`)
           await db.from('buyers').update({ wa_bridge_status: 'disconnected' }).eq('id', b.id)
         } else {
-          await sendWhatsApp(adminGroupId, `✅ WhatsApp de *${who}*${ph} reconectou — voltou a enviar normal.`)
+          await notifyAdmins(`✅ WhatsApp de *${who}*${ph} reconectou — voltou a enviar normal.`)
           await db.from('buyers').update({ wa_bridge_status: 'connected' }).eq('id', b.id)
         }
         alerts++
