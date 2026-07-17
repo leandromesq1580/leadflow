@@ -100,11 +100,37 @@ export async function notifyGroupSmsReply(leadName: string | null, fromPhone: st
 }
 
 /** Avisa o GRUPO de controle sobre uma NOVA COMPRA (pacote de leads/appointments ou assinatura). */
+/**
+ * Alerta pro time: GRUPO (primário) + NÚMERO DIRETO do admin (backup).
+ *
+ * POR QUE O BACKUP EXISTE: o envio pro grupo (@g.us) hoje NÃO entrega — o
+ * whatsapp-web.js aceita, devolve noAck e a mensagem SOME sem erro. 9 vendas
+ * (Joelma, Roberta, Fabiana x3, Marcos, Carla, Renata, Sidnei) se perderam
+ * assim, sem ninguém saber. O número direto entrega (comprovado). Enquanto o
+ * grupo não voltar, é o backup que garante que o alerta chega.
+ *
+ * O direto é best-effort e isolado: falha dele não derruba o retorno do grupo.
+ */
+async function notifyAdmins(msg: string): Promise<{ groupOk: boolean; directOk: boolean }> {
+  const adminGroupId = process.env.WHATSAPP_ADMIN_GROUP || '120363403347083071@g.us'
+  const adminPhone = process.env.ADMIN_WHATSAPP || '18632808023'
+  const groupOk = await sendWhatsApp(adminGroupId, msg)
+  let directOk = false
+  if (adminPhone) {
+    try {
+      directOk = await sendWhatsApp(adminPhone, msg)
+    } catch (e: any) {
+      console.warn('[Notify] backup direto do admin falhou:', e?.message)
+    }
+  }
+  if (!groupOk && !directOk) console.error('[Notify] alerta NAO chegou nem no grupo nem no direto:', msg.slice(0, 60))
+  return { groupOk, directOk }
+}
+
 export async function notifyGroupPurchase(p: {
   name: string | null; email: string | null; description: string; amount: number;
   kind: 'pacote' | 'assinatura' | 'renovacao'
 }) {
-  const adminGroupId = process.env.WHATSAPP_ADMIN_GROUP || '120363403347083071@g.us'
   const head = p.kind === 'renovacao' ? '🔁 *RENOVAÇÃO*' : p.kind === 'assinatura' ? '🟣 *NOVA ASSINATURA*' : '🛒 *NOVA COMPRA*'
   const msg = `${head}
 
@@ -112,7 +138,9 @@ export async function notifyGroupPurchase(p: {
 📧 ${p.email || '—'}
 🧾 ${p.description}
 💵 US$ ${p.amount.toFixed(2)}`
-  await sendWhatsApp(adminGroupId, msg)
+  // Grupo + direto: venda é dinheiro entrando, não pode sumir num buraco de entrega.
+  const { groupOk, directOk } = await notifyAdmins(msg)
+  console.log(`[Notify] venda "${p.description}" US$${p.amount.toFixed(2)} — grupo=${groupOk} direto=${directOk}`)
 }
 
 interface Buyer {
