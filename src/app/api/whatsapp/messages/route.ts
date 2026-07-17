@@ -198,6 +198,26 @@ export async function POST(request: NextRequest) {
     }
     const waId = sent?.id || null
 
+    // 🔁 ANTI-DUPLICAÇÃO (fecha a corrida): em contato @lid/grupo a bridge não devolve
+    // ack (waId null) e o evento message_create grava a MESMA saída com id real. O
+    // webhook já faz merge quando ELE chega depois — mas se ele chegar ANTES deste
+    // insert, sobrava duplicata. Aqui, quando NÃO temos ack, checamos se o gêmeo com
+    // id real já foi gravado (mesmo lead+texto, recente); se sim, devolvemos ele em
+    // vez de inserir a 2ª cópia.
+    if (!waId && !mediaUrl) {
+      const { data: twin } = await db.from('whatsapp_messages')
+        .select('*')
+        .eq('lead_id', lead_id)
+        .eq('direction', 'out')
+        .not('wa_message_id', 'is', null)
+        .eq('body', body || '')
+        .gte('sent_at', new Date(Date.now() - 5 * 60 * 1000).toISOString())
+        .order('sent_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (twin) return NextResponse.json({ message: twin })
+    }
+
     const { data: msg } = await db.from('whatsapp_messages').insert({
       buyer_id,
       lead_id,
