@@ -26,9 +26,13 @@ export async function POST(request: NextRequest) {
   if (!lead) return NextResponse.json({ error: 'Lead nao encontrado' }, { status: 404 })
   if (lead.assigned_to === to_buyer_id) return NextResponse.json({ error: 'Lead ja pertence a esse agente' }, { status: 400 })
 
-  const { data: toBuyer } = await db.from('buyers')
-    .select('id, name, email, phone, notification_phone_2, notification_email, notification_sms, is_admin')
-    .eq('id', to_buyer_id).single()
+  // `notification_phone_2` só existe após a migration 031. Sem a coluna, o PostgREST
+  // devolve 400 → toBuyer vira null → "Agente destino nao encontrado" (o repasse
+  // quebrava inteiro). Fallback: sem a coluna, segue sem o 2º número.
+  const TO_COLS = 'id, name, email, phone, notification_email, notification_sms, is_admin'
+  let toRes = await db.from('buyers').select(`${TO_COLS}, notification_phone_2`).eq('id', to_buyer_id).single()
+  if (toRes.error) toRes = await db.from('buyers').select(TO_COLS).eq('id', to_buyer_id).single()
+  const toBuyer = toRes.data
   if (!toBuyer) return NextResponse.json({ error: 'Agente destino nao encontrado' }, { status: 404 })
 
   // 💳 CHECA CRÉDITO ANTES de mover nada. Sem saldo de lead → bloqueia (avisa o admin).

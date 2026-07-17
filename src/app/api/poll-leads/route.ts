@@ -222,10 +222,13 @@ export async function GET(request: Request) {
       missedCount = missedLeads.length
       if (missedLeads.length) {
         const ids = [...new Set(missedLeads.map((l: any) => l.assigned_to))]
-        const { data: bs } = await supabase
-          .from('buyers')
-          .select('id, name, email, phone, notification_phone_2, notification_email, notification_sms')
-          .in('id', ids)
+        // `notification_phone_2` só existe depois da migration 031. Se a coluna não
+        // existe, o PostgREST devolve 400 e o select inteiro volta VAZIO → nenhum lead
+        // seria notificado. Por isso o fallback: sem a coluna, segue sem o 2º número.
+        const COLS = 'id, name, email, phone, notification_email, notification_sms'
+        let bsRes: { data: any[] | null; error: any } = await supabase.from('buyers').select(`${COLS}, notification_phone_2`).in('id', ids)
+        if (bsRes.error) bsRes = await supabase.from('buyers').select(COLS).in('id', ids)
+        const bs = bsRes.data
         const bmap = new Map((bs || []).map((b: any) => [b.id, b]))
         for (const lead of missedLeads) {
           const buyer = bmap.get((lead as any).assigned_to)

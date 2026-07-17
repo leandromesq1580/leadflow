@@ -18,7 +18,14 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}))
   const db = createAdminClient()
 
-  let query = db.from('leads').select('*, buyer:assigned_to(id, name, email, phone, whatsapp, notification_phone_2, notification_email, notification_sms)').not('assigned_to', 'is', null)
+  // `notification_phone_2` só existe após a migration 031 — sem ela o PostgREST
+  // devolve 400 e o reenvio inteiro morre. Só pede a coluna se ela existir.
+  const probe = await db.from('buyers').select('notification_phone_2').limit(1)
+  const buyerCols = probe.error
+    ? 'id, name, email, phone, whatsapp, notification_email, notification_sms'
+    : 'id, name, email, phone, whatsapp, notification_phone_2, notification_email, notification_sms'
+
+  let query = db.from('leads').select(`*, buyer:assigned_to(${buyerCols})`).not('assigned_to', 'is', null)
 
   if (body.lead_ids?.length) {
     query = query.in('id', body.lead_ids)
