@@ -233,7 +233,7 @@ export const messages = {
         starter: '🧪 Starter',
       starterNote: 'Exclusivo da 1ª compra',
         buy: 'Comprar',
-        cold: 'Tem também Leads Frios a partir de $4/lead — pra aquecer e nutrir.',
+        cold: 'Tem também Leads Frios a partir de $3/lead — pra aquecer e nutrir.',
       },
       free: {
         name: 'Grátis',
@@ -748,7 +748,7 @@ export const messages = {
         starter: '🧪 Starter',
       starterNote: 'First purchase only',
         buy: 'Buy',
-        cold: 'We also have Cold Leads from $4/lead — to warm up and nurture.',
+        cold: 'We also have Cold Leads from $3/lead — to warm up and nurture.',
       },
       free: {
         name: 'Free',
@@ -1263,7 +1263,7 @@ export const messages = {
         starter: '🧪 Starter',
       starterNote: 'Solo en la 1ª compra',
         buy: 'Comprar',
-        cold: 'También tenemos Leads Fríos desde $4/lead — para calentar y nutrir.',
+        cold: 'También tenemos Leads Fríos desde $3/lead — para calentar y nutrir.',
       },
       free: {
         name: 'Gratis',
