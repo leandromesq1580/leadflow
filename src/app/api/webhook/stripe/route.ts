@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { distributeColdLeads } from '@/lib/cold-leads'
 import { LEADS_PER_MONTH, CRM_PLAN_LIST } from '@/lib/crm-plans'
 import { notifyGroupPurchase } from '@/lib/notifications'
 import Stripe from 'stripe'
@@ -50,7 +49,7 @@ export async function POST(request: NextRequest) {
       }
 
       const buyerId = session.metadata?.buyer_id
-      const productType = session.metadata?.product_type as 'lead' | 'appointment'
+      const productType = session.metadata?.product_type as 'lead' | 'cold_lead' | 'appointment'
       const quantity = parseInt(session.metadata?.quantity || '0', 10)
       const pricePerUnit = parseFloat(session.metadata?.price_per_unit || '0')
 
@@ -61,19 +60,26 @@ export async function POST(request: NextRequest) {
 
       console.log(`[Stripe Webhook] Payment completed: ${quantity} ${productType}s for buyer ${buyerId}`)
 
-      // Create credits for buyer
-      const { error: creditError } = await supabase.from('credits').insert({
-        buyer_id: buyerId,
-        type: productType,
-        total_purchased: quantity,
-        total_used: 0,
-        price_per_unit: pricePerUnit,
-        stripe_payment_id: session.payment_intent as string,
-        purchased_at: new Date().toISOString(),
-      })
+      // Lead FRIO (jul/2026, opção B): a compra SÓ registra o pagamento — NÃO gera crédito e
+      // NÃO auto-atribui/entra na fila. Entrega é MANUAL (planilha) pelo admin. Lead quente e
+      // demais produtos seguem gerando crédito normalmente.
+      const isColdLead = productType === 'cold_lead'
 
-      if (creditError) {
-        console.error('[Stripe Webhook] Failed to create credits:', creditError)
+      // Create credits for buyer (pula lead frio — entrega manual, sem crédito)
+      if (!isColdLead) {
+        const { error: creditError } = await supabase.from('credits').insert({
+          buyer_id: buyerId,
+          type: productType,
+          total_purchased: quantity,
+          total_used: 0,
+          price_per_unit: pricePerUnit,
+          stripe_payment_id: session.payment_intent as string,
+          purchased_at: new Date().toISOString(),
+        })
+
+        if (creditError) {
+          console.error('[Stripe Webhook] Failed to create credits:', creditError)
+        }
       }
 
       // Record payment
@@ -92,26 +98,9 @@ export async function POST(request: NextRequest) {
         console.error('[Stripe Webhook] Failed to record payment:', paymentError)
       }
 
-      // If cold_lead purchase, distribute cold leads immediately
-      if (productType === 'cold_lead') {
-        const distributed = await distributeColdLeads(buyerId, quantity)
-        console.log(`[Stripe Webhook] Distributed ${distributed} cold leads to ${buyerId}`)
-
-        // Update credits used count
-        if (distributed > 0) {
-          const { data: newCredit } = await supabase
-            .from('credits')
-            .select('id')
-            .eq('buyer_id', buyerId)
-            .eq('type', 'cold_lead')
-            .order('purchased_at', { ascending: false })
-            .limit(1)
-            .single()
-
-          if (newCredit) {
-            await supabase.from('credits').update({ total_used: distributed }).eq('id', newCredit.id)
-          }
-        }
+      // Lead frio: entrega MANUAL (planilha). NÃO auto-distribui nem debita crédito (opção B).
+      if (isColdLead) {
+        console.log(`[Stripe Webhook] Lead FRIO pago: ${quantity} p/ buyer ${buyerId} — entrega MANUAL (planilha), sem crédito e sem auto-atribuição.`)
       }
 
       // Se comprou appointment e ainda nao tem CRM, vira perfil "appointment-only"
