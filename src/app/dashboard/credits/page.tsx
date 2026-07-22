@@ -4,6 +4,7 @@ import { PRODUCTS, getStripe } from '@/lib/stripe'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { BuyButton } from './buy-button'
+import { CouponBox } from './coupon-box'
 import { CrmPlansGrid } from '@/app/dashboard/planos/crm-plans-grid'
 import { CrmChangePlan } from './crm-change-plan'
 import { getCrmPlan, CRM_PLAN_LIST } from '@/lib/crm-plans'
@@ -131,6 +132,7 @@ export default async function CreditsPage({
 
       {/* Lead Packages */}
       <h2 className="text-[16px] font-bold mb-4" style={{ color: '#1a1a2e' }}>📋 Pacotes de Leads Exclusivos</h2>
+      <CouponBox />
       <div className="grid grid-cols-3 gap-4 mb-8">
         {leadPackages.map((pkg) => {
           return (

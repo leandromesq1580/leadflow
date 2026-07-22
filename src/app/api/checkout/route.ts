@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getStripe, PRODUCTS, type ProductType } from '@/lib/stripe'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { resolveCoupon } from '@/lib/coupons'
 
 export async function POST(request: NextRequest) {
   try {
-    const { packageId } = await request.json()
+    const { packageId, couponCode } = await request.json()
 
     // 🚫 Appointments não são mais vendidos (jul/2026). Bloqueia qualquer tentativa de
     // checkout de pacote de appointment mesmo que venha por request forjado/link antigo.
@@ -50,6 +51,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
     }
 
+    // Cupom da plataforma (só pacotes de LEAD): validado server-side por email do
+    // comprador; força o preço por lead no unit_amount. Cupom inválido/de outra conta
+    // é simplesmente ignorado (compra segue no preço de tabela).
+    const coupon = productType === 'lead' ? resolveCoupon(couponCode, buyer.email) : null
+    const unitPriceCents = coupon ? coupon.unitPriceCents : selectedPackage.unitPriceCents
+    const pricePerUnit = coupon ? coupon.unitPriceCents / 100 : selectedPackage.pricePerUnit
+
     // Create Stripe Checkout Session
     const stripe = getStripe()
     const baseParams = {
@@ -60,9 +68,9 @@ export async function POST(request: NextRequest) {
             currency: 'usd',
             product_data: {
               name: `${PRODUCTS[productType].name} — ${selectedPackage.quantity}x`,
-              description: `${selectedPackage.quantity} ${productType === 'cold_lead' ? 'leads frios' : 'leads exclusivos'} · ${buyer.name || buyer.email}`,
+              description: `${selectedPackage.quantity} ${productType === 'cold_lead' ? 'leads frios' : 'leads exclusivos'} · ${buyer.name || buyer.email}${coupon ? ` · cupom ${coupon.code}` : ''}`,
             },
-            unit_amount: selectedPackage.unitPriceCents,
+            unit_amount: unitPriceCents,
           },
           quantity: selectedPackage.quantity,
         },
@@ -73,8 +81,9 @@ export async function POST(request: NextRequest) {
         buyer_email: buyer.email || '',
         product_type: productType,
         quantity: String(selectedPackage.quantity),
-        price_per_unit: String(selectedPackage.pricePerUnit),
+        price_per_unit: String(pricePerUnit),
         package_id: selectedPackage.id,
+        coupon: coupon?.code || '',
       },
       payment_intent_data: {
         description: `${selectedPackage.quantity}x ${PRODUCTS[productType].name} — ${buyer.name || buyer.email}`,

@@ -7,10 +7,13 @@ export function BuyButton({ packageId, color }: { packageId: string; color: stri
 
   async function buy() {
     setLoading(true)
+    // Cupom aplicado na CouponBox fica em sessionStorage; o checkout revalida server-side.
+    let couponCode: string | null = null
+    try { couponCode = sessionStorage.getItem('lead_coupon') } catch {}
     const res = await fetch('/api/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ packageId }),
+      body: JSON.stringify({ packageId, couponCode }),
     })
     const data = await res.json()
     if (data.url) {
