@@ -166,7 +166,7 @@ export async function forceAssignRoundRobin(
   return assigned
 }
 
-interface AdminRule { admin_emails?: string[]; one_in?: number; daily_quota?: number }
+interface AdminRule { admin_emails?: string[]; one_in?: number; daily_quota?: number; daily_max?: number | null }
 
 /**
  * REGRA DO ADMINISTRADOR (proporcional, "1 a cada N"): a cada N leads do SISTEMA,
@@ -217,6 +217,27 @@ export async function tryAdminRule(
   // Rodízio entre os admins licenciados: alterna a cada vez do admin.
   const turn = Math.floor(position / everyN)
   const chosen = pool[(Math.max(turn, 1) - 1) % pool.length]
+
+  // TETO DIÁRIO (2026-07-23): quantos leads o admin pode receber POR DIA via regra.
+  // daily_max ausente/null = sem limite (comportamento antigo). 0 = nenhum hoje.
+  // Conta TODO lead de sistema já atribuído ao admin escolhido no dia (Eastern),
+  // inclusive os que caíram por fallback. Teto batido → a vez é PULADA e o lead
+  // segue pro roteamento normal. O FALLBACK (último recurso, sem comprador apto)
+  // NÃO respeita o teto de propósito — senão o lead ficaria órfão.
+  const dailyMax = rule?.daily_max
+  if (dailyMax !== undefined && dailyMax !== null) {
+    if (dailyMax <= 0) return null
+    const { count: adminToday } = await supabase
+      .from('leads')
+      .select('*', { count: 'exact', head: true })
+      .eq('assigned_to', chosen.id)
+      .not('meta_lead_id', 'is', null)
+      .gte('assigned_at', easternDayStartISO())
+    if ((adminToday || 0) >= dailyMax) {
+      if (!dryRun) console.log(`[Distribute] REGRA ADMIN: teto diário ${dailyMax} batido p/ ${chosen.name} (${adminToday} hoje) — vez pulada`)
+      return null
+    }
+  }
 
   // Dry-run (preview/teste): retorna quem PEGARIA sem atribuir nem notificar.
   if (dryRun) return { ...(chosen as any), _everyN: everyN, _position: position, _isTurn: isTurn } as EligibleBuyer

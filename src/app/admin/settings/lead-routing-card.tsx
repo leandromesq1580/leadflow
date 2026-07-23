@@ -12,7 +12,7 @@ interface Routing {
   steps?: Step[]
   fallback_mode?: 'normal' | 'exclusive'
   fallback_email?: string | null
-  admin_rule?: { admin_emails?: string[]; one_in?: number; daily_quota?: number }
+  admin_rule?: { admin_emails?: string[]; one_in?: number; daily_quota?: number; daily_max?: number | null }
 }
 
 const MODES: { v: Routing['mode']; label: string; desc: string }[] = [
@@ -81,6 +81,11 @@ export function LeadRoutingCard() {
   function setOneIn(n: number) {
     // grava no campo novo (one_in) e zera o antigo (daily_quota) pra não confundir
     set({ admin_rule: { ...(routing.admin_rule || { admin_emails: [] }), one_in: n, daily_quota: undefined } })
+  }
+  function setDailyMax(v: string) {
+    // vazio = sem limite (null); 0 = nenhum lead pro admin hoje; N = teto por dia
+    const daily_max = v.trim() === '' ? null : Math.max(0, parseInt(v) || 0)
+    set({ admin_rule: { ...(routing.admin_rule || { admin_emails: [] }), daily_max } })
   }
   function addStep() {
     set({ steps: [...(routing.steps || []), { email: buyers[0]?.email || '', limit: 10, delivered: 0 }] })
@@ -195,13 +200,19 @@ export function LeadRoutingCard() {
       <div className="pt-4 mt-4 border-t border-gray-100">
         <label className="block text-sm font-semibold text-gray-700 mb-1">👤 Regra do Administrador</label>
         <p className="text-[11px] text-gray-400 mb-3">
-          A cada <b>N leads do sistema</b>, 1 vai pro(s) admin(s) (em rodízio entre eles), com PRIORIDADE sobre o roteamento abaixo e respeitando a licença de estado. É <b>proporcional ao volume</b> (não um teto por dia). Ex.: <b>3</b> = a cada 2 leads pros outros, o 3º vai pro admin. 0 = desligado.
+          A cada <b>N leads do sistema</b>, 1 vai pro(s) admin(s) (em rodízio entre eles), com PRIORIDADE sobre o roteamento abaixo e respeitando a licença de estado. É <b>proporcional ao volume</b>. Ex.: <b>3</b> = a cada 2 leads pros outros, o 3º vai pro admin. 0 = desligado. Dá pra combinar com um <b>teto por dia</b> abaixo: batido o teto, a vez do admin é pulada e o lead segue pros compradores. <i>O fallback (lead sem nenhum comprador apto) não respeita o teto — é o último recurso.</i>
         </p>
         <div className="flex items-center gap-2 mb-3">
           <label className="text-sm text-gray-700">A cada</label>
           <input type="number" min={0} value={routing.admin_rule?.one_in ?? routing.admin_rule?.daily_quota ?? 0}
             onChange={e => setOneIn(parseInt(e.target.value) || 0)} className={inputCls} style={{ width: 70 }} />
           <label className="text-sm text-gray-700">leads do sistema, 1 vai pro admin</label>
+        </div>
+        <div className="flex items-center gap-2 mb-3">
+          <label className="text-sm text-gray-700">Máximo de</label>
+          <input type="number" min={0} placeholder="∞" value={routing.admin_rule?.daily_max ?? ''}
+            onChange={e => setDailyMax(e.target.value)} className={inputCls} style={{ width: 70 }} />
+          <label className="text-sm text-gray-700">leads pro admin <b>por dia</b> (vazio = sem limite · <b>0</b> = nenhum hoje)</label>
         </div>
         <label className="block text-[12px] font-semibold text-gray-600 mb-1">Administradores no rodízio</label>
         <div className="space-y-1.5 max-h-44 overflow-auto">
