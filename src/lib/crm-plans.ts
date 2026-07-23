@@ -2,8 +2,11 @@
  * Planos de assinatura CRM Pro — 4 tiers por tempo de compromisso.
  * Quanto mais longo o compromisso, menor o $/mês. Tudo pago À VISTA (1 cobrança
  * cobrindo o período inteiro) e RECORRENTE (renova ao fim do período). Moeda: USD.
- * Bônus: 5 leads por mês (5 * meses do ciclo, creditados a cada cobrança) + landing
- * page exclusiva. Fonte única usada pelo checkout, pela UI de planos e pelo webhook.
+ * Bônus de leads DESCONTINUADO pra assinatura NOVA (2026-07-23). Assinantes antigos
+ * (com histórico 'crm-bonus:%' em credits) seguem recebendo 5/mês nas renovações —
+ * o gate está no webhook (invoice.payment_succeeded). leadsPerCycle/LEADS_PER_MONTH
+ * ficam SÓ pra esse legado; não anunciar em tela de venda.
+ * + landing page exclusiva (trimestral+). Fonte única de checkout, UI e webhook.
  */
 export type CrmPlanKey = 'mensal' | 'trimestral' | 'semestral' | 'anual'
 

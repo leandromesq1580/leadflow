@@ -103,7 +103,7 @@ export default async function CreditsPage({
         <div className="mb-8">
           <h2 className="text-[16px] font-bold mb-1" style={{ color: '#1a1a2e' }}>⚡ Assine o CRM Pro</h2>
           <p className="text-[13px] mb-4" style={{ color: '#64748b' }}>
-            Pipeline, Time, Follow-ups e Anexos + <b>5 leads exclusivos por mês</b>. Quanto maior o compromisso, menor o $/mês.
+            Pipeline, Time, Follow-ups e Anexos. Quanto maior o compromisso, menor o $/mês.
           </p>
           <CrmPlansGrid />
         </div>

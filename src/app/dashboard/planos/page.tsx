@@ -8,8 +8,8 @@ export default function PlanosPage() {
       <div className="mb-8 text-center">
         <h1 className="text-[26px] font-extrabold" style={{ color: '#1a1a2e' }}>Escolha seu plano CRM Pro</h1>
         <p className="text-[14px] mt-2 max-w-2xl mx-auto" style={{ color: '#64748b' }}>
-          Quanto mais longo o compromisso, menor o valor por mês. Todos incluem o CRM Pro completo
-          e <b>5 leads exclusivos por mês</b>; a partir do trimestral, também uma <b>landing page exclusiva</b>.
+          Quanto mais longo o compromisso, menor o valor por mês. Todos incluem o CRM Pro completo;
+          a partir do trimestral, também uma <b>landing page exclusiva</b>.
           Pagamento à vista, renovação automática — cancele quando quiser.
         </p>
       </div>
