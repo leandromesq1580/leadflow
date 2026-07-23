@@ -15,6 +15,7 @@ const PERIODS = [
 interface Metrics {
   period: string
   revenue: number; adSpend: number; adSpendOk: boolean; netResult: number
+  leadPkgRevenue: number; coldLeadRevenue: number; leadSalesRevenue: number; leadProfit: number; cpl: number
   leadsGenerated: number; assignedInPeriod: number
   soldLeads: number; deliveredPaid: number; owedLeads: number; deliveryPct: number
   payingBuyers: number; totalBuyers: number; pendingAppts: number
@@ -84,6 +85,29 @@ export function DashboardKpis() {
           <StatCard label="Compradores Pagantes" value={m.payingBuyers} icon="👥" change={`de ${m.totalBuyers} cadastrados`} />
           <StatCard label="Leads Pendentes" value={m.owedLeads} icon="📦" change={`devidos · ${m.pendingAppts} appts`} accent={m.owedLeads > 0} />
         </div>
+      )}
+
+      {/* Operação de LEADS: venda de leads × custo de gerar — a assinatura CRM fica de fora
+          de propósito (já está na Receita geral acima). Responde "vender lead dá lucro?" */}
+      {m && (
+        <>
+          <h3 className="text-[13px] font-bold uppercase tracking-wider mt-6 mb-3" style={{ color: '#64748b' }}>
+            🎯 Operação de Leads — venda × custo de geração
+          </h3>
+          <div className="grid grid-cols-4 gap-4" style={{ opacity: loading ? 0.5 : 1, transition: 'opacity .2s' }}>
+            <StatCard label="Receita de Leads" value={usd(m.leadSalesRevenue)} icon="🏷️"
+              change={`${usd(m.leadPkgRevenue)} pacotes · ${usd(m.coldLeadRevenue)} frios (sem assinaturas)`} />
+            <StatCard label="Custo de Geração" value={m.adSpendOk ? usd(m.adSpend) : '—'} icon="📣"
+              change={m.adSpendOk ? 'Campanha Leads Seguro' : 'Meta indisponível'} />
+            <StatCard label="Lucro dos Leads" value={m.adSpendOk ? `${m.leadProfit < 0 ? '-' : ''}${usd(Math.abs(m.leadProfit))}` : '—'}
+              icon={m.leadProfit >= 0 ? '📈' : '📉'}
+              change={m.adSpendOk ? (m.leadSalesRevenue > 0 ? `Margem ${Math.round((m.leadProfit / m.leadSalesRevenue) * 100)}%` : 'venda de leads − tráfego') : 'precisa do gasto Meta'}
+              trend={m.adSpendOk ? (m.leadProfit >= 0 ? 'up' : 'down') : undefined}
+              danger={m.adSpendOk && m.leadProfit < 0} />
+            <StatCard label="Custo por Lead (CPL)" value={m.adSpendOk && m.leadsGenerated > 0 ? `$${m.cpl.toFixed(2)}` : '—'} icon="🧮"
+              change={m.leadsGenerated > 0 ? `${usd(m.adSpend)} ÷ ${m.leadsGenerated} leads gerados` : 'sem leads no período'} />
+          </div>
+        </>
       )}
     </div>
   )

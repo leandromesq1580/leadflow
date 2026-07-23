@@ -52,12 +52,18 @@ export async function GET(request: NextRequest) {
   const until = untilParam || fb.until
 
   // Receita + pagantes (pagamentos concluídos no período)
-  let payQ = db.from('payments').select('amount, buyer_id').eq('status', 'completed')
+  let payQ = db.from('payments').select('amount, buyer_id, product_type').eq('status', 'completed')
   if (since) payQ = payQ.gte('created_at', since)
   if (until) payQ = payQ.lt('created_at', until)
   const { data: payments } = await payQ
   const revenue = (payments || []).reduce((s, p) => s + Number(p.amount || 0), 0)
   const payingBuyers = new Set((payments || []).map((p: any) => p.buyer_id).filter(Boolean)).size
+
+  // Quebra da OPERAÇÃO DE LEADS: só a VENDA de leads (pacotes 'lead' + 'cold_lead'),
+  // sem assinaturas CRM nem appointments — pra comparar com o custo de gerar (Meta).
+  const leadPkgRevenue = (payments || []).filter((p: any) => p.product_type === 'lead').reduce((s, p) => s + Number(p.amount || 0), 0)
+  const coldLeadRevenue = (payments || []).filter((p: any) => p.product_type === 'cold_lead').reduce((s, p) => s + Number(p.amount || 0), 0)
+  const leadSalesRevenue = leadPkgRevenue + coldLeadRevenue
 
   // "Leads gerados" conta SÓ lead gerado pelo SISTEMA — ou seja, vindo do Meta Lead
   // Ads (tem `meta_lead_id`). Tudo criado na MÃO por comprador/admin (Manual,
@@ -123,10 +129,14 @@ export async function GET(request: NextRequest) {
     }
   } catch {}
   const netResult = revenue - adSpend
+  // Lucro da operação de leads: o que a venda de leads rendeu − o que custou gerar.
+  const leadProfit = leadSalesRevenue - adSpend
+  const cpl = (leadsGenerated || 0) > 0 ? adSpend / (leadsGenerated || 1) : 0
 
   return NextResponse.json({
     period: periodKey,
     revenue, adSpend, adSpendOk, netResult,
+    leadPkgRevenue, coldLeadRevenue, leadSalesRevenue, leadProfit, cpl,
     leadsGenerated: leadsGenerated || 0,
     assignedInPeriod: assignedInPeriod || 0,
     soldLeads, deliveredPaid, owedLeads, deliveryPct,
