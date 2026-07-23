@@ -31,6 +31,10 @@ export function voiceConfigured(): boolean {
 /** URL pública que a TwiML App chama (usada TAMBÉM pra validar a assinatura Twilio). */
 export const VOICE_OUTBOUND_URL = 'https://lead4producers.com/api/voice/outbound'
 export const VOICE_STATUS_URL = 'https://lead4producers.com/api/voice/status'
+// Aviso de consentimento tocado SÓ pro lead antes do bridge (leis two-party: FL, MA, CA…)
+export const VOICE_WHISPER_URL = 'https://lead4producers.com/api/voice/whisper'
+// Callback quando a gravação fica pronta (baixa do Twilio → Storage privado → Anexos)
+export const VOICE_RECORDING_URL = 'https://lead4producers.com/api/voice/recording'
 
 /** Extrai o DDD (area code) de um telefone US. */
 export function areaCodeOf(phone: string | null | undefined): string | null {
