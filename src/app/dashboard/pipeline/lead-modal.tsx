@@ -121,6 +121,14 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
     setFollowUps(d.followUps || [])
   }
 
+  // Softphone grava follow-up da ligação (Ligou/resultado) → recarrega a lista ao vivo.
+  useEffect(() => {
+    const h = (ev: Event) => { if ((ev as CustomEvent).detail?.leadId === leadId) loadFollowUps() }
+    window.addEventListener('l4p:fu-refresh', h as EventListener)
+    return () => window.removeEventListener('l4p:fu-refresh', h as EventListener)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leadId])
+
   async function loadAttachments() {
     const r = await fetch(`/api/leads/${leadId}/attachments`)
     const d = await r.json()
