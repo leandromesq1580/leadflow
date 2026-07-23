@@ -11,12 +11,13 @@ export interface PlatformCoupon {
 }
 
 export const PLATFORM_COUPONS: Record<string, PlatformCoupon> = {
-  // Bianca Zimmer (conta PRINCIPAL) — preço legado $22/lead em qualquer pacote, permanente.
+  // Bianca Zimmer — preço legado $22/lead em qualquer pacote, permanente.
+  // 2026-07-22: contas fundidas; o email da conta única virou biancazimmer.bz@gmail.com.
   LEADZIMMER22: {
     code: 'LEADZIMMER22',
     productType: 'lead',
     unitPriceCents: 2200,
-    allowedEmails: ['biancazimmer@gmail.com'],
+    allowedEmails: ['biancazimmer.bz@gmail.com'],
     label: 'Parceiro — $22/lead',
   },
 }
