@@ -43,9 +43,9 @@ export async function POST(request: NextRequest) {
       await db.from('buyers').update({ stripe_customer_id: customerId }).eq('id', buyer.id)
     }
 
-    // Bônus de leads descontinuado pra assinatura nova (2026-07-23) — descrição sem leads.
-    const landingTxt = plan.key !== 'mensal' ? ' + landing page exclusiva' : ''
-    const description = `Pipeline, time, follow-ups${landingTxt}${plan.savingsPct ? ` — economia de ${plan.savingsPct}% vs mensal` : ''}`
+    // Bônus de leads (2026-07-23) e landing page exclusiva (2026-07-24) descontinuados —
+    // descrição só com o CRM em si.
+    const description = `Pipeline, time, follow-ups${plan.savingsPct ? ` — economia de ${plan.savingsPct}% vs mensal` : ''}`
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',

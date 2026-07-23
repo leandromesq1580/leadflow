@@ -6,7 +6,8 @@
  * (com histórico 'crm-bonus:%' em credits) seguem recebendo 5/mês nas renovações —
  * o gate está no webhook (invoice.payment_succeeded). leadsPerCycle/LEADS_PER_MONTH
  * ficam SÓ pra esse legado; não anunciar em tela de venda.
- * + landing page exclusiva (trimestral+). Fonte única de checkout, UI e webhook.
+ * Landing page exclusiva também DESCONTINUADA como oferta (2026-07-24) — não anunciar.
+ * Fonte única de checkout, UI e webhook.
  */
 export type CrmPlanKey = 'mensal' | 'trimestral' | 'semestral' | 'anual'
 

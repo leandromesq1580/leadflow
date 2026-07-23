@@ -60,12 +60,6 @@ export function CrmChangePlan({ currentPlan }: { currentPlan: string | null }) {
                 <span className="font-bold" style={{ color: '#10b981' }}>✓</span>
                 <span>Acesso CRM Pro completo (pipeline, time, follow-ups)</span>
               </li>
-              {plan.key !== 'mensal' && (
-                <li className="flex items-start gap-2 text-[12.5px]" style={{ color: '#334155' }}>
-                  <span className="font-bold" style={{ color: '#10b981' }}>✓</span>
-                  <span>Landing page exclusiva</span>
-                </li>
-              )}
             </ul>
             <button onClick={() => change(plan)} disabled={isCurrent || !!loading}
               className="mt-5 w-full py-3 rounded-xl text-[13px] font-bold disabled:opacity-60 transition-all"
