@@ -94,6 +94,30 @@ export default function MobileCreditos() {
   const currentPlanKey = d?.crm_plan_key || null
   const leadPkgs = PRODUCTS.lead.packages
 
+  // Cupom de plataforma (paridade com o web, 2026-07-24): validado no servidor; quando
+  // aplicado, os pacotes de LEAD mostram o preço com desconto e o checkout recebe o código.
+  const [cupom, setCupom] = useState('')
+  const [cupomInfo, setCupomInfo] = useState<{ code: string; unitPrice: number } | null>(null)
+  const [cupomErr, setCupomErr] = useState('')
+  const [cupomBusy, setCupomBusy] = useState(false)
+  async function aplicarCupom(code: string, silent = false) {
+    if (!code.trim()) return
+    setCupomBusy(true); setCupomErr('')
+    try {
+      const r = await fetch('/api/coupon/validate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) })
+      const j = await r.json().catch(() => ({}))
+      if (j.valid) { setCupomInfo({ code: j.code, unitPrice: j.unitPrice }); try { sessionStorage.setItem('lead_coupon', j.code) } catch {} }
+      else { setCupomInfo(null); try { sessionStorage.removeItem('lead_coupon') } catch {}; if (!silent) setCupomErr(j.error || L('Cupom inválido.', 'Invalid coupon.', 'Cupón inválido.')) }
+    } catch { if (!silent) setCupomErr(L('Erro ao validar.', 'Validation error.', 'Error.')) }
+    setCupomBusy(false)
+  }
+  useEffect(() => {
+    let saved = ''
+    try { saved = sessionStorage.getItem('lead_coupon') || '' } catch {}
+    if (saved) { setCupom(saved); aplicarCupom(saved, true) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   async function changePlan(planKey: string) {
     if (busy || planKey === currentPlanKey) return
     const pl = CRM_PLAN_LIST.find(p => p.key === planKey)
@@ -108,14 +132,20 @@ export default function MobileCreditos() {
     setBusy(false)
   }
 
-  function PkgRow({ p, type }: { p: { id: string; quantity: number; totalDisplay: number; pricePerUnit: number }; type: string }) {
+  function PkgRow({ p, type, isLead }: { p: { id: string; quantity: number; totalDisplay: number; pricePerUnit: number }; type: string; isLead?: boolean }) {
+    // Cupom aplicado só mexe nos pacotes de LEAD (o servidor revalida no checkout)
+    const per = isLead && cupomInfo ? cupomInfo.unitPrice : p.pricePerUnit
+    const total = isLead && cupomInfo ? p.quantity * cupomInfo.unitPrice : p.totalDisplay
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <div>
           <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{p.quantity} {type}</p>
-          <p className="m-muted" style={{ margin: '1px 0 0', fontSize: 12 }}>${p.pricePerUnit}/{L('cada', 'each', 'cada')}</p>
+          <p className="m-muted" style={{ margin: '1px 0 0', fontSize: 12 }}>
+            ${per}/{L('cada', 'each', 'cada')}
+            {isLead && cupomInfo && <span style={{ color: '#4ade80', fontWeight: 700 }}> · {cupomInfo.code}</span>}
+          </p>
         </div>
-        <button onClick={() => go('/api/checkout', { packageId: p.id })} disabled={busy} className="m-tap" style={{ display: 'flex', alignItems: 'center', gap: 6, height: 38, padding: '0 14px', borderRadius: 11, background: 'var(--m-grad)', border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>${p.totalDisplay}</button>
+        <button onClick={() => go('/api/checkout', { packageId: p.id, couponCode: isLead && cupomInfo ? cupomInfo.code : undefined })} disabled={busy} className="m-tap" style={{ display: 'flex', alignItems: 'center', gap: 6, height: 38, padding: '0 14px', borderRadius: 11, background: 'var(--m-grad)', border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>${total.toLocaleString('en-US')}</button>
       </div>
     )
   }
@@ -226,10 +256,38 @@ export default function MobileCreditos() {
               </div>}
           </div>
 
+          {/* Cupom (aplica nos pacotes de lead) */}
+          <div className="m-card" style={{ padding: '12px 16px', marginBottom: 14 }}>
+            {cupomInfo ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#4ade80', flex: 1 }}>
+                  ✅ {L('Cupom', 'Coupon', 'Cupón')} {cupomInfo.code} — ${cupomInfo.unitPrice}/lead
+                </p>
+                <button onClick={() => { setCupomInfo(null); setCupom(''); try { sessionStorage.removeItem('lead_coupon') } catch {} }} className="m-tap"
+                  style={{ background: 'none', border: 'none', color: 'var(--m-muted)', fontSize: 12, fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}>
+                  {L('Remover', 'Remove', 'Quitar')}
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="m-muted" style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 600 }}>{L('Tem um cupom?', 'Have a coupon?', '¿Tienes cupón?')}</p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input value={cupom} onChange={e => setCupom(e.target.value.toUpperCase())} placeholder={L('CÓDIGO', 'CODE', 'CÓDIGO')}
+                    style={{ flex: 1, height: 40, borderRadius: 11, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: 'var(--m-text)', padding: '0 12px', fontSize: 13, fontWeight: 700, letterSpacing: 1 }} />
+                  <button onClick={() => aplicarCupom(cupom)} disabled={cupomBusy || !cupom.trim()} className="m-tap"
+                    style={{ height: 40, padding: '0 16px', borderRadius: 11, background: 'var(--m-grad)', border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: cupomBusy || !cupom.trim() ? 0.5 : 1 }}>
+                    {cupomBusy ? '...' : L('Aplicar', 'Apply', 'Aplicar')}
+                  </button>
+                </div>
+                {cupomErr && <p style={{ margin: '8px 0 0', fontSize: 12, color: '#f87171' }}>{cupomErr}</p>}
+              </>
+            )}
+          </div>
+
           {/* Pacotes */}
           <div className="m-card" style={{ padding: '4px 16px', marginBottom: 14 }}>
             <p style={{ fontSize: 14, fontWeight: 700, margin: '14px 0 2px' }}>{L('Leads exclusivos', 'Exclusive leads', 'Leads exclusivos')}</p>
-            {leadPkgs.map(p => <PkgRow key={p.id} p={p} type="Leads" />)}
+            {leadPkgs.map(p => <PkgRow key={p.id} p={p} type="Leads" isLead />)}
           </div>
           <div className="m-card" style={{ padding: '4px 16px', marginBottom: 14 }}>
             <p style={{ fontSize: 14, fontWeight: 700, margin: '14px 0 2px' }}>{L('Leads frios', 'Cold leads', 'Leads fríos')}</p>
