@@ -42,7 +42,10 @@ export async function POST(request: NextRequest) {
   const xml =
     `<Response>` +
     `<Dial callerId="${xmlEscape(callerId)}" answerOnBridge="true" action="${xmlEscape(statusCb)}" method="POST">` +
-    `<Number statusCallbackEvent="initiated ringing answered completed" statusCallback="${xmlEscape(statusCb)}" statusCallbackMethod="POST">${xmlEscape(target)}</Number>` +
+    // machineDetection="Enable" (AMD assíncrono): detecta humano × caixa postal SEM atrasar
+    // o bridge do áudio; o resultado (AnsweredBy) chega no mesmo callback de status e
+    // auto-classifica o follow-up da ligação. Custo Twilio ~$0.0075/chamada.
+    `<Number statusCallbackEvent="initiated ringing answered completed" statusCallback="${xmlEscape(statusCb)}" statusCallbackMethod="POST" machineDetection="Enable" amdStatusCallback="${xmlEscape(statusCb)}" amdStatusCallbackMethod="POST">${xmlEscape(target)}</Number>` +
     `</Dial>` +
     `</Response>`
   return twiml(xml)

@@ -37,6 +37,50 @@ export async function POST(request: NextRequest) {
         // tabela `calls` ainda não migrada — ignora (piloto tolerante)
       }
     }
+
+    // 🤖 AUTO-CLASSIFICAÇÃO do follow-up da ligação (2026-07-23): o softphone grava
+    // "📞 Ligou — resultado pendente" na saída da chamada; aqui os callbacks do Twilio
+    // completam sozinhos: AMD (AnsweredBy) diz humano×caixa postal; o action do Dial
+    // (DialCallStatus) diz não-atendeu/ocupado/completou + duração. NUNCA sobrescreve
+    // classificação manual — só mexe em follow-up ainda "pendente" ou "(auto)".
+    const answeredBy = p.AnsweredBy || null
+    const dialStatus = p.DialCallStatus || null
+    if (leadId && (answeredBy || dialStatus)) {
+      try {
+        const db = createAdminClient()
+        let q = db.from('follow_ups').select('id, description')
+          .eq('lead_id', leadId).eq('type', 'call')
+          .order('created_at', { ascending: false }).limit(1)
+        if (buyerId) q = q.eq('buyer_id', buyerId)
+        const { data: fus } = await q
+        const fu = (fus || [])[0]
+        const touchable = fu && /resultado pendente|\(auto\)/.test(fu.description || '')
+        if (fu && touchable) {
+          const dur = parseInt(p.DialCallDuration || '0', 10) || 0
+          const durTxt = dur > 0 ? ` (${Math.floor(dur / 60)}:${String(dur % 60).padStart(2, '0')})` : ''
+          let desc: string | null = null
+          let final = false
+          if (answeredBy) {
+            if (answeredBy === 'human') desc = '📞 Ligação — Atendeu (auto)'
+            else if (answeredBy.startsWith('machine') || answeredBy === 'fax') desc = '📞 Ligação — Caixa postal (auto)'
+            // 'unknown' → deixa o callback final decidir
+          } else if (dialStatus === 'no-answer') { desc = '📞 Ligação — Não atendeu (auto)'; final = true }
+          else if (dialStatus === 'busy') { desc = '📞 Ligação — Não atendeu (ocupado) (auto)'; final = true }
+          else if (dialStatus === 'failed' || dialStatus === 'canceled') { desc = '📞 Ligação — Não completou (auto)'; final = true }
+          else if (dialStatus === 'completed') {
+            final = true
+            desc = (fu.description || '').includes('Caixa postal')
+              ? `📞 Ligação${durTxt} — Caixa postal (auto)`
+              : `📞 Ligação${durTxt} — Atendeu (auto)`
+          }
+          if (desc) {
+            const upd: Record<string, unknown> = { description: desc }
+            if (final) { upd.status = 'completed'; upd.completed_at = new Date().toISOString() }
+            await db.from('follow_ups').update(upd).eq('id', fu.id)
+          }
+        }
+      } catch (e: any) { console.warn('[voice/status] fu auto:', e?.message) }
+    }
   } catch (e: any) {
     console.warn('[voice/status]', e?.message)
   }
