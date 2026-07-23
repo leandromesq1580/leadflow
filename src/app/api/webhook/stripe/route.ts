@@ -232,7 +232,15 @@ export async function POST(request: NextRequest) {
         const crmPlan = CRM_PLAN_LIST.find(p => p.amountCents === Math.round(amount * 100)) || null
         const monthsInCycle = crmPlan ? crmPlan.months : recMonths
         // DRIP: credita SÓ o mês 1 (5 leads) aqui; o cron dripCrmBonusLeads pinga +5 a cada 30 dias até o total do plano (trimestral/semestral/anual).
-        const bonusLeads = LEADS_PER_MONTH
+        // 🛑 BÔNUS DESCONTINUADO pra assinatura NOVA (decisão 2026-07-23): só continua
+        // recebendo quem JÁ tem histórico de bônus (assinante antigo = direito adquirido,
+        // renovações incluídas). Assinante novo nunca ganha o m1 → o drip pula sozinho
+        // (exige m1 do ciclo). A oferta saiu das telas de venda no mesmo commit.
+        const { data: grandfathered } = await supabase
+          .from('credits').select('id')
+          .eq('buyer_id', subBuyer.id).like('stripe_payment_id', 'crm-bonus:%')
+          .limit(1).maybeSingle()
+        const bonusLeads = grandfathered ? LEADS_PER_MONTH : 0
         if (bonusLeads > 0) {
           const leadMarker = `crm-bonus:${invoice.id}:m1`
           const { data: dupLead } = await supabase.from('credits').select('id').eq('stripe_payment_id', leadMarker).maybeSingle()

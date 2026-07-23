@@ -54,10 +54,11 @@ export function CrmChangePlan({ currentPlan }: { currentPlan: string | null }) {
                 Economia de {plan.savingsPct}% vs mensal
               </div>
             )}
+            {/* Bônus de leads descontinuado pra assinatura nova (2026-07-23) — não anunciar. */}
             <ul className="mt-4 space-y-2.5 flex-1">
               <li className="flex items-start gap-2 text-[12.5px]" style={{ color: '#334155' }}>
                 <span className="font-bold" style={{ color: '#10b981' }}>✓</span>
-                <span>{plan.leadsPerCycle} leads exclusivos (5/mês)</span>
+                <span>Acesso CRM Pro completo (pipeline, time, follow-ups)</span>
               </li>
               {plan.key !== 'mensal' && (
                 <li className="flex items-start gap-2 text-[12.5px]" style={{ color: '#334155' }}>

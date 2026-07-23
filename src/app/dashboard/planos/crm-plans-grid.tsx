@@ -38,9 +38,9 @@ export function CrmPlansGrid({ landing = false }: { landing?: boolean }) {
     <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}>
       {CRM_PLAN_LIST.map(plan => {
         const hot = !!plan.highlight
+        // Bônus de leads DESCONTINUADO pra assinatura nova (2026-07-23) — não anunciar.
         const benefits = [
           'Acesso CRM Pro completo (pipeline, time, follow-ups)',
-          `${plan.leadsPerCycle} leads exclusivos (5/mês)`,
         ]
         // Landing page exclusiva: só nos planos de compromisso maior — o MENSAL não tem
         if (plan.key !== 'mensal') benefits.push('Landing page exclusiva')
