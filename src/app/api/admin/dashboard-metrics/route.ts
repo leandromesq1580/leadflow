@@ -4,8 +4,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
 
-// Conta de anúncios CERTA do Lead4Producers (a 2374409502997954 era a MHF3).
-const AD_ACCOUNT_ID = 'act_1626622925084500'
+// Conta MHF3 — é onde a CAMPANHA LEADS SEGURO roda (decisão 2026-07-23: o gasto do
+// dashboard conta SÓ essa campanha; a act_1626622925084500 mostrava outra conta e
+// dava $711 vs $2.669 do gasto real do mês).
+const AD_ACCOUNT_ID = 'act_2374409502997954'
+// Só campanhas com esse trecho no nome entram no card "Gasto Tráfego".
+const CAMPAIGN_FILTER = 'LEADS SEGURO'
 
 // Período → date_preset do Meta + corte de data pro banco (fallback UTC; o cliente
 // manda since/until no fuso LOCAL dele). since=null = tudo. until = fim do range
@@ -99,11 +103,21 @@ export async function GET(request: NextRequest) {
   try {
     const token = (process.env.META_PAGE_TOKEN || '').trim().replace(/\\n/g, '')
     if (token) {
-      const p = new URLSearchParams({ fields: 'spend', date_preset: datePreset, access_token: token })
+      // level=campaign + filtering: entra na soma SÓ a campanha "LEADS SEGURO"
+      // (cinto e suspensório: filtra na Meta E re-checa o nome aqui).
+      const p = new URLSearchParams({
+        fields: 'spend,campaign_name',
+        level: 'campaign',
+        filtering: JSON.stringify([{ field: 'campaign.name', operator: 'CONTAIN', value: CAMPAIGN_FILTER }]),
+        date_preset: datePreset,
+        access_token: token,
+      })
       const res = await fetch(`https://graph.facebook.com/v25.0/${AD_ACCOUNT_ID}/insights?${p.toString()}`, { next: { revalidate: 300 } })
       const raw = await res.json()
       if (!raw.error && Array.isArray(raw.data)) {
-        adSpend = raw.data.reduce((s: number, r: any) => s + parseFloat(r.spend || '0'), 0)
+        adSpend = raw.data
+          .filter((r: any) => String(r.campaign_name || '').toUpperCase().includes(CAMPAIGN_FILTER))
+          .reduce((s: number, r: any) => s + parseFloat(r.spend || '0'), 0)
         adSpendOk = true
       }
     }
