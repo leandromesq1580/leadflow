@@ -41,7 +41,10 @@ export async function POST(request: NextRequest) {
   const statusCb = `${VOICE_STATUS_URL}?buyer_id=${encodeURIComponent(params.buyerId || '')}&lead_id=${encodeURIComponent(params.leadId || '')}`
   const xml =
     `<Response>` +
-    `<Dial callerId="${xmlEscape(callerId)}" answerOnBridge="true" action="${xmlEscape(statusCb)}" method="POST">` +
+    // ringTone="us": com machineDetection o Twilio suprime o early media (tom de chamada
+    // real da operadora) → sem isso o agente ouve SILÊNCIO até atender. O ringTone manda
+    // o Twilio gerar o tom de chamada (padrão US) enquanto toca.
+    `<Dial callerId="${xmlEscape(callerId)}" answerOnBridge="true" ringTone="us" action="${xmlEscape(statusCb)}" method="POST">` +
     // machineDetection="Enable" (AMD assíncrono): detecta humano × caixa postal SEM atrasar
     // o bridge do áudio; o resultado (AnsweredBy) chega no mesmo callback de status e
     // auto-classifica o follow-up da ligação. Custo Twilio ~$0.0075/chamada.
