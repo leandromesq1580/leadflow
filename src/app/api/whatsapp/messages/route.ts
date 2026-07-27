@@ -184,6 +184,33 @@ export async function POST(request: NextRequest) {
       await new Promise(res => setTimeout(res, 800 * (attempt + 1)))
     }
 
+    // 🛟 FALLBACK (2026-07-27, caso Ericka): o getNumberId da bridge às vezes dá FALSO
+    // "não tem WhatsApp" pra número que JÁ conversou (flakiness da página do WhatsApp).
+    // Se o lead tem histórico com chat id conhecido, reenvia direto pro endereço salvo —
+    // a bridge pula a consulta quando `number` já contém '@'. Só roda com histórico real.
+    if (!sent && /nao tem WhatsApp/i.test(lastErr)) {
+      try {
+        const { data: hist } = await db.from('whatsapp_messages')
+          .select('wa_message_id').eq('lead_id', lead_id)
+          .not('wa_message_id', 'is', null)
+          .order('sent_at', { ascending: false }).limit(5)
+        const remote = (hist || [])
+          .map(h => String(h.wa_message_id || '').match(/^(?:true|false)_([^_]+@(?:lid|c\.us))_/)?.[1])
+          .find(Boolean)
+        if (remote) {
+          const r2 = await fetch(`${bridgeUrl}/send`, {
+            method: 'POST',
+            headers: { apikey: bridgeKey, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...bridgePayload, number: remote }),
+          })
+          if (r2.ok) {
+            sent = await r2.json().catch(() => ({ id: null }))
+            console.log(`[WA send] falso-negativo contornado via chat conhecido ${remote} (lead ${lead_id})`)
+          }
+        }
+      } catch (e: any) { console.warn('[WA send] fallback chat conhecido:', e?.message) }
+    }
+
     if (!sent) {
       // Bridge caída de verdade → marca o cache pra parar de mentir 'connected'
       if (lastStatus === 503 || /Not connected|not ready/i.test(lastErr)) {
