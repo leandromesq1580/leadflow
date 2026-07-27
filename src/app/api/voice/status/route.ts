@@ -60,11 +60,16 @@ export async function POST(request: NextRequest) {
         if (fu && touchable) {
           const dur = parseInt(p.DialCallDuration || '0', 10) || 0
           const durTxt = dur > 0 ? ` (${Math.floor(dur / 60)}:${String(dur % 60).padStart(2, '0')})` : ''
+          // CORRIDA (2026-07-27): o AMD é assíncrono e pode chegar DEPOIS do callback
+          // final — e ele não traz duração. Preserva a duração que já estiver escrita
+          // no follow-up pra não apagar o tempo da ligação.
+          const prevDur = ((fu.description || '').match(/\(\d+:\d{2}\)/) || [])[0]
+          const durKeep = durTxt || (prevDur ? ` ${prevDur}` : '')
           let desc: string | null = null
           let final = false
           if (answeredBy) {
-            if (answeredBy === 'human') desc = '📞 Ligação — Atendeu (auto)'
-            else if (answeredBy.startsWith('machine') || answeredBy === 'fax') desc = '📞 Ligação — Caixa postal (auto)'
+            if (answeredBy === 'human') desc = `📞 Ligação${durKeep} — Atendeu (auto)`
+            else if (answeredBy.startsWith('machine') || answeredBy === 'fax') desc = `📞 Ligação${durKeep} — Caixa postal (auto)`
             // 'unknown' → deixa o callback final decidir
           } else if (dialStatus === 'no-answer') { desc = '📞 Ligação — Não atendeu (auto)'; final = true }
           else if (dialStatus === 'busy') { desc = '📞 Ligação — Não atendeu (ocupado) (auto)'; final = true }
@@ -72,8 +77,8 @@ export async function POST(request: NextRequest) {
           else if (dialStatus === 'completed') {
             final = true
             desc = (fu.description || '').includes('Caixa postal')
-              ? `📞 Ligação${durTxt} — Caixa postal (auto)`
-              : `📞 Ligação${durTxt} — Atendeu (auto)`
+              ? `📞 Ligação${durKeep} — Caixa postal (auto)`
+              : `📞 Ligação${durKeep} — Atendeu (auto)`
           }
           if (desc) {
             const upd: Record<string, unknown> = { description: desc }
