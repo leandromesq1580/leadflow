@@ -30,37 +30,54 @@ export function Softphone() {
   const timerRef = useRef<any>(null)
   const leadIdRef = useRef<string>('')
 
-  useEffect(() => {
-    let mounted = true
-    ;(async () => {
-      try {
-        const res = await fetch('/api/voice/token', { cache: 'no-store' })
-        if (!res.ok) return
-        const { token, identity } = await res.json()
-        buyerIdRef.current = identity || ''
-        const { Device } = await import('@twilio/voice-sdk')
-        if (!mounted) return
-        const device = new Device(token, { codecPreferences: ['opus', 'pcmu'] as any, logLevel: 'error' as any })
-        device.on('registered', () => { if (mounted) setStatus('ready') })
-        device.on('error', (e: any) => { console.warn('[softphone]', e?.message || e); if (mounted) setStatus(s => (s === 'off' ? 'error' : s)) })
-        device.on('tokenWillExpire', async () => {
-          try { const r = await fetch('/api/voice/token', { cache: 'no-store' }); const j = await r.json(); device.updateToken(j.token) } catch {}
-        })
-        await device.register()
-        deviceRef.current = device
-      } catch (e: any) {
-        console.warn('[softphone] init:', e?.message || e)
-      }
-    })()
+  const mountedRef = useRef(true)
+  const initingRef = useRef(false)
 
+  // Inicializa (ou RE-inicializa) o Device sob demanda. Antes só tentava 1x no load da
+  // página: se o token falhasse naquele instante (rede/cold start), o telefone ficava
+  // morto pra sempre na aba — todo clique dava "Telefone ainda conectando" (caso Sidnei
+  // 2026-07-27). Agora o clique em Ligar re-tenta na hora.
+  async function initDevice(): Promise<boolean> {
+    if (deviceRef.current) return true
+    if (initingRef.current) return false
+    initingRef.current = true
+    try {
+      const res = await fetch('/api/voice/token', { cache: 'no-store' })
+      if (!res.ok) return false
+      const { token, identity } = await res.json()
+      buyerIdRef.current = identity || ''
+      const { Device } = await import('@twilio/voice-sdk')
+      if (!mountedRef.current) return false
+      const device = new Device(token, { codecPreferences: ['opus', 'pcmu'] as any, logLevel: 'error' as any })
+      device.on('registered', () => { if (mountedRef.current) setStatus('ready') })
+      device.on('error', (e: any) => { console.warn('[softphone]', e?.message || e); if (mountedRef.current) setStatus(s => (s === 'off' ? 'error' : s)) })
+      device.on('tokenWillExpire', async () => {
+        try { const r = await fetch('/api/voice/token', { cache: 'no-store' }); const j = await r.json(); device.updateToken(j.token) } catch {}
+      })
+      await device.register()
+      deviceRef.current = device
+      return true
+    } catch (e: any) {
+      console.warn('[softphone] init:', e?.message || e)
+      return false
+    } finally {
+      initingRef.current = false
+    }
+  }
+
+  useEffect(() => {
+    mountedRef.current = true
+    initDevice()
     const onCall = (ev: Event) => startCall((ev as CustomEvent).detail)
     window.addEventListener('l4p:call', onCall as EventListener)
     return () => {
-      mounted = false
+      mountedRef.current = false
       window.removeEventListener('l4p:call', onCall as EventListener)
       clearInterval(timerRef.current)
       try { deviceRef.current?.destroy() } catch {}
+      deviceRef.current = null
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function startTimer() { setSeconds(0); clearInterval(timerRef.current); timerRef.current = setInterval(() => setSeconds(s => s + 1), 1000) }
@@ -78,9 +95,13 @@ export function Softphone() {
   }
 
   async function startCall(detail: { phone: string; name?: string; leadId?: string }) {
-    const device = deviceRef.current
-    if (!device) { alert('Telefone ainda conectando — tente de novo em 2s.'); return }
     if (status === 'connecting' || status === 'ringing' || status === 'incall') return
+    // Sem device? Tenta ativar AGORA (recupera token que falhou no load da página).
+    if (!deviceRef.current) {
+      const ok = await initDevice()
+      if (!ok) { alert('Não consegui ativar o telefone agora. Recarregue a página (F5) e tente de novo — se persistir, verifique a permissão de microfone do navegador.'); return }
+    }
+    const device = deviceRef.current
     setInfo({ name: detail.name, phone: detail.phone }); setMuted(false); setStatus('connecting')
     leadIdRef.current = detail.leadId || ''
     try {
