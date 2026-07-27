@@ -108,7 +108,7 @@ export async function notifyGroupSmsReply(leadName: string | null, fromPhone: st
  *
  * O direto é best-effort e isolado: falha dele não derruba o retorno do grupo.
  */
-async function notifyAdmins(msg: string): Promise<{ groupOk: boolean; directOk: boolean }> {
+export async function notifyAdmins(msg: string): Promise<{ groupOk: boolean; directOk: boolean }> {
   const adminGroupId = process.env.WHATSAPP_ADMIN_GROUP || '120363403347083071@g.us'
   const adminPhone = process.env.ADMIN_WHATSAPP || '18632808023'
   const groupOk = await sendWhatsApp(adminGroupId, msg)

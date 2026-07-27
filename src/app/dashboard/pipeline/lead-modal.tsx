@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { SendMessageModal } from '@/components/send-message-modal'
+import { ExchangeBox } from './exchange-box'
 import { TagPicker } from '@/components/tag-picker'
 import { WhatsAppInbox } from '@/components/whatsapp-inbox'
 import { callLead } from '@/components/voice/softphone'
@@ -651,6 +652,9 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                   )
                 })()}
               </div>
+
+              {/* Troca de lead: aparece só quando elegível (14d trabalhados + 0 respostas) */}
+              <ExchangeBox leadId={leadId} />
 
               {/* Actions */}
               <div className="flex justify-end gap-3 pt-3" style={{ borderTop: '1px solid #f1f5f9' }}>
