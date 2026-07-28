@@ -15,7 +15,7 @@ import { CRM_PLAN_LIST, LEADS_PER_MONTH } from './crm-plans'
  * cobrança = novo invoice = novo m1 (ciclo recomeça).
  */
 // ⚖️ EXCEÇÃO (2026-07-28, regra corrigida pelo dono: "assinou o CRM = 5 leads POR MÊS"):
-// 4 assinantes de jul/2026 (Ivone, Rita, Adriana, Elma) mantêm o benefício CLÁSSICO —
+// 5 assinantes de jul/2026 (Ivone, Rita, Adriana, Elma, Mariana Fonseca) mantêm o benefício CLÁSSICO —
 // m1 no invoice + este drip pinga +5/30d até o total do plano (semestral 30, anual 60).
 // Eles entram aqui naturalmente porque têm marker 'crm-bonus:%' casado com o payment.
 // Benefício segue EXTINTO pra qualquer outro assinante (gate no webhook). Não estender
