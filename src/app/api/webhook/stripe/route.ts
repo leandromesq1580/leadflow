@@ -208,7 +208,26 @@ export async function POST(request: NextRequest) {
       if (subId && amount > 0) {
         const { data: dupe } = await supabase.from('payments').select('id').eq('stripe_session_id', invoice.id).maybeSingle()
         if (dupe) { console.log(`[Stripe Webhook] invoice CRM ja registrada: ${invoice.id}`); break }
-        const { data: subBuyer } = await supabase.from('buyers').select('id, name, email').eq('crm_subscription_id', subId).maybeSingle()
+        let { data: subBuyer } = await supabase.from('buyers').select('id, name, email').eq('crm_subscription_id', subId).maybeSingle()
+        if (!subBuyer) {
+          // 🩹 CORRIDA (Zimmer 21/07, Rita 27/07): a fatura pode chegar ANTES do
+          // customer.subscription.created gravar o sub id no buyer → antes isso
+          // descartava pagamento+aviso em silêncio. Fallback: busca a assinatura no
+          // Stripe e resolve o buyer pelo metadata.buyer_id (o checkout SEMPRE grava
+          // via subscription_data). De quebra, já grava o sub id no buyer (cura a ordem).
+          try {
+            const sub = await getStripe().subscriptions.retrieve(subId)
+            const bid = (sub.metadata as any)?.buyer_id
+            if (bid) {
+              const { data: byMeta } = await supabase.from('buyers').select('id, name, email').eq('id', bid).maybeSingle()
+              if (byMeta) {
+                subBuyer = byMeta
+                await supabase.from('buyers').update({ crm_subscription_id: subId }).eq('id', bid).is('crm_subscription_id', null)
+                console.log(`[Stripe Webhook] invoice CRM: buyer resolvido via metadata da sub (${bid}) — corrida contornada`)
+              }
+            }
+          } catch (e: any) { console.error('[Stripe Webhook] fallback metadata da sub falhou:', e?.message) }
+        }
         if (!subBuyer) { console.error(`[Stripe Webhook] invoice CRM sem buyer (sub ${subId})`); break }
         const { error: crmPayErr } = await supabase.from('payments').insert({
           buyer_id: subBuyer.id,
