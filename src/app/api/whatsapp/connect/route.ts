@@ -58,7 +58,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: data.error || 'Falha ao criar bridge' }, { status: 500 })
     }
 
-    const bridgeUrl = `http://${VPS_HOST}:${port}`
+    // A porta REAL vem do admin do VPS (2026-07-27): ele é a autoridade — se a pedida
+    // colidir com env órfão (buyer deletado deixa porta fantasma no banco, caso
+    // silvanamamotta/3492), ele desvia pra próxima livre e devolve a que usou.
+    const actualPort = parseInt(String(data.port || port), 10)
+    const bridgeUrl = `http://${VPS_HOST}:${actualPort}`
     await db.from('buyers').update({
       wa_bridge_url: bridgeUrl,
       wa_bridge_key: data.api_key,
