@@ -3,6 +3,7 @@ import { getStripe, PRODUCTS, type ProductType } from '@/lib/stripe'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveCoupon } from '@/lib/coupons'
+import { hasAcceptedCurrentPolicy } from '@/lib/policies'
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,6 +50,15 @@ export async function POST(request: NextRequest) {
 
     if (!buyer) {
       return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
+    }
+
+    // 🔏 CLICKWRAP (2026-07-28): sem aceite da política vigente, sem compra.
+    // (Gate inerte até a migration 033 rodar — não quebra vendas no deploy.)
+    if (!(await hasAcceptedCurrentPolicy(db, buyer.id))) {
+      return NextResponse.json({
+        error: 'Antes de comprar, leia e aceite a Política de Leads e Uso (caixa de aceite na página de compra).',
+        policy_required: true,
+      }, { status: 412 })
     }
 
     // Cupom da plataforma (só pacotes de LEAD): validado server-side por email do

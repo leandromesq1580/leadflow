@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n-client'
 import { MIcon } from '@/components/mobile/icons'
 import { PRODUCTS } from '@/lib/stripe'
+import { PolicyCheck } from '@/components/policy-check'
 import { CRM_PLAN_LIST } from '@/lib/crm-plans'
 
 interface CreditsData { totalLeads: number; totalAppts: number; crm_plan: string; crm_subscription_status: string | null; crm_plan_key: string | null; history: Array<{ id: string; type: string; total_purchased: number; total_used: number; price_per_unit: number; purchased_at: string }> }
@@ -255,6 +256,9 @@ export default function MobileCreditos() {
                 ))}
               </div>}
           </div>
+
+          {/* Aceite das políticas (gate de compra) */}
+          <PolicyCheck context="checkout_mobile" dark />
 
           {/* Cupom (aplica nos pacotes de lead) */}
           <div className="m-card" style={{ padding: '12px 16px', marginBottom: 14 }}>

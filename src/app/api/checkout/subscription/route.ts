@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { hasAcceptedCurrentPolicy } from '@/lib/policies'
 import { getCrmPlan } from '@/lib/crm-plans'
 
 /**
@@ -28,6 +29,14 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (!buyer) return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
+
+    // 🔏 CLICKWRAP (2026-07-28): sem aceite da política vigente, sem assinatura.
+    if (!(await hasAcceptedCurrentPolicy(db, buyer.id))) {
+      return NextResponse.json({
+        error: 'Antes de assinar, leia e aceite a Política de Leads e Uso (caixa de aceite na página de planos).',
+        policy_required: true,
+      }, { status: 412 })
+    }
 
     if (buyer.crm_subscription_status === 'active') {
       return NextResponse.json({ error: 'Already subscribed' }, { status: 400 })

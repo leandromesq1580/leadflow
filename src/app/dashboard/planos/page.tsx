@@ -1,3 +1,4 @@
+import { PolicyCheck } from '@/components/policy-check'
 import { CrmPlansGrid } from './crm-plans-grid'
 
 export const metadata = { title: 'Planos CRM Pro — Lead4Producers' }
@@ -12,6 +13,7 @@ export default function PlanosPage() {
           Pagamento à vista, renovação automática — cancele quando quiser.
         </p>
       </div>
+      <PolicyCheck context="checkout_crm" />
       <CrmPlansGrid />
     </div>
   )
