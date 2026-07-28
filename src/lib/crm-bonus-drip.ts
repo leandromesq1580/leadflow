@@ -14,6 +14,18 @@ import { CRM_PLAN_LIST, LEADS_PER_MONTH } from './crm-plans'
  * do último mês creditado E ainda há meses pendentes no ciclo. Renovação = nova
  * cobrança = novo invoice = novo m1 (ciclo recomeça).
  */
+// ⚖️ EXCEÇÃO "5 POR CICLO" (decisão 2026-07-28): estes 4 assinantes ganham 5 leads
+// POR CICLO de assinatura (semestral = 5 a cada 6 meses; anual = 5 a cada 12), não
+// o drip antigo de 5/mês. Como: eles têm marker 'crm-bonus:%' (legado) → o webhook
+// credita 5 (m1) a CADA fatura/renovação; este drip PULA eles pra não multiplicar.
+// Benefício encerrado pra qualquer outro assinante — não adicionar nomes sem decisão do dono.
+const EXCECAO_5_POR_CICLO = new Set([
+  'ef5969bc-f78a-4d5c-8101-f0ffe9a2f205', // Ivone Ferreira da Silva Rosa (semestral)
+  '5635b282-da46-4a82-9672-bc3c92907b81', // Rita Feitosa
+  '62745ad7-f356-4bf9-8217-9b2a734f9f16', // Adriana Santana de Rezende Menezes (anual)
+  '2f0fb41a-2b9a-4ef9-b23b-2c4e2561c098', // Elma Franco (semestral)
+])
+
 export async function dripCrmBonusLeads(): Promise<number> {
   const supabase = createAdminClient()
   let granted = 0
@@ -27,6 +39,7 @@ export async function dripCrmBonusLeads(): Promise<number> {
 
   for (const b of subs || []) {
     try {
+      if (EXCECAO_5_POR_CICLO.has(b.id)) continue // 5 por CICLO via webhook — sem drip
       // Última cobrança CRM = ciclo atual (o invoice carrega o marker base).
       const { data: pay } = await supabase
         .from('payments')
