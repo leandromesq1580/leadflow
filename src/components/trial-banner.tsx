@@ -10,10 +10,10 @@ export function TrialBanner({ daysLeft }: { daysLeft: number }) {
   const urgent = daysLeft <= 2
   const t = useT()
 
-  async function subscribe() {
+  // 2026-07-29: banner leva pros 4 PLANOS (não assina o mensal direto) — preserva o upsell.
+  function verPlanos() {
     setLoading(true)
-    const r = await startCheckout('/api/checkout/subscription', undefined, { context: 'checkout_trial_banner' })
-    if (!r.ok) { alert(r.error); setLoading(false) }
+    window.location.href = '/dashboard/planos'
   }
 
   return (
@@ -46,7 +46,7 @@ export function TrialBanner({ daysLeft }: { daysLeft: number }) {
           {t.trialBanner.seePlans}
         </Link>
         <button
-          onClick={subscribe}
+          onClick={verPlanos}
           disabled={loading}
           className="px-4 py-2 rounded-lg text-[12px] font-bold text-white disabled:opacity-50"
           style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}

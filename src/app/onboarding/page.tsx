@@ -90,8 +90,8 @@ export default function OnboardingPage() {
     } else if (action === 'leads') {
       window.location.href = '/dashboard/credits'
     } else if (action === 'crm') {
-      const r = await startCheckout('/api/checkout/subscription', undefined, { context: 'checkout_onboarding' })
-      if (!r.ok) { alert(r.error); window.location.href = '/dashboard/credits' }
+      // 2026-07-29: manda pros 4 planos (antes assinava o mensal direto = upsell perdido)
+      window.location.href = '/dashboard/planos'
     }
   }
 

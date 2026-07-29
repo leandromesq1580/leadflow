@@ -1,8 +1,8 @@
 'use client'
 
-import Link from 'next/link'
-import { startCheckout } from '@/lib/checkout-client'
-import { useState } from 'react'
+import { CrmPlansGrid } from '@/app/dashboard/planos/crm-plans-grid'
+import { PolicyCheck } from '@/components/policy-check'
+
 
 interface Props {
   /** Nome da feature que o usuário tentou acessar (ex: "Pipeline"). */
@@ -25,14 +25,6 @@ const PERKS = [
 ]
 
 export function UpsellGate({ feature, icon, tagline }: Props) {
-  const [loading, setLoading] = useState(false)
-
-  async function subscribe() {
-    setLoading(true)
-    const r = await startCheckout('/api/checkout/subscription', undefined, { context: 'checkout_upsell' })
-    if (!r.ok) { alert(r.error); setLoading(false) }
-  }
-
   return (
     <div className="max-w-[760px] mx-auto py-6">
       {/* Hero: feature travada */}
@@ -73,28 +65,17 @@ export function UpsellGate({ feature, icon, tagline }: Props) {
         </div>
       </div>
 
-      {/* CTA */}
-      <div className="rounded-2xl p-6 text-center" style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)', border: '1px solid #c7d2fe' }}>
-        <div className="flex items-baseline justify-center gap-1 mb-1">
-          <span className="text-[40px] font-extrabold" style={{ color: '#4338ca' }}>$99</span>
-          <span className="text-[15px]" style={{ color: '#6366f1' }}>/mês</span>
-        </div>
-        <p className="text-[13px] mb-5" style={{ color: '#4f46e5' }}>
-          Continue recebendo seus appointments — e desbloqueie tudo pra fechar mais.
+      {/* CTA — 4 planos (2026-07-29): antes só o mensal $99, perdendo o upsell */}
+      <div className="rounded-2xl p-6" style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)', border: '1px solid #c7d2fe' }}>
+        <p className="text-[13px] text-center mb-1 font-bold" style={{ color: '#3730a3' }}>
+          Escolha seu plano — quanto maior o compromisso, menor o valor por mês
         </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button onClick={subscribe} disabled={loading}
-            className="px-8 py-3.5 rounded-xl text-[14px] font-bold text-white disabled:opacity-50 transition-all hover:shadow-lg"
-            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 4px 14px rgba(99,102,241,0.35)' }}>
-            {loading ? 'Abrindo checkout…' : '🚀 Assinar plano completo'}
-          </button>
-          <Link href="/dashboard/credits"
-            className="px-8 py-3.5 rounded-xl text-[14px] font-bold transition-all hover:shadow-sm"
-            style={{ background: '#fff', color: '#4338ca', border: '1px solid #c7d2fe' }}>
-            Ver planos
-          </Link>
-        </div>
-        <p className="text-[11px] mt-4" style={{ color: '#818cf8' }}>Cancele quando quiser · Sem fidelidade</p>
+        <p className="text-[12.5px] text-center mb-5" style={{ color: '#4f46e5' }}>
+          Desbloqueie tudo pra fechar mais.
+        </p>
+        <PolicyCheck context="checkout_upsell" />
+        <CrmPlansGrid />
+        <p className="text-[11px] mt-4 text-center" style={{ color: '#818cf8' }}>Cancele quando quiser · Sem fidelidade</p>
       </div>
     </div>
   )

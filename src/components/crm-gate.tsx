@@ -1,47 +1,45 @@
 'use client'
 
-import Link from 'next/link'
-import { startCheckout } from '@/lib/checkout-client'
-import { useState } from 'react'
 import { useT } from '@/lib/i18n-client'
+import { CrmPlansGrid } from '@/app/dashboard/planos/crm-plans-grid'
+import { PolicyCheck } from '@/components/policy-check'
 
 interface Props {
   children: React.ReactNode
   hasAccess: boolean
 }
 
+/**
+ * Tela de bloqueio das features do CRM Pro (pipeline, time, templates, performance,
+ * sequências, automações, whatsapp, ai-consult — 8 páginas).
+ *
+ * 2026-07-29: passou a mostrar os 4 PLANOS (mensal/trimestral/semestral/anual) em vez
+ * de um botão único de $99/mês. Antes, a tela de upsell mais vista do sistema vendia
+ * só o plano com o maior $/mês — perdendo o upgrade pra quem fecharia semestral/anual
+ * (30-40% mais barato por mês, caixa antecipado e menos churn).
+ */
 export function CrmGate({ children, hasAccess }: Props) {
-  const [loading, setLoading] = useState(false)
   const t = useT()
-
   if (hasAccess) return <>{children}</>
 
-  async function subscribe() {
-    setLoading(true)
-    const r = await startCheckout('/api/checkout/subscription', undefined, { context: 'checkout_crm_gate' })
-    if (!r.ok) { alert(r.error); setLoading(false) }
-  }
-
   return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="text-center max-w-md">
-        <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6"
+    <div className="max-w-[980px] mx-auto py-6">
+      <div className="text-center mb-7">
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
           style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)' }}>
-          <span className="text-[36px]">🔒</span>
+          <span className="text-[30px]">🔒</span>
         </div>
-        <h2 className="text-[22px] font-extrabold mb-2" style={{ color: '#1a1a2e' }}>{t.crmGate.title}</h2>
-        <p className="text-[14px] mb-2 leading-relaxed" style={{ color: '#94a3b8' }}>{t.crmGate.subtitle}</p>
-        <div className="flex items-baseline justify-center gap-1 mb-6">
-          <span className="text-[36px] font-extrabold" style={{ color: '#6366f1' }}>{t.crmGate.price}</span>
-          <span className="text-[14px]" style={{ color: '#94a3b8' }}>{t.crmGate.priceSub}</span>
-        </div>
-        <button onClick={subscribe} disabled={loading}
-          className="px-8 py-3.5 rounded-xl text-[14px] font-bold text-white disabled:opacity-50 transition-all hover:shadow-lg mb-3"
-          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
-          {loading ? t.crmGate.ctaLoading : t.crmGate.cta}
-        </button>
-        <p className="text-[11px]" style={{ color: '#c0c8d4' }}>{t.crmGate.cancel}</p>
+        <h2 className="text-[24px] font-extrabold mb-2" style={{ color: '#1a1a2e' }}>{t.crmGate.title}</h2>
+        <p className="text-[14px] leading-relaxed max-w-lg mx-auto" style={{ color: '#94a3b8' }}>
+          {t.crmGate.subtitle}
+        </p>
+        <p className="text-[12.5px] font-semibold mt-3" style={{ color: '#6366f1' }}>
+          Escolha o plano: quanto maior o compromisso, menor o valor por mês.
+        </p>
       </div>
+      <PolicyCheck context="checkout_crm_gate" />
+      <CrmPlansGrid />
+      <p className="text-center text-[11px] mt-5" style={{ color: '#c0c8d4' }}>{t.crmGate.cancel}</p>
     </div>
   )
 }
