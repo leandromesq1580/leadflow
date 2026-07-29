@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { startCheckout } from '@/lib/checkout-client'
 import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n-client'
 import { MIcon } from '@/components/mobile/icons'
@@ -83,10 +84,9 @@ export default function MobileCreditos() {
     if (busy) return
     setBusy(true)
     try {
-      const r = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined })
-      const j = await r.json().catch(() => ({}))
-      if (j.url) { window.location.href = j.url; return }
-      alert(j.error || L('Não consegui abrir o checkout.', "Couldn't open checkout.", 'Error.'))
+      const res = await startCheckout(endpoint as '/api/checkout' | '/api/checkout/subscription', body, { context: 'checkout_mobile' })
+      if (res.ok) return
+      alert(res.error || L('Não consegui abrir o checkout.', "Couldn't open checkout.", 'Error.'))
     } catch { alert(L('Erro de conexão.', 'Connection error.', 'Error.')) }
     setBusy(false)
   }

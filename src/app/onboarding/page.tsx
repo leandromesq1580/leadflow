@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { startCheckout } from '@/lib/checkout-client'
 import { useRouter } from 'next/navigation'
 
 const US_STATES = [
@@ -89,10 +90,8 @@ export default function OnboardingPage() {
     } else if (action === 'leads') {
       window.location.href = '/dashboard/credits'
     } else if (action === 'crm') {
-      const r = await fetch('/api/checkout/subscription', { method: 'POST' })
-      const d = await r.json()
-      if (d.url) window.location.href = d.url
-      else window.location.href = '/dashboard/credits'
+      const r = await startCheckout('/api/checkout/subscription', undefined, { context: 'checkout_onboarding' })
+      if (!r.ok) { alert(r.error); window.location.href = '/dashboard/credits' }
     }
   }
 

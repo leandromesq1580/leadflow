@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { startCheckout } from '@/lib/checkout-client'
 
 export function BuyButton({ packageId, color }: { packageId: string; color: string }) {
   const [loading, setLoading] = useState(false)
@@ -10,18 +11,8 @@ export function BuyButton({ packageId, color }: { packageId: string; color: stri
     // Cupom aplicado na CouponBox fica em sessionStorage; o checkout revalida server-side.
     let couponCode: string | null = null
     try { couponCode = sessionStorage.getItem('lead_coupon') } catch {}
-    const res = await fetch('/api/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ packageId, couponCode }),
-    })
-    const data = await res.json()
-    if (data.url) {
-      window.location.href = data.url
-    } else {
-      alert('Erro: ' + JSON.stringify(data))
-      setLoading(false)
-    }
+    const res = await startCheckout('/api/checkout', { packageId, couponCode }, { context: 'checkout_lead' })
+    if (!res.ok) { alert(res.error); setLoading(false) }
   }
 
   return (

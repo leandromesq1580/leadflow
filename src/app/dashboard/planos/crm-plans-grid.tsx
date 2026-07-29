@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { startCheckout } from '@/lib/checkout-client'
 import { CRM_PLAN_LIST, type CrmPlan } from '@/lib/crm-plans'
 
 function fmtMonth(n: number) { return n % 1 === 0 ? `$${n}` : `$${n.toFixed(2)}` }
@@ -19,18 +20,9 @@ export function CrmPlansGrid({ landing = false }: { landing?: boolean }) {
       window.location.href = '/register'
       return
     }
-    try {
-      const r = await fetch('/api/checkout/subscription', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: plan.key }),
-      })
-      const d = await r.json()
-      if (d.url) { window.location.href = d.url; return }
-      alert(d.error || 'Não foi possível iniciar o checkout.')
-    } catch {
-      alert('Falha de conexão. Tente de novo.')
-    }
+    const res = await startCheckout('/api/checkout/subscription', { plan: plan.key }, { context: 'checkout_crm' })
+    if (res.ok) return
+    alert(res.error || 'Não foi possível iniciar o checkout.')
     setLoading(null)
   }
 

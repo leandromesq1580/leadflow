@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { startCheckout } from '@/lib/checkout-client'
 import { useState } from 'react'
 import { useT } from '@/lib/i18n-client'
 
@@ -17,10 +18,8 @@ export function CrmGate({ children, hasAccess }: Props) {
 
   async function subscribe() {
     setLoading(true)
-    const r = await fetch('/api/checkout/subscription', { method: 'POST' })
-    const d = await r.json()
-    if (d.url) window.location.href = d.url
-    else setLoading(false)
+    const r = await startCheckout('/api/checkout/subscription', undefined, { context: 'checkout_crm_gate' })
+    if (!r.ok) { alert(r.error); setLoading(false) }
   }
 
   return (

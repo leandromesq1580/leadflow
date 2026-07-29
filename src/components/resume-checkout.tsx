@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { startCheckout } from '@/lib/checkout-client'
 
 /**
  * Retoma o checkout iniciado na landing. Quando o usuário clica "Comprar" num
@@ -20,14 +21,8 @@ export function ResumeCheckout() {
     if (planKey) {
       try { localStorage.removeItem('l4p_plan') } catch {}
       ;(async () => {
-        try {
-          const res = await fetch('/api/checkout/subscription', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ plan: planKey }),
-          })
-          const data = await res.json().catch(() => ({}))
-          window.location.href = data?.url || '/dashboard/planos'
-        } catch { window.location.href = '/dashboard/planos' }
+        const res = await startCheckout('/api/checkout/subscription', { plan: planKey }, { context: 'checkout_resume_crm' })
+        if (!res.ok) { alert(res.error); window.location.href = '/dashboard/planos' }
       })()
       return
     }
@@ -36,20 +31,8 @@ export function ResumeCheckout() {
     if (!pkg) return
     try { localStorage.removeItem('l4p_buy') } catch {}
     ;(async () => {
-      try {
-        const res = await fetch('/api/checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ packageId: pkg }),
-        })
-        const data = await res.json().catch(() => ({}))
-        if (data?.url) { window.location.href = data.url; return }
-        console.warn('[ResumeCheckout] checkout sem url:', data)
-        window.location.href = '/dashboard/credits'
-      } catch (e) {
-        console.warn('[ResumeCheckout] falhou:', e)
-        window.location.href = '/dashboard/credits'
-      }
+      const res = await startCheckout('/api/checkout', { packageId: pkg }, { context: 'checkout_resume_lead' })
+      if (!res.ok) { alert(res.error); window.location.href = '/dashboard/credits' }
     })()
   }, [])
   return null
