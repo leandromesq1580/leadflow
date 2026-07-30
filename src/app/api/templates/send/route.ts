@@ -66,9 +66,18 @@ export async function POST(request: NextRequest) {
     }
 
     if (!sendRes) {
+      // Erro TRADUZIDO (2026-07-30): antes vazava o erro cru da bridge ("Not connected")
+      // pro cliente — mesma tradução do /api/whatsapp/messages. Também marca a bridge
+      // como desconectada pro app parar de dizer "conectado" e mostrar o QR.
+      const desconectada = lastStatus === 503 || /Not connected|not ready/i.test(lastErr)
+      if (desconectada) {
+        try { await db.from('buyers').update({ wa_bridge_status: 'disconnected' }).eq('id', buyer_id) } catch {}
+      }
       const friendly = /No LID|nao tem WhatsApp/i.test(lastErr)
         ? `Este número não tem WhatsApp ativo (${cleanPhone}). Confirme o número com o lead.`
-        : lastErr
+        : desconectada
+          ? 'Seu WhatsApp desconectou. Vá em Configurações → Conectar WhatsApp e escaneie o QR code — depois é só reenviar (sua mensagem continua salva aqui).'
+          : lastErr
       return NextResponse.json({ error: friendly }, { status: lastStatus })
     }
 
