@@ -66,7 +66,10 @@ export const TRAINING_MODULES: TrainingModule[] = [
       { id: '1jTNayhMlGZKnGnt1nnytJIJmIZmDHoFm', title: 'Anexos e formulários' },
       { id: '1xsdLRpj46NmLxXVcytSoMsV6sPOJyljt', title: 'Notas' },
       { id: '1RcszYTriWQ_j5wjSknZffI44pgpJ5r77', title: 'Comunidade Lead4Pro' },
-      { id: '1sQlCCHx_Ype4kwTc_dRsvCYzg8bHkudz', title: 'Indicações — ganhe créditos' },
+      // Aula 'Indicações — ganhe créditos' REMOVIDA em 2026-07-30: ensinava a regra antiga
+      // ($25 mensal / $100 anual, sem carência e sem uso do crédito). O programa mudou
+      // (10% CRM / 5% leads, carência 14d, desconto até 50%). Regravar antes de repor —
+      // vídeo antigo era: 1sQlCCHx_Ype4kwTc_dRsvCYzg8bHkudz
     ],
   },
 ]
