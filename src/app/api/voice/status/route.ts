@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendSms, toE164 } from '@/lib/twilio'
-import { buyerTimezone } from '@/lib/availability'
+import { sendOrScheduleAutoSms } from '@/lib/sms-auto'
 
 export const dynamic = 'force-dynamic'
 
@@ -86,52 +85,13 @@ export async function POST(request: NextRequest) {
             await db.from('follow_ups').update(upd).eq('id', fu.id)
           }
 
-          // 📱 SMS AUTOMÁTICO pós-tentativa SEM CONTATO (decisão 2026-07-25): quando a
-          // ligação termina sem falar com o lead (não atendeu / ocupado / caixa postal),
-          // manda SMS "tentei te ligar" e registra follow-up — a trilha alimenta a
-          // gestão de TROCA de leads. Regras: máx 1/dia e 14 no total por lead,
-          // só 8h–21h no fuso do lead, respeita opt-out (STOP).
+          // 📱 SMS AUTOMÁTICO pós-tentativa SEM CONTATO (lib/sms-auto): envia se estiver
+          // na janela legal do lead (8h–21h); FORA da janela, AGENDA pro próximo horário
+          // permitido (antes descartava — lead não recebia e o dia não contava na troca).
           if (final && desc && /Não atendeu|Caixa postal/.test(desc)) {
             try {
-              const { data: leadRow } = await db.from('leads')
-                .select('name, phone, state, sms_opted_out').eq('id', leadId).maybeSingle()
-              const e164 = toE164(leadRow?.phone)
-              if (leadRow && !leadRow.sms_opted_out && e164) {
-                const tz = buyerTimezone(leadRow.state ? [leadRow.state] : null)
-                const hourStr = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: '2-digit', hour12: false }).format(new Date())
-                const hour = parseInt(hourStr, 10)
-                const { data: prior } = await db.from('follow_ups')
-                  .select('id, created_at').eq('lead_id', leadId)
-                  .like('description', '📱 SMS auto%')
-                const total = (prior || []).length
-                const dayFmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz })
-                const today = dayFmt.format(new Date())
-                const sentToday = (prior || []).some(p => dayFmt.format(new Date(p.created_at as string)) === today)
-                if (hour >= 8 && hour < 21 && total < 14 && !sentToday) {
-                  let buyerName = ''
-                  if (buyerId) {
-                    const { data: b } = await db.from('buyers').select('name').eq('id', buyerId).maybeSingle()
-                    buyerName = (b?.name || '').trim()
-                  }
-                  const first = String(leadRow.name || '').trim().split(/\s+/)[0]
-                  const smsBody = `Oi${first ? ' ' + first : ''}! Aqui é ${buyerName || 'seu corretor'}. Tentei te ligar agora sobre sua cotação de seguro de vida, mas não consegui falar com você. Pode me retornar por aqui?`
-                  const res = await sendSms(e164, smsBody)
-                  if (res.ok) {
-                    await db.from('sms_messages').insert({
-                      lead_id: leadId, direction: 'out', to_phone: e164.replace(/\D/g, ''),
-                      body: smsBody, status: 'sent', twilio_sid: res.sid || null,
-                    })
-                    await db.from('follow_ups').insert({
-                      lead_id: leadId, buyer_id: buyerId, type: 'note',
-                      description: `📱 SMS auto (${total + 1}/14) — tentativa de ligação sem contato`,
-                      status: 'completed', completed_at: new Date().toISOString(),
-                    })
-                    console.log(`[voice/status] SMS auto ${total + 1}/14 -> lead ${leadId}`)
-                  } else {
-                    console.warn('[voice/status] SMS auto falhou:', res.error)
-                  }
-                }
-              }
+              const r = await sendOrScheduleAutoSms(db, leadId, buyerId)
+              if (r !== 'skipped') console.log(`[voice/status] SMS auto ${r} (lead ${leadId})`)
             } catch (e: any) { console.warn('[voice/status] sms auto:', e?.message) }
           }
         }

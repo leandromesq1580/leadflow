@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { distributeLeadToNextBuyer, forceAssignRoundRobin, redistributePendingLeads, tryAdminRule } from '@/lib/distribute'
+import { dispatchScheduledSms } from '@/lib/sms-auto'
 import { dripCrmBonusLeads } from '@/lib/crm-bonus-drip'
 import { notifyGroupLeadPending, sendLeadNotificationEmail, checkBridgeHealthAndAlert, checkAllBridgesAndAlert } from '@/lib/notifications'
 import { stateFromPhone } from '@/lib/us-area-codes'
@@ -190,6 +191,8 @@ export async function GET(request: Request) {
   // DRIP dos leads de bonus CRM: +5 a cada 30 dias nos planos multi-mes (trimestral/semestral/anual).
   let crmDripped = 0
   try { crmDripped = await dripCrmBonusLeads() } catch (e) { console.error('[Poll] crm drip err:', (e as any)?.message) }
+    // Fila de SMS automático (agendados fora da janela TCPA) — despacha no horário permitido
+    try { await dispatchScheduledSms() } catch (e) { console.error('[Poll] sms fila err:', (e as any)?.message) }
 
   // 🔒 WATCHDOG + RECONCILIAÇÃO (rede de segurança das notificações).
   // 1) Checa a saúde da bridge; se cair, alerta o admin por email (1x/30min).
