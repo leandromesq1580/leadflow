@@ -85,25 +85,43 @@ export function QueuePositionCard({ dark = false }: { dark?: boolean }) {
             </p>
           )}
 
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 7, fontSize: 10.5, color: mut }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ width: 8, height: 8, borderRadius: 2, background: '#10b981', display: 'inline-block' }} />
+              SUA VEZ = próximo lead do estado é seu
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ width: 8, height: 8, borderRadius: 2, background: '#c7d2fe', display: 'inline-block' }} />
+              Nº na fila = há gente na sua frente
+            </span>
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {visiveis.map(s => (
-              <div key={s.state} style={{
-                display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5,
-                padding: '7px 10px', borderRadius: 10,
-                background: dark ? 'rgba(255,255,255,0.04)' : '#f8fafc',
-              }}>
-                <span style={{
-                  fontWeight: 800, fontSize: 11, padding: '2px 7px', borderRadius: 6,
-                  background: s.position === 1 ? (dark ? 'rgba(16,185,129,0.2)' : '#ecfdf5') : (dark ? 'rgba(99,102,241,0.18)' : '#eef2ff'),
-                  color: s.position === 1 ? '#059669' : '#6366f1',
-                }}>{s.state}</span>
-                <span style={{ color: ink, fontWeight: 700 }}>{ord(s.position)} de {s.total}</span>
-                <span style={{ color: mut }}>· {eta(s)}</span>
-                <span style={{ marginLeft: 'auto', color: mut, fontSize: 11 }}>
-                  {s.leadsPerDay > 0 ? `${s.leadsPerDay}/dia no estado` : 'sem leads (14d)'}
-                </span>
-              </div>
-            ))}
+            {visiveis.map(s => {
+              const primeiro = s.position === 1
+              return (
+                <div key={s.state} style={{
+                  display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5,
+                  padding: '7px 10px', borderRadius: 10,
+                  background: dark ? 'rgba(255,255,255,0.04)' : '#f8fafc',
+                  borderLeft: `3px solid ${primeiro ? '#10b981' : '#c7d2fe'}`,
+                }}>
+                  <span style={{
+                    fontWeight: 800, fontSize: 11, padding: '2px 7px', borderRadius: 6,
+                    background: dark ? 'rgba(255,255,255,0.08)' : '#eef2ff', color: dark ? 'var(--m-text)' : '#4f46e5',
+                  }}>{s.state}</span>
+                  {/* Texto explícito — não depender da cor pra entender a posição */}
+                  <span style={{ fontWeight: 800, fontSize: 11, color: primeiro ? '#059669' : '#6366f1' }}>
+                    {primeiro ? 'SUA VEZ' : `${ord(s.position)} na fila`}
+                  </span>
+                  <span style={{ color: mut }}>
+                    {primeiro ? `de ${s.total} · ${eta(s)}` : `de ${s.total} · ${eta(s)}`}
+                  </span>
+                  <span style={{ marginLeft: 'auto', color: mut, fontSize: 11 }}>
+                    {s.leadsPerDay > 0 ? `${s.leadsPerDay}/dia no estado` : 'sem leads (14d)'}
+                  </span>
+                </div>
+              )
+            })}
           </div>
 
           {!d.availableNow && (
