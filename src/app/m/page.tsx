@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { QueuePositionCard } from '@/components/queue-position-card'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n-client'
 import { MIcon } from '@/components/mobile/icons'
@@ -67,6 +68,9 @@ export default function MobileHome() {
           </span>
         </div>
       </div>
+
+      {/* Sua vez na fila (mobile) */}
+      <QueuePositionCard dark />
 
       {/* Stats 2x2 */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 11, marginBottom: 20 }}>

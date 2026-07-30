@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { OnboardingChecklist } from '@/components/onboarding-checklist'
 import { StaleLeadsAlert } from '@/components/stale-leads-alert'
+import { QueuePositionCard } from '@/components/queue-position-card'
 import { PrivatePhone } from '@/components/private-field'
 import { getLocale } from '@/lib/locale'
 import { getMessages } from '@/lib/i18n'
@@ -66,6 +67,9 @@ export default async function DashboardPage() {
 
       {/* Stale Leads Alert */}
       <StaleLeadsAlert buyerId={buyer.id} />
+
+      {/* Sua vez na fila — posição real por estado (feature 2026-07-30) */}
+      <QueuePositionCard />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-3">
