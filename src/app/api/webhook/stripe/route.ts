@@ -3,6 +3,7 @@ import { getStripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { LEADS_PER_MONTH, CRM_PLAN_LIST } from '@/lib/crm-plans'
 import { notifyGroupPurchase } from '@/lib/notifications'
+import { grantReferralReward, cancelRewardsFor, consumeCredit } from '@/lib/referral'
 import Stripe from 'stripe'
 
 /**
@@ -125,6 +126,17 @@ export async function POST(request: NextRequest) {
           .is('stripe_customer_id', null)
       }
 
+      // 🎁 INDICAÇÃO na compra de pacote de leads (5% — regra 2026-07-30)
+      try { await grantReferralReward(supabase, buyerId, 'lead', session.amount_total || 0) }
+      catch (e) { console.error('[Stripe Webhook] indicação leads:', (e as any)?.message) }
+
+      // 💳 Se o checkout usou crédito de indicação como desconto, debita agora (confirmado)
+      const usouCredito = parseInt(session.metadata?.referral_discount_cents || '0', 10) || 0
+      if (usouCredito > 0) {
+        try { await consumeCredit(supabase, buyerId, usouCredito, session.id) }
+        catch (e) { console.error('[Stripe Webhook] consumo de crédito:', (e as any)?.message) }
+      }
+
       // 🔔 Avisa o grupo de controle sobre a compra do pacote (nome, email, o que, valor)
       try {
         const { data: pBuyer } = await supabase.from('buyers').select('name, email').eq('id', buyerId).single()
@@ -156,26 +168,10 @@ export async function POST(request: NextRequest) {
         }).eq('id', buyerId)
         console.log(`[Stripe Webhook] CRM subscription ${status} (${interval}) for ${buyerId}`)
 
-        // Trigger referral reward on first subscription
-        if (status === 'active' && event.type === 'customer.subscription.created') {
-          const { data: buyer } = await supabase.from('buyers').select('referred_by').eq('id', buyerId).single()
-          if (buyer?.referred_by) {
-            const rewardCents = interval === 'year' ? 10000 : 2500
-            await supabase.from('referral_rewards').insert({
-              referrer_buyer_id: buyer.referred_by,
-              referred_buyer_id: buyerId,
-              trigger_event: 'crm_subscription',
-              reward_cents: rewardCents,
-            }).select().maybeSingle()
-            // Increment referrer credit (idempotent via UNIQUE)
-            const { error } = await supabase.rpc('increment_referral_credit', { p_buyer_id: buyer.referred_by, p_cents: rewardCents })
-            if (error) {
-              // Fallback: manual update
-              const { data: referrer } = await supabase.from('buyers').select('referral_credit_cents').eq('id', buyer.referred_by).single()
-              await supabase.from('buyers').update({ referral_credit_cents: (referrer?.referral_credit_cents || 0) + rewardCents }).eq('id', buyer.referred_by)
-            }
-          }
-        }
+        // 🎁 INDICAÇÃO (regra 2026-07-30): a recompensa vem do VALOR pago (tabela em
+        // lib/referral), fica PENDENTE 14 dias e é 1 por indicado. A concessão real
+        // acontece na fatura (invoice.payment_succeeded), que é onde temos o valor
+        // cobrado — aqui não fazemos nada pra não pagar por assinatura que não cobrou.
       }
       break
     }
@@ -273,6 +269,12 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        // 🎁 INDICAÇÃO: só na PRIMEIRA cobrança do indicado (renovação não paga de novo)
+        if (invoice.billing_reason !== 'subscription_cycle') {
+          try { await grantReferralReward(supabase, subBuyer.id, 'crm', Math.round(amount * 100)) }
+          catch (e) { console.error('[Stripe Webhook] indicação CRM:', (e as any)?.message) }
+        }
+
         // 🔔 Avisa o grupo de controle sobre a assinatura/renovacao (nome, email, plano, valor)
         try {
           const planLabel = crmPlan ? crmPlan.label : (monthsInCycle === 12 ? 'Anual' : monthsInCycle === 6 ? 'Semestral' : monthsInCycle === 3 ? 'Trimestral' : 'Mensal')
@@ -287,6 +289,15 @@ export async function POST(request: NextRequest) {
     }
 
     case 'charge.refunded': {
+      // 🎁 INDICAÇÃO: reembolso do indicado estorna a recompensa do indicador
+      try {
+        const ch = event.data.object as any
+        const pi = ch.payment_intent
+        if (pi) {
+          const { data: pay } = await supabase.from('payments').select('buyer_id').eq('stripe_payment_intent_id', pi).maybeSingle()
+          if (pay?.buyer_id) await cancelRewardsFor(supabase, pay.buyer_id, 'reembolso do indicado')
+        }
+      } catch (e) { console.error('[Stripe Webhook] estorno indicação:', (e as any)?.message) }
       // Reembolso na Stripe → marca o pagamento como 'refunded' no nosso banco.
       // A receita (/admin/revenue) só soma status='completed', então isso já desconta.
       const charge = event.data.object as any

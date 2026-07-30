@@ -4,6 +4,7 @@ import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveCoupon } from '@/lib/coupons'
 import { hasAcceptedCurrentPolicy } from '@/lib/policies'
+import { discountForOrder } from '@/lib/referral'
 
 export async function POST(request: NextRequest) {
   try {
@@ -68,6 +69,12 @@ export async function POST(request: NextRequest) {
     const unitPriceCents = coupon ? coupon.unitPriceCents : selectedPackage.unitPriceCents
     const pricePerUnit = coupon ? coupon.unitPriceCents / 100 : selectedPackage.pricePerUnit
 
+    // 🎁 CRÉDITO DE INDICAÇÃO como desconto (regra 2026-07-30): cobre até 50% do pedido
+    // de LEADS. Vai como coupon one-time (o cliente vê o desconto no checkout) e o
+    // débito real do saldo acontece no webhook, quando o pagamento CONFIRMA.
+    const orderCents = unitPriceCents * selectedPackage.quantity
+    const referralDiscount = await discountForOrder(db, buyer.id, orderCents)
+
     // Create Stripe Checkout Session
     const stripe = getStripe()
     const baseParams = {
@@ -94,6 +101,7 @@ export async function POST(request: NextRequest) {
         price_per_unit: String(pricePerUnit),
         package_id: selectedPackage.id,
         coupon: coupon?.code || '',
+        referral_discount_cents: String(referralDiscount),
       },
       payment_intent_data: {
         description: `${selectedPackage.quantity}x ${PRODUCTS[productType].name} — ${buyer.name || buyer.email}`,
@@ -102,10 +110,25 @@ export async function POST(request: NextRequest) {
       cancel_url: 'https://lead4producers.com/dashboard/credits?cancelled=true',
     }
 
+    // coupon one-time do desconto de indicação (criado só quando há crédito)
+    let discountParam: { discounts: { coupon: string }[] } | Record<string, never> = {}
+    if (referralDiscount > 0) {
+      try {
+        const c = await stripe.coupons.create({
+          amount_off: referralDiscount, currency: 'usd', duration: 'once',
+          name: 'Crédito de indicação',
+        })
+        discountParam = { discounts: [{ coupon: c.id }] }
+      } catch (e: any) {
+        console.warn('[Checkout] coupon de indicação falhou:', e?.message)
+      }
+    }
+
     let session
     try {
       session = await stripe.checkout.sessions.create({
         ...baseParams,
+        ...discountParam,
         customer: buyer.stripe_customer_id || undefined,
         customer_email: !buyer.stripe_customer_id ? buyer.email : undefined,
       })
@@ -115,7 +138,7 @@ export async function POST(request: NextRequest) {
       // novo customer live depois. Recuperação transparente (cliente não vê erro).
       if (/No such customer|similar object exists in test mode/i.test(e?.message || '')) {
         await db.from('buyers').update({ stripe_customer_id: null }).eq('id', buyer.id)
-        session = await stripe.checkout.sessions.create({ ...baseParams, customer_email: buyer.email })
+        session = await stripe.checkout.sessions.create({ ...baseParams, ...discountParam, customer_email: buyer.email })
       } else {
         throw e
       }

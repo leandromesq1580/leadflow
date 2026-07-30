@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { distributeLeadToNextBuyer, forceAssignRoundRobin, redistributePendingLeads, tryAdminRule } from '@/lib/distribute'
 import { dispatchScheduledSms } from '@/lib/sms-auto'
+import { releasePendingRewards } from '@/lib/referral'
 import { dripCrmBonusLeads } from '@/lib/crm-bonus-drip'
 import { notifyGroupLeadPending, sendLeadNotificationEmail, checkBridgeHealthAndAlert, checkAllBridgesAndAlert } from '@/lib/notifications'
 import { stateFromPhone } from '@/lib/us-area-codes'
@@ -193,6 +194,8 @@ export async function GET(request: Request) {
   try { crmDripped = await dripCrmBonusLeads() } catch (e) { console.error('[Poll] crm drip err:', (e as any)?.message) }
     // Fila de SMS automático (agendados fora da janela TCPA) — despacha no horário permitido
     try { await dispatchScheduledSms() } catch (e) { console.error('[Poll] sms fila err:', (e as any)?.message) }
+    // Indicação: libera recompensas cuja carência de 14 dias venceu
+    try { await releasePendingRewards() } catch (e) { console.error('[Poll] referral release err:', (e as any)?.message) }
 
   // 🔒 WATCHDOG + RECONCILIAÇÃO (rede de segurança das notificações).
   // 1) Checa a saúde da bridge; se cair, alerta o admin por email (1x/30min).
