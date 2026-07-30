@@ -11,8 +11,12 @@ interface Data {
 const ord = (n: number) => `${n}º`
 
 function eta(d: StateInfo): string {
-  if (d.position === 1) return d.leadsPerDay > 0 ? 'você é o próximo' : 'você é o próximo (sem volume agora)'
-  if (d.etaDays === null) return 'sem previsão (estado sem leads no momento)'
+  if (d.position === 1) {
+    // 1º lugar em estado de volume baixo não promete rapidez — evita frustração
+    if (d.etaDays !== null && d.etaDays > 2) return `você é o próximo (chega ~${Math.ceil(d.etaDays)} dias)`
+    return 'você é o próximo'
+  }
+  if (d.etaDays === null) return 'sem previsão'
   if (d.etaDays <= 1) return 'previsão: hoje'
   if (d.etaDays <= 2) return 'previsão: até amanhã'
   return `previsão: ~${Math.ceil(d.etaDays)} dias`
@@ -50,6 +54,12 @@ export function QueuePositionCard({ dark = false }: { dark?: boolean }) {
 
   const best = d.best
   const semFila = d.states.length === 0
+  // Enxuga a lista (2026-07-30): estado SEM lead nos últimos 14 dias é ruído — sai da
+  // lista e vira um resumo discreto. Mostra os 5 mais relevantes (menor previsão).
+  const ativos = d.states.filter(s => s.leadsPerDay > 0)
+  const semVolume = d.states.filter(s => s.leadsPerDay === 0).map(s => s.state)
+  const visiveis = ativos.slice(0, 5)
+  const extras = ativos.length - visiveis.length
 
   return (
     <div style={card}>
@@ -68,7 +78,7 @@ export function QueuePositionCard({ dark = false }: { dark?: boolean }) {
       ) : (
         <>
           {best && (
-            <p style={{ margin: '0 0 10px', fontSize: 13.5, fontWeight: 700, color: best.position === 1 ? '#059669' : ink }}>
+            <p style={{ margin: '0 0 10px', fontSize: 13.5, fontWeight: 700, color: best.position === 1 && (best.etaDays ?? 99) <= 2 ? '#059669' : ink }}>
               {best.position === 1
                 ? `🥇 Você é o próximo a receber em ${best.state}`
                 : `Você está em ${ord(best.position)} lugar na fila de ${best.state} (${best.total} na disputa)`}
@@ -76,7 +86,7 @@ export function QueuePositionCard({ dark = false }: { dark?: boolean }) {
           )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {d.states.map(s => (
+            {visiveis.map(s => (
               <div key={s.state} style={{
                 display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5,
                 padding: '7px 10px', borderRadius: 10,
@@ -105,6 +115,12 @@ export function QueuePositionCard({ dark = false }: { dark?: boolean }) {
           {d.receivedToday > 0 && (
             <p style={{ margin: '8px 0 0', fontSize: 11.5, color: mut }}>
               Você já recebeu {d.receivedToday} lead{d.receivedToday > 1 ? 's' : ''} hoje — quem ainda não recebeu tem prioridade na próxima rodada.
+            </p>
+          )}
+          {(extras > 0 || semVolume.length > 0) && (
+            <p style={{ margin: '8px 0 0', fontSize: 11.5, color: mut }}>
+              {extras > 0 && `+${extras} ${extras === 1 ? 'outro estado com movimento' : 'outros estados com movimento'}. `}
+              {semVolume.length > 0 && `Sem leads nos últimos 14 dias: ${semVolume.join(', ')}.`}
             </p>
           )}
           <p style={{ margin: '8px 0 0', fontSize: 11, color: mut }}>
