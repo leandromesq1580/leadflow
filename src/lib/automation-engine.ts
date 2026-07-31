@@ -8,6 +8,7 @@ interface Automation {
   id: string
   buyer_id: string
   name: string
+  created_at: string
   trigger_type: 'stage_entered' | 'stage_stale' | 'no_response' | 'meeting_before'
   trigger_config: { stage_id?: string; hours?: number }
   action_type: 'send_template' | 'move_stage' | 'notify_agent'
@@ -44,6 +45,27 @@ export async function runAutomations(buyerIds?: string[]): Promise<{ ran: number
           : existingQuery.is('meeting_id', null)
         const { data: existing } = await existingQuery.maybeSingle()
         if (existing) continue
+
+        // 🛑 TRAVA PERSISTENTE (incidente 2026-07-31): automation_runs é apagado por
+        // CASCADE quando a automação é deletada — recriar zerava a trava e reenviava
+        // pra TODOS os leads (o mesmo lead recebeu 17x). O follow-up NÃO tem FK com a
+        // automação, então sobrevive: se este lead já recebeu ESTE template por
+        // automação nos últimos 7 dias, não reenvia.
+        if (auto.action_type === 'send_template' && auto.action_config?.template_id) {
+          const { data: tpl } = await db.from('templates').select('name')
+            .eq('id', auto.action_config.template_id).maybeSingle()
+          if (tpl?.name) {
+            const desde = new Date(Date.now() - 7 * 86400_000).toISOString()
+            const { data: jaEnviou } = await db.from('follow_ups')
+              .select('id').eq('lead_id', target.lead_id)
+              .like('description', `[Automação]%${tpl.name}`)
+              .gte('created_at', desde).limit(1).maybeSingle()
+            if (jaEnviou) {
+              console.log(`[automation] pulando ${target.lead_id}: já recebeu "${tpl.name}" por automação nos últimos 7 dias`)
+              continue
+            }
+          }
+        }
 
         try {
           await executeAction(auto, target)
@@ -101,11 +123,16 @@ async function findTargets(auto: Automation): Promise<Target[]> {
     if (!stageId) return []
     const pipelineIds = await pipelineIdsOfBuyer(auto.buyer_id)
     if (pipelineIds.length === 0) return []
+    // 🛑 NÃO RETROATIVO (incidente 2026-07-31): antes pegava TODOS os leads que já
+    // estavam no estágio — criar a automação disparava de uma vez pra base inteira
+    // (85 leads na conta da Raquel). Agora só quem ENTROU no estágio depois que a
+    // automação foi criada.
     const { data } = await db
       .from('pipeline_leads')
       .select('id, lead_id')
       .eq('stage_id', stageId)
       .in('pipeline_id', pipelineIds)
+      .gte('moved_at', auto.created_at)
     return (data || []).map(r => ({ lead_id: r.lead_id, pipeline_lead_id: r.id }))
   }
 
