@@ -110,16 +110,31 @@ export async function processSequencesForLead(leadId: string): Promise<number> {
         await db.from('sequence_enrollments').update({ status: 'completed', completed_at: now }).eq('id', enr.id)
         continue
       }
-      await executeStep(step, enr)
+      // 🔒 AVANÇA O PONTEIRO ANTES DE ENVIAR (mesma corrida do automation-engine,
+      // provada em 2026-07-31): antes enviava e só depois marcava o passo — duas
+      // execuções paralelas do cron pegavam o mesmo enrollment e ambas enviavam.
+      // O update condicional (current_step = valor lido) é o lock: quem perder a
+      // corrida afeta 0 linhas e PULA sem enviar.
       const nextIdx = enr.current_step + 1
-      if (nextIdx >= steps.length) {
-        await db.from('sequence_enrollments').update({ status: 'completed', completed_at: now }).eq('id', enr.id)
-      } else {
-        const nextStep = steps[nextIdx]
-        const prevScheduled = new Date(enr.next_run_at).getTime()
-        const nextAt = new Date(prevScheduled + nextStep.delay_hours * 3600_000).toISOString()
-        await db.from('sequence_enrollments').update({ current_step: nextIdx, next_run_at: nextAt }).eq('id', enr.id)
+      const isLast = nextIdx >= steps.length
+      const patch = isLast
+        ? { status: 'completed', completed_at: now }
+        : (() => {
+            const nextStep = steps[nextIdx]
+            const prevScheduled = new Date(enr.next_run_at).getTime()
+            return { current_step: nextIdx, next_run_at: new Date(prevScheduled + nextStep.delay_hours * 3600_000).toISOString() }
+          })()
+      const { data: claimed } = await db.from('sequence_enrollments')
+        .update(patch)
+        .eq('id', enr.id)
+        .eq('current_step', enr.current_step)
+        .eq('status', 'active')
+        .select('id')
+      if (!claimed || claimed.length === 0) {
+        console.log(`[sequence] corrida evitada: enrollment ${enr.id} já processado por outra execução`)
+        continue
       }
+      await executeStep(step, enr)
       processed++
     } catch (err: any) {
       const msg = err?.message || ''

@@ -67,27 +67,41 @@ export async function runAutomations(buyerIds?: string[]): Promise<{ ran: number
           }
         }
 
+        // 🔒 RESERVA ANTES DE ENVIAR (corrida provada no incidente 2026-07-31: o mesmo
+        // lead recebeu 3 msgs em 0,7s e houve 85 casos de duplicata no MESMO segundo).
+        // Antes: checava → ENVIAVA → só então gravava o run. Duas execuções do cron em
+        // paralelo passavam juntas pela checagem e ambas enviavam (a janela era o tempo
+        // do envio, que tem retry). Agora o INSERT vem primeiro: o UNIQUE
+        // (automation_id, lead_id) do banco é o lock atômico — quem perder a corrida
+        // recebe erro de duplicidade e PULA, sem enviar nada.
+        const { data: reserva, error: reservaErr } = await db.from('automation_runs').insert({
+          automation_id: auto.id,
+          lead_id: target.lead_id,
+          pipeline_lead_id: target.pipeline_lead_id || null,
+          meeting_id: target.meeting_id || null,
+          meeting_source: target.meeting_source || null,
+          status: 'skipped', // vira success/failed depois do envio
+        }).select('id').maybeSingle()
+
+        if (reservaErr) {
+          if (/duplicate|unique/i.test(reservaErr.message)) {
+            console.log(`[automation] corrida evitada: ${target.lead_id} já reservado por outra execução`)
+          } else {
+            console.error('[automation] reserva falhou:', reservaErr.message)
+          }
+          continue
+        }
+
         try {
           await executeAction(auto, target)
-          await db.from('automation_runs').insert({
-            automation_id: auto.id,
-            lead_id: target.lead_id,
-            pipeline_lead_id: target.pipeline_lead_id || null,
-            meeting_id: target.meeting_id || null,
-            meeting_source: target.meeting_source || null,
-            status: 'success',
-          })
+          if (reserva?.id) await db.from('automation_runs').update({ status: 'success' }).eq('id', reserva.id)
           ran++
         } catch (err: any) {
-          await db.from('automation_runs').insert({
-            automation_id: auto.id,
-            lead_id: target.lead_id,
-            pipeline_lead_id: target.pipeline_lead_id || null,
-            meeting_id: target.meeting_id || null,
-            meeting_source: target.meeting_source || null,
-            status: 'failed',
-            error: err?.message?.slice(0, 500) || 'Unknown error',
-          })
+          if (reserva?.id) {
+            await db.from('automation_runs').update({
+              status: 'failed', error: err?.message?.slice(0, 500) || 'Unknown error',
+            }).eq('id', reserva.id)
+          }
           failed++
         }
       }
