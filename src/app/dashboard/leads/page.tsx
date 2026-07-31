@@ -1,4 +1,5 @@
 import { createServerSupabase } from '@/lib/supabase/server'
+import { BulkDeleteManual } from '@/components/bulk-delete-manual'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { LeadActions } from './lead-actions'
@@ -41,7 +42,10 @@ export default async function LeadsPage() {
           <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>Meus Leads</h1>
           <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>{allLeads.length} leads no total</p>
         </div>
-        <LeadActions />
+        <div className="flex items-center gap-2">
+          <BulkDeleteManual />
+          <LeadActions />
+        </div>
       </div>
 
       {/* Agency manual mode alert */}
