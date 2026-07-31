@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { checkSendRate } from '@/lib/send-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { assertBuyerOwnsLead } from '@/lib/lead-ownership'
 import { getBridgeForBuyer } from '@/lib/wa-bridge'
@@ -147,6 +148,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Send via a bridge do PROPRIO buyer (multi-tenant)
+    // 🛑 LIMITADOR por conta (incidente 2026-07-31)
+    const rate = await checkSendRate(db, buyer_id)
+    if (!rate.ok) return NextResponse.json({ error: rate.reason, rate_limited: true }, { status: 429 })
+
     const bridgeUrl = bridge.url
     const bridgeKey = bridge.key
     const cleanPhone = lead.phone.replace(/[\s\-()]/g, '').replace(/^\+/, '')

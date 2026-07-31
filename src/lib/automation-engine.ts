@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { renderTemplate } from '@/lib/template-render'
 import { resolveSendBridge } from '@/lib/wa-bridge'
+import { checkSendRate } from '@/lib/send-guard'
 import { Resend } from 'resend'
 
 interface Automation {
@@ -208,6 +209,9 @@ async function executeAction(auto: Automation, target: Target): Promise<void> {
     if (template.type === 'whatsapp') {
       if (!lead.phone) throw new Error('Lead sem telefone')
       // Envia pela bridge do DONO do lead (não pela global/Regiane)
+      // 🛑 LIMITADOR por conta — automação também respeita o teto (2026-07-31)
+      const rate = await checkSendRate(db, auto.buyer_id)
+      if (!rate.ok) { console.error('[automation] envio bloqueado pelo limitador:', rate.reason); return }
       const sb = await resolveSendBridge(db, auto.buyer_id)
       const cleanPhone = lead.phone.replace(/[\s\-()]/g, '').replace(/^\+/, '')
       const res = await fetch(`${sb.url}/send`, {

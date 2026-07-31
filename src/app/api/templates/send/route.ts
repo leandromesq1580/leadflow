@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { checkSendRate } from '@/lib/send-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { renderTemplate } from '@/lib/template-render'
 import { resolveSendBridge } from '@/lib/wa-bridge'
@@ -31,6 +32,11 @@ export async function POST(request: NextRequest) {
 
   if (type === 'whatsapp') {
     if (!lead.phone) return NextResponse.json({ error: 'Lead sem telefone' }, { status: 400 })
+
+    // 🛑 LIMITADOR (incidente 2026-07-31): teto de envios por conta — mata rajada
+    // de máquina antes de virar spam nos leads e queda da sessão do WhatsApp.
+    const rate = await checkSendRate(db, buyer_id)
+    if (!rate.ok) return NextResponse.json({ error: rate.reason, rate_limited: true }, { status: 429 })
     // Envia pela bridge do DONO do lead (não pela global/Regiane)
     const sb = await resolveSendBridge(db, buyer_id)
     const cleanPhone = lead.phone.replace(/[\s\-\(\)]/g, '').replace(/^\+/, '')

@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { renderTemplate } from '@/lib/template-render'
 import { resolveSendBridge } from '@/lib/wa-bridge'
+import { checkSendRate } from '@/lib/send-guard'
 import { Resend } from 'resend'
 
 /**
@@ -303,6 +304,9 @@ async function executeStep(step: any, enr: any): Promise<void> {
   if (type === 'whatsapp') {
     if (!lead.phone) throw new Error('No phone')
     // Envia pela bridge do DONO do lead (não pela global/Regiane)
+    // 🛑 LIMITADOR por conta — sequência também respeita o teto (2026-07-31)
+    const rate = await checkSendRate(db, enr.buyer_id)
+    if (!rate.ok) { console.error('[sequence] envio bloqueado pelo limitador:', rate.reason); return }
     const sb = await resolveSendBridge(db, enr.buyer_id)
     const cleanPhone = lead.phone.replace(/[\s\-()]/g, '').replace(/^\+/, '')
     const r = await fetch(`${sb.url}/send`, {
