@@ -13,6 +13,7 @@ import { MobileNav } from '@/components/dashboard/mobile-nav'
 import { ResumeCheckout } from '@/components/resume-checkout'
 import { cookies, headers } from 'next/headers'
 import { isTrialActive, trialDaysRemaining, isAppointmentOnly, isLeadOnly } from '@/lib/crm-access'
+import { podeVerApolices } from '@/lib/policies-access'
 import { AppointmentGate } from '@/components/dashboard/appointment-gate'
 import { LeadGate } from '@/components/dashboard/lead-gate'
 import { getLocale } from '@/lib/locale'
@@ -60,6 +61,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const daysLeft = trialDaysRemaining(buyer)
   const apptOnly = isAppointmentOnly(buyer)
   const leadOnly = isLeadOnly(buyer)
+  const podeApolices = await podeVerApolices(db, buyer?.id)
   const locale = await getLocale()
 
   // "Ver como": admin vendo o sistema na pele de outro usuário
@@ -71,7 +73,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <PrivacyProvider>
       <div className="flex min-h-screen" style={{ background: '#f8f9fc' }}>
         <div className="hidden md:block">
-          <Sidebar type="buyer" userName={buyer?.name || user!.email || ''} isAgency={buyer?.is_agency || false} buyerId={buyer?.id} crmPlan={buyer?.crm_plan || 'free'} isAdmin={!!buyer?.is_admin} />
+          <Sidebar type="buyer" userName={buyer?.name || user!.email || ''} isAgency={buyer?.is_agency || false} buyerId={buyer?.id} crmPlan={buyer?.crm_plan || 'free'} isAdmin={!!buyer?.is_admin} podeVerApolices={podeApolices} />
         </div>
         <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-auto" data-crm-plan={buyer?.crm_plan || 'free'}>
           {impAs && <ImpersonationBanner name={impAs} />}
@@ -84,7 +86,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </AppointmentGate>
         </main>
         {buyer?.id && <PwaRegister buyerId={buyer.id} />}
-        <MobileNav userName={buyer?.name || user!.email || ''} isAgency={buyer?.is_agency || false} buyerId={buyer?.id} crmPlan={buyer?.crm_plan || 'free'} isAdmin={!!buyer?.is_admin} />
+        <MobileNav userName={buyer?.name || user!.email || ''} isAgency={buyer?.is_agency || false} buyerId={buyer?.id} crmPlan={buyer?.crm_plan || 'free'} isAdmin={!!buyer?.is_admin} podeVerApolices={podeApolices} />
         <TutorChat />
         <Softphone />
         <MetaPixel />

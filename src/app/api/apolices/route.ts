@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { callerBuyer } from '@/lib/api-auth'
 import { kpisDe, type Policy } from '@/lib/insurance-policies'
+import { podeVerApolices } from '@/lib/policies-access'
 
 export const dynamic = 'force-dynamic'
 
 /**
- * /api/policies — gestão de apólices do corretor logado (pós-venda).
+ * /api/apolices — gestão de apólices do corretor logado (pós-venda).
  * GET    lista + KPIs · POST cria · PATCH atualiza · DELETE remove
+ * Acesso restrito: só quem está liberado ou conectou a própria seguradora (403).
  * Tolerante: enquanto a migration 036 não roda, devolve lista vazia + needsMigration.
  */
 
@@ -34,6 +36,7 @@ export async function GET() {
   const db = createAdminClient()
   const caller = await callerBuyer(db)
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await podeVerApolices(db, caller.id))) return NextResponse.json({ error: 'Recurso não habilitado nesta conta.' }, { status: 403 })
   try {
     const { data, error } = await db.from('policies').select('*')
       .eq('buyer_id', caller.id).order('updated_at', { ascending: false })
@@ -52,6 +55,7 @@ export async function POST(request: NextRequest) {
   const db = createAdminClient()
   const caller = await callerBuyer(db)
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await podeVerApolices(db, caller.id))) return NextResponse.json({ error: 'Recurso não habilitado nesta conta.' }, { status: 403 })
   const body = await request.json().catch(() => ({}))
   if (!String(body.client_name || '').trim()) {
     return NextResponse.json({ error: 'Informe o nome do cliente.' }, { status: 400 })
@@ -73,6 +77,7 @@ export async function PATCH(request: NextRequest) {
   const db = createAdminClient()
   const caller = await callerBuyer(db)
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await podeVerApolices(db, caller.id))) return NextResponse.json({ error: 'Recurso não habilitado nesta conta.' }, { status: 403 })
   const body = await request.json().catch(() => ({}))
   if (!body.id) return NextResponse.json({ error: 'id obrigatório' }, { status: 400 })
   try {
@@ -91,6 +96,7 @@ export async function DELETE(request: NextRequest) {
   const db = createAdminClient()
   const caller = await callerBuyer(db)
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await podeVerApolices(db, caller.id))) return NextResponse.json({ error: 'Recurso não habilitado nesta conta.' }, { status: 403 })
   const id = new URL(request.url).searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'id obrigatório' }, { status: 400 })
   const { error } = await db.from('policies').delete().eq('id', id).eq('buyer_id', caller.id)
