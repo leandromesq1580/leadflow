@@ -146,6 +146,8 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan }: SidebarP
     { href: '/dashboard/performance', label: t.sidebar.performance, icon: '📈' },
     { href: '/dashboard/leads', label: t.sidebar.leads, icon: '🎯' },
     { href: '/dashboard/pipeline', label: t.sidebar.pipeline, icon: '📋' },
+    // Pós-venda: gestão das apólices vendidas (2026-08-03)
+    { href: '/dashboard/apolices', label: t._locale === 'en' ? 'Policies' : t._locale === 'es' ? 'Pólizas' : 'Apólices', icon: '🛡️' },
     { href: '/dashboard/community', label: t._locale === 'en' ? 'Community' : t._locale === 'es' ? 'Comunidad' : 'Comunidade', icon: '🤝' },
     { href: '/dashboard/treinamento', label: t._locale === 'en' ? 'Training' : t._locale === 'es' ? 'Entrenamiento' : 'Treinamento', icon: '🎓' },
     { href: '/dashboard/notas', label: t._locale === 'en' ? 'Notes' : 'Notas', icon: '🗒️' },
