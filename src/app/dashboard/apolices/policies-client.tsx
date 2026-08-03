@@ -21,6 +21,9 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
   const [edit, setEdit] = useState<Partial<Policy> | null>(null)
   const [aberto, setAberto] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
+  const [conector, setConector] = useState<{ conectado: boolean; seguradora?: string | null; ultimaSync?: string | null } | null>(null)
+  const [sincronizando, setSincronizando] = useState(false)
+  const [avisoSync, setAvisoSync] = useState<string | null>(null)
 
   async function carregar() {
     try {
@@ -30,6 +33,28 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
     setCarregando(false)
   }
   useEffect(() => { carregar() }, [])
+  useEffect(() => {
+    fetch('/api/apolices/sync', { cache: 'no-store' }).then(r => r.json()).then(setConector).catch(() => {})
+  }, [])
+
+  /** Puxa o portal da seguradora — atualiza status/pendências sem tocar no que você escreveu. */
+  async function sincronizar() {
+    setSincronizando(true); setAvisoSync(null)
+    try {
+      const r = await fetch('/api/apolices/sync', { method: 'POST' })
+      const d = await r.json()
+      if (!r.ok) { setAvisoSync(d.error || 'Não consegui atualizar agora.'); setSincronizando(false); return }
+      const partes = []
+      if (d.novas) partes.push(`${d.novas} nova(s)`)
+      if (d.atualizadas) partes.push(`${d.atualizadas} atualizada(s)`)
+      setAvisoSync(partes.length
+        ? `Portal lido: ${partes.join(' · ')}. ${d.semMudanca} sem mudança.`
+        : `Tudo em dia — nenhuma mudança no portal (${d.semMudanca} apólices conferidas).`)
+      await carregar()
+      fetch('/api/apolices/sync', { cache: 'no-store' }).then(r => r.json()).then(setConector).catch(() => {})
+    } catch { setAvisoSync('Erro de conexão com o portal.') }
+    setSincronizando(false)
+  }
 
   const visiveis = useMemo(() => {
     const t = busca.trim().toLowerCase()
@@ -98,6 +123,14 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
         <div className="flex gap-2">
           <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar cliente ou nº da apólice…"
             className="px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4', width: 250 }} />
+          {conector?.conectado && (
+            <button onClick={sincronizar} disabled={sincronizando}
+              className="px-4 py-2 rounded-xl text-[13px] font-bold"
+              style={{ background: '#fff', border: '1px solid #e8ecf4', color: sincronizando ? '#94a3b8' : '#0f766e' }}
+              title={`Ler o portal da ${conector.seguradora} agora`}>
+              {sincronizando ? '⏳ Lendo o portal…' : '🔄 Atualizar do portal'}
+            </button>
+          )}
           <button onClick={() => setEdit({ status: 'submitted', premium_mode: 'monthly', requirements: [] })}
             className="px-4 py-2 rounded-xl text-[13px] font-bold text-white"
             style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
@@ -105,6 +138,21 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
           </button>
         </div>
       </div>
+
+      {avisoSync && (
+        <div className="rounded-xl p-3 mb-4 text-[13px] font-semibold flex items-center justify-between gap-3"
+          style={{ background: '#f0fdfa', border: '1px solid #99f6e4', color: '#0f766e' }}>
+          <span>🔄 {avisoSync}</span>
+          <button onClick={() => setAvisoSync(null)} style={{ color: '#5eead4' }}>✕</button>
+        </div>
+      )}
+
+      {conector?.conectado && conector.ultimaSync && !avisoSync && (
+        <p className="text-[12px] mb-4" style={{ color: '#94a3b8' }}>
+          Conectado ao portal da {conector.seguradora} · última leitura{' '}
+          {new Date(conector.ultimaSync).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+        </p>
+      )}
 
       {migracao && (
         <div className="rounded-xl p-4 mb-5 text-[13px] font-semibold" style={{ background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e' }}>
