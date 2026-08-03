@@ -6,7 +6,7 @@ import { StageSelect, rotuloDoEstagio, todosOsEstagios, type PipelineOpt } from 
 interface Automation {
   id: string
   name: string
-  trigger_type: 'stage_entered' | 'stage_stale' | 'no_response' | 'meeting_before'
+  trigger_type: 'stage_entered' | 'stage_stale' | 'no_response' | 'meeting_before' | 'event_before'
   trigger_config: { stage_id?: string; hours?: number }
   action_type: 'send_template' | 'move_stage' | 'notify_agent'
   action_config: { template_id?: string; target_stage_id?: string }
@@ -24,6 +24,7 @@ const TRIGGER_LABELS: Record<string, string> = {
   stage_stale: 'Lead parado em estágio',
   no_response: 'Sem resposta há N horas',
   meeting_before: 'Antes de uma reunião',
+  event_before: 'Antes de um evento da agenda',
 }
 
 const ACTION_LABELS: Record<string, string> = {
@@ -109,6 +110,7 @@ export default function AutomationsPage() {
     if (a.trigger_type === 'stage_stale' && stage) trigger = `Parado em "${rotulo(stage.id)}" há ${a.trigger_config.hours || 24}h`
     if (a.trigger_type === 'no_response') trigger = `Sem resposta há ${a.trigger_config.hours || 48}h`
     if (a.trigger_type === 'meeting_before') trigger = `${a.trigger_config.hours || 1}h antes da reunião`
+    if (a.trigger_type === 'event_before') trigger = `${a.trigger_config.hours || 1}h antes do evento da agenda`
 
     let action = ACTION_LABELS[a.action_type]
     if (a.action_type === 'send_template' && tpl) action = `Enviar ${tpl.type === 'whatsapp' ? '💬' : '📧'} "${tpl.name}"`
@@ -248,6 +250,7 @@ function AutomationForm({ buyerId, templates, stages, pipelines, editing, onClos
             <option value="stage_stale">Lead parado em estágio há N horas</option>
             <option value="no_response">Lead sem resposta há N horas</option>
             <option value="meeting_before">N horas antes de uma reunião</option>
+            <option value="event_before">N horas antes de um evento da agenda</option>
           </select>
 
           {(triggerType === 'stage_entered' || triggerType === 'stage_stale') && (
@@ -256,12 +259,19 @@ function AutomationForm({ buyerId, templates, stages, pipelines, editing, onClos
               className="w-full mb-2 px-3 py-2 rounded-lg text-[13px]" style={{ background: '#fff', border: '1px solid #c7d2fe' }} />
           )}
 
-          {(triggerType === 'stage_stale' || triggerType === 'no_response' || triggerType === 'meeting_before') && (
+          {(triggerType === 'stage_stale' || triggerType === 'no_response' || triggerType === 'meeting_before' || triggerType === 'event_before') && (
             <input type="number" value={triggerHours} onChange={e => setTriggerHours(Number(e.target.value))}
-              placeholder={triggerType === 'meeting_before' ? 'Horas antes da reunião (ex: 1)' : 'Horas'} min={1}
+              placeholder={triggerType === 'meeting_before' ? 'Horas antes da reunião (ex: 1)' : triggerType === 'event_before' ? 'Horas antes do evento (ex: 1)' : 'Horas'} min={1}
               className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ background: '#fff', border: '1px solid #c7d2fe' }} />
           )}
         </div>
+
+        {triggerType === 'event_before' && actionType !== 'notify_agent' && (
+          <div className="p-3 rounded-lg mb-3 text-[12px]" style={{ background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e' }}>
+            ⚠️ Evento da agenda normalmente não tem cliente vinculado. Sem cliente, só a ação
+            <b> "Notificar agente"</b> funciona — as outras precisam de alguém pra receber.
+          </div>
+        )}
 
         <div className="p-3 rounded-lg mb-4" style={{ background: '#ecfdf5' }}>
           <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: '#10b981' }}>Então (ação)</p>

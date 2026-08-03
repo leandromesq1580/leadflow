@@ -9,7 +9,7 @@ interface Automation {
   buyer_id: string
   name: string
   created_at: string
-  trigger_type: 'stage_entered' | 'stage_stale' | 'no_response' | 'meeting_before'
+  trigger_type: 'stage_entered' | 'stage_stale' | 'no_response' | 'meeting_before' | 'event_before'
   trigger_config: { stage_id?: string; hours?: number }
   action_type: 'send_template' | 'move_stage' | 'notify_agent'
   action_config: { template_id?: string; target_stage_id?: string }
@@ -39,7 +39,9 @@ export async function runAutomations(buyerIds?: string[]): Promise<{ ran: number
           .from('automation_runs')
           .select('id')
           .eq('automation_id', auto.id)
-          .eq('lead_id', target.lead_id)
+        existingQuery = target.lead_id
+          ? existingQuery.eq('lead_id', target.lead_id)
+          : existingQuery.is('lead_id', null)
         existingQuery = target.meeting_id
           ? existingQuery.eq('meeting_id', target.meeting_id)
           : existingQuery.is('meeting_id', null)
@@ -51,7 +53,7 @@ export async function runAutomations(buyerIds?: string[]): Promise<{ ran: number
         // pra TODOS os leads (o mesmo lead recebeu 17x). O follow-up NÃO tem FK com a
         // automação, então sobrevive: se este lead já recebeu ESTE template por
         // automação nos últimos 7 dias, não reenvia.
-        if (auto.action_type === 'send_template' && auto.action_config?.template_id) {
+        if (target.lead_id && auto.action_type === 'send_template' && auto.action_config?.template_id) {
           const { data: tpl } = await db.from('templates').select('name')
             .eq('id', auto.action_config.template_id).maybeSingle()
           if (tpl?.name) {
@@ -85,7 +87,9 @@ export async function runAutomations(buyerIds?: string[]): Promise<{ ran: number
 
         if (reservaErr) {
           if (/duplicate|unique/i.test(reservaErr.message)) {
-            console.log(`[automation] corrida evitada: ${target.lead_id} já reservado por outra execução`)
+            console.log(`[automation] corrida evitada: ${target.lead_id || target.meeting_id} já reservado por outra execução`)
+          } else if (/null value in column "lead_id"|violates not-null/i.test(reservaErr.message)) {
+            console.error('[automation] gatilho de evento da agenda exige a migration 037 (automation_runs.lead_id nulo)')
           } else {
             console.error('[automation] reserva falhou:', reservaErr.message)
           }
@@ -114,10 +118,14 @@ export async function runAutomations(buyerIds?: string[]): Promise<{ ran: number
 }
 
 interface Target {
-  lead_id: string
+  /** null = evento da agenda sem cliente vinculado (só ação de avisar o corretor) */
+  lead_id: string | null
   pipeline_lead_id?: string | null
   meeting_id?: string | null
   meeting_source?: 'appointment' | 'calendar_item' | 'follow_up' | null
+  /** título do evento, pra escrever o aviso quando não há cliente */
+  titulo?: string | null
+  quando?: string | null
 }
 
 async function findTargets(auto: Automation): Promise<Target[]> {
@@ -225,6 +233,32 @@ async function findTargets(auto: Automation): Promise<Target[]> {
     return targets
   }
 
+  if (auto.trigger_type === 'event_before') {
+    // Evento da AGENDA — com ou sem cliente vinculado. É a diferença pro gatilho de
+    // reunião: aquele exige lead, e evento de agenda quase nunca tem (74 no sistema,
+    // nenhum com lead). Sem cliente, a ação possível é avisar o corretor.
+    const hours = auto.trigger_config.hours || 1
+    const targetMs = Date.now() + hours * 60 * 60 * 1000
+    const lower = new Date(targetMs - 35 * 60 * 1000).toISOString()
+    const upper = new Date(targetMs + 5 * 60 * 1000).toISOString()
+
+    const { data } = await db.from('calendar_items')
+      .select('id, lead_id, title, start_at')
+      .eq('buyer_id', auto.buyer_id)
+      .eq('kind', 'event')
+      .gte('start_at', lower)
+      .lte('start_at', upper)
+      .is('completed_at', null)
+
+    return (data || []).map(e => ({
+      lead_id: e.lead_id || null,
+      meeting_id: e.id,
+      meeting_source: 'calendar_item' as const,
+      titulo: e.title || null,
+      quando: e.start_at || null,
+    }))
+  }
+
   return []
 }
 
@@ -234,6 +268,8 @@ async function executeAction(auto: Automation, target: Target): Promise<void> {
   if (auto.action_type === 'send_template') {
     const templateId = auto.action_config.template_id
     if (!templateId) throw new Error('Missing template_id')
+    // evento de agenda sem cliente: não há pra quem mandar
+    if (!target.lead_id) throw new Error('Evento sem cliente vinculado — não há destinatário para o template')
 
     const [{ data: template }, { data: lead }, { data: agent }] = await Promise.all([
       db.from('templates').select('*').eq('id', templateId).single(),
@@ -300,6 +336,7 @@ async function executeAction(auto: Automation, target: Target): Promise<void> {
 
   if (auto.action_type === 'move_stage') {
     const targetStageId = auto.action_config.target_stage_id
+    if (!target.lead_id) throw new Error('Evento sem cliente vinculado — não há lead para mover')
     if (!targetStageId || !target.pipeline_lead_id) throw new Error('Missing stage or pipeline_lead')
     await db.from('pipeline_leads').update({
       stage_id: targetStageId,
@@ -309,18 +346,29 @@ async function executeAction(auto: Automation, target: Target): Promise<void> {
   }
 
   if (auto.action_type === 'notify_agent') {
-    const { data: lead } = await db.from('leads').select('name, phone, email').eq('id', target.lead_id).single()
+    const { data: lead } = target.lead_id
+      ? await db.from('leads').select('name, phone, email').eq('id', target.lead_id).single()
+      : { data: null as any }
     const { data: agent } = await db.from('buyers').select('email, notification_email').eq('id', auto.buyer_id).single()
     if (!agent?.notification_email || !agent.email) return
 
     const resendKey = (process.env.RESEND_API_KEY || '').trim()
     if (!resendKey) return
     const resend = new Resend(resendKey)
+
+    // Evento da agenda sem cliente: o aviso fala do compromisso, não de um lead.
+    const hora = target.quando
+      ? new Date(target.quando).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+      : null
+    const corpo = target.lead_id
+      ? `<p>Sua automação <b>${auto.name}</b> detectou o lead <b>${lead?.name || target.lead_id}</b> (${lead?.phone || lead?.email || 'sem contato'}).</p><p><a href="https://lead4producers.com/dashboard/pipeline">Abrir pipeline →</a></p>`
+      : `<p>Lembrete do seu compromisso: <b>${target.titulo || 'Evento da agenda'}</b>${hora ? ` — ${hora}` : ''}.</p><p><a href="https://lead4producers.com/dashboard/agenda">Abrir agenda →</a></p>`
+
     await resend.emails.send({
       from: 'Lead4Producers <noreply@resend.dev>',
       to: agent.email,
-      subject: `⏰ Automação: ${auto.name}`,
-      html: `<p>Sua automação <b>${auto.name}</b> detectou o lead <b>${lead?.name || target.lead_id}</b> (${lead?.phone || lead?.email || 'sem contato'}).</p><p><a href="https://lead4producers.com/dashboard/pipeline">Abrir pipeline →</a></p>`,
+      subject: `⏰ ${target.lead_id ? `Automação: ${auto.name}` : target.titulo || auto.name}`,
+      html: corpo,
     })
     return
   }

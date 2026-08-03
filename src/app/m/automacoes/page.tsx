@@ -29,6 +29,7 @@ export default function MobileAutomacoes() {
     { v: 'stage_stale', l: L('Lead parado em estágio', 'Lead stale in stage', 'Lead detenido') },
     { v: 'no_response', l: L('Sem resposta há N horas', 'No response for N hours', 'Sin respuesta') },
     { v: 'meeting_before', l: L('Antes de uma reunião', 'Before a meeting', 'Antes de reunión') },
+    { v: 'event_before', l: L('Antes de um evento da agenda', 'Before a calendar event', 'Antes de un evento de agenda') },
   ]
   const ACTIONS = [
     { v: 'send_template', l: L('Enviar template', 'Send template', 'Enviar plantilla') },
