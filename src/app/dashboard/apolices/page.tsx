@@ -2,7 +2,7 @@ import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { PoliciesClient } from './policies-client'
-import { podeVerApolices } from '@/lib/policies-access'
+import { acessoApolices } from '@/lib/policies-access'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Apólices — Lead4Pro' }
@@ -16,6 +16,7 @@ export default async function ApolicesPage() {
   const { data: buyer } = await db.from('buyers').select('id').eq('auth_user_id', user.id).single()
   if (!buyer) redirect('/login')
   // quem não foi liberado (nem conectou a própria seguradora) não entra nem pela URL
-  if (!(await podeVerApolices(db, buyer.id))) redirect('/dashboard')
-  return <PoliciesClient buyerId={buyer.id} />
+  const acesso = await acessoApolices(db, buyer.id)
+  if (!acesso.pode) redirect('/dashboard')
+  return <PoliciesClient buyerId={acesso.bookDe} />
 }

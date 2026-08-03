@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { callerBuyer } from '@/lib/api-auth'
 import { kpisDe, type Policy } from '@/lib/insurance-policies'
-import { podeVerApolices } from '@/lib/policies-access'
+import { acessoApolices } from '@/lib/policies-access'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,10 +36,11 @@ export async function GET() {
   const db = createAdminClient()
   const caller = await callerBuyer(db)
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!(await podeVerApolices(db, caller.id))) return NextResponse.json({ error: 'Recurso não habilitado nesta conta.' }, { status: 403 })
+  const acesso = await acessoApolices(db, caller.id)
+  if (!acesso.pode) return NextResponse.json({ error: 'Recurso não habilitado nesta conta.' }, { status: 403 })
   try {
     const { data, error } = await db.from('policies').select('*')
-      .eq('buyer_id', caller.id).order('updated_at', { ascending: false })
+      .eq('buyer_id', acesso.bookDe).order('updated_at', { ascending: false })
     if (error) throw error
     const lista = (data || []) as Policy[]
     return NextResponse.json({ policies: lista, kpis: kpisDe(lista) })
@@ -55,14 +56,15 @@ export async function POST(request: NextRequest) {
   const db = createAdminClient()
   const caller = await callerBuyer(db)
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!(await podeVerApolices(db, caller.id))) return NextResponse.json({ error: 'Recurso não habilitado nesta conta.' }, { status: 403 })
+  const acesso = await acessoApolices(db, caller.id)
+  if (!acesso.pode) return NextResponse.json({ error: 'Recurso não habilitado nesta conta.' }, { status: 403 })
   const body = await request.json().catch(() => ({}))
   if (!String(body.client_name || '').trim()) {
     return NextResponse.json({ error: 'Informe o nome do cliente.' }, { status: 400 })
   }
   try {
     const { data, error } = await db.from('policies')
-      .insert({ ...limpar(body), buyer_id: caller.id }).select().single()
+      .insert({ ...limpar(body), buyer_id: acesso.bookDe }).select().single()
     if (error) throw error
     return NextResponse.json({ policy: data })
   } catch (e: any) {
@@ -77,13 +79,14 @@ export async function PATCH(request: NextRequest) {
   const db = createAdminClient()
   const caller = await callerBuyer(db)
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!(await podeVerApolices(db, caller.id))) return NextResponse.json({ error: 'Recurso não habilitado nesta conta.' }, { status: 403 })
+  const acesso = await acessoApolices(db, caller.id)
+  if (!acesso.pode) return NextResponse.json({ error: 'Recurso não habilitado nesta conta.' }, { status: 403 })
   const body = await request.json().catch(() => ({}))
   if (!body.id) return NextResponse.json({ error: 'id obrigatório' }, { status: 400 })
   try {
     const { data, error } = await db.from('policies')
       .update({ ...limpar(body), updated_at: new Date().toISOString() })
-      .eq('id', body.id).eq('buyer_id', caller.id)  // só a própria apólice
+      .eq('id', body.id).eq('buyer_id', acesso.bookDe)  // só a própria apólice
       .select().single()
     if (error) throw error
     return NextResponse.json({ policy: data })
@@ -96,10 +99,11 @@ export async function DELETE(request: NextRequest) {
   const db = createAdminClient()
   const caller = await callerBuyer(db)
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!(await podeVerApolices(db, caller.id))) return NextResponse.json({ error: 'Recurso não habilitado nesta conta.' }, { status: 403 })
+  const acesso = await acessoApolices(db, caller.id)
+  if (!acesso.pode) return NextResponse.json({ error: 'Recurso não habilitado nesta conta.' }, { status: 403 })
   const id = new URL(request.url).searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'id obrigatório' }, { status: 400 })
-  const { error } = await db.from('policies').delete().eq('id', id).eq('buyer_id', caller.id)
+  const { error } = await db.from('policies').delete().eq('id', id).eq('buyer_id', acesso.bookDe)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })
 }
