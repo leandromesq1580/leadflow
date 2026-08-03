@@ -6,6 +6,7 @@ import { useT } from '@/lib/i18n-client'
 import { MIcon } from '@/components/mobile/icons'
 import { Toggle } from '@/components/mobile/toggle'
 import { useStages } from '@/components/mobile/use-stages'
+import { StageSelect, rotuloDoEstagio } from '@/components/stage-select'
 
 interface Automation { id?: string; name: string; trigger_type: string; trigger_config: { stage_id?: string; hours?: number }; action_type: string; action_config: { template_id?: string; target_stage_id?: string }; enabled?: boolean }
 interface Template { id: string; name: string; type: string }
@@ -21,7 +22,7 @@ export default function MobileAutomacoes() {
   const [templates, setTemplates] = useState<Template[]>([])
   const [editing, setEditing] = useState<Automation | null>(null)
   const [busy, setBusy] = useState(false)
-  const { defaultStages } = useStages(buyerId)
+  const { pipelines } = useStages(buyerId)
 
   const TRIGGERS = [
     { v: 'stage_entered', l: L('Lead entrou em estágio', 'Lead entered stage', 'Lead entró en etapa') },
@@ -36,7 +37,7 @@ export default function MobileAutomacoes() {
   ]
   const tLabel = (v: string) => TRIGGERS.find(x => x.v === v)?.l || v
   const aLabel = (v: string) => ACTIONS.find(x => x.v === v)?.l || v
-  const stageName = (id?: string) => defaultStages.find(s => s.id === id)?.name || '—'
+  const stageName = (id?: string) => rotuloDoEstagio(pipelines, id)
   const tplName = (id?: string) => templates.find(x => x.id === id)?.name || '—'
 
   const reload = (bid: string) => fetch(`/api/automations?buyer_id=${bid}`, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d) setList(d.automations || []) }).catch(() => {})
@@ -120,9 +121,9 @@ export default function MobileAutomacoes() {
             <p className="m-muted" style={{ fontSize: 12, fontWeight: 700, margin: '0 0 8px' }}>{L('Quando', 'When', 'Cuando')}</p>
             <select value={editing.trigger_type} onChange={e => setEditing({ ...editing, trigger_type: e.target.value, trigger_config: {} })} style={selStyle}>{TRIGGERS.map(x => <option key={x.v} value={x.v}>{x.l}</option>)}</select>
             {['stage_entered', 'stage_stale'].includes(editing.trigger_type) && (
-              <select value={editing.trigger_config.stage_id || ''} onChange={e => setEditing({ ...editing, trigger_config: { ...editing.trigger_config, stage_id: e.target.value } })} style={selStyle}>
-                <option value="">{L('Selecione o estágio', 'Select stage', 'Selecciona etapa')}</option>{defaultStages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+              <StageSelect pipelines={pipelines} value={editing.trigger_config.stage_id || ''}
+                onChange={v => setEditing({ ...editing, trigger_config: { ...editing.trigger_config, stage_id: v } })}
+                placeholder={L('Selecione o estágio', 'Select stage', 'Selecciona etapa')} style={selStyle} />
             )}
             {editing.trigger_type !== 'stage_entered' && (
               <input className="m-input" type="number" value={editing.trigger_config.hours ?? ''} onChange={e => setEditing({ ...editing, trigger_config: { ...editing.trigger_config, hours: Number(e.target.value) } })} placeholder={L('Horas', 'Hours', 'Horas')} style={{ marginBottom: 14 }} />
@@ -136,9 +137,9 @@ export default function MobileAutomacoes() {
               </select>
             )}
             {editing.action_type === 'move_stage' && (
-              <select value={editing.action_config.target_stage_id || ''} onChange={e => setEditing({ ...editing, action_config: { target_stage_id: e.target.value } })} style={selStyle}>
-                <option value="">{L('Selecione o estágio', 'Select stage', 'Selecciona etapa')}</option>{defaultStages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+              <StageSelect pipelines={pipelines} value={editing.action_config.target_stage_id || ''}
+                onChange={v => setEditing({ ...editing, action_config: { target_stage_id: v } })}
+                placeholder={L('Selecione o estágio', 'Select stage', 'Selecciona etapa')} style={selStyle} />
             )}
 
             <button onClick={save} disabled={busy || !editing.name.trim()} className="m-tap" style={{ width: '100%', height: 48, borderRadius: 14, background: 'var(--m-grad)', border: 'none', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: busy || !editing.name.trim() ? 0.5 : 1, marginTop: 4 }}>{busy ? L('Salvando…', 'Saving…', 'Guardando…') : L('Salvar', 'Save', 'Guardar')}</button>

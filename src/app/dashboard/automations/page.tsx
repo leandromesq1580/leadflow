@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { StageSelect, rotuloDoEstagio, todosOsEstagios, type PipelineOpt } from '@/components/stage-select'
 
 interface Automation {
   id: string
@@ -16,9 +17,7 @@ interface Template {
   id: string; name: string; type: 'whatsapp' | 'email'
 }
 
-interface Stage {
-  id: string; name: string; order: number
-}
+interface Stage { id: string; name: string; pipelineId: string; pipelineName: string }
 
 const TRIGGER_LABELS: Record<string, string> = {
   stage_entered: 'Lead entrou em estágio',
@@ -38,6 +37,7 @@ export default function AutomationsPage() {
   const [automations, setAutomations] = useState<Automation[]>([])
   const [templates, setTemplates] = useState<Template[]>([])
   const [stages, setStages] = useState<Stage[]>([])
+  const [pipelines, setPipelines] = useState<PipelineOpt[]>([])
   const [showNew, setShowNew] = useState(false)
   const [editing, setEditing] = useState<Automation | null>(null)
   const [loading, setLoading] = useState(true)
@@ -73,10 +73,12 @@ export default function AutomationsPage() {
     ])
     setAutomations(autoRes.automations || [])
     setTemplates(tmplRes.templates || [])
-    // Flatten stages from default pipeline (or first)
-    const pipelines = pipeRes.pipelines || []
-    const defaultPipe = pipelines.find((p: any) => p.is_default) || pipelines[0]
-    setStages((defaultPipe?.stages || []).map((s: any) => ({ id: s.id, name: s.name, order: s.position })))
+    // TODAS as pipelines entram. Quem tem "Vendas" e "Pós Vendas" precisa automatizar
+    // as duas — antes só a padrão aparecia e o resto do funil ficava inalcançável.
+    // (o motor já dispara em qualquer pipeline: automation-engine filtra por buyer, não por pipeline)
+    const pipes: PipelineOpt[] = pipeRes.pipelines || []
+    setPipelines(pipes)
+    setStages(todosOsEstagios(pipes))
   }
 
   async function toggle(a: Automation) {
@@ -99,10 +101,12 @@ export default function AutomationsPage() {
     const stage = stages.find(s => s.id === a.trigger_config.stage_id)
     const tpl = templates.find(t => t.id === a.action_config.template_id)
     const targetStage = stages.find(s => s.id === a.action_config.target_stage_id)
+    // com mais de um funil o nome sozinho é ambíguo → "Pós Vendas · Approved"
+    const rotulo = (id?: string) => rotuloDoEstagio(pipelines, id, '')
 
     let trigger = triggerTxt
-    if (a.trigger_type === 'stage_entered' && stage) trigger = `Ao entrar em "${stage.name}"`
-    if (a.trigger_type === 'stage_stale' && stage) trigger = `Parado em "${stage.name}" há ${a.trigger_config.hours || 24}h`
+    if (a.trigger_type === 'stage_entered' && stage) trigger = `Ao entrar em "${rotulo(stage.id)}"`
+    if (a.trigger_type === 'stage_stale' && stage) trigger = `Parado em "${rotulo(stage.id)}" há ${a.trigger_config.hours || 24}h`
     if (a.trigger_type === 'no_response') trigger = `Sem resposta há ${a.trigger_config.hours || 48}h`
     if (a.trigger_type === 'meeting_before') trigger = `${a.trigger_config.hours || 1}h antes da reunião`
 
@@ -167,7 +171,7 @@ export default function AutomationsPage() {
       </div>
 
       {showNew && (
-        <AutomationForm
+        <AutomationForm pipelines={pipelines}
           buyerId={buyerId}
           templates={templates}
           stages={stages}
@@ -180,10 +184,11 @@ export default function AutomationsPage() {
   )
 }
 
-function AutomationForm({ buyerId, templates, stages, editing, onClose, onSaved }: {
+function AutomationForm({ buyerId, templates, stages, pipelines, editing, onClose, onSaved }: {
   buyerId: string
   templates: Template[]
   stages: Stage[]
+  pipelines: PipelineOpt[]
   editing: Automation | null
   onClose: () => void
   onSaved: () => void
@@ -246,11 +251,9 @@ function AutomationForm({ buyerId, templates, stages, editing, onClose, onSaved 
           </select>
 
           {(triggerType === 'stage_entered' || triggerType === 'stage_stale') && (
-            <select value={triggerStageId} onChange={e => setTriggerStageId(e.target.value)}
-              className="w-full mb-2 px-3 py-2 rounded-lg text-[13px]" style={{ background: '#fff', border: '1px solid #c7d2fe' }}>
-              <option value="">Escolha o estágio...</option>
-              {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
+            <StageSelect pipelines={pipelines} value={triggerStageId} onChange={setTriggerStageId}
+              placeholder="Escolha o estágio..."
+              className="w-full mb-2 px-3 py-2 rounded-lg text-[13px]" style={{ background: '#fff', border: '1px solid #c7d2fe' }} />
           )}
 
           {(triggerType === 'stage_stale' || triggerType === 'no_response' || triggerType === 'meeting_before') && (
@@ -278,11 +281,9 @@ function AutomationForm({ buyerId, templates, stages, editing, onClose, onSaved 
           )}
 
           {actionType === 'move_stage' && (
-            <select value={actionStageId} onChange={e => setActionStageId(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ background: '#fff', border: '1px solid #a7f3d0' }}>
-              <option value="">Escolha o estágio destino...</option>
-              {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
+            <StageSelect pipelines={pipelines} value={actionStageId} onChange={setActionStageId}
+              placeholder="Escolha o estágio destino..."
+              className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ background: '#fff', border: '1px solid #a7f3d0' }} />
           )}
         </div>
 
