@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 const DOC_TYPES = ['Social', 'ITIN', 'Passaporte']
 const HEALTH = ['Diabetes', 'Colesterol', 'Coração', 'Ansiedade/Depressão', 'Câncer', 'Nenhuma das opções', 'Outro']
@@ -41,6 +41,31 @@ function blank(): Record<string, any> {
   return o
 }
 
+/** Tem alguma coisa preenchida? (usado pra decidir se vale guardar/descartar) */
+function temConteudo(o: Record<string, any>): boolean {
+  return FIELDS.some(x => {
+    const v = o[x.k]
+    return x.type === 'checks' ? (Array.isArray(v) && v.length > 0) : !!String(v || '').trim()
+  }) || !!o.driver_license || !!o.passport
+}
+
+/**
+ * RASCUNHO NO APARELHO (bug relatado em 03/08/2026).
+ *
+ * O corretor começava a aplicação, saía pra buscar um dado e voltava com tudo em
+ * branco. Eram três buracos: (1) trocar de aba dentro do lead DESMONTA esta tela —
+ * o modal renderiza a aba por condição, não esconde; (2) voltar de outra aba do
+ * navegador dispara de uma vez os polls que estavam congelados, e a árvore inteira
+ * reconcilia; (3) fechar o modal (ou o deploy trocar a versão da página) leva tudo.
+ * Em todos, o useState morria em silêncio e as 22 respostas iam junto.
+ *
+ * Agora o que está sendo digitado é gravado NO APARELHO a cada pausa e devolvido ao
+ * voltar. Só some quando a aplicação é salva ou quando o próprio corretor descarta.
+ * Um rascunho por lead; expira em 30 dias pra não virar lixo eterno.
+ */
+const RASCUNHO_VALIDADE = 30 * 24 * 60 * 60 * 1000
+const chaveRascunho = (leadId: string) => `l4p_form_draft:${leadId}`
+
 export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: string }) {
   const [forms, setForms] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -50,8 +75,60 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [rascunhoEm, setRascunhoEm] = useState<number | null>(null)
+  /** Segura o gravador até o rascunho ser restaurado (senão o estado em branco do
+   *  primeiro render apagaria o que estava guardado). Também protege a troca de lead. */
+  const pularGravacao = useRef(true)
+  const timerRascunho = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => { load() }, [leadId])
+
+  // Devolve o rascunho ao montar. Leitura só aqui dentro (nunca no initializer do
+  // useState) — no initializer o servidor renderiza diferente do navegador e quebra.
+  useEffect(() => {
+    pularGravacao.current = true
+    try {
+      const cru = localStorage.getItem(chaveRascunho(leadId))
+      if (cru) {
+        const d = JSON.parse(cru)
+        if (d?.f && Date.now() - (d.ts || 0) < RASCUNHO_VALIDADE) {
+          setF({ ...blank(), ...d.f })
+          if (d.show) setShow(true)
+          setRascunhoEm(d.ts || null)
+        } else {
+          localStorage.removeItem(chaveRascunho(leadId))   // velho demais: não ressuscita
+        }
+      }
+    } catch { /* storage bloqueado (Safari privado) — segue sem rascunho */ }
+    const t = setTimeout(() => { pularGravacao.current = false }, 0)
+    return () => clearTimeout(t)
+  }, [leadId])
+
+  // Guarda a cada pausa de meio segundo. Nada digitado, nada guardado — e apagar tudo
+  // apaga o rascunho junto (senão o texto que ele acabou de tirar voltaria depois).
+  useEffect(() => {
+    if (pularGravacao.current) return
+    if (timerRascunho.current) clearTimeout(timerRascunho.current)
+    if (!temConteudo(f)) {
+      try { localStorage.removeItem(chaveRascunho(leadId)) } catch {}
+      if (rascunhoEm) setRascunhoEm(null)
+      return
+    }
+    timerRascunho.current = setTimeout(() => {
+      try {
+        const ts = Date.now()
+        localStorage.setItem(chaveRascunho(leadId), JSON.stringify({ v: 1, ts, show, f }))
+        setRascunhoEm(ts)
+      } catch { /* sem storage: o formulário continua funcionando, só não sobrevive */ }
+    }, 500)
+    return () => { if (timerRascunho.current) clearTimeout(timerRascunho.current) }
+  }, [f, show, leadId, rascunhoEm])
+
+  function descartarRascunho() {
+    if (timerRascunho.current) clearTimeout(timerRascunho.current)
+    try { localStorage.removeItem(chaveRascunho(leadId)) } catch {}
+    setRascunhoEm(null)
+  }
 
   async function load() {
     setLoading(true)
@@ -103,11 +180,7 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
   }
 
   async function submit() {
-    const hasAny = FIELDS.some(x => {
-      const v = f[x.k]
-      return x.type === 'checks' ? (Array.isArray(v) && v.length > 0) : !!String(v || '').trim()
-    }) || f.driver_license || f.passport
-    if (!hasAny) { alert('Preencha ao menos um campo antes de salvar.'); return }
+    if (!temConteudo(f)) { alert('Preencha ao menos um campo antes de salvar.'); return }
     setSaving(true)
     try {
       const r = await fetch(`/api/leads/${leadId}/forms`, {
@@ -116,6 +189,7 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
       })
       const d = await r.json()
       if (!r.ok) { alert(d.error || 'Erro ao salvar'); setSaving(false); return }
+      descartarRascunho()          // salvo no servidor: o rascunho local não serve mais
       setF(blank()); setShow(false); await load()
     } catch (err: any) {
       alert(`Erro ao salvar: ${err?.message || 'conexão'}`)
@@ -186,7 +260,9 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
     )
   }
 
-  if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#94a3b8', fontSize: 13 }}>Carregando…</div>
+  // Só a tela toda espera. Com o formulário aberto, recarregar o histórico não pode
+  // desmontar o que está sendo digitado.
+  if (loading && !show) return <div style={{ textAlign: 'center', padding: 40, color: '#94a3b8', fontSize: 13 }}>Carregando…</div>
 
   return (
     <div>
@@ -197,7 +273,7 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
       )}
 
       {!show && (
-        <button onClick={() => { setF(blank()); setShow(true) }}
+        <button onClick={() => { if (!temConteudo(f)) setF(blank()); setShow(true) }}
           className="w-full py-4 rounded-xl text-[13px] font-bold mb-5"
           style={{ background: '#f0f4ff', color: '#6366f1', border: '1px dashed #c7d2fe' }}>
           📝 Nova aplicação
@@ -206,7 +282,14 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
 
       {show && (
         <div style={{ border: '1px solid #e8ecf4', borderRadius: 14, padding: 16, marginBottom: 18, background: '#fafbff' }}>
-          <p style={{ fontSize: 14, fontWeight: 800, color: '#1a1a2e', margin: '0 0 14px' }}>Nova aplicação · cadastro do cliente</p>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', margin: '0 0 14px' }}>
+            <p style={{ fontSize: 14, fontWeight: 800, color: '#1a1a2e', margin: 0 }}>Nova aplicação · cadastro do cliente</p>
+            {rascunhoEm && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#059669' }}>
+                ✓ Rascunho guardado {new Date(rascunhoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} — pode sair e voltar
+              </span>
+            )}
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
             {FIELDS.map(field => (
               <div key={field.k}>
@@ -224,7 +307,10 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
               style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>
               {saving ? 'Salvando…' : 'Salvar aplicação'}
             </button>
-            <button onClick={() => setShow(false)} disabled={saving}
+            <button onClick={() => {
+              if (temConteudo(f) && !confirm('Descartar o que você preencheu? O rascunho será apagado.')) return
+              descartarRascunho(); setF(blank()); setShow(false)
+            }} disabled={saving}
               className="px-5 py-3 rounded-xl text-[13px] font-bold" style={{ background: '#f1f5f9', color: '#64748b' }}>
               Cancelar
             </button>

@@ -62,7 +62,11 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   const [pendingPipelineId, setPendingPipelineId] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch(`/api/leads/${leadId}`).then(r => r.json()).then(d => setLead(d.lead || d))
+    // Só troca o lead por uma resposta VÁLIDA: um erro (ou corpo vazio) sobrescrevia o
+    // objeto e derrubava o corpo do modal, levando junto o que estava sendo editado.
+    fetch(`/api/leads/${leadId}`).then(r => r.json())
+      .then(d => { const l = d?.lead || d; if (l?.id) setLead(l) })
+      .catch(() => { /* mantém o que já está na tela */ })
     loadFollowUps()
     loadAttachments()
     loadPipelineInfo()
