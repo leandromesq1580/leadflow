@@ -44,6 +44,15 @@ export async function GET(request: NextRequest) {
       .order('start_at'),
   ])
 
+  // Falha de UMA fonte não pode sumir em silêncio: se a busca dos compromissos do
+  // lead quebrar (coluna nova, embed inválido), a agenda continuava 200 e sem nenhuma
+  // reunião — indistinguível de "não tem nada marcado".
+  const falhas: string[] = []
+  if (apptsRes.error) falhas.push(`appointments: ${apptsRes.error.message}`)
+  if (fusRes.error) falhas.push(`compromissos do lead: ${fusRes.error.message}`)
+  if (itemsRes.error) falhas.push(`agenda: ${itemsRes.error.message}`)
+  if (falhas.length) console.error('[calendar] fonte(s) falharam:', falhas.join(' | '))
+
   const appts = apptsRes.data || []
   const fus = fusRes.data || []
   const items = itemsRes.data || []
@@ -111,5 +120,5 @@ export async function GET(request: NextRequest) {
     })),
   ].sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
 
-  return NextResponse.json({ events })
+  return NextResponse.json({ events, ...(falhas.length ? { falhas } : {}) })
 }

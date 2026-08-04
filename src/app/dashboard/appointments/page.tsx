@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { faixaDeHoras } from '@/lib/calendar-hours'
 import { TimePicker } from '@/components/time-picker'
 
 type EventKind = 'appointment' | 'followup' | 'event' | 'task'
@@ -70,8 +71,10 @@ export default function AppointmentsPage() {
       const last = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0)
       const start = new Date(first)
       start.setDate(first.getDate() - first.getDay())
-      const end = new Date(last)
-      end.setDate(last.getDate() + (6 - last.getDay()))
+      // a grade desenha SEMPRE 42 células (6 semanas). Buscar só até o fim da última
+      // semana do mês deixava a 6ª linha sem dados — compromisso lá era invisível.
+      const end = new Date(start)
+      end.setDate(start.getDate() + 41)
       end.setHours(23, 59, 59)
       return { rangeFrom: start.toISOString(), rangeTo: end.toISOString() }
     }
@@ -187,7 +190,7 @@ export default function AppointmentsPage() {
 
       {loading && <div className="text-center py-10 text-[12px]" style={{ color: '#94a3b8' }}>Carregando...</div>}
 
-      {!loading && view === 'month' && <MonthView anchor={anchor} events={events} onClick={setSelectedEvent} />}
+      {!loading && view === 'month' && <MonthView onDia={(d) => { setAnchor(d); setView('day') }} anchor={anchor} events={events} onClick={setSelectedEvent} />}
       {!loading && view === 'week' && <WeekView anchor={anchor} events={events} onClick={setSelectedEvent} />}
       {!loading && view === 'day' && <DayView anchor={anchor} events={events} onClick={setSelectedEvent} />}
 
@@ -305,7 +308,11 @@ function EventPill({ event, onClick, compact }: { event: CalendarEvent; onClick:
   )
 }
 
-function MonthView({ anchor, events, onClick }: { anchor: Date; events: CalendarEvent[]; onClick: (e: CalendarEvent) => void }) {
+
+
+const VISIVEIS_NO_MES = 4
+
+function MonthView({ anchor, events, onClick, onDia }: { anchor: Date; events: CalendarEvent[]; onClick: (e: CalendarEvent) => void; onDia: (d: Date) => void }) {
   const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1)
   const start = new Date(first); start.setDate(first.getDate() - first.getDay())
   const days: Date[] = []
@@ -342,12 +349,19 @@ function MonthView({ anchor, events, onClick }: { anchor: Date; events: Calendar
                   style={{ background: isToday ? '#6366f1' : 'transparent', color: isToday ? '#fff' : inMonth ? '#1a1a2e' : '#c0c8d4' }}>
                   {d.getDate()}
                 </span>
-                {dayEvents.length > 3 && (
-                  <span className="text-[9px]" style={{ color: '#94a3b8' }}>+{dayEvents.length - 3}</span>
+                {dayEvents.length > VISIVEIS_NO_MES && (
+                  // antes era só um texto: o resto do dia ficava inalcançável (67 dias
+                  // do sistema têm mais de 3 compromissos). Agora abre o dia inteiro.
+                  <button onClick={ev => { ev.stopPropagation(); onDia(d) }}
+                    className="text-[9px] font-bold px-1 rounded"
+                    style={{ color: '#6366f1', background: '#eef2ff', cursor: 'pointer', border: 'none' }}
+                    title="Ver todos deste dia">
+                    +{dayEvents.length - VISIVEIS_NO_MES}
+                  </button>
                 )}
               </div>
               <div className="space-y-0.5">
-                {dayEvents.slice(0, 3).map(e => (
+                {dayEvents.slice(0, VISIVEIS_NO_MES).map(e => (
                   <EventPill key={e.id} event={e} onClick={() => onClick(e)} compact />
                 ))}
               </div>
@@ -364,7 +378,9 @@ function WeekView({ anchor, events, onClick }: { anchor: Date; events: CalendarE
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(start); d.setDate(start.getDate() + i); return d
   })
-  const hours = Array.from({ length: 14 }, (_, i) => i + 7)
+  const daysStr = days.map(d => d.toDateString())
+  const doPeriodo = events.filter(e => daysStr.includes(new Date(e.start).toDateString()))
+  const hours = faixaDeHoras(doPeriodo.map(e => e.start), 7, 20)
   const today = new Date()
 
   return (
@@ -412,7 +428,8 @@ function WeekView({ anchor, events, onClick }: { anchor: Date; events: CalendarE
 }
 
 function DayView({ anchor, events, onClick }: { anchor: Date; events: CalendarEvent[]; onClick: (e: CalendarEvent) => void }) {
-  const hours = Array.from({ length: 17 }, (_, i) => i + 6)
+  const doDia = events.filter(e => new Date(e.start).toDateString() === anchor.toDateString())
+  const hours = faixaDeHoras(doDia.map(e => e.start), 6, 22)
   return (
     <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
       <div className="overflow-y-auto max-h-[700px]">
