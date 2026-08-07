@@ -41,13 +41,28 @@ export async function POST(request: NextRequest) {
 
     const db = createAdminClient()
 
-    // Dedupe
+    // Dedupe — com uma exceção: mensagem que já existe SEM o arquivo.
+    //
+    // A mídia se perde quando o download no navegador da bridge falha (o servidor
+    // ficou sem memória e o renderer morre no meio, sem lançar erro). A linha fica
+    // com media_type preenchido e media_url NULL — é a caixa vermelha "não foi salvo".
+    // Antes, uma segunda tentativa (backfill) era descartada aqui e o furo virava
+    // permanente. Agora, se a repetição TROUXE o arquivo e a linha guardada não tem,
+    // a gente preenche. Só isso: nada de duplicar mensagem nem sobrescrever texto.
     const { data: existing } = await db
       .from('whatsapp_messages')
-      .select('id')
+      .select('id, media_url')
       .eq('wa_message_id', wa_message_id)
       .maybeSingle()
-    if (existing) return NextResponse.json({ skipped: 'duplicate' })
+    if (existing) {
+      if (media_url && !existing.media_url) {
+        await db.from('whatsapp_messages')
+          .update({ media_url, ...(media_type ? { media_type } : {}) })
+          .eq('id', existing.id)
+        return NextResponse.json({ healed: 'media' })
+      }
+      return NextResponse.json({ skipped: 'duplicate' })
+    }
 
     const normalizedFrom = String(from).replace(/\D/g, '')
     const normalizedTo = String(to || '').replace(/\D/g, '')
