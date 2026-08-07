@@ -237,15 +237,26 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
   }
 
   function renderMedia(m: Message) {
-    // Se media_type foi classificado mas url está faltando (upload falhou no wa-bridge antigo)
+    // Mídia sem arquivo: o WhatsApp mudou o formato de identificação das conversas (@lid)
+    // e a biblioteca da ponte não consegue mais BAIXAR o anexo — o download falha, não o
+    // upload. Dizer "falha de upload" fazia o corretor achar que o sistema perdeu o
+    // arquivo do cliente. O arquivo continua no WhatsApp do celular dele; aqui é só a
+    // cópia que não veio. Enquanto não há correção da biblioteca, a tela avisa a verdade.
     if (m.media_type && !m.media_url) {
+      const rotulo = m.media_type === 'image' ? 'Imagem' : m.media_type === 'audio' ? 'Áudio'
+        : m.media_type === 'video' ? 'Vídeo' : m.media_type === 'ptt' ? 'Áudio de voz' : 'Arquivo'
       return (
-        <div className="flex items-center gap-2 rounded-lg px-2 py-1.5 mb-1"
-          style={{ background: 'rgba(239,68,68,0.1)', border: '1px dashed #fecaca' }}>
-          <span className="text-[16px]">⚠️</span>
-          <p className="text-[11px]" style={{ color: '#dc2626' }}>
-            {m.media_type === 'image' ? 'Imagem' : m.media_type === 'audio' ? 'Áudio' : m.media_type === 'video' ? 'Vídeo' : 'Arquivo'} não foi salvo (falha de upload)
-          </p>
+        <div className="flex items-start gap-2 rounded-lg px-2.5 py-2 mb-1"
+          style={{ background: '#fffbeb', border: '1px dashed #fde68a' }}>
+          <span className="text-[15px]">📎</span>
+          <div>
+            <p className="text-[11.5px] font-bold" style={{ color: '#92400e' }}>
+              {rotulo} recebida — abra no seu WhatsApp
+            </p>
+            <p className="text-[10.5px]" style={{ color: '#b45309' }}>
+              O arquivo está na conversa do seu celular. A cópia não chegou aqui.
+            </p>
+          </div>
         </div>
       )
     }
