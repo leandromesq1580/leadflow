@@ -161,6 +161,8 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, podeVerApo
     { href: '/dashboard/appointments', label: t.sidebar.appointments, icon: '📅' },
     { href: '/dashboard/ai-consult', label: t._locale === 'en' ? 'AI Specialist' : t._locale === 'es' ? 'Especialista IA' : 'Especialista AI', icon: '🤖' },
     { href: '/dashboard/templates', label: t.sidebar.templates, icon: '📝' },
+    // Roteiro de venda ao lado do telefone (2026-08-08) — o apoio em si é opt-in
+    { href: '/dashboard/roteiro', label: t._locale === 'en' ? 'Call Script' : t._locale === 'es' ? 'Guion' : 'Roteiro', icon: '📜' },
     { href: '/dashboard/automations', label: t.sidebar.automations, icon: '⚡' },
     { href: '/dashboard/sequences', label: t.sidebar.sequences, icon: '🔁' },
     { href: '/dashboard/settings/notifications', label: t._locale === 'en' ? 'Reminders' : t._locale === 'es' ? 'Avisos' : 'Avisos', icon: '🔔' },

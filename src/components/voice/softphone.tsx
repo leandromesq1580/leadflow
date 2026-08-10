@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { CallScriptPanel } from './call-script-panel'
 
 /** Dispara uma ligação de qualquer lugar do app: callLead('+1...', 'Nome', leadId). */
 export function callLead(phone: string, name?: string, leadId?: string) {
@@ -138,6 +139,9 @@ export function Softphone() {
   const label = status === 'connecting' ? 'Conectando…' : status === 'ringing' ? 'Chamando…' : fmt(seconds)
 
   return (
+    <>
+    {/* Roteiro de venda ao lado do telefone — só pra quem ativou (opt-in) */}
+    <CallScriptPanel ativa={active} leadName={info.name} />
     <div style={{
       position: 'fixed', bottom: 20, right: 20, zIndex: 9999, width: 300,
       background: '#0f172a', color: '#fff', borderRadius: 16, padding: 16,
@@ -161,5 +165,6 @@ export function Softphone() {
         }}>Desligar</button>
       </div>
     </div>
+    </>
   )
 }
