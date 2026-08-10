@@ -168,6 +168,30 @@ export async function POST(request: NextRequest) {
         }).eq('id', buyerId)
         console.log(`[Stripe Webhook] CRM subscription ${status} (${interval}) for ${buyerId}`)
 
+        // ⚖️ UMA ASSINATURA POR CLIENTE (regra do dono; caso Roberta, 2026-08-10).
+        // A renovação falha, o cliente ASSINA DE NOVO em vez de trocar o cartão, e a
+        // antiga fica viva em past_due — o retry cobraria $99 extra no dia em que o
+        // cartão voltasse a aceitar. Ao NASCER uma assinatura, toda outra assinatura
+        // viva do mesmo cliente Stripe é cancelada e a fatura pendente dela anulada.
+        if (event.type === 'customer.subscription.created' && typeof sub.customer === 'string') {
+          try {
+            const stripe = getStripe()
+            const outras = await stripe.subscriptions.list({ customer: sub.customer, limit: 20 })
+            for (const velha of outras.data) {
+              if (velha.id === sub.id) continue
+              if (!['active', 'past_due', 'unpaid', 'trialing'].includes(velha.status)) continue
+              await stripe.subscriptions.cancel(velha.id)
+              console.log(`[Stripe Webhook] 1-por-cliente: duplicada ${velha.id} (${velha.status}) cancelada em favor de ${sub.id}`)
+              if (typeof velha.latest_invoice === 'string') {
+                try {
+                  const inv = await stripe.invoices.retrieve(velha.latest_invoice)
+                  if (inv.status === 'open') await stripe.invoices.voidInvoice(inv.id)
+                } catch (e: any) { console.error('[Stripe Webhook] anular fatura da duplicada falhou:', e?.message) }
+              }
+            }
+          } catch (e: any) { console.error('[Stripe Webhook] varredura 1-por-cliente falhou:', e?.message) }
+        }
+
         // 🎁 INDICAÇÃO (regra 2026-07-30): a recompensa vem do VALOR pago (tabela em
         // lib/referral), fica PENDENTE 14 dias e é 1 por indicado. A concessão real
         // acontece na fatura (invoice.payment_succeeded), que é onde temos o valor
