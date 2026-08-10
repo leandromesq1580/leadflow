@@ -96,6 +96,31 @@ export async function notifyGroupSmsReply(leadName: string | null, fromPhone: st
   await notifyAdmins(msg) // grupo + direto
 }
 
+/**
+ * Avisa o DONO do lead que o lead respondeu por SMS (caso Robson, 2026-08-10).
+ * Antes só o admin sabia — o corretor mandava SMS, o lead respondia e ninguém via.
+ * Sai pela bridge GLOBAL (regra da casa: aviso da plataforma pro comprador nunca
+ * usa a bridge dele). Best-effort: falha aqui não afeta o registro da resposta.
+ */
+export async function notifySmsReplyToOwner(buyerId: string, leadName: string | null, leadId: string, texto: string) {
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const db = createAdminClient()
+    const { data: buyer } = await db.from('buyers').select('phone, name').eq('id', buyerId).maybeSingle()
+    if (!buyer?.phone) return false
+    const msg = `💬 *${leadName || 'Seu lead'} respondeu seu SMS!*
+
+"${texto.slice(0, 300)}"
+
+Responda pela aba Conversa do lead:
+🔗 lead4producers.com/dashboard/whatsapp?lead=${leadId}`
+    return await sendWhatsApp(buyer.phone, msg)
+  } catch (e) {
+    console.error('[Notify] aviso de SMS ao dono falhou:', (e as any)?.message)
+    return false
+  }
+}
+
 /** Avisa o GRUPO de controle sobre uma NOVA COMPRA (pacote de leads/appointments ou assinatura). */
 /**
  * Alerta pro time: GRUPO (primário) + NÚMERO DIRETO do admin (backup).

@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { validateTwilioSignature, isOptOut } from '@/lib/twilio'
-import { notifyGroupSmsReply } from '@/lib/notifications'
+import { notifyGroupSmsReply, notifySmsReplyToOwner } from '@/lib/notifications'
+import { pushToBuyer } from '@/lib/push-notify'
 
 /**
  * POST /api/webhook/twilio-sms — resposta de SMS chegando (configurar este URL
@@ -71,6 +72,23 @@ export async function POST(request: NextRequest) {
   // Alerta o grupo de controle (não bloqueia a resposta ao Twilio)
   try { await notifyGroupSmsReply(lead?.name || null, digits, body) } catch (e) {
     console.error('[Twilio SMS] alerta grupo falhou:', (e as any)?.message)
+  }
+
+  // Avisa o DONO do lead (caso Robson, 2026-08-10): antes o corretor mandava SMS,
+  // o lead respondia e só o admin ficava sabendo. WhatsApp pela bridge global +
+  // push no celular; a resposta em si já aparece na aba Conversa (etiqueta SMS).
+  if (lead?.id && lead?.assigned_to) {
+    try { await notifySmsReplyToOwner(lead.assigned_to, lead.name || null, lead.id, body) } catch (e) {
+      console.error('[Twilio SMS] aviso ao dono falhou:', (e as any)?.message)
+    }
+    try {
+      await pushToBuyer(lead.assigned_to, {
+        title: `💬 ${lead.name || 'Seu lead'} respondeu seu SMS`,
+        body: body.slice(0, 120),
+        url: `/dashboard/whatsapp?lead=${lead.id}`,
+        tag: `sms-reply-${lead.id}`,
+      })
+    } catch (e) { console.error('[Twilio SMS] push ao dono falhou:', (e as any)?.message) }
   }
 
   return twiml()

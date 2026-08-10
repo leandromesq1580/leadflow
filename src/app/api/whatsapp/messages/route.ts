@@ -38,6 +38,36 @@ export async function GET(request: NextRequest) {
   const { data, error } = await query.limit(500)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // A conversa do lead inclui os SMS (caso Robson, 2026-08-10): o lead respondia o
+  // SMS automático e a resposta ficava invisível — só o admin sabia, o dono do lead
+  // não via em lugar nenhum. Aqui os SMS entram na MESMA linha do tempo, marcados
+  // com channel:'sms' (a tela mostra a etiqueta; o composer continua só WhatsApp).
+  // Só o que materializou de verdade: sent/delivered/received/failed — agendado e
+  // cancelado não são eventos da conversa. Tolerante: sem tabela, segue só WhatsApp.
+  if (leadId) {
+    try {
+      const { data: sms } = await db.from('sms_messages')
+        .select('id, direction, from_phone, to_phone, body, status, created_at')
+        .eq('lead_id', leadId)
+        .in('status', ['sent', 'delivered', 'received', 'failed'])
+        .order('created_at', { ascending: true }).limit(200)
+      const smsMsgs = (sms || []).map(s => ({
+        id: `sms-${s.id}`,
+        direction: s.direction === 'in' ? 'in' : 'out',
+        body: s.body || '',
+        from_phone: s.from_phone || '',
+        to_phone: s.to_phone || '',
+        sent_at: s.created_at,
+        status: s.status,
+        read_at: s.created_at,   // SMS não participa do contador de não lidas
+        channel: 'sms',
+      }))
+      const tudo = [...(data || []), ...smsMsgs]
+        .sort((a: any, b: any) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime())
+      return NextResponse.json({ messages: tudo })
+    } catch { /* segue só com whatsapp */ }
+  }
+
   return NextResponse.json({ messages: data || [] })
 }
 

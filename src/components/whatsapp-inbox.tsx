@@ -14,6 +14,8 @@ interface Message {
   read_at: string | null
   media_url?: string | null
   media_type?: string | null
+  /** 'sms' = veio/foi por SMS (aparece com etiqueta; o composer continua WhatsApp) */
+  channel?: string
 }
 
 interface Props {
@@ -315,12 +317,18 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
                 borderBottomRightRadius: m.direction === 'out' ? 4 : 16,
                 borderBottomLeftRadius: m.direction === 'in' ? 4 : 16,
               }}>
+              {m.channel === 'sms' && (
+                <span className="inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mb-1"
+                  style={{ background: m.direction === 'out' ? 'rgba(15,118,110,0.12)' : '#eef2ff', color: m.direction === 'out' ? '#0f766e' : '#6366f1', letterSpacing: 0.5 }}>
+                  SMS
+                </span>
+              )}
               {renderMedia(m)}
               {m.body && (
                 <p className="text-[13px] whitespace-pre-wrap break-words" style={{ color: '#1a1a2e' }}>{m.body}</p>
               )}
               <p className="text-[9px] mt-0.5 text-right" style={{ color: '#94a3b8' }}>
-                {fmtTime(m.sent_at)} {m.direction === 'out' && (m.status === 'read' ? '✓✓' : m.status === 'delivered' ? '✓✓' : '✓')}
+                {fmtTime(m.sent_at)} {m.direction === 'out' && m.channel !== 'sms' && (m.status === 'read' ? '✓✓' : m.status === 'delivered' ? '✓✓' : '✓')}
               </p>
             </div>
           </div>
