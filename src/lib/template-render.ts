@@ -29,8 +29,27 @@ export function renderTemplate(body: string, lead: Lead, agent: Agent): string {
     agente_primeiro_nome: (agent.name || '').split(' ')[0] || '',
     agente_email: agent.email || '',
     agente_telefone: agent.phone || '',
+    // apelidos comuns que os corretores escrevem
+    primeironome: firstName,
+    nome_completo: lead.name || '',
+    cliente: firstName,
+    lead: firstName,
   }
-  return body.replace(/\{([a-z_]+)\}/g, (_, key) => vars[key] ?? `{${key}}`)
+
+  // TOLERANTE COM O JEITO QUE CADA CORRETOR ESCREVE (caso Aroldo, 2026-08-10):
+  // o formato oficial é {primeiro_nome}, mas foram pro CLIENTE mensagens com
+  // "[primeiro_nome]", "(primeiro-nome)" e "{Primeiro Nome}" cruas — o código
+  // aparecia na tela do segurado. Agora {x}, {{x}}, [x] e (x) funcionam, com
+  // hífen/espaço/acento/maiúscula normalizados. Palavra desconhecida entre
+  // parênteses fica intacta — prosa normal não é tocada.
+  const normalizar = (k: string) => k.normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().trim().replace(/[\s-]+/g, '_')
+  return body.replace(
+    /\{\{\s*([a-zA-ZÀ-ú][a-zA-ZÀ-ú _-]{1,30})\s*\}\}|\{\s*([a-zA-ZÀ-ú][a-zA-ZÀ-ú _-]{1,30})\s*\}|\[\s*([a-zA-ZÀ-ú][a-zA-ZÀ-ú _-]{1,30})\s*\]|\(\s*([a-zA-ZÀ-ú][a-zA-ZÀ-ú _-]{1,30})\s*\)/g,
+    (m, a, b, c, d) => {
+      const key = normalizar(a || b || c || d || '')
+      return key in vars ? vars[key] : m
+    })
 }
 
 export const AVAILABLE_VARS = [

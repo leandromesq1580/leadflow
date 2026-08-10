@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { assertBuyerOwnsLead } from '@/lib/lead-ownership'
 import { getBridgeForBuyer } from '@/lib/wa-bridge'
 import { callerBuyer, canActAs } from '@/lib/api-auth'
+import { renderTemplate } from '@/lib/template-render'
 
 /** GET /api/whatsapp/messages?lead_id=X&buyer_id=Y — thread pra lead (com validacao de ownership) */
 export async function GET(request: NextRequest) {
@@ -120,6 +121,20 @@ export async function POST(request: NextRequest) {
     // 🔒 Bloqueia envio por quem nao e mais dono do lead
     const own = await assertBuyerOwnsLead(db, buyer_id, lead_id)
     if (!own.ok) return NextResponse.json({ error: own.reason || 'Acesso negado' }, { status: 403 })
+
+    // Variáveis também na caixa de mensagem (caso Aroldo, 2026-08-10): a corretora
+    // colou um texto com [primeiro_nome] direto na Conversa e o cliente recebeu o
+    // código cru — a caixa não substituía nada, só os templates. Agora, se o texto
+    // tem cara de variável, renderiza com os dados do lead antes de enviar.
+    if (body && /[{\[(]\s*[a-zA-ZÀ-ú][a-zA-ZÀ-ú _-]{1,30}\s*[}\])]/.test(body)) {
+      try {
+        const [{ data: leadVar }, { data: agenteVar }] = await Promise.all([
+          db.from('leads').select('name, phone, email, state, interest, city').eq('id', lead_id).maybeSingle(),
+          db.from('buyers').select('name, email, phone').eq('id', buyer_id).maybeSingle(),
+        ])
+        if (leadVar) body = renderTemplate(body, leadVar, agenteVar || {})
+      } catch { /* sem dados, envia como digitado */ }
+    }
 
     // 🔒 Multi-bridge: msg sai do WhatsApp DO DONO DO LEAD (assigned_to_member > assigned_to).
     // buyer_id do request tem que bater com o dono (ja garantido pelo assertBuyerOwnsLead acima).
