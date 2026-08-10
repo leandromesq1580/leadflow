@@ -15,7 +15,7 @@ export async function StaleLeadsAlert({ buyerId }: Props) {
 
   const { data: staleEntries } = await db
     .from('pipeline_leads')
-    .select('lead_id, moved_at, lead:leads(contract_closed, archived, assigned_to)')
+    .select('lead_id, moved_at, lead:leads(contract_closed, archived, assigned_to, assigned_to_member)')
     .in('pipeline_id', pipelineIds)
     .lt('moved_at', threshold)
 
@@ -27,14 +27,20 @@ export async function StaleLeadsAlert({ buyerId }: Props) {
   // ("Vendas" + "nao atendeu" + "NAO ATENDEU" + "nao tem interesse"), contado 4x.
   // Aviso que exagera vira aviso ignorado.
   //
-  // De quebra, tira o que nunca deveria estar ali: lead arquivado e lead que já foi
-  // reatribuído a outro corretor (a linha do funil sobrevive à reatribuição).
+  // De quebra, tira lead arquivado — ele saía do Kanban mas continuava gritando aqui.
+  //
+  // CUIDADO com o dono: em conta de agência o lead fica com assigned_to do DONO e é
+  // delegado ao corretor por assigned_to_member — o funil é do corretor e o trabalho
+  // é dele. Filtrar só por assigned_to escondia 533 leads reais da Fernanda (membro
+  // do time da Regiane). Então só descarta lead de OUTRO dono quando não há delegação
+  // nenhuma: aí é sobra de reatribuição, e a linha do funil ficou órfã.
   const leadsParados = new Set(
     (staleEntries || [])
       .filter((e: any) => {
         const l = e.lead
         if (!l || l.contract_closed || l.archived) return false
-        return !l.assigned_to || l.assigned_to === buyerId
+        if (!l.assigned_to || l.assigned_to === buyerId) return true
+        return !!l.assigned_to_member   // delegado: é trabalho deste corretor
       })
       .map((e: any) => e.lead_id)
       .filter(Boolean)
