@@ -13,14 +13,33 @@ export async function StaleLeadsAlert({ buyerId }: Props) {
 
   const pipelineIds = pipelines.map(p => p.id)
 
-  // Count stale leads (3+ days, not closed)
   const { data: staleEntries } = await db
     .from('pipeline_leads')
-    .select('id, moved_at, lead:leads(contract_closed)')
+    .select('lead_id, moved_at, lead:leads(contract_closed, archived, assigned_to)')
     .in('pipeline_id', pipelineIds)
     .lt('moved_at', threshold)
 
-  const staleCount = (staleEntries || []).filter((e: any) => !e.lead?.contract_closed).length
+  // CONTA LEAD, NÃO LINHA DE FUNIL (bug relatado em 07/08/2026).
+  //
+  // O CRM deixa o mesmo lead estar em vários funis ao mesmo tempo, e cada funil é uma
+  // linha em pipeline_leads. Contando linha, uma cliente com 15 leads via o aviso
+  // "32 leads precisam de atenção" — havia lead dela aparecendo em 4 funis
+  // ("Vendas" + "nao atendeu" + "NAO ATENDEU" + "nao tem interesse"), contado 4x.
+  // Aviso que exagera vira aviso ignorado.
+  //
+  // De quebra, tira o que nunca deveria estar ali: lead arquivado e lead que já foi
+  // reatribuído a outro corretor (a linha do funil sobrevive à reatribuição).
+  const leadsParados = new Set(
+    (staleEntries || [])
+      .filter((e: any) => {
+        const l = e.lead
+        if (!l || l.contract_closed || l.archived) return false
+        return !l.assigned_to || l.assigned_to === buyerId
+      })
+      .map((e: any) => e.lead_id)
+      .filter(Boolean)
+  )
+  const staleCount = leadsParados.size
   if (staleCount === 0) return null
 
   return (
