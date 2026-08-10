@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { toE164 } from '@/lib/twilio'
-import { pickCallerId, validVoiceSignature, VOICE_OUTBOUND_URL, VOICE_STATUS_URL, VOICE_WHISPER_URL, VOICE_RECORDING_URL, xmlEscape } from '@/lib/voice'
+import { pickCallerId, validVoiceSignature, VOICE_OUTBOUND_URL, VOICE_STATUS_URL, VOICE_WHISPER_URL, VOICE_RECORDING_URL, VOICE_TRANSCRIPTION_URL, xmlEscape } from '@/lib/voice'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,11 +37,27 @@ export async function POST(request: NextRequest) {
   const db = createAdminClient()
   const callerId = await pickCallerId(db, target)
 
+  // TRANSCRIÇÃO AO VIVO (teste da Fase 2 do roteiro, 2026-08-08) — gated por conta em
+  // settings.call_transcription.buyers. Fora da lista, NADA muda no TwiML. Desligar =
+  // tirar o buyer da lista (sem deploy). O texto chega por webhook em quase tempo real;
+  // consumimos "1 fork" do teto de 4 por chamada (AMD usa outro).
+  let transcricao = ''
+  try {
+    const { data } = await db.from('settings').select('value').eq('key', 'call_transcription').maybeSingle()
+    const liberados: string[] = (data?.value as any)?.buyers || []
+    if (params.buyerId && liberados.includes(params.buyerId)) {
+      const tCb = `${VOICE_TRANSCRIPTION_URL}?buyer_id=${encodeURIComponent(params.buyerId)}&lead_id=${encodeURIComponent(params.leadId || '')}`
+      transcricao =
+        `<Start><Transcription statusCallbackUrl="${xmlEscape(tCb)}" languageCode="pt-BR" track="both_tracks" partialResults="false" transcriptionEngine="google"/></Start>`
+    }
+  } catch { /* transcrição é acessório: falha aqui nunca pode derrubar a ligação */ }
+
   // answerOnBridge: o navegador ouve o ringback e só conta minuto quando atende.
   const statusCb = `${VOICE_STATUS_URL}?buyer_id=${encodeURIComponent(params.buyerId || '')}&lead_id=${encodeURIComponent(params.leadId || '')}`
   const recCb = `${VOICE_RECORDING_URL}?buyer_id=${encodeURIComponent(params.buyerId || '')}&lead_id=${encodeURIComponent(params.leadId || '')}`
   const xml =
     `<Response>` +
+    transcricao +
     // ringTone="us": com machineDetection o Twilio suprime o early media (tom de chamada
     // real da operadora) → sem isso o agente ouve SILÊNCIO até atender. O ringTone manda
     // o Twilio gerar o tom de chamada (padrão US) enquanto toca.

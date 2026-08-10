@@ -13,8 +13,8 @@ function twiml(): Response {
   const xml =
     `<?xml version="1.0" encoding="UTF-8"?>` +
     `<Response>` +
-    `<Say voice="alice" language="en-US">This call may be recorded.</Say>` +
-    `<Say voice="alice" language="pt-BR">Esta ligação pode ser gravada.</Say>` +
+    `<Say voice="alice" language="en-US">This call may be recorded and monitored.</Say>` +
+    `<Say voice="alice" language="pt-BR">Esta ligação pode ser gravada e monitorada.</Say>` +
     `</Response>`
   return new Response(xml, { headers: { 'Content-Type': 'text/xml' } })
 }

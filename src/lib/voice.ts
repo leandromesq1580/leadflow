@@ -33,6 +33,7 @@ export const VOICE_OUTBOUND_URL = 'https://lead4producers.com/api/voice/outbound
 export const VOICE_STATUS_URL = 'https://lead4producers.com/api/voice/status'
 // Aviso de consentimento tocado SÓ pro lead antes do bridge (leis two-party: FL, MA, CA…)
 export const VOICE_WHISPER_URL = 'https://lead4producers.com/api/voice/whisper'
+export const VOICE_TRANSCRIPTION_URL = 'https://lead4producers.com/api/voice/transcription'
 // Callback quando a gravação fica pronta (baixa do Twilio → Storage privado → Anexos)
 export const VOICE_RECORDING_URL = 'https://lead4producers.com/api/voice/recording'
 
