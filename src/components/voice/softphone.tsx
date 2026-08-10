@@ -21,6 +21,7 @@ export function Softphone() {
   const [info, setInfo] = useState<{ name?: string; phone?: string }>({})
   const [seconds, setSeconds] = useState(0)
   const [muted, setMuted] = useState(false)
+  const [callSid, setCallSid] = useState('')   // id da chamada (liga o painel de roteiro à transcrição)
   // AUDITORIA DE LIGAÇÃO (2026-07-23): ao ligar pra um lead, grava follow-up "📞 Ligou —
   // resultado pendente" na hora (prova da tentativa mesmo se fechar tudo). O RESULTADO é
   // AUTO-classificado pelo servidor (/api/voice/status: AMD humano×caixa postal + status
@@ -110,7 +111,7 @@ export function Softphone() {
       callRef.current = call
       if (detail.leadId) logCallAttempt(detail.leadId) // registra a tentativa já na saída da chamada
       call.on('ringing', () => setStatus('ringing'))
-      call.on('accept', () => { setStatus('incall'); startTimer() })
+      call.on('accept', () => { setStatus('incall'); startTimer(); try { setCallSid(call.parameters?.CallSid || '') } catch {} })
       call.on('disconnect', endUi)
       call.on('cancel', endUi)
       call.on('reject', endUi)
@@ -120,6 +121,7 @@ export function Softphone() {
 
   function endUi() {
     clearInterval(timerRef.current); callRef.current = null; setStatus(deviceRef.current ? 'ready' : 'off')
+    setCallSid('')
     // Fim de ligação de LEAD: o resultado chega pelos callbacks do Twilio em segundos —
     // agenda refreshs da lista de follow-ups pra UI mostrar a classificação automática.
     const lid = leadIdRef.current
@@ -141,7 +143,7 @@ export function Softphone() {
   return (
     <>
     {/* Roteiro de venda ao lado do telefone — só pra quem ativou (opt-in) */}
-    <CallScriptPanel ativa={active} leadName={info.name} />
+    <CallScriptPanel ativa={active} leadName={info.name} callSid={callSid} />
     <div style={{
       position: 'fixed', bottom: 20, right: 20, zIndex: 9999, width: 300,
       background: '#0f172a', color: '#fff', borderRadius: 16, padding: 16,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { avaliarConversa } from '@/lib/call-assist'
 
 export const dynamic = 'force-dynamic'
 
@@ -59,6 +60,16 @@ export async function POST(request: NextRequest) {
       { key: chave, value: atual, updated_at: new Date().toISOString() },
       { onConflict: 'key' },
     )
+
+    // FASE 2: fala do CLIENTE aciona a sugestão da IA (o corretor responde ao que o
+    // cliente disse — fala do próprio atendente não gera sugestão). Só roda pra quem
+    // tem o roteiro LIGADO (gate + debounce dentro de avaliarConversa). Falha aqui
+    // não afeta a transcrição — o catch de fora já protege.
+    if (evento === 'transcription-content' && p.Track === 'outbound_track') {
+      try { await avaliarConversa(callSid) } catch (e: any) {
+        console.error('[voice/transcription] assist:', e?.message)
+      }
+    }
   } catch (e: any) {
     console.error('[voice/transcription]', e?.message)
   }
