@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { callerBuyer } from '@/lib/api-auth'
-import { sincronizarNL, conectorDe, dispararVarredura, statusVarredura } from '@/lib/nl-sync'
+import { sincronizarNL, conectorDe, dispararVarredura, statusVarredura, enviarCodigoMfa } from '@/lib/nl-sync'
 import { acessoApolices } from '@/lib/policies-access'
 
 export const dynamic = 'force-dynamic'
@@ -23,12 +23,20 @@ export async function POST(req: Request) {
   const acesso = await acessoApolices(db, caller.id)
   if (!acesso.pode) return NextResponse.json({ error: 'Recurso não habilitado nesta conta.' }, { status: 403 })
 
-  const body = await req.json().catch(() => ({} as { modo?: string }))
+  const body = await req.json().catch(() => ({} as { modo?: string; code?: string }))
   const modo = body?.modo || 'importar'
 
-  if (modo === 'varrer' || modo === 'status') {
+  if (modo === 'varrer' || modo === 'status' || modo === 'mfa') {
     const cfg = await conectorDe(db, acesso.bookDe)
     if (!cfg) return NextResponse.json({ error: 'Conector não configurado nesta conta.' }, { status: 400 })
+
+    if (modo === 'mfa') {
+      const code = String(body?.code || '').replace(/\D/g, '')
+      if (code.length < 4) return NextResponse.json({ error: 'Código inválido.' }, { status: 400 })
+      const r = await enviarCodigoMfa(cfg, code)
+      if (!r.ok) return NextResponse.json({ error: r.erro || 'O robô recusou o código.' }, { status: 502 })
+      return NextResponse.json({ ok: true })
+    }
 
     if (modo === 'varrer') {
       const st = await statusVarredura(cfg)

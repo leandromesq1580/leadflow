@@ -34,6 +34,8 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
   } | null>(null)
   const [sincronizando, setSincronizando] = useState(false)
   const [avisoSync, setAvisoSync] = useState<string | null>(null)
+  const [mfaPedido, setMfaPedido] = useState(false)
+  const [mfaCodigo, setMfaCodigo] = useState('')
 
   async function carregar() {
     try {
@@ -61,69 +63,100 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
     }).catch(() => {})
   }, [])
 
+  const postSync = (body: any) => fetch('/api/apolices/sync', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  })
+
+  /** Espera a varredura terminar (ou pedir MFA) e importa o resultado. */
+  async function esperarEImportar() {
+    const inicio = Date.now()
+    let pronto = false
+    while (Date.now() - inicio < 6 * 60_000) {
+      await new Promise(res => setTimeout(res, 10_000))
+      const s = await postSync({ modo: 'status' }).then(r => r.json()).catch(() => null)
+      if (!s) continue
+      if (s.awaiting_mfa) {
+        // o código chegou no e-mail do agente — o campo pra digitar aparece no banner
+        setMfaPedido(true)
+        setAvisoSync(L('⚠️ O portal pediu o código de verificação que acabou de chegar no e-mail do agente. Digite aqui:',
+                       '⚠️ The portal asked for the verification code that just arrived in the agent email. Type it here:',
+                       '⚠️ El portal pidió el código de verificación que acaba de llegar al correo del agente. Escríbelo aquí:'))
+        setSincronizando(false); return
+      }
+      if (s.last_error && !s.running) {
+        setAvisoSync(L(`⚠️ A varredura falhou: ${s.last_error}. Importando a última leitura disponível…`,
+                       `⚠️ The sweep failed: ${s.last_error}. Importing the latest available read…`,
+                       `⚠️ El barrido falló: ${s.last_error}. Importando la última lectura disponible…`))
+        break
+      }
+      if (!s.running) { pronto = true; break }
+    }
+    if (!pronto) {
+      // não terminou no prazo → importa o que tem e avisa (melhor que nada)
+      setAvisoSync(prev => prev?.startsWith('⚠️') ? prev : L('A varredura está demorando — importando a última leitura disponível.',
+        'The sweep is taking long — importing the latest available read.',
+        'El barrido está tardando — importando la última lectura disponible.'))
+    }
+
+    const r = await postSync({ modo: 'importar' })
+    const d = await r.json()
+    if (!r.ok) { setAvisoSync(d.error || L('Não consegui atualizar agora.', 'Could not refresh right now.', 'No pude actualizar ahora.')); setSincronizando(false); return }
+    const partes = []
+    if (d.novas) partes.push(L(`${d.novas} nova(s)`, `${d.novas} new`, `${d.novas} nueva(s)`))
+    if (d.atualizadas) partes.push(L(`${d.atualizadas} atualizada(s)`, `${d.atualizadas} updated`, `${d.atualizadas} actualizada(s)`))
+    setAvisoSync(partes.length
+      ? L(`Portal lido: ${partes.join(' · ')}. ${d.semMudanca} sem mudança.`,
+          `Portal read: ${partes.join(' · ')}. ${d.semMudanca} unchanged.`,
+          `Portal leído: ${partes.join(' · ')}. ${d.semMudanca} sin cambios.`)
+      : L(`Tudo em dia — nenhuma mudança no portal (${d.semMudanca} apólices conferidas).`,
+          `All caught up — no changes on the portal (${d.semMudanca} policies checked).`,
+          `Todo al día — sin cambios en el portal (${d.semMudanca} pólizas revisadas).`))
+    await carregar()
+    fetch('/api/apolices/sync', { cache: 'no-store' }).then(r => r.json()).then(setConector).catch(() => {})
+    setSincronizando(false)
+  }
+
   /**
    * Puxa o portal DE VERDADE: acorda o robô (Playwright no servidor, ~2-4 min),
    * acompanha a varredura e só então importa. Antes o botão lia um cache que podia
    * ter DIAS — parecia atualizado e não era.
    */
   async function sincronizar() {
-    setSincronizando(true); setAvisoSync(null)
+    setSincronizando(true); setAvisoSync(null); setMfaPedido(false)
     try {
-      const post = (body: any) => fetch('/api/apolices/sync', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-      })
-      const v = await post({ modo: 'varrer' })
+      const v = await postSync({ modo: 'varrer' })
       const vd = await v.json()
       if (!v.ok) { setAvisoSync(vd.error || L('Não consegui acordar o robô do portal.', 'Could not wake the portal robot.', 'No pude despertar el robot del portal.')); setSincronizando(false); return }
 
-      // varredura leva uns minutos — acompanha até terminar (limite ~6 min)
       setAvisoSync(L('Varrendo o portal da National Life… (~2 a 4 min — pode continuar usando o sistema)',
                      'Sweeping the National Life portal… (~2–4 min — you can keep using the system)',
                      'Barriendo el portal de National Life… (~2–4 min — puedes seguir usando el sistema)'))
-      const inicio = Date.now()
-      let pronto = false
-      while (Date.now() - inicio < 6 * 60_000) {
-        await new Promise(res => setTimeout(res, 10_000))
-        const s = await post({ modo: 'status' }).then(r => r.json()).catch(() => null)
-        if (!s) continue
-        if (s.awaiting_mfa) {
-          setAvisoSync(L('⚠️ O portal pediu código de verificação (MFA). Abra o e-mail do agente, pegue o código e informe no painel do robô — depois clique em Atualizar de novo.',
-                         '⚠️ The portal asked for a verification code (MFA). Get the code from the agent email, enter it in the robot panel, then click Refresh again.',
-                         '⚠️ El portal pidió código de verificación (MFA). Toma el código del correo del agente, ingrésalo en el panel del robot y vuelve a hacer clic en Actualizar.'))
-          setSincronizando(false); return
-        }
-        if (s.last_error && !s.running) {
-          setAvisoSync(L(`⚠️ A varredura falhou: ${s.last_error}. Importando a última leitura disponível…`,
-                         `⚠️ The sweep failed: ${s.last_error}. Importing the latest available read…`,
-                         `⚠️ El barrido falló: ${s.last_error}. Importando la última lectura disponible…`))
-          break
-        }
-        if (!s.running) { pronto = true; break }
-      }
-      if (!pronto) {
-        // não terminou no prazo → importa o que tem e avisa (melhor que nada)
-        setAvisoSync(prev => prev?.startsWith('⚠️') ? prev : L('A varredura está demorando — importando a última leitura disponível.',
-          'The sweep is taking long — importing the latest available read.',
-          'El barrido está tardando — importando la última lectura disponible.'))
-      }
+      await esperarEImportar()
+    } catch {
+      setAvisoSync(L('Erro de conexão com o portal.', 'Connection error with the portal.', 'Error de conexión con el portal.'))
+      setSincronizando(false)
+    }
+  }
 
-      const r = await post({ modo: 'importar' })
+  /** Entrega o código MFA digitado no banner e retoma a varredura do ponto onde parou. */
+  async function enviarMfa() {
+    const code = mfaCodigo.replace(/\D/g, '')
+    if (code.length < 4) return
+    setSincronizando(true)
+    try {
+      const r = await postSync({ modo: 'mfa', code })
       const d = await r.json()
-      if (!r.ok) { setAvisoSync(d.error || L('Não consegui atualizar agora.', 'Could not refresh right now.', 'No pude actualizar ahora.')); setSincronizando(false); return }
-      const partes = []
-      if (d.novas) partes.push(L(`${d.novas} nova(s)`, `${d.novas} new`, `${d.novas} nueva(s)`))
-      if (d.atualizadas) partes.push(L(`${d.atualizadas} atualizada(s)`, `${d.atualizadas} updated`, `${d.atualizadas} actualizada(s)`))
-      setAvisoSync(partes.length
-        ? L(`Portal lido: ${partes.join(' · ')}. ${d.semMudanca} sem mudança.`,
-            `Portal read: ${partes.join(' · ')}. ${d.semMudanca} unchanged.`,
-            `Portal leído: ${partes.join(' · ')}. ${d.semMudanca} sin cambios.`)
-        : L(`Tudo em dia — nenhuma mudança no portal (${d.semMudanca} apólices conferidas).`,
-            `All caught up — no changes on the portal (${d.semMudanca} policies checked).`,
-            `Todo al día — sin cambios en el portal (${d.semMudanca} pólizas revisadas).`))
-      await carregar()
-      fetch('/api/apolices/sync', { cache: 'no-store' }).then(r => r.json()).then(setConector).catch(() => {})
-    } catch { setAvisoSync(L('Erro de conexão com o portal.', 'Connection error with the portal.', 'Error de conexión con el portal.')) }
-    setSincronizando(false)
+      if (!r.ok) {
+        setAvisoSync(d.error || L('O robô recusou o código — confira e tente de novo.', 'The robot rejected the code — check it and try again.', 'El robot rechazó el código — revísalo e inténtalo de nuevo.'))
+        setSincronizando(false); return
+      }
+      setMfaPedido(false); setMfaCodigo('')
+      setAvisoSync(L('Código entregue — continuando a varredura…', 'Code delivered — resuming the sweep…', 'Código entregado — reanudando el barrido…'))
+      await esperarEImportar()
+    } catch {
+      setAvisoSync(L('Erro de conexão com o portal.', 'Connection error with the portal.', 'Error de conexión con el portal.'))
+      setSincronizando(false)
+    }
   }
 
   const visiveis = useMemo(() => {
@@ -215,10 +248,25 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
       </div>
 
       {avisoSync && (
-        <div className="rounded-xl p-3 mb-4 text-[13px] font-semibold flex items-center justify-between gap-3"
-          style={{ background: '#f0fdfa', border: '1px solid #99f6e4', color: '#0f766e' }}>
+        <div className="rounded-xl p-3 mb-4 text-[13px] font-semibold flex items-center justify-between gap-3 flex-wrap"
+          style={{ background: mfaPedido ? '#fffbeb' : '#f0fdfa', border: `1px solid ${mfaPedido ? '#fde68a' : '#99f6e4'}`, color: mfaPedido ? '#92400e' : '#0f766e' }}>
           <span>🔄 {avisoSync}</span>
-          <button onClick={() => setAvisoSync(null)} style={{ color: '#5eead4' }}>✕</button>
+          {mfaPedido && (
+            <span className="flex items-center gap-2">
+              <input value={mfaCodigo} onChange={e => setMfaCodigo(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                onKeyDown={e => { if (e.key === 'Enter') enviarMfa() }}
+                placeholder={L('código do e-mail', 'code from email', 'código del correo')}
+                inputMode="numeric" autoFocus
+                className="px-3 py-1.5 rounded-lg text-[14px] font-bold tracking-widest"
+                style={{ border: '1px solid #fbbf24', width: 140, background: '#fff', color: '#1a1a2e' }} />
+              <button onClick={enviarMfa} disabled={sincronizando || mfaCodigo.replace(/\D/g, '').length < 4}
+                className="px-4 py-1.5 rounded-lg text-[13px] font-bold text-white disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}>
+                {L('Enviar código', 'Send code', 'Enviar código')}
+              </button>
+            </span>
+          )}
+          <button onClick={() => { setAvisoSync(null); setMfaPedido(false) }} style={{ color: mfaPedido ? '#fbbf24' : '#5eead4' }}>✕</button>
         </div>
       )}
 

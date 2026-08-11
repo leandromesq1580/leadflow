@@ -49,6 +49,18 @@ export async function dispararVarredura(cfg: NLConfig): Promise<{ ok: boolean; e
   } catch (e: any) { return { ok: false, erro: String(e?.message || e) } }
 }
 
+/** Entrega o código MFA (que chegou no e-mail do agente) pro robô continuar. */
+export async function enviarCodigoMfa(cfg: NLConfig, code: string): Promise<{ ok: boolean; erro?: string }> {
+  try {
+    const r = await fetch(`${cfg.url.replace(/\/$/, '')}/mfa?k=${encodeURIComponent(cfg.key)}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }),
+    })
+    const d = await r.json().catch(() => ({}))
+    if (!r.ok || d?.ok === false) return { ok: false, erro: d?.error || `robô respondeu ${r.status}` }
+    return { ok: true }
+  } catch (e: any) { return { ok: false, erro: String(e?.message || e) } }
+}
+
 /** O robô está varrendo? Pediu MFA? Quando varreu por último? */
 export async function statusVarredura(cfg: NLConfig): Promise<NLStatusRobo | null> {
   try {
