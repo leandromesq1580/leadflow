@@ -12,8 +12,12 @@ export function formatCurrency(cents: number): string {
   }).format(cents / 100)
 }
 
-export function formatDate(date: string | Date): string {
-  return new Intl.DateTimeFormat('pt-BR', {
+// Locale das funcoes compartilhadas de UI (web passa; /m fica no default 'pt' ate a Onda 3)
+export type UiLocale = 'pt' | 'en' | 'es'
+
+export function formatDate(date: string | Date, locale: UiLocale = 'pt'): string {
+  const tag = locale === 'en' ? 'en-US' : locale === 'es' ? 'es-US' : 'pt-BR'
+  return new Intl.DateTimeFormat(tag, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -22,23 +26,23 @@ export function formatDate(date: string | Date): string {
   }).format(new Date(date))
 }
 
-export function timeAgo(date: string | Date): string {
+export function timeAgo(date: string | Date, locale: UiLocale = 'pt'): string {
   const now = new Date()
   const past = new Date(date)
   const diff = now.getTime() - past.getTime()
 
   const minutes = Math.floor(diff / 60000)
-  if (minutes < 1) return 'agora'
-  if (minutes < 60) return `${minutes} min atras`
+  if (minutes < 1) return locale === 'en' ? 'just now' : locale === 'es' ? 'ahora' : 'agora'
+  if (minutes < 60) return locale === 'en' ? `${minutes} min ago` : locale === 'es' ? `hace ${minutes} min` : `${minutes} min atras`
 
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h atras`
+  if (hours < 24) return locale === 'en' ? `${hours}h ago` : locale === 'es' ? `hace ${hours}h` : `${hours}h atras`
 
   const days = Math.floor(hours / 24)
-  if (days === 1) return 'ontem'
-  if (days < 7) return `${days} dias atras`
+  if (days === 1) return locale === 'en' ? 'yesterday' : locale === 'es' ? 'ayer' : 'ontem'
+  if (days < 7) return locale === 'en' ? `${days} days ago` : locale === 'es' ? `hace ${days} días` : `${days} dias atras`
 
-  return formatDate(date)
+  return formatDate(date, locale)
 }
 
 export function getInitials(name: string): string {
@@ -50,27 +54,67 @@ export function getInitials(name: string): string {
     .slice(0, 2)
 }
 
-export function statusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    new: 'Novo',
-    assigned: 'Entregue',
-    qualified: 'Qualificado',
-    appointment_set: 'Agendado',
-    contacted: 'Contatado',
-    no_answer: 'Sem resposta',
-    callback: 'Retornar',
-    meeting_set: 'Reuniao marcada',
-    converted: 'Convertido',
-    lost: 'Perdido',
-    scheduled: 'Agendado',
-    confirmed: 'Confirmado',
-    completed: 'Realizado',
-    no_show: 'Nao compareceu',
-    cancelled: 'Cancelado',
-    pending: 'Pendente',
-    active: 'Ativo',
+export function statusLabel(status: string, locale: UiLocale = 'pt'): string {
+  const labels: Record<UiLocale, Record<string, string>> = {
+    pt: {
+      new: 'Novo',
+      assigned: 'Entregue',
+      qualified: 'Qualificado',
+      appointment_set: 'Agendado',
+      contacted: 'Contatado',
+      no_answer: 'Sem resposta',
+      callback: 'Retornar',
+      meeting_set: 'Reuniao marcada',
+      converted: 'Convertido',
+      lost: 'Perdido',
+      scheduled: 'Agendado',
+      confirmed: 'Confirmado',
+      completed: 'Realizado',
+      no_show: 'Nao compareceu',
+      cancelled: 'Cancelado',
+      pending: 'Pendente',
+      active: 'Ativo',
+    },
+    en: {
+      new: 'New',
+      assigned: 'Delivered',
+      qualified: 'Qualified',
+      appointment_set: 'Appointment set',
+      contacted: 'Contacted',
+      no_answer: 'No answer',
+      callback: 'Call back',
+      meeting_set: 'Meeting set',
+      converted: 'Converted',
+      lost: 'Lost',
+      scheduled: 'Scheduled',
+      confirmed: 'Confirmed',
+      completed: 'Completed',
+      no_show: 'No-show',
+      cancelled: 'Canceled',
+      pending: 'Pending',
+      active: 'Active',
+    },
+    es: {
+      new: 'Nuevo',
+      assigned: 'Entregado',
+      qualified: 'Calificado',
+      appointment_set: 'Cita agendada',
+      contacted: 'Contactado',
+      no_answer: 'Sin respuesta',
+      callback: 'Devolver llamada',
+      meeting_set: 'Reunión agendada',
+      converted: 'Convertido',
+      lost: 'Perdido',
+      scheduled: 'Programado',
+      confirmed: 'Confirmado',
+      completed: 'Realizado',
+      no_show: 'No se presentó',
+      cancelled: 'Cancelado',
+      pending: 'Pendiente',
+      active: 'Activo',
+    },
   }
-  return labels[status] || status
+  return labels[locale]?.[status] || labels.pt[status] || status
 }
 
 export function statusColor(status: string): string {

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { AppointmentActions } from './appointment-actions'
 import { AppointmentManager } from './appointment-manager'
+import { getLocale } from '@/lib/locale'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,6 +14,7 @@ export default async function AdminAppointmentsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const locale = await getLocale()
   const db = createAdminClient()
 
   // Leads waiting for appointment qualification
@@ -114,7 +116,7 @@ export default async function AdminAppointmentsPage() {
 
                 <div className="rounded-xl px-4 py-2 mb-4" style={{ background: '#fffbeb', border: '1px solid #fde68a' }}>
                   <p className="text-[12px] font-semibold" style={{ color: '#92400e' }}>
-                    ⏳ Recebido {timeAgo(lead.created_at)} · {eligible.length} comprador{eligible.length !== 1 ? 'es' : ''} elegivel{eligible.length !== 1 ? 'is' : ''}
+                    ⏳ Recebido {timeAgo(lead.created_at, locale)} · {eligible.length} comprador{eligible.length !== 1 ? 'es' : ''} elegivel{eligible.length !== 1 ? 'is' : ''}
                   </p>
                 </div>
 

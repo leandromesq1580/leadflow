@@ -20,6 +20,7 @@ interface PipelineLead {
 
 export default function PipelinePage() {
   const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [pipelines, setPipelines] = useState<Pipeline[]>([])
   const [activePipeline, setActivePipeline] = useState<Pipeline | null>(null)
   const [leads, setLeads] = useState<PipelineLead[]>([])
@@ -317,14 +318,14 @@ export default function PipelinePage() {
             style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)' }}>
             <span className="text-[36px]">📋</span>
           </div>
-          <h1 className="text-[24px] font-extrabold mb-2" style={{ color: '#1a1a2e' }}>Pipeline de Vendas</h1>
+          <h1 className="text-[24px] font-extrabold mb-2" style={{ color: '#1a1a2e' }}>{L('Pipeline de Vendas', 'Sales Pipeline', 'Pipeline de Ventas')}</h1>
           <p className="text-[14px] mb-8 leading-relaxed" style={{ color: '#94a3b8' }}>
-            Gerencie seus leads visualmente com Kanban.<br/>Arraste entre estagios conforme avanca a venda.
+            {L('Gerencie seus leads visualmente com Kanban.', 'Manage your leads visually with Kanban.', 'Gestiona tus leads visualmente con Kanban.')}<br/>{L('Arraste entre estagios conforme avanca a venda.', 'Drag between stages as the sale moves forward.', 'Arrastra entre etapas a medida que avanza la venta.')}
           </p>
           <button onClick={createPipeline} disabled={creating}
             className="px-8 py-3.5 rounded-xl text-[14px] font-bold text-white disabled:opacity-50 transition-all hover:shadow-lg"
             style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
-            {creating ? 'Criando...' : 'Criar Meu Pipeline'}
+            {creating ? L('Criando...', 'Creating...', 'Creando...') : L('Criar Meu Pipeline', 'Create My Pipeline', 'Crear Mi Pipeline')}
           </button>
         </div>
       </div>
@@ -366,7 +367,7 @@ export default function PipelinePage() {
             </span>
             {closedLeads > 0 && (
               <span className="text-[12px] font-bold px-2 py-0.5 rounded-md" style={{ background: '#dcfce7', color: '#15803d' }}>
-                {closedLeads} fechados
+                {closedLeads} {L('fechados', 'closed', 'cerrados')}
               </span>
             )}
           </div>
@@ -380,7 +381,7 @@ export default function PipelinePage() {
               <path d="M4 9v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9" />
               <path d="M10 13h4" />
             </svg>
-            Arquivados
+            {L('Arquivados', 'Archived', 'Archivados')}
           </Link>
           <Link href="/dashboard/pipeline/settings"
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-bold transition-all hover:shadow-sm"
@@ -450,7 +451,7 @@ export default function PipelinePage() {
             })}
             {teamMembers.filter(m => m.is_active).length === 0 && (
               <p className="text-[12px] px-4 py-3" style={{ color: '#94a3b8' }}>
-                Nenhum membro ativo. <Link href="/dashboard/team" className="font-bold" style={{ color: '#6366f1' }}>Adicionar membro →</Link>
+                {L('Nenhum membro ativo.', 'No active members.', 'Ningún miembro activo.')} <Link href="/dashboard/team" className="font-bold" style={{ color: '#6366f1' }}>{L('Adicionar membro →', 'Add member →', 'Agregar miembro →')}</Link>
               </p>
             )}
           </div>
@@ -459,16 +460,16 @@ export default function PipelinePage() {
           {!selectedMemberId ? (
             <div className="rounded-xl py-16 text-center" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
               <p className="text-[32px] mb-2">👥</p>
-              <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>Selecione um membro do time</p>
-              <p className="text-[12px] mt-1" style={{ color: '#94a3b8' }}>Você verá o pipeline completo dele — mesmas colunas, mesmos leads.</p>
+              <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>{L('Selecione um membro do time', 'Select a team member', 'Selecciona un miembro del equipo')}</p>
+              <p className="text-[12px] mt-1" style={{ color: '#94a3b8' }}>{L('Você verá o pipeline completo dele — mesmas colunas, mesmos leads.', "You'll see their full pipeline — same columns, same leads.", 'Verás su pipeline completo — mismas columnas, mismos leads.')}</p>
             </div>
           ) : loadingMember ? (
             <div className="rounded-xl py-16 text-center" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-              <p className="text-[12px]" style={{ color: '#94a3b8' }}>Carregando pipeline...</p>
+              <p className="text-[12px]" style={{ color: '#94a3b8' }}>{L('Carregando pipeline...', 'Loading pipeline...', 'Cargando pipeline...')}</p>
             </div>
           ) : !memberPipeline ? (
             <div className="rounded-xl py-16 text-center" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-              <p className="text-[12px]" style={{ color: '#94a3b8' }}>Esse membro ainda não tem pipeline.</p>
+              <p className="text-[12px]" style={{ color: '#94a3b8' }}>{L('Esse membro ainda não tem pipeline.', "This member doesn't have a pipeline yet.", 'Este miembro aún no tiene pipeline.')}</p>
             </div>
           ) : (
             <>
@@ -477,8 +478,11 @@ export default function PipelinePage() {
                   style={{ background: '#fef3c7', border: '1px solid #fde68a' }}>
                   <span className="text-[14px]">ℹ️</span>
                   <p className="text-[12px]" style={{ color: '#92400e' }}>
-                    Esse membro ainda não tem conta própria — você está vendo os leads atribuídos a ele.
-                    Quando ele se cadastrar em lead4producers.com com o email <strong>{teamMembers.find(m => m.id === selectedMemberId)?.email}</strong>, o pipeline dele aparecerá aqui.
+                    {L('Esse membro ainda não tem conta própria — você está vendo os leads atribuídos a ele. Quando ele se cadastrar em lead4producers.com com o email ',
+                      "This member doesn't have their own account yet — you're seeing the leads assigned to them. Once they sign up at lead4producers.com with the email ",
+                      'Este miembro aún no tiene cuenta propia — estás viendo los leads asignados a él. Cuando se registre en lead4producers.com con el email ')}
+                    <strong>{teamMembers.find(m => m.id === selectedMemberId)?.email}</strong>
+                    {L(', o pipeline dele aparecerá aqui.', ', their pipeline will show up here.', ', su pipeline aparecerá aquí.')}
                   </p>
                 </div>
               )}
@@ -566,13 +570,13 @@ export default function PipelinePage() {
             {filterDate === 'custom' && (
               <div className="flex items-end gap-2">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#c0c8d4' }}>De</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#c0c8d4' }}>{L('De', 'From', 'Desde')}</label>
                   <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)}
                     className="px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
                     style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#c0c8d4' }}>Até</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#c0c8d4' }}>{L('Até', 'To', 'Hasta')}</label>
                   <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)}
                     className="px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
                     style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
@@ -583,13 +587,13 @@ export default function PipelinePage() {
               style={{ background: closedOnly ? '#f0fdf4' : '#f8f9fc', border: `1px solid ${closedOnly ? '#86efac' : '#e8ecf4'}` }}>
               <input type="checkbox" checked={closedOnly} onChange={e => setClosedOnly(e.target.checked)}
                 className="w-3.5 h-3.5 rounded accent-green-500" />
-              <span className="text-[11px] font-bold" style={{ color: closedOnly ? '#15803d' : '#94a3b8' }}>Fechados</span>
+              <span className="text-[11px] font-bold" style={{ color: closedOnly ? '#15803d' : '#94a3b8' }}>{L('Fechados', 'Closed', 'Cerrados')}</span>
             </label>
             <label className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer"
               style={{ background: staleOnly ? '#fff7ed' : '#f8f9fc', border: `1px solid ${staleOnly ? '#fed7aa' : '#e8ecf4'}` }}>
               <input type="checkbox" checked={staleOnly} onChange={e => setStaleOnly(e.target.checked)}
                 className="w-3.5 h-3.5 rounded accent-orange-500" />
-              <span className="text-[11px] font-bold" style={{ color: staleOnly ? '#ea580c' : '#94a3b8' }}>⚠️ Parados 3+ dias</span>
+              <span className="text-[11px] font-bold" style={{ color: staleOnly ? '#ea580c' : '#94a3b8' }}>{L('⚠️ Parados 3+ dias', '⚠️ Stale 3+ days', '⚠️ Parados 3+ días')}</span>
             </label>
           </div>
         )}

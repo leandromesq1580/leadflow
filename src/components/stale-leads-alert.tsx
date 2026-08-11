@@ -1,9 +1,12 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
+import { getLocale } from '@/lib/locale'
 
 interface Props { buyerId: string }
 
 export async function StaleLeadsAlert({ buyerId }: Props) {
+  const locale = await getLocale()
+  const L = (pt: string, en: string, es: string) => locale === 'en' ? en : locale === 'es' ? es : pt
   const db = createAdminClient()
   const threshold = new Date(Date.now() - 3 * 86400000).toISOString()
 
@@ -57,14 +60,18 @@ export async function StaleLeadsAlert({ buyerId }: Props) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[14px] font-extrabold" style={{ color: '#9a3412' }}>
-            {staleCount} lead{staleCount > 1 ? 's' : ''} precisa{staleCount > 1 ? 'm' : ''} de atencao
+            {staleCount === 1
+              ? L('1 lead precisa de atenção', '1 lead needs attention', '1 lead necesita atención')
+              : L(`${staleCount} leads precisam de atenção`, `${staleCount} leads need attention`, `${staleCount} leads necesitan atención`)}
           </p>
           <p className="text-[12px] mt-0.5" style={{ color: '#c2410c' }}>
-            Parado{staleCount > 1 ? 's' : ''} ha 3+ dias no pipeline. Hora de fazer follow-up!
+            {staleCount === 1
+              ? L('Parado há 3+ dias no pipeline. Hora de fazer follow-up!', 'Sitting in the pipeline for 3+ days. Time to follow up!', 'Parado 3+ días en el pipeline. ¡Hora de dar seguimiento!')
+              : L('Parados há 3+ dias no pipeline. Hora de fazer follow-up!', 'Sitting in the pipeline for 3+ days. Time to follow up!', 'Parados 3+ días en el pipeline. ¡Hora de dar seguimiento!')}
           </p>
         </div>
         <span className="text-[12px] font-bold px-3 py-2 rounded-lg flex-shrink-0" style={{ background: '#ea580c', color: '#fff' }}>
-          Ver Pipeline →
+          {L('Ver Pipeline', 'View Pipeline', 'Ver Pipeline')} →
         </span>
       </div>
     </Link>

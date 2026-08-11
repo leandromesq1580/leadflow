@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useLayoutEffect } from 'react'
+import { useT } from '@/lib/i18n-client'
 
 interface Member {
   id: string
@@ -21,6 +22,8 @@ interface Props {
  * Usa o mesmo endpoint e padrão visual do AssignButton de /dashboard/leads.
  */
 export function CardAssignMenu({ leadId, members, currentMemberId, onAssigned, onArchived }: Props) {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [open, setOpen] = useState(false)
   const [assigning, setAssigning] = useState(false)
   const [archiving, setArchiving] = useState(false)
@@ -81,7 +84,7 @@ export function CardAssignMenu({ leadId, members, currentMemberId, onAssigned, o
       <button
         ref={buttonRef}
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(!open) }}
-        aria-label="Atribuir ao time"
+        aria-label={L('Atribuir ao time', 'Assign to team', 'Asignar al equipo')}
         className="flex items-center justify-center rounded-md transition-colors hover:bg-slate-100"
         style={{ width: 24, height: 24, color: currentMemberId ? '#6366f1' : '#94a3b8' }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -97,7 +100,7 @@ export function CardAssignMenu({ leadId, members, currentMemberId, onAssigned, o
           <div className={`absolute right-0 ${positionClass} z-50 rounded-xl p-2 min-w-[190px]`}
             style={{ background: '#fff', border: '1px solid #e8ecf4', boxShadow: shadowDir }}>
             <p className="text-[10px] font-bold px-2 py-1 mb-1" style={{ color: '#94a3b8' }}>
-              {currentMemberId ? 'Transferir pra:' : 'Atribuir pra:'}
+              {currentMemberId ? L('Transferir pra:', 'Transfer to:', 'Transferir a:') : L('Atribuir pra:', 'Assign to:', 'Asignar a:')}
             </p>
 
             {currentMemberId && (
@@ -105,12 +108,12 @@ export function CardAssignMenu({ leadId, members, currentMemberId, onAssigned, o
                 disabled={assigning}
                 className="w-full text-left px-3 py-2 rounded-lg text-[12px] font-semibold hover:bg-amber-50 disabled:opacity-50 mb-1"
                 style={{ color: '#b45309', borderBottom: '1px solid #f1f5f9' }}>
-                ← Voltar pra mim
+                {L('← Voltar pra mim', '← Back to me', '← Devolver a mí')}
               </button>
             )}
 
             {members.length === 0 && (
-              <p className="text-[11px] px-3 py-2" style={{ color: '#94a3b8' }}>Nenhum membro no time</p>
+              <p className="text-[11px] px-3 py-2" style={{ color: '#94a3b8' }}>{L('Nenhum membro no time', 'No team members', 'Ningún miembro en el equipo')}</p>
             )}
 
             {members.map(m => (
@@ -135,13 +138,13 @@ export function CardAssignMenu({ leadId, members, currentMemberId, onAssigned, o
                 <path d="M4 9v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9" />
                 <path d="M10 13h4" />
               </svg>
-              {archiving ? 'Arquivando...' : 'Arquivar lead'}
+              {archiving ? L('Arquivando...', 'Archiving...', 'Archivando...') : L('Arquivar lead', 'Archive lead', 'Archivar lead')}
             </button>
 
             <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(false) }}
               className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] mt-1"
               style={{ color: '#94a3b8' }}>
-              Cancelar
+              {L('Cancelar', 'Cancel', 'Cancelar')}
             </button>
           </div>
         </>

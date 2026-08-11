@@ -2,12 +2,15 @@ import { createServerSupabase } from '@/lib/supabase/server'
 import { BulkDeleteManual } from '@/components/bulk-delete-manual'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
+import { getLocale } from '@/lib/locale'
 import { LeadActions } from './lead-actions'
 import { LeadsList } from './leads-list'
 
 export const dynamic = 'force-dynamic'
 
 export default async function LeadsPage() {
+  const locale = await getLocale()
+  const L = (pt: string, en: string, es: string) => locale === 'en' ? en : locale === 'es' ? es : pt
   const supabase = await createServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -39,8 +42,8 @@ export default async function LeadsPage() {
     <div className="max-w-[1040px]">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>Meus Leads</h1>
-          <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>{allLeads.length} leads no total</p>
+          <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>{L('Meus Leads', 'My Leads', 'Mis Leads')}</h1>
+          <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>{allLeads.length} {L('leads no total', 'leads in total', 'leads en total')}</p>
         </div>
         <div className="flex items-center gap-2">
           <BulkDeleteManual />
@@ -54,9 +57,11 @@ export default async function LeadsPage() {
           <span className="text-[20px]">⚡</span>
           <div>
             <p className="text-[13px] font-bold" style={{ color: '#92400e' }}>
-              {unassignedCount} lead{unassignedCount > 1 ? 's' : ''} sem agente atribuido
+              {unassignedCount} {unassignedCount > 1
+                ? L('leads sem agente atribuido', 'leads without an assigned agent', 'leads sin agente asignado')
+                : L('lead sem agente atribuido', 'lead without an assigned agent', 'lead sin agente asignado')}
             </p>
-            <p className="text-[12px]" style={{ color: '#a16207' }}>Clique em "Atribuir" pra enviar pro agente do seu time.</p>
+            <p className="text-[12px]" style={{ color: '#a16207' }}>{L('Clique em "Atribuir" pra enviar pro agente do seu time.', 'Click "Assign" to send it to an agent on your team.', 'Haz clic en "Asignar" para enviarlo a un agente de tu equipo.')}</p>
           </div>
         </div>
       )}
@@ -64,17 +69,17 @@ export default async function LeadsPage() {
       {/* Filters */}
       <div className="flex gap-2 mb-5 flex-wrap">
         <span className="px-4 py-2 rounded-xl text-[13px] font-bold" style={{ background: '#eef2ff', color: '#6366f1' }}>
-          Todos ({allLeads.length})
+          {L('Todos', 'All', 'Todos')} ({allLeads.length})
         </span>
         <span className="px-4 py-2 rounded-xl text-[13px] font-semibold" style={{ color: '#64748b' }}>
-          Novos ({newCount})
+          {L('Novos', 'New', 'Nuevos')} ({newCount})
         </span>
         <span className="px-4 py-2 rounded-xl text-[13px] font-semibold" style={{ color: '#64748b' }}>
-          Qualificados ({qualifiedCount})
+          {L('Qualificados', 'Qualified', 'Calificados')} ({qualifiedCount})
         </span>
         {buyer.is_agency && (
           <span className="px-4 py-2 rounded-xl text-[13px] font-semibold" style={{ color: '#f59e0b' }}>
-            Sem Agente ({unassignedCount})
+            {L('Sem Agente', 'Unassigned', 'Sin Agente')} ({unassignedCount})
           </span>
         )}
       </div>

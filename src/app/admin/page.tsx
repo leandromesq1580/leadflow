@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { timeAgo, getInitials } from '@/lib/utils'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { getLocale } from '@/lib/locale'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +17,7 @@ export default async function AdminDashboard() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const locale = await getLocale()
   const db = createAdminClient()
 
   // KPIs (receita, gasto, resultado, vendidos, etc.) agora vêm da API por PERÍODO
@@ -100,7 +102,7 @@ export default async function AdminDashboard() {
                     {lead.buyer?.name || <span style={{ color: '#f59e0b' }}>Na fila</span>}
                   </span>
                   <Badge status={lead.status} />
-                  <span className="text-[11px]" style={{ color: '#94a3b8' }}>{timeAgo(lead.created_at)}</span>
+                  <span className="text-[11px]" style={{ color: '#94a3b8' }}>{timeAgo(lead.created_at, locale)}</span>
                 </div>
               ))}
             </div>

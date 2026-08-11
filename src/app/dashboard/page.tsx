@@ -161,7 +161,7 @@ export default async function DashboardPage() {
                   <PrivatePhone value={lead.phone} className="text-[13px] font-semibold" style={{ color: '#6366f1' }} />
                 </div>
                 <Badge status={lead.status} />
-                <span className="text-[12px] whitespace-nowrap" style={{ color: '#94a3b8' }}>{timeAgo(lead.created_at)}</span>
+                <span className="text-[12px] whitespace-nowrap" style={{ color: '#94a3b8' }}>{timeAgo(lead.created_at, locale)}</span>
                 <span className="text-[18px] opacity-0 group-hover:opacity-100" style={{ color: '#94a3b8' }}>›</span>
               </Link>
             ))}

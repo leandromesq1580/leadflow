@@ -43,6 +43,7 @@ const STATE_NAMES: Record<string, string> = {
 export function SettingsForm({ buyer, activeStates, activeAvailability, activeAvailabilityHours, allStates }: Props) {
   const router = useRouter()
   const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [name, setName] = useState(buyer.name || '')
   const [phone, setPhone] = useState(buyer.phone || '')
   const [whatsapp, setWhatsapp] = useState(buyer.whatsapp || '')
@@ -103,7 +104,7 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
-        throw new Error(body.error || `Erro ${res.status}`)
+        throw new Error(body.error || L(`Erro ${res.status}`, `Error ${res.status}`, `Error ${res.status}`))
       }
 
       setSaved(true)
@@ -112,7 +113,7 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
         router.push('/dashboard')
       }, 800)
     } catch (err: any) {
-      setError(err?.message || 'Falha ao salvar. Tente novamente.')
+      setError(err?.message || L('Falha ao salvar. Tente novamente.', 'Failed to save. Please try again.', 'No se pudo guardar. Inténtalo de nuevo.'))
     } finally {
       setSaving(false)
     }
@@ -156,18 +157,18 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
           </div>
           <div>
             <label className="block text-[12px] font-bold mb-1" style={{ color: '#64748b' }}>
-              2º número para notificações <span style={{ fontWeight: 500, color: '#94a3b8' }}>(opcional)</span>
+              {L('2º número para notificações', '2nd number for notifications', '2º número para notificaciones')} <span style={{ fontWeight: 500, color: '#94a3b8' }}>{L('(opcional)', '(optional)', '(opcional)')}</span>
             </label>
             <input type="tel" value={notifPhone2} onChange={(e) => setNotifPhone2(e.target.value)}
               placeholder="+1 407 555 0100"
               className="w-full px-4 py-3 rounded-xl text-[14px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
             <p className="text-[11px] mt-1" style={{ color: '#94a3b8' }}>
-              Recebe o mesmo alerta de <b>Novo Lead</b> que o seu telefone principal. <b>Não precisa conectar WhatsApp</b> — só precisa ser um número que tenha WhatsApp.
+              {L('Recebe o mesmo alerta de ', 'Gets the same ', 'Recibe la misma alerta de ')}<b>{L('Novo Lead', 'New Lead', 'Nuevo Lead')}</b>{L(' que o seu telefone principal. ', ' alert as your main phone. ', ' que tu teléfono principal. ')}<b>{L('Não precisa conectar WhatsApp', 'No need to connect WhatsApp', 'No hace falta conectar WhatsApp')}</b>{L(' — só precisa ser um número que tenha WhatsApp.', ' — it just needs to be a number with WhatsApp on it.', ' — solo necesita ser un número que tenga WhatsApp.')}
             </p>
           </div>
           <div>
-            <label className="block text-[12px] font-bold mb-1" style={{ color: '#64748b' }}>Cal.com Link</label>
-            <input type="url" value={calLink} onChange={(e) => setCalLink(e.target.value)} placeholder="https://cal.com/seu-nome"
+            <label className="block text-[12px] font-bold mb-1" style={{ color: '#64748b' }}>{L('Cal.com Link', 'Cal.com Link', 'Enlace de Cal.com')}</label>
+            <input type="url" value={calLink} onChange={(e) => setCalLink(e.target.value)} placeholder={L('https://cal.com/seu-nome', 'https://cal.com/your-name', 'https://cal.com/tu-nombre')}
               className="w-full px-4 py-3 rounded-xl text-[14px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
           </div>
         </div>
@@ -248,8 +249,8 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
                     <div key={key} className="mt-2 ml-1 pl-3" style={{ borderLeft: '2px solid #eef2ff' }}>
                       <p className="text-[11px] mb-1.5" style={{ color: '#94a3b8' }}>
                         {pLabel} · {hrs.length === 0
-                          ? <span style={{ color: '#6366f1', fontWeight: 600 }}>período todo</span>
-                          : <span style={{ color: '#4338ca', fontWeight: 600 }}>{hrs.length}h escolhida{hrs.length > 1 ? 's' : ''}</span>}
+                          ? <span style={{ color: '#6366f1', fontWeight: 600 }}>{L('período todo', 'entire period', 'todo el período')}</span>
+                          : <span style={{ color: '#4338ca', fontWeight: 600 }}>{hrs.length}h {L(hrs.length > 1 ? 'escolhidas' : 'escolhida', 'selected', hrs.length > 1 ? 'elegidas' : 'elegida')}</span>}
                       </p>
                       <div className="flex flex-wrap items-center gap-1.5">
                         {PERIOD_HOURS[pk].map(h => {
@@ -269,7 +270,7 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
                         {hrs.length > 0 && (
                           <button type="button" onClick={() => setAvailHours(prev => ({ ...prev, [key]: [] }))}
                             className="px-2 py-1 text-[11px] font-semibold" style={{ color: '#6366f1' }}>
-                            limpar (período todo)
+                            {L('limpar (período todo)', 'clear (entire period)', 'limpiar (todo el período)')}
                           </button>
                         )}
                       </div>
@@ -311,8 +312,8 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
             className="flex items-center justify-between p-3 rounded-xl mt-2 transition-all hover:opacity-90"
             style={{ background: 'linear-gradient(135deg, #eef2ff, #f5f3ff)', border: '1px solid #c7d2fe', textDecoration: 'none' }}>
             <div>
-              <p className="text-[13px] font-bold" style={{ color: '#4338ca' }}>🔔 Gestão de avisos de reunião →</p>
-              <p className="text-[11px] mt-0.5" style={{ color: '#6366f1' }}>Banner ao vivo, alerta sonoro, push do navegador, WhatsApp lembrete</p>
+              <p className="text-[13px] font-bold" style={{ color: '#4338ca' }}>🔔 {L('Gestão de avisos de reunião', 'Meeting reminder settings', 'Gestión de avisos de reunión')} →</p>
+              <p className="text-[11px] mt-0.5" style={{ color: '#6366f1' }}>{L('Banner ao vivo, alerta sonoro, push do navegador, WhatsApp lembrete', 'Live banner, sound alert, browser push, WhatsApp reminder', 'Banner en vivo, alerta de sonido, push del navegador, recordatorio por WhatsApp')}</p>
             </div>
           </a>
         </div>
@@ -327,7 +328,7 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
         </button>
         {saved && (
           <span className="text-[13px] font-semibold flex items-center gap-1.5" style={{ color: '#10b981' }}>
-            ✅ Salvo com sucesso
+            ✅ {L('Salvo com sucesso', 'Saved successfully', 'Guardado con éxito')}
           </span>
         )}
         {error && !saving && (

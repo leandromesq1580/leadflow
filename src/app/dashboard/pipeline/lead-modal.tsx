@@ -10,6 +10,7 @@ import { AiScoreBadge } from '@/components/ai-score-badge'
 import { TimePicker } from '@/components/time-picker'
 import { usePrivacy } from '@/lib/privacy-mode'
 import { LeadFormsTab } from './lead-forms-tab'
+import { useT } from '@/lib/i18n-client'
 
 interface Props {
   leadId: string
@@ -22,12 +23,12 @@ interface FollowUp {
   id: string; type: string; description: string; scheduled_at: string | null; completed_at: string | null; created_at: string
 }
 
-const FOLLOW_UP_TYPES = [
-  { key: 'note', label: 'Nota', icon: '📝' },
-  { key: 'call', label: 'Ligacao', icon: '📞' },
+const followUpTypes = (L: (pt: string, en: string, es: string) => string) => [
+  { key: 'note', label: L('Nota', 'Note', 'Nota'), icon: '📝' },
+  { key: 'call', label: L('Ligacao', 'Call', 'Llamada'), icon: '📞' },
   { key: 'whatsapp', label: 'WhatsApp', icon: '💬' },
   { key: 'email', label: 'Email', icon: '📧' },
-  { key: 'meeting', label: 'Reuniao', icon: '🤝' },
+  { key: 'meeting', label: L('Reuniao', 'Meeting', 'Reunión'), icon: '🤝' },
 ]
 
 interface Attachment {
@@ -35,6 +36,10 @@ interface Attachment {
 }
 
 export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
+  const FOLLOW_UP_TYPES = followUpTypes(L)
+  const dateLocale = t._locale === 'en' ? 'en-US' : t._locale === 'es' ? 'es-US' : 'pt-BR'
   const privacy = usePrivacy()
   const [tab, setTab] = useState<'details' | 'inbox' | 'followups' | 'attachments' | 'forms'>('details')
   const [lead, setLead] = useState<any>(null)
@@ -83,11 +88,15 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   useEffect(() => {
     if (fuType !== 'meeting' || !fuSendConfirm || fuConfirmEdited) return
     if (!fuDate || !fuTime) { setFuConfirmMsg(''); return }
-    const first = (lead?.name || '').trim().split(' ')[0] || 'tudo bem'
+    const first = (lead?.name || '').trim().split(' ')[0] || L('tudo bem', 'there', 'qué tal')
     const [y, m, d] = fuDate.split('-')
     const [hh, mm] = fuTime.split(':').map(Number)
     const horaFmt = `${hh % 12 || 12}:${String(mm).padStart(2, '0')} ${hh >= 12 ? 'PM' : 'AM'}`
-    setFuConfirmMsg(`Oi ${first}! 👋 como combinado deixamos nossa conversa para o dia ${d}/${m}/${y} às ${horaFmt}. Até lá!\nQualquer imprevisto, é só me avisar por aqui. 🙂`)
+    setFuConfirmMsg(L(
+      `Oi ${first}! 👋 como combinado deixamos nossa conversa para o dia ${d}/${m}/${y} às ${horaFmt}. Até lá!\nQualquer imprevisto, é só me avisar por aqui. 🙂`,
+      `Hi ${first}! 👋 as agreed, our conversation is set for ${m}/${d}/${y} at ${horaFmt}. Talk to you then!\nIf anything comes up, just let me know here. 🙂`,
+      `¡Hola ${first}! 👋 como quedamos, dejamos nuestra conversación para el día ${d}/${m}/${y} a las ${horaFmt}. ¡Hasta entonces!\nCualquier imprevisto, avísame por aquí. 🙂`
+    ))
   }, [fuType, fuSendConfirm, fuConfirmEdited, fuDate, fuTime, lead?.name])
 
   async function loadPipelineInfo() {
@@ -146,7 +155,11 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
 
     const MAX = 30 * 1024 * 1024
     if (file.size > MAX) {
-      alert(`Arquivo muito grande (${(file.size / 1024 / 1024).toFixed(1)}MB). Máximo ${MAX / 1024 / 1024}MB.`)
+      alert(L(
+        `Arquivo muito grande (${(file.size / 1024 / 1024).toFixed(1)}MB). Máximo ${MAX / 1024 / 1024}MB.`,
+        `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max ${MAX / 1024 / 1024}MB.`,
+        `Archivo demasiado grande (${(file.size / 1024 / 1024).toFixed(1)}MB). Máximo ${MAX / 1024 / 1024}MB.`
+      ))
       e.target.value = ''
       return
     }
@@ -161,7 +174,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
       })
       if (!urlRes.ok) {
         const d = await urlRes.json().catch(() => ({}))
-        throw new Error(d.error || `Falha ao gerar upload URL (HTTP ${urlRes.status})`)
+        throw new Error(d.error || L(`Falha ao gerar upload URL (HTTP ${urlRes.status})`, `Failed to generate upload URL (HTTP ${urlRes.status})`, `Error al generar la URL de subida (HTTP ${urlRes.status})`))
       }
       const { signedUrl, path } = await urlRes.json()
 
@@ -171,7 +184,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
         headers: { 'Content-Type': file.type || 'application/octet-stream' },
         body: file,
       })
-      if (!upRes.ok) throw new Error(`Falha no upload (HTTP ${upRes.status})`)
+      if (!upRes.ok) throw new Error(L(`Falha no upload (HTTP ${upRes.status})`, `Upload failed (HTTP ${upRes.status})`, `Error en la subida (HTTP ${upRes.status})`))
 
       // 3) Registra metadados no DB
       const regRes = await fetch(`/api/leads/${leadId}/attachments/register`, {
@@ -187,13 +200,14 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
       })
       if (!regRes.ok) {
         const d = await regRes.json().catch(() => ({}))
-        throw new Error(d.error || `Falha ao registrar arquivo (HTTP ${regRes.status})`)
+        throw new Error(d.error || L(`Falha ao registrar arquivo (HTTP ${regRes.status})`, `Failed to register file (HTTP ${regRes.status})`, `Error al registrar el archivo (HTTP ${regRes.status})`))
       }
 
       await loadAttachments()
     } catch (err: any) {
       console.error('[uploadFile] erro:', err)
-      alert(`Não foi possível anexar: ${err?.message || 'erro desconhecido'}`)
+      const msg = err?.message || L('erro desconhecido', 'unknown error', 'error desconocido')
+      alert(L(`Não foi possível anexar: ${msg}`, `Could not attach: ${msg}`, `No se pudo adjuntar: ${msg}`))
     } finally {
       setUploading(false)
       e.target.value = ''
@@ -201,7 +215,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   }
 
   async function deleteAttachment(attId: string) {
-    if (!confirm('Remover este arquivo?')) return
+    if (!confirm(L('Remover este arquivo?', 'Remove this file?', '¿Eliminar este archivo?'))) return
     await fetch(`/api/leads/${leadId}/attachments`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
@@ -266,14 +280,14 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
     // Demais tipos: exigem descrição, mas com AVISO (nunca falha em silêncio).
     if (fuType === 'meeting') {
       if (!fuDate || !fuTime) {
-        alert('Reunião precisa de data e hora pra aparecer no calendário.')
+        alert(L('Reunião precisa de data e hora pra aparecer no calendário.', 'A meeting needs a date and time to show on the calendar.', 'La reunión necesita fecha y hora para aparecer en el calendario.'))
         return
       }
     } else if (!fuDesc.trim()) {
-      alert('Escreva o que aconteceu ou precisa ser feito.')
+      alert(L('Escreva o que aconteceu ou precisa ser feito.', 'Write down what happened or needs to be done.', 'Escribe qué pasó o qué hay que hacer.'))
       return
     }
-    const description = fuDesc.trim() || (fuType === 'meeting' ? 'Reunião' : '')
+    const description = fuDesc.trim() || (fuType === 'meeting' ? L('Reunião', 'Meeting', 'Reunión') : '')
     let scheduled_at: string | null = null
     if (fuDate) {
       const time = fuTime || '09:00'
@@ -286,7 +300,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
     })
     if (!res.ok) {
       const e = await res.json().catch(() => ({}))
-      alert('Não consegui salvar a reunião: ' + (e.error || 'erro no servidor'))
+      alert(L('Não consegui salvar a reunião: ', "Couldn't save the meeting: ", 'No pude guardar la reunión: ') + (e.error || L('erro no servidor', 'server error', 'error del servidor')))
       return
     }
     // ✅ SALVOU no banco. Fecha e atualiza a lista AGORA.
@@ -318,10 +332,10 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
         })
         if (!r.ok) {
           const e = await r.json().catch(() => ({}))
-          alert('Reunião salva ✅ — mas a confirmação no WhatsApp NÃO foi enviada: ' + (e.error || 'erro ao enviar'))
+          alert(L('Reunião salva ✅ — mas a confirmação no WhatsApp NÃO foi enviada: ', 'Meeting saved ✅ — but the WhatsApp confirmation was NOT sent: ', 'Reunión guardada ✅ — pero la confirmación por WhatsApp NO fue enviada: ') + (e.error || L('erro ao enviar', 'send error', 'error al enviar')))
         }
       } catch {
-        alert('Reunião salva ✅ — mas a confirmação no WhatsApp demorou demais. Mande manualmente se precisar.')
+        alert(L('Reunião salva ✅ — mas a confirmação no WhatsApp demorou demais. Mande manualmente se precisar.', 'Meeting saved ✅ — but the WhatsApp confirmation took too long. Send it manually if needed.', 'Reunión guardada ✅ — pero la confirmación por WhatsApp tardó demasiado. Envíala manualmente si hace falta.'))
       }
     }
   }
@@ -346,7 +360,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   }
 
   async function deleteFollowUp(fuId: string) {
-    if (!confirm('Deletar este follow-up?')) return
+    if (!confirm(L('Deletar este follow-up?', 'Delete this follow-up?', '¿Eliminar este seguimiento?'))) return
     await fetch(`/api/follow-ups/${fuId}`, { method: 'DELETE' })
     loadFollowUps()
   }
@@ -412,16 +426,16 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
             </div>
             {lead.phone && (
               <button onClick={() => callLead(lead.phone, lead.name, leadId)}
-                title="Ligar pelo navegador com número local (DDD do lead)"
+                title={L('Ligar pelo navegador com número local (DDD do lead)', "Call from the browser with a local number (lead's area code)", 'Llamar desde el navegador con número local (código de área del lead)')}
                 className="px-4 py-2.5 rounded-xl text-[12px] font-bold text-white flex items-center gap-1.5 flex-shrink-0"
                 style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
-                📞 Ligar
+                📞 {L('Ligar', 'Call', 'Llamar')}
               </button>
             )}
             <button onClick={() => setShowSendMsg(true)}
               className="px-4 py-2.5 rounded-xl text-[12px] font-bold text-white flex items-center gap-1.5 flex-shrink-0"
               style={{ background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 4px 14px rgba(16,185,129,0.3)' }}>
-              💬 Enviar Msg
+              💬 {L('Enviar Msg', 'Send Msg', 'Enviar Msj')}
             </button>
           </div>
         </div>
@@ -441,10 +455,10 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
           {/* Tabs */}
           <div className="flex gap-1 mb-6 p-1 rounded-xl overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" style={{ background: '#f1f5f9' }}>
             {[
-              { key: 'details', label: 'Detalhes', icon: '📋' },
-              { key: 'inbox', label: 'Conversa', icon: '💬' },
-              { key: 'followups', label: 'Follow-ups', icon: '📌', count: followUps.length },
-              { key: 'attachments', label: 'Anexos', icon: '📎', count: attachments.length },
+              { key: 'details', label: L('Detalhes', 'Details', 'Detalles'), icon: '📋' },
+              { key: 'inbox', label: L('Conversa', 'Chat', 'Conversación'), icon: '💬' },
+              { key: 'followups', label: L('Follow-ups', 'Follow-ups', 'Seguimientos'), icon: '📌', count: followUps.length },
+              { key: 'attachments', label: L('Anexos', 'Attachments', 'Adjuntos'), icon: '📎', count: attachments.length },
               { key: 'forms', label: 'Forms', icon: '📝' },
             ].map(t => (
               <button key={t.key} onClick={() => setTab(t.key as any)}
@@ -463,27 +477,27 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
             <div className="space-y-5">
               {/* Contact section */}
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-widest mb-3" style={{ color: '#c0c8d4' }}>Contato</p>
+                <p className="text-[11px] font-bold uppercase tracking-widest mb-3" style={{ color: '#c0c8d4' }}>{L('Contato', 'Contact', 'Contacto')}</p>
                 <div className="grid grid-cols-2 gap-3">
-                  {input('Nome', 'name', 'text', '👤')}
-                  {input('Telefone', 'phone', 'tel', '📞')}
+                  {input(L('Nome', 'Name', 'Nombre'), 'name', 'text', '👤')}
+                  {input(L('Telefone', 'Phone', 'Teléfono'), 'phone', 'tel', '📞')}
                   {input('Email', 'email', 'email', '📧')}
-                  {input('Estado', 'state', 'text', '📍')}
+                  {input(L('Estado', 'State', 'Estado'), 'state', 'text', '📍')}
                 </div>
               </div>
 
               {/* Lead info section */}
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-widest mb-3" style={{ color: '#c0c8d4' }}>Informacoes</p>
+                <p className="text-[11px] font-bold uppercase tracking-widest mb-3" style={{ color: '#c0c8d4' }}>{L('Informacoes', 'Information', 'Información')}</p>
                 <div className="grid grid-cols-2 gap-3">
-                  {input('Cidade', 'city')}
-                  {input('Interesse', 'interest')}
-                  {input('Plataforma', 'platform')}
-                  {input('Campanha', 'campaign_name')}
-                  {input('Faixa Etaria', 'age_range')}
-                  {input('Atendente', 'attendant')}
-                  {input('Motivo', 'reason')}
-                  {input('Valor Apolice', 'policy_value', 'number', '💰')}
+                  {input(L('Cidade', 'City', 'Ciudad'), 'city')}
+                  {input(L('Interesse', 'Interest', 'Interés'), 'interest')}
+                  {input(L('Plataforma', 'Platform', 'Plataforma'), 'platform')}
+                  {input(L('Campanha', 'Campaign', 'Campaña'), 'campaign_name')}
+                  {input(L('Faixa Etaria', 'Age Range', 'Rango de Edad'), 'age_range')}
+                  {input(L('Atendente', 'Rep', 'Agente'), 'attendant')}
+                  {input(L('Motivo', 'Reason', 'Motivo'), 'reason')}
+                  {input(L('Valor Apolice', 'Policy Value', 'Valor de Póliza'), 'policy_value', 'number', '💰')}
                 </div>
               </div>
 
@@ -497,8 +511,8 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                       onChange={e => setLead({ ...lead, is_organic: e.target.checked })}
                       className="w-4 h-4 rounded accent-green-500" />
                     <div>
-                      <span className="text-[12px] font-bold block" style={{ color: '#1a1a2e' }}>Lead Organico</span>
-                      <span className="text-[10px]" style={{ color: '#94a3b8' }}>Nao veio de campanha paga</span>
+                      <span className="text-[12px] font-bold block" style={{ color: '#1a1a2e' }}>{L('Lead Organico', 'Organic Lead', 'Lead Orgánico')}</span>
+                      <span className="text-[10px]" style={{ color: '#94a3b8' }}>{L('Nao veio de campanha paga', 'Did not come from a paid campaign', 'No vino de campaña pagada')}</span>
                     </div>
                   </label>
                   <label className="flex-1 flex items-center gap-3 p-3.5 rounded-xl cursor-pointer transition-all"
@@ -507,8 +521,8 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                       onChange={e => setLead({ ...lead, contract_closed: e.target.checked })}
                       className="w-4 h-4 rounded accent-green-500" />
                     <div>
-                      <span className="text-[12px] font-bold block" style={{ color: '#1a1a2e' }}>Contrato Fechado</span>
-                      <span className="text-[10px]" style={{ color: '#94a3b8' }}>Apolice emitida</span>
+                      <span className="text-[12px] font-bold block" style={{ color: '#1a1a2e' }}>{L('Contrato Fechado', 'Contract Closed', 'Contrato Cerrado')}</span>
+                      <span className="text-[10px]" style={{ color: '#94a3b8' }}>{L('Apolice emitida', 'Policy issued', 'Póliza emitida')}</span>
                     </div>
                   </label>
                 </div>
@@ -518,7 +532,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                   <div className="grid grid-cols-2 gap-3 mt-3 p-4 rounded-xl" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
                     <div>
                       <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: '#15803d' }}>
-                        📅 Data Fechamento
+                        📅 {L('Data Fechamento', 'Closing Date', 'Fecha de Cierre')}
                       </label>
                       <input type="date" value={lead.closed_at ? lead.closed_at.split('T')[0] : ''}
                         onChange={e => setLead({ ...lead, closed_at: e.target.value ? new Date(e.target.value).toISOString() : null })}
@@ -527,7 +541,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: '#15803d' }}>
-                        💰 Valor da Apolice
+                        💰 {L('Valor da Apolice', 'Policy Value', 'Valor de la Póliza')}
                       </label>
                       <input type="number" value={lead.policy_value || ''} placeholder="0.00"
                         onChange={e => setLead({ ...lead, policy_value: parseFloat(e.target.value) || 0 })}
@@ -542,17 +556,17 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               {pipelineLead && (
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: '#94a3b8' }}>
-                    📋 Estágio no Pipeline
+                    📋 {L('Estágio no Pipeline', 'Stage in Pipeline', 'Etapa en el Pipeline')}
                   </label>
                   <div className="rounded-xl p-3" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>Pipeline atual:</span>
+                      <span className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>{L('Pipeline atual:', 'Current pipeline:', 'Pipeline actual:')}</span>
                       <span className="text-[12px] font-bold" style={{ color: '#1a1a2e' }}>
                         {pipelineLead.pipeline?.name || 'Default'}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>Estágio atual:</span>
+                      <span className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>{L('Estágio atual:', 'Current stage:', 'Etapa actual:')}</span>
                       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold"
                         style={{
                           background: (pipelineLead.stage?.color || '#6366f1') + '22',
@@ -560,13 +574,13 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                           border: `1px solid ${(pipelineLead.stage?.color || '#6366f1')}44`,
                         }}>
                         <span className="w-2 h-2 rounded-full" style={{ background: pipelineLead.stage?.color || '#6366f1' }} />
-                        {pipelineLead.stage?.name || 'Sem estágio'}
+                        {pipelineLead.stage?.name || L('Sem estágio', 'No stage', 'Sin etapa')}
                       </span>
                     </div>
 
                     {pipelines.length > 1 && (
                       <div className="mb-2">
-                        <label className="block text-[10px] font-bold uppercase mb-1" style={{ color: '#94a3b8' }}>Mover para pipeline:</label>
+                        <label className="block text-[10px] font-bold uppercase mb-1" style={{ color: '#94a3b8' }}>{L('Mover para pipeline:', 'Move to pipeline:', 'Mover a pipeline:')}</label>
                         <select
                           value={pendingPipelineId || pipelineLead.pipeline?.id || ''}
                           onChange={e => {
@@ -589,7 +603,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                           }}>
                           {pipelines.map((p: any) => (
                             <option key={p.id} value={p.id}>
-                              {p.name}{p.id === pipelineLead.pipeline?.id ? ' (atual)' : ''}
+                              {p.name}{p.id === pipelineLead.pipeline?.id ? L(' (atual)', ' (current)', ' (actual)') : ''}
                             </option>
                           ))}
                         </select>
@@ -597,7 +611,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                     )}
 
                     <div>
-                      <label className="block text-[10px] font-bold uppercase mb-1" style={{ color: '#94a3b8' }}>Mover para estágio:</label>
+                      <label className="block text-[10px] font-bold uppercase mb-1" style={{ color: '#94a3b8' }}>{L('Mover para estágio:', 'Move to stage:', 'Mover a etapa:')}</label>
                       <select
                         value={pendingStageId || pipelineLead.stage_id || ''}
                         onChange={e => setPendingStageId(e.target.value)}
@@ -611,13 +625,13 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                           .sort((a: any, b: any) => a.position - b.position)
                           .map((s: any) => (
                             <option key={s.id} value={s.id}>
-                              {s.name}{s.id === pipelineLead.stage_id && (pendingPipelineId || pipelineLead.pipeline?.id) === pipelineLead.pipeline?.id ? ' (atual)' : ''}
+                              {s.name}{s.id === pipelineLead.stage_id && (pendingPipelineId || pipelineLead.pipeline?.id) === pipelineLead.pipeline?.id ? L(' (atual)', ' (current)', ' (actual)') : ''}
                             </option>
                           ))}
                       </select>
                       {((pendingStageId && pendingStageId !== pipelineLead.stage_id) || (pendingPipelineId && pendingPipelineId !== pipelineLead.pipeline?.id)) && (
                         <p className="text-[10px] mt-1 font-semibold" style={{ color: '#6366f1' }}>
-                          ⚠️ Mudança pendente — será salva ao clicar &ldquo;Salvar Alterações&rdquo;
+                          ⚠️ {L('Mudança pendente — será salva ao clicar', 'Pending change — saved when you click', 'Cambio pendiente — se guardará al hacer clic en')} &ldquo;{L('Salvar Alterações', 'Save Changes', 'Guardar Cambios')}&rdquo;
                         </p>
                       )}
                     </div>
@@ -628,10 +642,10 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               {/* Observation */}
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: '#94a3b8' }}>
-                  📝 Observacao
+                  📝 {L('Observacao', 'Notes', 'Observación')}
                 </label>
                 <textarea value={lead.observation || ''} onChange={e => setLead({ ...lead, observation: e.target.value })}
-                  rows={3} placeholder="Notas sobre este lead. URLs viram clicáveis automaticamente."
+                  rows={3} placeholder={L('Notas sobre este lead. URLs viram clicáveis automaticamente.', 'Notes about this lead. URLs become clickable automatically.', 'Notas sobre este lead. Las URLs se vuelven clicables automáticamente.')}
                   className="w-full px-3.5 py-2.5 rounded-xl text-[13px] font-medium resize-none transition-all focus:outline-none focus:ring-2 focus:ring-indigo-200"
                   style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
                 {(() => {
@@ -663,12 +677,12 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               {/* Actions */}
               <div className="flex justify-end gap-3 pt-3" style={{ borderTop: '1px solid #f1f5f9' }}>
                 <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-[13px] font-semibold transition-colors hover:bg-gray-50" style={{ color: '#64748b' }}>
-                  Cancelar
+                  {L('Cancelar', 'Cancel', 'Cancelar')}
                 </button>
                 <button onClick={saveLead} disabled={saving}
                   className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50 transition-all"
                   style={{ background: '#6366f1', boxShadow: '0 4px 14px rgba(99,102,241,0.25)' }}>
-                  {saving ? 'Salvando...' : 'Salvar Alteracoes'}
+                  {saving ? L('Salvando...', 'Saving...', 'Guardando...') : L('Salvar Alteracoes', 'Save Changes', 'Guardar Cambios')}
                 </button>
               </div>
             </div>
@@ -684,17 +698,17 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               <button onClick={() => setShowNewFU(true)}
                 className="w-full py-3 rounded-xl text-[13px] font-bold mb-5 transition-all hover:shadow-sm"
                 style={{ background: '#f0f4ff', color: '#6366f1', border: '1px dashed #c7d2fe' }}>
-                + Novo Follow-up
+                + {L('Novo Follow-up', 'New Follow-up', 'Nuevo Seguimiento')}
               </button>
 
               {/* New follow-up form */}
               {showNewFU && (
                 <div className="rounded-xl p-5 mb-5" style={{ background: '#fafbff', border: '1px solid #e0e7ff' }}>
                   <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: '#94a3b8' }}>
-                    Tipo · <span style={{ color: '#6366f1' }}>
+                    {L('Tipo', 'Type', 'Tipo')} · <span style={{ color: '#6366f1' }}>
                       {(() => {
-                        const cur = FOLLOW_UP_TYPES.find(t => t.key === fuType)
-                        return cur ? `${cur.icon} ${cur.label} selecionado` : 'selecione'
+                        const cur = FOLLOW_UP_TYPES.find(ft => ft.key === fuType)
+                        return cur ? `${cur.icon} ${cur.label} ${L('selecionado', 'selected', 'seleccionado')}` : L('selecione', 'select one', 'selecciona')
                       })()}
                     </span>
                   </p>
@@ -712,7 +726,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                       </button>
                     ))}
                   </div>
-                  <textarea value={fuDesc} onChange={e => setFuDesc(e.target.value)} placeholder="O que aconteceu ou precisa ser feito..."
+                  <textarea value={fuDesc} onChange={e => setFuDesc(e.target.value)} placeholder={L('O que aconteceu ou precisa ser feito...', 'What happened or needs to be done...', 'Qué pasó o qué hay que hacer...')}
                     rows={2} className="w-full px-3.5 py-2.5 rounded-xl text-[13px] resize-none mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                     style={{ background: '#fff', border: '1px solid #e8ecf4' }} />
 
@@ -723,8 +737,8 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                   }}>
                     <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: fuType === 'meeting' ? '#92400e' : '#94a3b8' }}>
                       {fuType === 'meeting'
-                        ? '📅 Data e hora da reunião — OBRIGATÓRIO'
-                        : '📅 Agendar (opcional — aparece no calendário)'}
+                        ? '📅 ' + L('Data e hora da reunião — OBRIGATÓRIO', 'Meeting date and time — REQUIRED', 'Fecha y hora de la reunión — OBLIGATORIO')
+                        : '📅 ' + L('Agendar (opcional — aparece no calendário)', 'Schedule (optional — shows on the calendar)', 'Agendar (opcional — aparece en el calendario)')}
                     </p>
                     <div className="flex gap-2">
                       <input type="date" value={fuDate} onChange={e => setFuDate(e.target.value)}
@@ -746,7 +760,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                     </div>
                     {fuType === 'meeting' && (!fuDate || !fuTime) && (
                       <p className="text-[10px] mt-1.5" style={{ color: '#92400e' }}>
-                        ⚠️ Reunião precisa de data + hora pra ser criada como appointment no calendário.
+                        ⚠️ {L('Reunião precisa de data + hora pra ser criada como appointment no calendário.', 'A meeting needs a date + time to be created as an appointment on the calendar.', 'La reunión necesita fecha + hora para crearse como cita en el calendario.')}
                       </p>
                     )}
 
@@ -757,7 +771,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                           <input type="checkbox" checked={fuSendConfirm} onChange={e => setFuSendConfirm(e.target.checked)}
                             className="w-4 h-4 mt-0.5 accent-emerald-500 flex-shrink-0" />
                           <span className="text-[12px] font-bold" style={{ color: '#92400e' }}>
-                            ✉️ Mandar confirmação pro lead no WhatsApp (com a data e hora) — pra ele não esquecer
+                            ✉️ {L('Mandar confirmação pro lead no WhatsApp (com a data e hora) — pra ele não esquecer', "Send the lead a WhatsApp confirmation (with date and time) — so they don't forget", 'Enviar confirmación al lead por WhatsApp (con fecha y hora) — para que no se olvide')}
                           </span>
                         </label>
                         {fuSendConfirm && (
@@ -765,11 +779,11 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                             <textarea value={fuConfirmMsg}
                               onChange={e => { setFuConfirmMsg(e.target.value); setFuConfirmEdited(true) }}
                               rows={3}
-                              placeholder={(!fuDate || !fuTime) ? 'Escolha a data e a hora — a mensagem é montada sozinha.' : ''}
+                              placeholder={(!fuDate || !fuTime) ? L('Escolha a data e a hora — a mensagem é montada sozinha.', 'Pick the date and time — the message is built automatically.', 'Elige la fecha y la hora — el mensaje se arma solo.') : ''}
                               className="w-full mt-2 px-3 py-2 rounded-lg text-[12px] resize-none focus:outline-none focus:ring-2 focus:ring-emerald-200"
                               style={{ background: '#fff', border: '1px solid #fde68a', color: '#1a1a2e' }} />
                             <p className="text-[10px] mt-1" style={{ color: '#a16207' }}>
-                              Vai pelo WhatsApp do seu número conectado e aparece na conversa do lead. Pode editar o texto acima.
+                              {L('Vai pelo WhatsApp do seu número conectado e aparece na conversa do lead. Pode editar o texto acima.', "Sent via your connected WhatsApp number and shows up in the lead's conversation. You can edit the text above.", 'Se envía por el WhatsApp de tu número conectado y aparece en la conversación del lead. Puedes editar el texto de arriba.')}
                             </p>
                           </>
                         )}
@@ -778,11 +792,11 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                   </div>
 
                   <div className="flex gap-2 justify-end">
-                    <button onClick={() => setShowNewFU(false)} className="px-4 py-2 text-[12px] font-semibold rounded-lg" style={{ color: '#94a3b8' }}>Cancelar</button>
+                    <button onClick={() => setShowNewFU(false)} className="px-4 py-2 text-[12px] font-semibold rounded-lg" style={{ color: '#94a3b8' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
                     <button onClick={addFollowUp}
                       disabled={fuType === 'meeting' ? (!fuDate || !fuTime) : !fuDesc.trim()}
                       className="px-5 py-2 rounded-lg text-[12px] font-bold text-white disabled:opacity-40"
-                      style={{ background: '#6366f1' }}>Salvar</button>
+                      style={{ background: '#6366f1' }}>{L('Salvar', 'Save', 'Guardar')}</button>
                   </div>
                 </div>
               )}
@@ -791,13 +805,13 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               {followUps.length === 0 ? (
                 <div className="text-center py-12">
                   <span className="text-[32px] block mb-2">📌</span>
-                  <p className="text-[13px] font-semibold" style={{ color: '#94a3b8' }}>Nenhum follow-up registrado</p>
-                  <p className="text-[11px] mt-1" style={{ color: '#c0c8d4' }}>Registre ligacoes, notas e reunioes</p>
+                  <p className="text-[13px] font-semibold" style={{ color: '#94a3b8' }}>{L('Nenhum follow-up registrado', 'No follow-ups yet', 'Ningún seguimiento registrado')}</p>
+                  <p className="text-[11px] mt-1" style={{ color: '#c0c8d4' }}>{L('Registre ligacoes, notas e reunioes', 'Log calls, notes and meetings', 'Registra llamadas, notas y reuniones')}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {followUps.map(fu => {
-                    const typeInfo = FOLLOW_UP_TYPES.find(t => t.key === fu.type) || FOLLOW_UP_TYPES[0]
+                    const typeInfo = FOLLOW_UP_TYPES.find(ft => ft.key === fu.type) || FOLLOW_UP_TYPES[0]
                     const done = !!fu.completed_at
                     return (
                       <div key={fu.id} className="rounded-xl p-4 flex gap-3 transition-all"
@@ -822,12 +836,12 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                                   disabled={!editingFU.text.trim()}
                                   className="px-3 py-1 rounded text-[10px] font-bold text-white disabled:opacity-50"
                                   style={{ background: '#6366f1' }}>
-                                  Salvar
+                                  {L('Salvar', 'Save', 'Guardar')}
                                 </button>
                                 <button onClick={() => setEditingFU(null)}
                                   className="px-3 py-1 rounded text-[10px] font-bold"
                                   style={{ color: '#94a3b8' }}>
-                                  Cancelar
+                                  {L('Cancelar', 'Cancel', 'Cancelar')}
                                 </button>
                               </div>
                             </div>
@@ -837,7 +851,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                                 {fu.description}
                               </p>
                               <p className="text-[11px] mt-0.5" style={{ color: '#94a3b8' }}>
-                                {new Date(fu.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })} · {typeInfo.label}
+                                {new Date(fu.created_at).toLocaleDateString(dateLocale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })} · {typeInfo.label}
                               </p>
                             </>
                           )}
@@ -846,7 +860,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                           <div className="flex flex-col gap-1 self-start">
                             {!done && (
                               <button onClick={() => completeFollowUp(fu.id)}
-                                title="Concluir"
+                                title={L('Concluir', 'Complete', 'Completar')}
                                 className="text-[10px] font-bold px-2 py-1 rounded-lg transition-all hover:shadow-sm"
                                 style={{ background: '#dcfce7', color: '#166534' }}>
                                 ✓
@@ -856,13 +870,13 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                               <span className="text-[10px] font-bold px-2 py-1" style={{ color: '#10b981' }}>✓</span>
                             )}
                             <button onClick={() => setEditingFU({ id: fu.id, text: fu.description })}
-                              title="Editar"
+                              title={L('Editar', 'Edit', 'Editar')}
                               className="text-[10px] font-bold px-2 py-1 rounded-lg hover:bg-indigo-50"
                               style={{ color: '#6366f1' }}>
                               ✎
                             </button>
                             <button onClick={() => deleteFollowUp(fu.id)}
-                              title="Deletar"
+                              title={L('Deletar', 'Delete', 'Eliminar')}
                               className="text-[10px] font-bold px-2 py-1 rounded-lg hover:bg-red-50"
                               style={{ color: '#ef4444' }}>
                               🗑
@@ -884,16 +898,16 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                 style={{ background: '#f0f4ff', color: '#6366f1', border: '1px dashed #c7d2fe' }}>
                 <input type="file" className="hidden" onChange={uploadFile} disabled={uploading}
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.xls,.xlsx,.csv,.txt" />
-                {uploading ? 'Enviando...' : '📎 Clique para anexar arquivo'}
+                {uploading ? L('Enviando...', 'Uploading...', 'Subiendo...') : '📎 ' + L('Clique para anexar arquivo', 'Click to attach a file', 'Haz clic para adjuntar un archivo')}
               </label>
-              <p className="text-[10px] mb-4" style={{ color: '#c0c8d4' }}>PDF, DOC, XLS, imagens — max 10MB</p>
+              <p className="text-[10px] mb-4" style={{ color: '#c0c8d4' }}>{L('PDF, DOC, XLS, imagens — max 10MB', 'PDF, DOC, XLS, images — max 10MB', 'PDF, DOC, XLS, imágenes — máx 10MB')}</p>
 
               {/* List */}
               {attachments.length === 0 ? (
                 <div className="text-center py-12">
                   <span className="text-[32px] block mb-2">📁</span>
-                  <p className="text-[13px] font-semibold" style={{ color: '#94a3b8' }}>Nenhum anexo</p>
-                  <p className="text-[11px] mt-1" style={{ color: '#c0c8d4' }}>Envie propostas, contratos e documentos</p>
+                  <p className="text-[13px] font-semibold" style={{ color: '#94a3b8' }}>{L('Nenhum anexo', 'No attachments', 'Ningún adjunto')}</p>
+                  <p className="text-[11px] mt-1" style={{ color: '#c0c8d4' }}>{L('Envie propostas, contratos e documentos', 'Upload proposals, contracts and documents', 'Sube propuestas, contratos y documentos')}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -911,7 +925,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                         <div className="flex-1 min-w-0">
                           <p className="text-[13px] font-semibold truncate" style={{ color: '#1a1a2e' }}>{att.file_name}</p>
                           <p className="text-[11px]" style={{ color: '#94a3b8' }}>
-                            {formatFileSize(att.file_size)} · {new Date(att.created_at).toLocaleDateString('pt-BR')}
+                            {formatFileSize(att.file_size)} · {new Date(att.created_at).toLocaleDateString(dateLocale)}
                           </p>
                         </div>
                         <button onClick={async () => {
@@ -921,7 +935,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                           }}
                           className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg"
                           style={{ background: '#eef2ff', color: '#6366f1' }}>
-                          Baixar
+                          {L('Baixar', 'Download', 'Descargar')}
                         </button>
                         <button onClick={() => deleteAttachment(att.id)}
                           className="text-[10px] font-bold px-2 py-1.5 rounded-lg"

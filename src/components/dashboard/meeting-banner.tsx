@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useT } from '@/lib/i18n-client'
 
 interface UpcomingEvent {
   id: string
@@ -84,6 +85,8 @@ interface Props {
 }
 
 export function MeetingBanner({ buyerId }: Props) {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [events, setEvents] = useState<UpcomingEvent[]>([])
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS)
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
@@ -222,9 +225,9 @@ export function MeetingBanner({ buyerId }: Props) {
             {next.title}
           </p>
           <p className="text-[11px] opacity-90 truncate">
-            Em <span className="font-bold tabular-nums">{countdown}</span>
+            {L('Em', 'In', 'En')} <span className="font-bold tabular-nums">{countdown}</span>
             {next.subtitle ? ` · ${next.subtitle}` : ''}
-            {visible.length > 1 ? ` · +${visible.length - 1} próximo${visible.length > 2 ? 's' : ''}` : ''}
+            {visible.length > 1 ? ` · +${visible.length - 1} ${L(visible.length > 2 ? 'próximos' : 'próximo', 'more', 'más')}` : ''}
           </p>
         </div>
         <a
@@ -232,13 +235,13 @@ export function MeetingBanner({ buyerId }: Props) {
           className="px-3 py-1.5 rounded-lg text-[11px] font-extrabold whitespace-nowrap"
           style={{ background: 'rgba(255,255,255,0.22)', color: '#fff', textDecoration: 'none' }}
         >
-          Abrir →
+          {L('Abrir', 'Open', 'Abrir')} →
         </a>
         <button
           onClick={() => setDismissed(prev => new Set(prev).add(next.id))}
           className="w-7 h-7 rounded-lg flex items-center justify-center text-[14px] font-bold"
           style={{ background: 'rgba(255,255,255,0.18)', color: '#fff' }}
-          aria-label="Dispensar"
+          aria-label={L('Dispensar', 'Dismiss', 'Descartar')}
         >
           ×
         </button>

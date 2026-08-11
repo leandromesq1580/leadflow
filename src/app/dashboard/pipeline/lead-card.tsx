@@ -76,15 +76,18 @@ const FU_COLOR: Record<string, { icon: string; bg: string; color: string }> = {
 
 // Horario Eastern (EUA) em AM/PM — o lead mora nos EUA, nao no Brasil
 const LEAD_TZ = 'America/New_York'
-function formatFuDate(iso: string): string {
+function formatFuDate(iso: string, locale: string): string {
   const d = new Date(iso)
-  const dateStr = d.toLocaleDateString('en-GB', { timeZone: LEAD_TZ, day: '2-digit', month: '2-digit' }) // 21/04
+  // PT mantém dd/mm (en-GB); EN vê mm/dd (en-US); ES segue es-US
+  const dateLocale = locale === 'en' ? 'en-US' : locale === 'es' ? 'es-US' : 'en-GB'
+  const dateStr = d.toLocaleDateString(dateLocale, { timeZone: LEAD_TZ, day: '2-digit', month: '2-digit' }) // 21/04
   const timeStr = d.toLocaleTimeString('en-US', { timeZone: LEAD_TZ, hour: 'numeric', minute: '2-digit', hour12: true }) // 6:00 PM
   return `${dateStr} ${timeStr}`
 }
 
 export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, unreadCount = 0, lastFollowUp, teamMembers, onAssigned, onArchived }: Props) {
   const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const privacy = usePrivacy()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: pipelineLeadId,
@@ -128,7 +131,11 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
             minWidth: 22, height: 22, justifyContent: 'center',
             zIndex: 10,
           }}
-          title={`${unreadCount} mensagem${unreadCount > 1 ? 's' : ''} não lida${unreadCount > 1 ? 's' : ''}`}>
+          title={L(
+            `${unreadCount} mensagem${unreadCount > 1 ? 's' : ''} não lida${unreadCount > 1 ? 's' : ''}`,
+            `${unreadCount} unread message${unreadCount > 1 ? 's' : ''}`,
+            `${unreadCount} mensaje${unreadCount > 1 ? 's' : ''} sin leer`,
+          )}>
           💬 {unreadCount > 99 ? '99+' : unreadCount}
         </div>
       )}
@@ -176,7 +183,7 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
               {label}
             </span>
             <span className="text-[10px] font-semibold" style={{ color: color.color, opacity: 0.8 }}>
-              · {formatFuDate(when)}
+              · {formatFuDate(when, t._locale)}
             </span>
           </div>
         )

@@ -1,7 +1,8 @@
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Badge } from '@/components/ui/badge'
-import { formatDate, getInitials } from '@/lib/utils'
+import { getInitials } from '@/lib/utils'
+import { getLocale } from '@/lib/locale'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
@@ -9,6 +10,12 @@ export const dynamic = 'force-dynamic'
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const locale = await getLocale()
+  const L = (pt: string, en: string, es: string) => locale === 'en' ? en : locale === 'es' ? es : pt
+  const dateLocale = locale === 'en' ? 'en-US' : locale === 'es' ? 'es-US' : 'pt-BR'
+  const formatDate = (date: string | Date) => new Intl.DateTimeFormat(dateLocale, {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  }).format(new Date(date))
   const supabase = await createServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -24,8 +31,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   if (!lead) {
     return (
       <div className="max-w-3xl">
-        <Link href="/dashboard/leads" className="text-[13px] font-medium" style={{ color: '#6366f1' }}>← Voltar</Link>
-        <p className="text-center py-20" style={{ color: '#94a3b8' }}>Lead nao encontrado</p>
+        <Link href="/dashboard/leads" className="text-[13px] font-medium" style={{ color: '#6366f1' }}>{L('← Voltar', '← Back', '← Volver')}</Link>
+        <p className="text-center py-20" style={{ color: '#94a3b8' }}>{L('Lead nao encontrado', 'Lead not found', 'Lead no encontrado')}</p>
       </div>
     )
   }
@@ -39,7 +46,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   return (
     <div className="max-w-3xl">
       <Link href="/dashboard/leads" className="text-[13px] font-medium mb-6 inline-block" style={{ color: '#6366f1' }}>
-        ← Voltar para lista
+        {L('← Voltar para lista', '← Back to list', '← Volver a la lista')}
       </Link>
 
       {/* Header */}
@@ -59,10 +66,10 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
       {/* Contact Info */}
       <div className="rounded-2xl p-6 mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-        <h2 className="text-[15px] font-bold mb-4" style={{ color: '#1a1a2e' }}>Informacoes do Lead</h2>
+        <h2 className="text-[15px] font-bold mb-4" style={{ color: '#1a1a2e' }}>{L('Informacoes do Lead', 'Lead Information', 'Información del Lead')}</h2>
         <div className="grid grid-cols-2 gap-4">
           <div className="rounded-xl p-4" style={{ background: '#f8f9fc' }}>
-            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Telefone</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Telefone', 'Phone', 'Teléfono')}</p>
             <a href={`tel:${lead.phone}`} className="text-[15px] font-bold block mt-1" style={{ color: '#6366f1' }}>
               {lead.phone || '—'}
             </a>
@@ -72,19 +79,19 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             <p className="text-[14px] font-semibold mt-1" style={{ color: '#1a1a2e' }}>{lead.email || '—'}</p>
           </div>
           <div className="rounded-xl p-4" style={{ background: '#f8f9fc' }}>
-            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Interesse</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Interesse', 'Interest', 'Interés')}</p>
             <p className="text-[14px] font-semibold mt-1" style={{ color: '#1a1a2e' }}>{lead.interest}</p>
           </div>
           <div className="rounded-xl p-4" style={{ background: '#f8f9fc' }}>
-            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Campanha</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Campanha', 'Campaign', 'Campaña')}</p>
             <p className="text-[14px] font-semibold mt-1" style={{ color: '#1a1a2e' }}>{lead.campaign_name || '—'}</p>
           </div>
           <div className="rounded-xl p-4" style={{ background: '#f8f9fc' }}>
-            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Tipo</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Tipo', 'Type', 'Tipo')}</p>
             <Badge status={lead.type} />
           </div>
           <div className="rounded-xl p-4" style={{ background: '#f8f9fc' }}>
-            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Recebido em</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Recebido em', 'Received on', 'Recibido el')}</p>
             <p className="text-[14px] font-semibold mt-1" style={{ color: '#1a1a2e' }}>{formatDate(lead.created_at)}</p>
           </div>
         </div>
@@ -92,7 +99,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
       {/* Activity History */}
       <div className="rounded-2xl p-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-        <h2 className="text-[15px] font-bold mb-4" style={{ color: '#1a1a2e' }}>Historico</h2>
+        <h2 className="text-[15px] font-bold mb-4" style={{ color: '#1a1a2e' }}>{L('Historico', 'History', 'Historial')}</h2>
         {activities && activities.length > 0 ? (
           <div className="space-y-4">
             {activities.map((act: any) => (
@@ -107,7 +114,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             ))}
           </div>
         ) : (
-          <p className="text-[13px]" style={{ color: '#94a3b8' }}>Nenhuma atividade registrada</p>
+          <p className="text-[13px]" style={{ color: '#94a3b8' }}>{L('Nenhuma atividade registrada', 'No activity recorded', 'Ninguna actividad registrada')}</p>
         )}
       </div>
     </div>

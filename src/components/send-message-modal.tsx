@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { renderTemplate } from '@/lib/template-render'
+import { useT } from '@/lib/i18n-client'
 
 interface Template {
   id: string; name: string; type: 'whatsapp' | 'email'; subject: string | null; body: string; is_system: boolean
@@ -24,6 +25,8 @@ interface Props {
 }
 
 export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }: Props) {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [templates, setTemplates] = useState<Template[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [customBody, setCustomBody] = useState('')
@@ -67,7 +70,7 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
       onClose()
     } else {
       const d = await r.json()
-      alert(d.error || 'Erro ao enviar')
+      alert(d.error || L('Erro ao enviar', 'Failed to send', 'Error al enviar'))
     }
   }
 
@@ -80,7 +83,7 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
         {/* Header */}
         <div className="px-6 py-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
           <div>
-            <h2 className="text-[16px] font-extrabold text-white">Enviar mensagem pra {lead.name}</h2>
+            <h2 className="text-[16px] font-extrabold text-white">{L('Enviar mensagem pra', 'Send a message to', 'Enviar mensaje a')} {lead.name}</h2>
             <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.7)' }}>{lead.phone} · {lead.email}</p>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10" style={{ color: '#fff' }}>✕</button>
@@ -90,7 +93,7 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
           {/* Template picker */}
           {!selectedId && !editing && (
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: '#94a3b8' }}>Escolha um template</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: '#94a3b8' }}>{L('Escolha um template', 'Choose a template', 'Elige una plantilla')}</p>
               <div className="space-y-2 mb-4">
                 {templates.map(t => (
                   <button key={t.id} onClick={() => setSelectedId(t.id)}
@@ -100,7 +103,7 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-[13px] font-bold" style={{ color: '#1a1a2e' }}>{t.name}</p>
-                        {t.is_system && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: '#fef3c7', color: '#92400e' }}>Sistema</span>}
+                        {t.is_system && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: '#fef3c7', color: '#92400e' }}>{L('Sistema', 'System', 'Sistema')}</span>}
                       </div>
                       <p className="text-[11px] line-clamp-1" style={{ color: '#94a3b8' }}>{t.body}</p>
                     </div>
@@ -110,7 +113,7 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
               <button onClick={() => { setEditing(true); setCustomBody(''); setSelectedId(null) }}
                 className="w-full py-3 rounded-xl text-[13px] font-bold"
                 style={{ background: '#eef2ff', color: '#6366f1', border: '1px dashed #c7d2fe' }}>
-                + Mensagem customizada
+                + {L('Mensagem customizada', 'Custom message', 'Mensaje personalizado')}
               </button>
             </div>
           )}
@@ -121,22 +124,22 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>
-                    {editing ? 'Customizada' : selected?.name}
+                    {editing ? L('Customizada', 'Custom', 'Personalizado') : selected?.name}
                   </p>
                   {!editing && (
                     <button onClick={() => { setEditing(true); setCustomBody(selected?.body || '') }}
                       className="text-[11px] font-bold" style={{ color: '#6366f1' }}>
-                      ✎ Editar antes de enviar
+                      ✎ {L('Editar antes de enviar', 'Edit before sending', 'Editar antes de enviar')}
                     </button>
                   )}
                 </div>
                 <button onClick={() => { setSelectedId(null); setEditing(false); setCustomBody('') }}
-                  className="text-[11px] font-bold" style={{ color: '#94a3b8' }}>← Trocar template</button>
+                  className="text-[11px] font-bold" style={{ color: '#94a3b8' }}>← {L('Trocar template', 'Change template', 'Cambiar plantilla')}</button>
               </div>
 
               {editing && !selected && (
                 <div className="mb-3">
-                  <label className="text-[11px] font-bold uppercase tracking-wider block mb-1" style={{ color: '#94a3b8' }}>Canal</label>
+                  <label className="text-[11px] font-bold uppercase tracking-wider block mb-1" style={{ color: '#94a3b8' }}>{L('Canal', 'Channel', 'Canal')}</label>
                   <div className="flex gap-2">
                     <button onClick={() => setCustomType('whatsapp')}
                       className="flex-1 py-2 rounded-lg text-[12px] font-bold"
@@ -154,7 +157,7 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
 
               {editing ? (
                 <textarea value={customBody} onChange={e => setCustomBody(e.target.value)}
-                  rows={8} placeholder="Digite sua mensagem. Use {primeiro_nome}, {nome}, etc."
+                  rows={8} placeholder={L('Digite sua mensagem. Use {primeiro_nome}, {nome}, etc.', 'Type your message. Use {primeiro_nome}, {nome}, etc.', 'Escribe tu mensaje. Usa {primeiro_nome}, {nome}, etc.')}
                   className="w-full px-4 py-3 rounded-xl text-[13px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-200"
                   style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
               ) : (
@@ -165,14 +168,16 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
 
               {editing && preview && (
                 <div className="mt-3 rounded-xl p-4" style={{ background: '#f0f4ff', border: '1px solid #e0e7ff' }}>
-                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#6366f1' }}>Preview (variaveis substituidas)</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#6366f1' }}>{L('Preview (variaveis substituidas)', 'Preview (variables filled in)', 'Vista previa (variables sustituidas)')}</p>
                   <p className="text-[13px] whitespace-pre-wrap" style={{ color: '#1a1a2e' }}>{preview}</p>
                 </div>
               )}
 
               {!canSend && (
                 <p className="text-[12px] mt-3 px-4 py-3 rounded-lg" style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
-                  ⚠️ {activeType === 'whatsapp' ? 'Lead sem telefone' : 'Lead sem email'} — nao e possivel enviar
+                  ⚠️ {activeType === 'whatsapp'
+                    ? L('Lead sem telefone', 'Lead has no phone number', 'El lead no tiene teléfono')
+                    : L('Lead sem email', 'Lead has no email', 'El lead no tiene email')} — {L('nao e possivel enviar', 'unable to send', 'no se puede enviar')}
                 </p>
               )}
             </div>
@@ -182,11 +187,13 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
         {/* Footer */}
         {(selected || editing) && (
           <div className="px-6 py-4 flex justify-end gap-3" style={{ borderTop: '1px solid #f1f5f9' }}>
-            <button onClick={onClose} className="px-4 py-2 text-[13px] font-semibold" style={{ color: '#64748b' }}>Cancelar</button>
+            <button onClick={onClose} className="px-4 py-2 text-[13px] font-semibold" style={{ color: '#64748b' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
             <button onClick={send} disabled={sending || !canSend || !preview.trim()}
               className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50"
               style={{ background: activeType === 'whatsapp' ? '#10b981' : '#6366f1', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
-              {sending ? 'Enviando...' : `Enviar ${activeType === 'whatsapp' ? 'WhatsApp' : 'Email'} →`}
+              {sending
+                ? L('Enviando...', 'Sending...', 'Enviando...')
+                : `${L('Enviar', 'Send', 'Enviar')} ${activeType === 'whatsapp' ? 'WhatsApp' : 'Email'} →`}
             </button>
           </div>
         )}

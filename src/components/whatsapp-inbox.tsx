@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRealtime } from '@/lib/use-realtime'
+import { useT } from '@/lib/i18n-client'
 
 interface Message {
   id: string
@@ -39,6 +40,8 @@ const QUICK_EMOJIS = [
 const MAX_FILE_SIZE = 16 * 1024 * 1024 // 16MB
 
 export function WhatsAppInbox({ leadId, buyerId }: Props) {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
@@ -119,14 +122,15 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
       await load()
     } else {
       const d = await r.json()
-      alert(d.error || 'Erro ao enviar')
+      alert(d.error || L('Erro ao enviar', 'Failed to send', 'Error al enviar'))
     }
   }
 
   async function sendFile(file: File) {
     setMicError(null)
     if (file.size > MAX_FILE_SIZE) {
-      setMicError(`Arquivo muito grande. Máximo ${MAX_FILE_SIZE / 1024 / 1024}MB.`)
+      const mb = MAX_FILE_SIZE / 1024 / 1024
+      setMicError(L(`Arquivo muito grande. Máximo ${mb}MB.`, `File is too large. Max ${mb}MB.`, `El archivo es demasiado grande. Máximo ${mb}MB.`))
       return
     }
     setSending(true)
@@ -143,7 +147,12 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
       await load()
     } else {
       const d = await r.json().catch(() => ({}))
-      setMicError(d.error || `Erro ao enviar ${file.type.startsWith('audio/') ? 'audio' : 'arquivo'}. Tente de novo.`)
+      const isAudio = file.type.startsWith('audio/')
+      setMicError(d.error || L(
+        `Erro ao enviar ${isAudio ? 'audio' : 'arquivo'}. Tente de novo.`,
+        `Failed to send the ${isAudio ? 'audio' : 'file'}. Please try again.`,
+        `Error al enviar el ${isAudio ? 'audio' : 'archivo'}. Inténtalo de nuevo.`,
+      ))
     }
     if (fileRef.current) fileRef.current.value = ''
   }
@@ -152,15 +161,27 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
     setMicError(null)
     // 1) Sanity checks antes de pedir permissao
     if (typeof window === 'undefined' || !window.isSecureContext) {
-      setMicError('Gravar audio precisa de HTTPS (ou localhost). Acesse pelo lead4producers.com.')
+      setMicError(L(
+        'Gravar audio precisa de HTTPS (ou localhost). Acesse pelo lead4producers.com.',
+        'Audio recording requires HTTPS (or localhost). Use lead4producers.com.',
+        'Grabar audio requiere HTTPS (o localhost). Entra por lead4producers.com.',
+      ))
       return
     }
     if (!navigator.mediaDevices?.getUserMedia) {
-      setMicError('Seu navegador nao suporta gravacao de audio. Use Chrome, Edge ou Safari atualizado.')
+      setMicError(L(
+        'Seu navegador nao suporta gravacao de audio. Use Chrome, Edge ou Safari atualizado.',
+        'Your browser does not support audio recording. Use an up-to-date Chrome, Edge, or Safari.',
+        'Tu navegador no soporta grabar audio. Usa Chrome, Edge o Safari actualizado.',
+      ))
       return
     }
     if (typeof MediaRecorder === 'undefined') {
-      setMicError('MediaRecorder indisponivel nesse navegador.')
+      setMicError(L(
+        'MediaRecorder indisponivel nesse navegador.',
+        'MediaRecorder is not available in this browser.',
+        'MediaRecorder no está disponible en este navegador.',
+      ))
       return
     }
     try {
@@ -192,13 +213,25 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
     } catch (err: any) {
       console.error('[mic] startRecording err:', err?.name, err?.message)
       if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
-        setMicError('Microfone bloqueado. Clique no cadeado da barra de endereco -> Permissoes do site -> Microfone -> Permitir. Depois F5.')
+        setMicError(L(
+          'Microfone bloqueado. Clique no cadeado da barra de endereco -> Permissoes do site -> Microfone -> Permitir. Depois F5.',
+          'Microphone blocked. Click the padlock in the address bar -> Site permissions -> Microphone -> Allow. Then press F5.',
+          'Micrófono bloqueado. Haz clic en el candado de la barra de direcciones -> Permisos del sitio -> Micrófono -> Permitir. Luego F5.',
+        ))
       } else if (err?.name === 'NotFoundError') {
-        setMicError('Nenhum microfone encontrado nesse dispositivo.')
+        setMicError(L(
+          'Nenhum microfone encontrado nesse dispositivo.',
+          'No microphone found on this device.',
+          'No se encontró ningún micrófono en este dispositivo.',
+        ))
       } else if (err?.name === 'NotReadableError') {
-        setMicError('Microfone em uso por outro app. Feche Zoom/Meet/etc e tente de novo.')
+        setMicError(L(
+          'Microfone em uso por outro app. Feche Zoom/Meet/etc e tente de novo.',
+          'Microphone is in use by another app. Close Zoom/Meet/etc. and try again.',
+          'El micrófono está en uso por otra app. Cierra Zoom/Meet/etc. e inténtalo de nuevo.',
+        ))
       } else {
-        setMicError('Falha no microfone: ' + (err?.message || err?.name || 'erro desconhecido'))
+        setMicError(L('Falha no microfone: ', 'Microphone error: ', 'Falla del micrófono: ') + (err?.message || err?.name || L('erro desconhecido', 'unknown error', 'error desconocido')))
       }
     }
   }
@@ -233,7 +266,7 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
 
   function fmtTime(iso: string) {
     const d = new Date(iso)
-    const date = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+    const date = d.toLocaleDateString(t._locale === 'en' ? 'en-US' : t._locale === 'es' ? 'es-US' : 'pt-BR', { day: '2-digit', month: '2-digit' })
     const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
     return `${date} ${time}`
   }
@@ -245,18 +278,21 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
     // arquivo do cliente. O arquivo continua no WhatsApp do celular dele; aqui é só a
     // cópia que não veio. Enquanto não há correção da biblioteca, a tela avisa a verdade.
     if (m.media_type && !m.media_url) {
-      const rotulo = m.media_type === 'image' ? 'Imagem' : m.media_type === 'audio' ? 'Áudio'
-        : m.media_type === 'video' ? 'Vídeo' : m.media_type === 'ptt' ? 'Áudio de voz' : 'Arquivo'
+      const rotulo = m.media_type === 'image' ? L('Imagem', 'Image', 'Imagen')
+        : m.media_type === 'audio' ? L('Áudio', 'Audio', 'Audio')
+        : m.media_type === 'video' ? L('Vídeo', 'Video', 'Video')
+        : m.media_type === 'ptt' ? L('Áudio de voz', 'Voice note', 'Nota de voz')
+        : L('Arquivo', 'File', 'Archivo')
       return (
         <div className="flex items-start gap-2 rounded-lg px-2.5 py-2 mb-1"
           style={{ background: '#fffbeb', border: '1px dashed #fde68a' }}>
           <span className="text-[15px]">📎</span>
           <div>
             <p className="text-[11.5px] font-bold" style={{ color: '#92400e' }}>
-              {rotulo} recebida — abra no seu WhatsApp
+              {rotulo} {L('recebida — abra no seu WhatsApp', 'received — open it in your WhatsApp', 'recibido — ábrelo en tu WhatsApp')}
             </p>
             <p className="text-[10.5px]" style={{ color: '#b45309' }}>
-              O arquivo está na conversa do seu celular. A cópia não chegou aqui.
+              {L('O arquivo está na conversa do seu celular. A cópia não chegou aqui.', 'The file is in the chat on your phone. The copy did not arrive here.', 'El archivo está en la conversación de tu celular. La copia no llegó aquí.')}
             </p>
           </div>
         </div>
@@ -271,7 +307,7 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
         <div className="rounded-lg p-2 mb-1" style={{ background: 'rgba(0,0,0,0.04)', minWidth: 240 }}>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[14px]">🎤</span>
-            <span className="text-[11px] font-bold" style={{ color: '#64748b' }}>Mensagem de voz</span>
+            <span className="text-[11px] font-bold" style={{ color: '#64748b' }}>{L('Mensagem de voz', 'Voice message', 'Mensaje de voz')}</span>
           </div>
           <audio controls src={m.media_url} className="w-full" preload="metadata" style={{ minHeight: 32 }} />
         </div>
@@ -281,7 +317,7 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
       return <video controls src={m.media_url} className="rounded-lg max-w-full max-h-[300px] mb-1" />
     }
     // document
-    const filename = m.media_url.split('/').pop()?.split('?')[0] || 'arquivo'
+    const filename = m.media_url.split('/').pop()?.split('?')[0] || L('arquivo', 'file', 'archivo')
     return (
       <a href={m.media_url} target="_blank" rel="noopener noreferrer"
         className="flex items-center gap-2 rounded-lg px-2 py-1.5 mb-1 hover:bg-black/5 transition-colors"
@@ -289,13 +325,13 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
         <span className="text-[20px]">📎</span>
         <div className="min-w-0 flex-1">
           <p className="text-[12px] font-bold truncate" style={{ color: '#1a1a2e' }}>{filename.slice(0, 40)}</p>
-          <p className="text-[10px]" style={{ color: '#64748b' }}>Baixar documento</p>
+          <p className="text-[10px]" style={{ color: '#64748b' }}>{L('Baixar documento', 'Download document', 'Descargar documento')}</p>
         </div>
       </a>
     )
   }
 
-  if (loading) return <div className="text-[12px] p-4" style={{ color: '#94a3b8' }}>Carregando conversa...</div>
+  if (loading) return <div className="text-[12px] p-4" style={{ color: '#94a3b8' }}>{L('Carregando conversa...', 'Loading conversation...', 'Cargando conversación...')}</div>
 
   return (
     <div className="flex flex-col rounded-xl overflow-hidden" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', height: 460 }}>
@@ -304,8 +340,8 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
         {messages.length === 0 && (
           <div className="text-center py-10">
             <p className="text-[40px] mb-2">💬</p>
-            <p className="text-[13px]" style={{ color: '#94a3b8' }}>Nenhuma mensagem ainda</p>
-            <p className="text-[11px] mt-1" style={{ color: '#cbd5e1' }}>Envie a primeira mensagem abaixo</p>
+            <p className="text-[13px]" style={{ color: '#94a3b8' }}>{L('Nenhuma mensagem ainda', 'No messages yet', 'Aún no hay mensajes')}</p>
+            <p className="text-[11px] mt-1" style={{ color: '#cbd5e1' }}>{L('Envie a primeira mensagem abaixo', 'Send the first message below', 'Envía el primer mensaje abajo')}</p>
           </div>
         )}
         {messages.map(m => (
@@ -367,17 +403,17 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
           <div className="flex items-center gap-3 px-3 py-2 rounded-xl" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
             <span className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ background: '#ef4444' }} />
             <span className="text-[13px] font-bold" style={{ color: '#dc2626' }}>
-              Gravando áudio — {Math.floor(recordSecs / 60)}:{String(recordSecs % 60).padStart(2, '0')}
+              {L('Gravando áudio', 'Recording audio', 'Grabando audio')} — {Math.floor(recordSecs / 60)}:{String(recordSecs % 60).padStart(2, '0')}
             </span>
             <div className="flex-1" />
             <button onClick={() => stopRecording(true)}
               className="px-3 py-1.5 rounded-lg text-[12px] font-bold" style={{ color: '#64748b' }}>
-              Cancelar
+              {L('Cancelar', 'Cancel', 'Cancelar')}
             </button>
             <button onClick={() => stopRecording(false)}
               className="px-4 py-1.5 rounded-lg text-[12px] font-bold text-white"
               style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
-              ➤ Enviar
+              ➤ {L('Enviar', 'Send', 'Enviar')}
             </button>
           </div>
         ) : (
@@ -389,7 +425,7 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
             </button>
             <button onClick={() => fileRef.current?.click()} disabled={sending}
               className="w-9 h-9 rounded-lg flex items-center justify-center text-[16px] hover:bg-gray-100 transition-colors disabled:opacity-50"
-              title="Anexar arquivo">
+              title={L('Anexar arquivo', 'Attach file', 'Adjuntar archivo')}>
               📎
             </button>
             <input ref={fileRef} type="file"
@@ -398,7 +434,7 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
               className="hidden" />
             <button onClick={startRecording} disabled={sending}
               className="w-9 h-9 rounded-lg flex items-center justify-center text-[16px] hover:bg-red-50 transition-colors disabled:opacity-50"
-              title="Gravar áudio">
+              title={L('Gravar áudio', 'Record audio', 'Grabar audio')}>
               🎤
             </button>
 
@@ -411,7 +447,7 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
                   sendText()
                 }
               }}
-              placeholder="Digite uma mensagem... (Enter envia)"
+              placeholder={L('Digite uma mensagem... (Enter envia)', 'Type a message... (Enter to send)', 'Escribe un mensaje... (Enter envía)')}
               rows={1}
               className="flex-1 px-3 py-2 rounded-xl text-[13px] resize-none focus:outline-none"
               style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e', maxHeight: 100 }}

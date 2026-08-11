@@ -1,4 +1,7 @@
+'use client'
+
 import { statusLabel } from '@/lib/utils'
+import { useT } from '@/lib/i18n-client'
 
 interface BadgeProps {
   status: string
@@ -25,6 +28,7 @@ const styles: Record<string, { bg: string; fg: string; dot: string }> = {
 }
 
 export function Badge({ status, children }: BadgeProps) {
+  const t = useT()
   const s = styles[status] || styles.lost
   return (
     <span
@@ -32,7 +36,7 @@ export function Badge({ status, children }: BadgeProps) {
       style={{ background: s.bg, color: s.fg }}
     >
       <span className="w-1.5 h-1.5 rounded-full" style={{ background: s.dot }} />
-      {children || statusLabel(status)}
+      {children || statusLabel(status, t._locale)}
     </span>
   )
 }
