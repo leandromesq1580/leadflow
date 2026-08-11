@@ -18,6 +18,7 @@ import { AppointmentGate } from '@/components/dashboard/appointment-gate'
 import { LeadGate } from '@/components/dashboard/lead-gate'
 import { getLocale } from '@/lib/locale'
 import { I18nProvider } from '@/lib/i18n-client'
+import { LocaleSync } from '@/components/locale-sync'
 import { PrivacyProvider } from '@/lib/privacy-mode'
 import { redirect } from 'next/navigation'
 
@@ -86,6 +87,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </AppointmentGate>
         </main>
         {buyer?.id && <PwaRegister buyerId={buyer.id} />}
+        {buyer?.id && <LocaleSync locale={locale} />}
         <MobileNav userName={buyer?.name || user!.email || ''} isAgency={buyer?.is_agency || false} buyerId={buyer?.id} crmPlan={buyer?.crm_plan || 'free'} isAdmin={!!buyer?.is_admin} podeVerApolices={podeApolices} />
         <TutorChat />
         <Softphone />

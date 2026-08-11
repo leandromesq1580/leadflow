@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useT } from '@/lib/i18n-client'
 
 type Lead = {
   id: string
@@ -21,17 +22,20 @@ type Lead = {
   policy_value: number | null
 }
 
-function timeSinceArchived(ts: string | null): string {
+function timeSinceArchived(ts: string | null, locale: string = 'pt'): string {
   if (!ts) return ''
+  const L = (pt: string, en: string, es: string) => locale === 'en' ? en : locale === 'es' ? es : pt
   const s = Math.floor((Date.now() - new Date(ts).getTime()) / 1000)
-  if (s < 60) return 'há instantes'
-  if (s < 3600) return `há ${Math.floor(s / 60)} min`
-  if (s < 86400) return `há ${Math.floor(s / 3600)} h`
-  if (s < 86400 * 30) return `há ${Math.floor(s / 86400)} dias`
-  return new Date(ts).toLocaleDateString('pt-BR')
+  if (s < 60) return L('há instantes', 'just now', 'hace instantes')
+  if (s < 3600) return L(`há ${Math.floor(s / 60)} min`, `${Math.floor(s / 60)} min ago`, `hace ${Math.floor(s / 60)} min`)
+  if (s < 86400) return L(`há ${Math.floor(s / 3600)} h`, `${Math.floor(s / 3600)} h ago`, `hace ${Math.floor(s / 3600)} h`)
+  if (s < 86400 * 30) return L(`há ${Math.floor(s / 86400)} dias`, `${Math.floor(s / 86400)} days ago`, `hace ${Math.floor(s / 86400)} días`)
+  return new Date(ts).toLocaleDateString(locale === 'en' ? 'en-US' : locale === 'es' ? 'es-US' : 'pt-BR')
 }
 
 export default function ArchivedLeadsPage() {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [reactivating, setReactivating] = useState<string | null>(null)
@@ -52,13 +56,13 @@ export default function ArchivedLeadsPage() {
   useEffect(() => { load() }, [])
 
   async function reactivate(leadId: string) {
-    if (!confirm('Reativar este lead? Ele voltará para a primeira etapa do pipeline.')) return
+    if (!confirm(L('Reativar este lead? Ele voltará para a primeira etapa do pipeline.', 'Reactivate this lead? It will go back to the first stage of the pipeline.', '¿Reactivar este lead? Volverá a la primera etapa del pipeline.'))) return
     setReactivating(leadId)
     try {
       const r = await fetch(`/api/leads/${leadId}/unarchive`, { method: 'POST' })
       if (!r.ok) {
-        const d = await r.json().catch(() => ({ error: 'Erro desconhecido' }))
-        alert('Erro ao reativar: ' + (d.error || r.status))
+        const d = await r.json().catch(() => ({ error: L('Erro desconhecido', 'Unknown error', 'Error desconocido') }))
+        alert(L('Erro ao reativar: ', 'Error reactivating: ', 'Error al reactivar: ') + (d.error || r.status))
         return
       }
       // Remove from local list
@@ -69,15 +73,19 @@ export default function ArchivedLeadsPage() {
   }
 
   async function deleteForever(l: Lead) {
-    const label = l.name?.trim() || 'este lead'
-    if (!confirm(`EXCLUIR DEFINITIVAMENTE "${label}"?\n\nIsso apaga o lead com todas as mensagens, formulários, anexos e histórico.\n\n⚠️ NÃO dá pra desfazer.`)) return
-    if (!confirm(`Última confirmação: excluir "${label}" pra sempre?`)) return
+    const label = l.name?.trim() || L('este lead', 'this lead', 'este lead')
+    if (!confirm(L(
+      `EXCLUIR DEFINITIVAMENTE "${label}"?\n\nIsso apaga o lead com todas as mensagens, formulários, anexos e histórico.\n\n⚠️ NÃO dá pra desfazer.`,
+      `PERMANENTLY DELETE "${label}"?\n\nThis erases the lead with all messages, forms, attachments and history.\n\n⚠️ This CANNOT be undone.`,
+      `¿ELIMINAR DEFINITIVAMENTE "${label}"?\n\nEsto borra el lead con todos los mensajes, formularios, adjuntos e historial.\n\n⚠️ NO se puede deshacer.`,
+    ))) return
+    if (!confirm(L(`Última confirmação: excluir "${label}" pra sempre?`, `Last confirmation: delete "${label}" forever?`, `Última confirmación: ¿eliminar "${label}" para siempre?`))) return
     setDeleting(l.id)
     try {
       const r = await fetch(`/api/leads/${l.id}`, { method: 'DELETE' })
       if (!r.ok) {
-        const d = await r.json().catch(() => ({ error: 'Erro desconhecido' }))
-        alert('Erro ao excluir: ' + (d.error || r.status))
+        const d = await r.json().catch(() => ({ error: L('Erro desconhecido', 'Unknown error', 'Error desconocido') }))
+        alert(L('Erro ao excluir: ', 'Error deleting: ', 'Error al eliminar: ') + (d.error || r.status))
         return
       }
       setLeads(ls => ls.filter(x => x.id !== l.id))
@@ -112,10 +120,10 @@ export default function ArchivedLeadsPage() {
               <path d="M19 12H5" />
               <path d="m12 19-7-7 7-7" />
             </svg>
-            Voltar ao pipeline
+            {L('Voltar ao pipeline', 'Back to pipeline', 'Volver al pipeline')}
           </Link>
           <h1 className="text-[22px] font-extrabold tracking-tight" style={{ color: '#1a1a2e' }}>
-            Leads arquivados
+            {L('Leads arquivados', 'Archived leads', 'Leads archivados')}
           </h1>
           <span
             className="text-[11px] font-bold px-2 py-1 rounded-md"
@@ -130,7 +138,7 @@ export default function ArchivedLeadsPage() {
       <div className="mb-5">
         <input
           type="text"
-          placeholder="Buscar por nome, telefone, email ou interesse..."
+          placeholder={L('Buscar por nome, telefone, email ou interesse...', 'Search by name, phone, email or interest...', 'Buscar por nombre, teléfono, email o interés...')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full px-4 py-2.5 rounded-xl text-[13px] outline-none transition-all focus:shadow-sm"
@@ -141,7 +149,7 @@ export default function ArchivedLeadsPage() {
       {/* List */}
       {loading ? (
         <div className="text-center py-16 text-[13px]" style={{ color: '#94a3b8' }}>
-          Carregando...
+          {L('Carregando...', 'Loading...', 'Cargando...')}
         </div>
       ) : filtered.length === 0 ? (
         <div
@@ -159,10 +167,10 @@ export default function ArchivedLeadsPage() {
             </svg>
           </div>
           <p className="text-[14px] font-bold mb-1" style={{ color: '#475569' }}>
-            {search ? 'Nenhum lead arquivado encontrado' : 'Nenhum lead arquivado'}
+            {search ? L('Nenhum lead arquivado encontrado', 'No archived leads found', 'Ningún lead archivado encontrado') : L('Nenhum lead arquivado', 'No archived leads', 'Ningún lead archivado')}
           </p>
           <p className="text-[12px]" style={{ color: '#94a3b8' }}>
-            {search ? 'Tente outra busca.' : 'Quando você arquivar leads, eles aparecem aqui.'}
+            {search ? L('Tente outra busca.', 'Try another search.', 'Intenta otra búsqueda.') : L('Quando você arquivar leads, eles aparecem aqui.', 'When you archive leads, they show up here.', 'Cuando archives leads, aparecerán aquí.')}
           </p>
         </div>
       ) : (
@@ -185,14 +193,14 @@ export default function ArchivedLeadsPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
                   <p className="text-[14px] font-bold truncate" style={{ color: '#1a1a2e' }}>
-                    {l.name || 'Sem nome'}
+                    {l.name || L('Sem nome', 'No name', 'Sin nombre')}
                   </p>
                   {l.contract_closed && (
                     <span
                       className="text-[10px] font-extrabold px-1.5 py-0.5 rounded"
                       style={{ background: '#dcfce7', color: '#15803d' }}
                     >
-                      FECHADO
+                      {L('FECHADO', 'CLOSED', 'CERRADO')}
                     </span>
                   )}
                 </div>
@@ -202,7 +210,7 @@ export default function ArchivedLeadsPage() {
                   {l.interest && <span className="truncate">💡 {l.interest}</span>}
                 </div>
                 <p className="text-[10px] mt-1" style={{ color: '#94a3b8' }}>
-                  Arquivado {timeSinceArchived(l.archived_at)}
+                  {L('Arquivado', 'Archived', 'Archivado')} {timeSinceArchived(l.archived_at, t._locale)}
                 </p>
               </div>
 
@@ -214,26 +222,26 @@ export default function ArchivedLeadsPage() {
                 style={{ background: '#6366f1', color: '#fff' }}
               >
                 {reactivating === l.id ? (
-                  'Reativando...'
+                  L('Reativando...', 'Reactivating...', 'Reactivando...')
                 ) : (
                   <>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
                       <path d="M3 3v5h5" />
                     </svg>
-                    Reativar
+                    {L('Reativar', 'Reactivate', 'Reactivar')}
                   </>
                 )}
               </button>
               <button
                 onClick={() => deleteForever(l)}
                 disabled={deleting === l.id || reactivating === l.id}
-                title="Excluir definitivamente — não dá pra desfazer"
+                title={L('Excluir definitivamente — não dá pra desfazer', 'Delete permanently — cannot be undone', 'Eliminar definitivamente — no se puede deshacer')}
                 className="px-4 py-2 rounded-xl text-[12px] font-bold transition-all hover:shadow-sm disabled:opacity-50 flex items-center gap-1.5 flex-shrink-0"
                 style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}
               >
                 {deleting === l.id ? (
-                  'Excluindo...'
+                  L('Excluindo...', 'Deleting...', 'Eliminando...')
                 ) : (
                   <>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
@@ -243,7 +251,7 @@ export default function ArchivedLeadsPage() {
                       <line x1="10" y1="11" x2="10" y2="17" />
                       <line x1="14" y1="11" x2="14" y2="17" />
                     </svg>
-                    Excluir
+                    {L('Excluir', 'Delete', 'Eliminar')}
                   </>
                 )}
               </button>

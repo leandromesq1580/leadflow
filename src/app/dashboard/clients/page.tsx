@@ -2,6 +2,7 @@ import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { ClientsInbox } from '@/components/dashboard/clients-inbox'
+import { getLocale } from '@/lib/locale'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,6 +12,8 @@ export const dynamic = 'force-dynamic'
  * Só admins — comprador comum é redirecionado.
  */
 export default async function DashboardClientsPage() {
+  const locale = await getLocale()
+  const L = (pt: string, en: string, es: string) => locale === 'en' ? en : locale === 'es' ? es : pt
   const supabase = await createServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -24,13 +27,17 @@ export default async function DashboardClientsPage() {
 
   return (
     <div className="max-w-[1100px]">
-      <h1 className="text-[24px] font-extrabold mb-1" style={{ color: '#1a1a2e' }}>👥 Atendimento a Clientes</h1>
+      <h1 className="text-[24px] font-extrabold mb-1" style={{ color: '#1a1a2e' }}>{L('👥 Atendimento a Clientes', '👥 Client Support', '👥 Atención a Clientes')}</h1>
       <p className="text-[14px] mb-6" style={{ color: '#64748b' }}>
-        Conversas com os compradores — separadas dos seus leads. Mesmo número, caixa própria.
+        {L(
+          'Conversas com os compradores — separadas dos seus leads. Mesmo número, caixa própria.',
+          'Conversations with buyers — separate from your leads. Same number, its own inbox.',
+          'Conversaciones con los compradores — separadas de tus leads. Mismo número, bandeja propia.',
+        )}
       </p>
       {!migrated ? (
         <div className="rounded-xl px-5 py-4" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
-          <p className="text-[13px] font-bold" style={{ color: '#dc2626' }}>Migração pendente — rode 019_client_messages.sql.</p>
+          <p className="text-[13px] font-bold" style={{ color: '#dc2626' }}>{L('Migração pendente — rode 019_client_messages.sql.', 'Migration pending — run 019_client_messages.sql.', 'Migración pendiente — ejecuta 019_client_messages.sql.')}</p>
         </div>
       ) : <ClientsInbox />}
     </div>

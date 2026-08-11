@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { validateTwilioSignature, isOptOut } from '@/lib/twilio'
 import { notifyGroupSmsReply, notifySmsReplyToOwner } from '@/lib/notifications'
 import { pushToBuyer } from '@/lib/push-notify'
+import { localeDoBuyer, trad } from '@/lib/buyer-locale'
 
 /**
  * POST /api/webhook/twilio-sms — resposta de SMS chegando (configurar este URL
@@ -82,8 +83,14 @@ export async function POST(request: NextRequest) {
       console.error('[Twilio SMS] aviso ao dono falhou:', (e as any)?.message)
     }
     try {
+      // Idioma do dono do lead (settings, via buyer-locale) — webhook não tem cookie; falha vira 'pt'
+      const T = trad(await localeDoBuyer(db, lead.assigned_to))
       await pushToBuyer(lead.assigned_to, {
-        title: `💬 ${lead.name || 'Seu lead'} respondeu seu SMS`,
+        title: T(
+          `💬 ${lead.name || 'Seu lead'} respondeu seu SMS`,
+          `💬 ${lead.name || 'Your lead'} replied to your SMS`,
+          `💬 ${lead.name || 'Tu lead'} respondió a tu SMS`
+        ),
         body: body.slice(0, 120),
         url: `/dashboard/whatsapp?lead=${lead.id}`,
         tag: `sms-reply-${lead.id}`,

@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { localeDoBuyer, trad } from '@/lib/buyer-locale'
 import { renderTemplate } from '@/lib/template-render'
 import { resolveSendBridge } from '@/lib/wa-bridge'
 import { checkSendRate } from '@/lib/send-guard'
@@ -356,18 +357,30 @@ async function executeAction(auto: Automation, target: Target): Promise<void> {
     if (!resendKey) return
     const resend = new Resend(resendKey)
 
+    // Idioma do corretor (settings, via buyer-locale) — cron não vê cookie; falha vira 'pt'
+    const loc = await localeDoBuyer(db, auto.buyer_id)
+    const T = trad(loc)
+
     // Evento da agenda sem cliente: o aviso fala do compromisso, não de um lead.
     const hora = target.quando
-      ? new Date(target.quando).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+      ? new Date(target.quando).toLocaleString(loc === 'en' ? 'en-US' : loc === 'es' ? 'es-US' : 'pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
       : null
     const corpo = target.lead_id
-      ? `<p>Sua automação <b>${auto.name}</b> detectou o lead <b>${lead?.name || target.lead_id}</b> (${lead?.phone || lead?.email || 'sem contato'}).</p><p><a href="https://lead4producers.com/dashboard/pipeline">Abrir pipeline →</a></p>`
-      : `<p>Lembrete do seu compromisso: <b>${target.titulo || 'Evento da agenda'}</b>${hora ? ` — ${hora}` : ''}.</p><p><a href="https://lead4producers.com/dashboard/agenda">Abrir agenda →</a></p>`
+      ? T(
+          `<p>Sua automação <b>${auto.name}</b> detectou o lead <b>${lead?.name || target.lead_id}</b> (${lead?.phone || lead?.email || 'sem contato'}).</p><p><a href="https://lead4producers.com/dashboard/pipeline">Abrir pipeline →</a></p>`,
+          `<p>Your automation <b>${auto.name}</b> detected the lead <b>${lead?.name || target.lead_id}</b> (${lead?.phone || lead?.email || 'no contact info'}).</p><p><a href="https://lead4producers.com/dashboard/pipeline">Open pipeline →</a></p>`,
+          `<p>Tu automatización <b>${auto.name}</b> detectó el lead <b>${lead?.name || target.lead_id}</b> (${lead?.phone || lead?.email || 'sin contacto'}).</p><p><a href="https://lead4producers.com/dashboard/pipeline">Abrir pipeline →</a></p>`
+        )
+      : T(
+          `<p>Lembrete do seu compromisso: <b>${target.titulo || 'Evento da agenda'}</b>${hora ? ` — ${hora}` : ''}.</p><p><a href="https://lead4producers.com/dashboard/agenda">Abrir agenda →</a></p>`,
+          `<p>Reminder for your event: <b>${target.titulo || 'Calendar event'}</b>${hora ? ` — ${hora}` : ''}.</p><p><a href="https://lead4producers.com/dashboard/agenda">Open calendar →</a></p>`,
+          `<p>Recordatorio de tu compromiso: <b>${target.titulo || 'Evento de la agenda'}</b>${hora ? ` — ${hora}` : ''}.</p><p><a href="https://lead4producers.com/dashboard/agenda">Abrir agenda →</a></p>`
+        )
 
     await resend.emails.send({
       from: 'Lead4Producers <noreply@resend.dev>',
       to: agent.email,
-      subject: `⏰ ${target.lead_id ? `Automação: ${auto.name}` : target.titulo || auto.name}`,
+      subject: `⏰ ${target.lead_id ? T(`Automação: ${auto.name}`, `Automation: ${auto.name}`, `Automatización: ${auto.name}`) : target.titulo || auto.name}`,
       html: corpo,
     })
     return

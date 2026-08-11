@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { localeDoBuyer, trad, type BuyerLocale } from './buyer-locale'
 
 let _resend: Resend | null = null
 function getResend(): Resend {
@@ -108,11 +109,14 @@ export async function notifySmsReplyToOwner(buyerId: string, leadName: string | 
     const db = createAdminClient()
     const { data: buyer } = await db.from('buyers').select('phone, name').eq('id', buyerId).maybeSingle()
     if (!buyer?.phone) return false
-    const msg = `💬 *${leadName || 'Seu lead'} respondeu seu SMS!*
+    // Idioma do corretor (cron/webhook não enxerga cookie); falha no lookup vira 'pt'
+    const L = trad(await localeDoBuyer(db, buyerId))
+    const quem = leadName || L('Seu lead', 'Your lead', 'Tu lead')
+    const msg = `💬 *${L(`${quem} respondeu seu SMS!`, `${quem} replied to your SMS!`, `¡${quem} respondió a tu SMS!`)}*
 
 "${texto.slice(0, 300)}"
 
-Responda pela aba Conversa do lead:
+${L('Responda pela aba Conversa do lead:', "Reply from the lead's Conversation tab:", 'Responde desde la pestaña Conversación del lead:')}
 🔗 lead4producers.com/dashboard/whatsapp?lead=${leadId}`
     return await sendWhatsApp(buyer.phone, msg)
   } catch (e) {
@@ -204,12 +208,20 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead): Promi
     }
   } catch { /* se a checagem falhar, segue o fluxo normal */ }
 
+  // Idioma do corretor pros avisos abaixo (push, email, WhatsApp). Cron/webhook não
+  // enxerga o cookie de idioma → busca no settings; qualquer falha cai em 'pt'.
+  let L = trad('pt')
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    L = trad(await localeDoBuyer(createAdminClient(), (buyer as any).id))
+  } catch { /* mantém 'pt' */ }
+
   // Fire-and-forget push
   try {
     const { pushToBuyer } = await import('@/lib/push-notify')
     pushToBuyer((buyer as any).id || '', {
-      title: `🎯 Novo lead — ${lead.name}`,
-      body: `${lead.state} · ${lead.interest}. Ligue nos próximos 5 minutos!`,
+      title: `🎯 ${L('Novo lead', 'New lead', 'Nuevo lead')} — ${lead.name}`,
+      body: `${lead.state} · ${lead.interest}. ${L('Ligue nos próximos 5 minutos!', 'Call within the next 5 minutes!', '¡Llama en los próximos 5 minutos!')}`,
       url: '/dashboard/leads',
       tag: `lead-${lead.id}`,
     }).catch(err => console.error('[Push] err', err))
@@ -219,31 +231,31 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead): Promi
     await getResend().emails.send({
       from: 'Lead4Producers <onboarding@resend.dev>',
       to: buyer.email,
-      subject: `Novo Lead! ${lead.name} — ${lead.state}`,
+      subject: `${L('Novo Lead!', 'New Lead!', '¡Nuevo Lead!')} ${lead.name} — ${lead.state}`,
       html: `
         <div style="font-family:sans-serif;max-width:500px;margin:0 auto;">
           <div style="background:#1a56db;color:#fff;padding:20px;border-radius:12px 12px 0 0;">
-            <h2 style="margin:0;">Novo Lead Disponivel!</h2>
+            <h2 style="margin:0;">${L('Novo Lead Disponivel!', 'New Lead Available!', '¡Nuevo Lead Disponible!')}</h2>
           </div>
           <div style="background:#f8fafc;padding:24px;border:1px solid #e2e8f0;border-radius:0 0 12px 12px;">
-            <p style="color:#64748b;margin-top:0;">Ola ${buyer.name}, voce recebeu um novo lead exclusivo:</p>
+            <p style="color:#64748b;margin-top:0;">${L(`Ola ${buyer.name}, voce recebeu um novo lead exclusivo:`, `Hi ${buyer.name}, you've received a new exclusive lead:`, `Hola ${buyer.name}, recibiste un nuevo lead exclusivo:`)}</p>
 
             <div style="background:#fff;padding:16px;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:16px;">
-              <p style="margin:4px 0;"><strong>Nome:</strong> ${lead.name}</p>
-              <p style="margin:4px 0;"><strong>Telefone:</strong> <a href="tel:${lead.phone}" style="color:#1a56db;font-weight:700;">${lead.phone}</a></p>
-              <p style="margin:4px 0;"><strong>Estado:</strong> ${lead.state}</p>
-              <p style="margin:4px 0;"><strong>Interesse:</strong> ${lead.interest}</p>
+              <p style="margin:4px 0;"><strong>${L('Nome', 'Name', 'Nombre')}:</strong> ${lead.name}</p>
+              <p style="margin:4px 0;"><strong>${L('Telefone', 'Phone', 'Teléfono')}:</strong> <a href="tel:${lead.phone}" style="color:#1a56db;font-weight:700;">${lead.phone}</a></p>
+              <p style="margin:4px 0;"><strong>${L('Estado', 'State', 'Estado')}:</strong> ${lead.state}</p>
+              <p style="margin:4px 0;"><strong>${L('Interesse', 'Interest', 'Interés')}:</strong> ${lead.interest}</p>
             </div>
 
             <div style="background:#fef3c7;padding:12px;border-radius:8px;margin-bottom:16px;">
               <p style="margin:0;font-size:14px;color:#92400e;">
-                ⚡ <strong>Ligue nos proximos 5 minutos!</strong> Leads contactados rapidamente tem 3x mais chance de conversao.
+                ⚡ <strong>${L('Ligue nos proximos 5 minutos!', 'Call within the next 5 minutes!', '¡Llama en los próximos 5 minutos!')}</strong> ${L('Leads contactados rapidamente tem 3x mais chance de conversao.', 'Leads contacted quickly are 3x more likely to convert.', 'Los leads contactados rápido tienen 3x más probabilidad de conversión.')}
               </p>
             </div>
 
             <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard"
                style="display:block;text-align:center;background:#1a56db;color:#fff;padding:14px;border-radius:8px;text-decoration:none;font-weight:700;">
-              Ver no Painel
+              ${L('Ver no Painel', 'Open Dashboard', 'Ver en el Panel')}
             </a>
           </div>
         </div>
@@ -276,14 +288,14 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead): Promi
   const onlyDigits = (s: string | null | undefined) => String(s || '').replace(/\D/g, '')
   const phone2 = String(buyer.notification_phone_2 || '').trim()
   if (buyer.phone || phone2) {
-    const whatsappMsg = `🎯 *Novo Lead — Lead4Producers!*
+    const whatsappMsg = `🎯 *${L('Novo Lead — Lead4Producers!', 'New Lead — Lead4Producers!', '¡Nuevo Lead — Lead4Producers!')}*
 
 📋 *${lead.name}*
 📞 ${lead.phone}
 📍 ${lead.state}
 💡 ${lead.interest}
 
-⚡ Ligue nos proximos 5 minutos!
+⚡ ${L('Ligue nos proximos 5 minutos!', 'Call within the next 5 minutes!', '¡Llama en los próximos 5 minutos!')}
 🔗 lead4producers.com/dashboard`
 
     // O alerta "você recebeu um lead" é da PLATAFORMA pro comprador → sai SEMPRE
@@ -490,6 +502,10 @@ export async function sendTeamMemberNotification(member: TeamMember, lead: Lead,
     }
   } catch { /* se a checagem falhar, segue o fluxo normal */ }
 
+  // Idioma do membro: locale é por buyer, então só existe se ele tem conta própria
+  // (auth_user_id → buyers). Membro sem conta segue em 'pt' (comportamento de sempre).
+  let L = trad('pt')
+
   // Push: se o membro tem conta propria (auth_user_id), manda push pro buyer dele
   if (member.auth_user_id) {
     try {
@@ -498,9 +514,10 @@ export async function sendTeamMemberNotification(member: TeamMember, lead: Lead,
       const db = createAdminClient()
       const { data: memberBuyer } = await db.from('buyers').select('id').eq('auth_user_id', member.auth_user_id).single()
       if (memberBuyer?.id) {
+        L = trad(await localeDoBuyer(db, memberBuyer.id))
         pushToBuyer(memberBuyer.id, {
-          title: `🎯 Novo lead — ${lead.name}`,
-          body: `${lead.state} · ${lead.interest}. Ligue nos próximos 5 minutos!`,
+          title: `🎯 ${L('Novo lead', 'New lead', 'Nuevo lead')} — ${lead.name}`,
+          body: `${lead.state} · ${lead.interest}. ${L('Ligue nos próximos 5 minutos!', 'Call within the next 5 minutes!', '¡Llama en los próximos 5 minutos!')}`,
           url: `/dashboard/pipeline?lead=${(lead as any).id || ''}`,
           tag: `lead-team-${(lead as any).id || member.id}`,
         }).catch(err => console.error('[Push team] err', err))
@@ -514,23 +531,23 @@ export async function sendTeamMemberNotification(member: TeamMember, lead: Lead,
       await getResend().emails.send({
         from: 'Lead4Producers <onboarding@resend.dev>',
         to: member.email,
-        subject: `Novo Lead! ${lead.name} — ${lead.state}`,
+        subject: `${L('Novo Lead!', 'New Lead!', '¡Nuevo Lead!')} ${lead.name} — ${lead.state}`,
         html: `
           <div style="font-family:sans-serif;max-width:500px;margin:0 auto;">
             <div style="background:#6366f1;color:#fff;padding:20px;border-radius:12px 12px 0 0;">
-              <h2 style="margin:0;">Novo Lead pra Voce!</h2>
+              <h2 style="margin:0;">${L('Novo Lead pra Voce!', 'New Lead for You!', '¡Nuevo Lead para Ti!')}</h2>
             </div>
             <div style="background:#f8fafc;padding:24px;border:1px solid #e2e8f0;border-radius:0 0 12px 12px;">
-              <p style="color:#64748b;margin-top:0;">Ola ${member.name}, voce recebeu um lead exclusivo:</p>
+              <p style="color:#64748b;margin-top:0;">${L(`Ola ${member.name}, voce recebeu um lead exclusivo:`, `Hi ${member.name}, you've received an exclusive lead:`, `Hola ${member.name}, recibiste un lead exclusivo:`)}</p>
               <div style="background:#fff;padding:16px;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:16px;">
-                <p style="margin:4px 0;"><strong>Nome:</strong> ${lead.name}</p>
-                <p style="margin:4px 0;"><strong>Telefone:</strong> <a href="tel:${lead.phone}" style="color:#6366f1;font-weight:700;">${lead.phone}</a></p>
-                <p style="margin:4px 0;"><strong>Estado:</strong> ${lead.state}</p>
-                <p style="margin:4px 0;"><strong>Interesse:</strong> ${lead.interest}</p>
+                <p style="margin:4px 0;"><strong>${L('Nome', 'Name', 'Nombre')}:</strong> ${lead.name}</p>
+                <p style="margin:4px 0;"><strong>${L('Telefone', 'Phone', 'Teléfono')}:</strong> <a href="tel:${lead.phone}" style="color:#6366f1;font-weight:700;">${lead.phone}</a></p>
+                <p style="margin:4px 0;"><strong>${L('Estado', 'State', 'Estado')}:</strong> ${lead.state}</p>
+                <p style="margin:4px 0;"><strong>${L('Interesse', 'Interest', 'Interés')}:</strong> ${lead.interest}</p>
               </div>
               <div style="background:#fef3c7;padding:12px;border-radius:8px;">
                 <p style="margin:0;font-size:14px;color:#92400e;">
-                  ⚡ <strong>Ligue nos proximos 5 minutos!</strong>
+                  ⚡ <strong>${L('Ligue nos proximos 5 minutos!', 'Call within the next 5 minutes!', '¡Llama en los próximos 5 minutos!')}</strong>
                 </p>
               </div>
             </div>
@@ -546,14 +563,14 @@ export async function sendTeamMemberNotification(member: TeamMember, lead: Lead,
   // WhatsApp
   const memberPhone = member.whatsapp || member.phone
   if (memberPhone) {
-    const msg = `🎯 *Novo Lead — Lead4Producers!*
+    const msg = `🎯 *${L('Novo Lead — Lead4Producers!', 'New Lead — Lead4Producers!', '¡Nuevo Lead — Lead4Producers!')}*
 
 📋 *${lead.name}*
 📞 ${lead.phone}
 📍 ${lead.state}
 💡 ${lead.interest}
 
-⚡ Ligue nos proximos 5 minutos!`
+⚡ ${L('Ligue nos proximos 5 minutos!', 'Call within the next 5 minutes!', '¡Llama en los próximos 5 minutos!')}`
 
     await sendWhatsApp(memberPhone, msg, bridge)
   }
@@ -569,8 +586,23 @@ export async function sendAppointmentNotificationEmail(
   notes: string
 ) {
   try {
+    // Idioma do corretor — os callers selecionam só name/email/phone, então quando
+    // não vem id resolve pelo email. Qualquer falha cai em 'pt' (não derruba o envio).
+    let loc: BuyerLocale = 'pt'
+    try {
+      const { createAdminClient } = await import('@/lib/supabase/admin')
+      const db = createAdminClient()
+      let buyerId: string | null = (buyer as any).id || null
+      if (!buyerId && buyer.email) {
+        const { data } = await db.from('buyers').select('id').eq('email', buyer.email).maybeSingle()
+        buyerId = (data as any)?.id || null
+      }
+      loc = await localeDoBuyer(db, buyerId)
+    } catch { /* mantém 'pt' */ }
+    const L = trad(loc)
+
     const date = new Date(scheduledAt)
-    const formatted = date.toLocaleDateString('pt-BR', {
+    const formatted = date.toLocaleDateString(loc === 'en' ? 'en-US' : loc === 'es' ? 'es-US' : 'pt-BR', {
       weekday: 'long',
       day: '2-digit',
       month: 'long',
@@ -581,26 +613,26 @@ export async function sendAppointmentNotificationEmail(
     await getResend().emails.send({
       from: 'Lead4Producers <onboarding@resend.dev>',
       to: buyer.email,
-      subject: `Appointment Agendado! ${lead.name} — ${formatted}`,
+      subject: `${L('Appointment Agendado!', 'Appointment Scheduled!', '¡Appointment Agendado!')} ${lead.name} — ${formatted}`,
       html: `
         <div style="font-family:sans-serif;max-width:500px;margin:0 auto;">
           <div style="background:#ea580c;color:#fff;padding:20px;border-radius:12px 12px 0 0;">
-            <h2 style="margin:0;">Appointment Agendado!</h2>
+            <h2 style="margin:0;">${L('Appointment Agendado!', 'Appointment Scheduled!', '¡Appointment Agendado!')}</h2>
           </div>
           <div style="background:#f8fafc;padding:24px;border:1px solid #e2e8f0;border-radius:0 0 12px 12px;">
-            <p style="color:#64748b;margin-top:0;">Ola ${buyer.name}, um appointment foi agendado para voce:</p>
+            <p style="color:#64748b;margin-top:0;">${L(`Ola ${buyer.name}, um appointment foi agendado para voce:`, `Hi ${buyer.name}, an appointment has been scheduled for you:`, `Hola ${buyer.name}, se agendó un appointment para ti:`)}</p>
 
             <div style="background:#fff;padding:16px;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:16px;">
-              <p style="margin:4px 0;"><strong>Cliente:</strong> ${lead.name}</p>
-              <p style="margin:4px 0;"><strong>Telefone:</strong> <a href="tel:${lead.phone}" style="color:#ea580c;font-weight:700;">${lead.phone}</a></p>
-              <p style="margin:4px 0;"><strong>Data/Hora:</strong> ${formatted}</p>
-              <p style="margin:4px 0;"><strong>Interesse:</strong> ${lead.interest}</p>
+              <p style="margin:4px 0;"><strong>${L('Cliente', 'Client', 'Cliente')}:</strong> ${lead.name}</p>
+              <p style="margin:4px 0;"><strong>${L('Telefone', 'Phone', 'Teléfono')}:</strong> <a href="tel:${lead.phone}" style="color:#ea580c;font-weight:700;">${lead.phone}</a></p>
+              <p style="margin:4px 0;"><strong>${L('Data/Hora', 'Date/Time', 'Fecha/Hora')}:</strong> ${formatted}</p>
+              <p style="margin:4px 0;"><strong>${L('Interesse', 'Interest', 'Interés')}:</strong> ${lead.interest}</p>
               ${notes ? `<p style="margin:8px 0 4px;"><strong>Brief:</strong></p><p style="margin:4px 0;color:#64748b;font-size:14px;">${notes}</p>` : ''}
             </div>
 
             <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/appointments"
                style="display:block;text-align:center;background:#ea580c;color:#fff;padding:14px;border-radius:8px;text-decoration:none;font-weight:700;">
-              Ver Appointments
+              ${L('Ver Appointments', 'View Appointments', 'Ver Appointments')}
             </a>
           </div>
         </div>

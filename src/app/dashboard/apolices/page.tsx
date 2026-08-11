@@ -3,9 +3,15 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { PoliciesClient } from './policies-client'
 import { acessoApolices } from '@/lib/policies-access'
+import { getLocale } from '@/lib/locale'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Apólices — Lead4Pro' }
+
+export async function generateMetadata() {
+  const locale = await getLocale()
+  const title = locale === 'en' ? 'Policies — Lead4Pro' : locale === 'es' ? 'Pólizas — Lead4Pro' : 'Apólices — Lead4Pro'
+  return { title }
+}
 
 /** Pós-venda: gestão das apólices vendidas (buckets de ação, pendências e risco). */
 export default async function ApolicesPage() {

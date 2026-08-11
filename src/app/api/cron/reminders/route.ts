@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { pushToBuyer } from '@/lib/push-notify'
 import { getBridgeForBuyer } from '@/lib/wa-bridge'
+import { localesDosBuyers, trad } from '@/lib/buyer-locale'
 
 /**
  * GET /api/cron/reminders
@@ -27,13 +28,16 @@ const DEFAULT_PREFS = {
 type EventType = 'appointment' | 'followup' | 'calendar_item'
 type Channel = 'push' | 'whatsapp' | 'email'
 
+/** mesmo espírito do L() da interface — o cron não vê cookie, então o texto é resolvido por buyer */
+type Trad = (pt: string, en: string, es: string) => string
+
 interface UpcomingEvent {
   type: EventType
   id: string
   buyer_id: string
   start: string
-  title: string
-  body: string
+  title: (T: Trad) => string
+  body: (T: Trad) => string
   url: string
   lead_id: string | null
 }
@@ -144,8 +148,8 @@ export async function GET(request: NextRequest) {
       id: a.id,
       buyer_id: a.buyer_id,
       start: a.scheduled_at,
-      title: `Appointment às ${fmtTime(a.scheduled_at)}`,
-      body: a.lead?.name ? `Com ${a.lead.name}` : 'Appointment',
+      title: (T: Trad) => T(`Appointment às ${fmtTime(a.scheduled_at)}`, `Appointment at ${fmtTime(a.scheduled_at)}`, `Appointment a las ${fmtTime(a.scheduled_at)}`),
+      body: (T: Trad) => a.lead?.name ? T(`Com ${a.lead.name}`, `With ${a.lead.name}`, `Con ${a.lead.name}`) : 'Appointment',
       url: '/dashboard/appointments',
       lead_id: a.lead?.id || null,
     })),
@@ -154,8 +158,8 @@ export async function GET(request: NextRequest) {
       id: f.id,
       buyer_id: f.buyer_id,
       start: f.scheduled_at,
-      title: `${f.type === 'meeting' ? 'Reunião' : f.type === 'call' ? 'Ligação' : 'Follow-up'} às ${fmtTime(f.scheduled_at)}`,
-      body: f.lead?.name ? `${f.lead.name}: ${(f.description || '').slice(0, 60)}` : (f.description || '').slice(0, 80),
+      title: (T: Trad) => `${f.type === 'meeting' ? T('Reunião', 'Meeting', 'Reunión') : f.type === 'call' ? T('Ligação', 'Call', 'Llamada') : 'Follow-up'} ${T('às', 'at', 'a las')} ${fmtTime(f.scheduled_at)}`,
+      body: () => f.lead?.name ? `${f.lead.name}: ${(f.description || '').slice(0, 60)}` : (f.description || '').slice(0, 80),
       url: '/dashboard/appointments',
       lead_id: f.lead?.id || null,
     })),
@@ -164,8 +168,8 @@ export async function GET(request: NextRequest) {
       id: i.id,
       buyer_id: i.buyer_id,
       start: i.start_at,
-      title: `${i.kind === 'event' ? '📆' : '☐'} ${fmtTime(i.start_at)} — ${i.title.slice(0, 40)}`,
-      body: i.kind === 'event' ? 'Começa em breve' : 'Tarefa vencendo',
+      title: () => `${i.kind === 'event' ? '📆' : '☐'} ${fmtTime(i.start_at)} — ${i.title.slice(0, 40)}`,
+      body: (T: Trad) => i.kind === 'event' ? T('Começa em breve', 'Starting soon', 'Comienza pronto') : T('Tarefa vencendo', 'Task due soon', 'Tarea por vencer'),
       url: '/dashboard/appointments',
       lead_id: null,
     })),
@@ -180,11 +184,12 @@ export async function GET(request: NextRequest) {
     byBuyer.get(ev.buyer_id)!.push(ev)
   }
 
-  // Carrega prefs + dados do buyer (whatsapp, email) em batch
+  // Carrega prefs + dados do buyer (whatsapp, email) + idiomas em batch
   const buyerIds = Array.from(byBuyer.keys())
-  const [prefsRes, buyersRes] = await Promise.all([
+  const [prefsRes, buyersRes, locales] = await Promise.all([
     db.from('notification_preferences').select('*').in('buyer_id', buyerIds),
     db.from('buyers').select('id, name, email, phone, whatsapp').in('id', buyerIds),
+    localesDosBuyers(db, buyerIds),
   ])
   const prefsMap = new Map((prefsRes.data || []).map((p: any) => [p.buyer_id, p]))
   const buyerMap = new Map((buyersRes.data || []).map((b: any) => [b.id, b]))
@@ -196,6 +201,7 @@ export async function GET(request: NextRequest) {
   for (const [buyerId, list] of byBuyer) {
     const prefs = (prefsMap.get(buyerId) as any) || DEFAULT_PREFS
     const buyer = (buyerMap.get(buyerId) as any) || null
+    const T = trad(locales[buyerId] || 'pt')
     const pushIntervals: number[] = prefs.reminder_intervals || DEFAULT_PREFS.reminder_intervals
     const waIntervals: number[] = prefs.whatsapp_intervals || DEFAULT_PREFS.whatsapp_intervals
     const emailIntervals: number[] = prefs.email_intervals || DEFAULT_PREFS.email_intervals
@@ -203,6 +209,9 @@ export async function GET(request: NextRequest) {
     for (const ev of list) {
       const elapsed = new Date(ev.start).getTime() - nowMs
       if (elapsed <= 0) continue
+      // Título e corpo já no idioma deste buyer (uma vez por evento)
+      const titulo = ev.title(T)
+      const corpo = ev.body(T)
 
       // Push do navegador
       if (prefs.push_enabled !== false) {
@@ -211,8 +220,8 @@ export async function GET(request: NextRequest) {
           const recorded = await tryRecord(db, ev, interval, 'push')
           if (!recorded) continue
           await pushToBuyer(buyerId, {
-            title: `⏰ Em ${interval} min — ${ev.title}`,
-            body: ev.body,
+            title: T(`⏰ Em ${interval} min — ${titulo}`, `⏰ In ${interval} min — ${titulo}`, `⏰ En ${interval} min — ${titulo}`),
+            body: corpo,
             url: ev.url,
             tag: `reminder-${ev.type}-${ev.id}-${interval}`,
           }).catch(() => {})
@@ -228,7 +237,11 @@ export async function GET(request: NextRequest) {
             if (!shouldFire(elapsed, interval)) continue
             const recorded = await tryRecord(db, ev, interval, 'whatsapp')
             if (!recorded) continue
-            const message = `⏰ *Lembrete Lead4Pro*\n\n${ev.title}\nEm *${interval} minutos*\n\n${ev.body}`.trim()
+            const message = T(
+              `⏰ *Lembrete Lead4Pro*\n\n${titulo}\nEm *${interval} minutos*\n\n${corpo}`,
+              `⏰ *Lead4Pro Reminder*\n\n${titulo}\nIn *${interval} minutes*\n\n${corpo}`,
+              `⏰ *Recordatorio Lead4Pro*\n\n${titulo}\nEn *${interval} minutos*\n\n${corpo}`
+            ).trim()
             const ok = await sendWhatsApp(buyerId, phone, message, db)
             if (ok) whatsapp++
           }
@@ -244,15 +257,15 @@ export async function GET(request: NextRequest) {
           const html = `
             <div style="font-family:system-ui,-apple-system,sans-serif;max-width:520px;margin:0 auto;padding:24px;">
               <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;padding:20px;border-radius:14px 14px 0 0;">
-                <h2 style="margin:0;font-size:18px;">⏰ ${ev.title}</h2>
-                <p style="margin:6px 0 0;opacity:.9;font-size:13px;">Em ${interval} minutos</p>
+                <h2 style="margin:0;font-size:18px;">⏰ ${titulo}</h2>
+                <p style="margin:6px 0 0;opacity:.9;font-size:13px;">${T(`Em ${interval} minutos`, `In ${interval} minutes`, `En ${interval} minutos`)}</p>
               </div>
               <div style="background:#f8fafc;padding:20px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 14px 14px;">
-                <p style="margin:0 0 14px;color:#1a1a2e;font-size:14px;">${ev.body}</p>
-                <a href="https://lead4producers.com${ev.url}" style="display:inline-block;background:#6366f1;color:#fff;text-decoration:none;padding:10px 16px;border-radius:10px;font-weight:bold;font-size:13px;">Abrir agenda →</a>
+                <p style="margin:0 0 14px;color:#1a1a2e;font-size:14px;">${corpo}</p>
+                <a href="https://lead4producers.com${ev.url}" style="display:inline-block;background:#6366f1;color:#fff;text-decoration:none;padding:10px 16px;border-radius:10px;font-weight:bold;font-size:13px;">${T('Abrir agenda →', 'Open calendar →', 'Abrir agenda →')}</a>
               </div>
             </div>`
-          const ok = await sendEmail(buyer.email, `⏰ Em ${interval} min — ${ev.title}`, html)
+          const ok = await sendEmail(buyer.email, T(`⏰ Em ${interval} min — ${titulo}`, `⏰ In ${interval} min — ${titulo}`, `⏰ En ${interval} min — ${titulo}`), html)
           if (ok) email++
         }
       }

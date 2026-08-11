@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { localeDoBuyer, trad } from '@/lib/buyer-locale'
 
 /**
  * POST /api/webhook/wa-bridge
@@ -331,12 +332,14 @@ export async function POST(request: NextRequest) {
     // Push só pra mensagem RECEBIDA (não pra mensagem que o próprio dono mandou)
     if (!isOut) try {
       const { pushToBuyer } = await import('@/lib/push-notify')
+      // Idioma do corretor (settings, via buyer-locale) — webhook não enxerga cookie; falha vira 'pt'
+      const T = trad(await localeDoBuyer(db, notifyBuyerId))
       const preview = body
         ? String(body).slice(0, 80)
-        : media_type === 'audio' ? '🎤 Mensagem de voz'
-        : media_type === 'image' ? '📷 Enviou uma imagem'
-        : media_type === 'video' ? '🎥 Enviou um vídeo'
-        : media_type ? '📎 Enviou um arquivo' : 'Nova mensagem'
+        : media_type === 'audio' ? T('🎤 Mensagem de voz', '🎤 Voice message', '🎤 Mensaje de voz')
+        : media_type === 'image' ? T('📷 Enviou uma imagem', '📷 Sent an image', '📷 Envió una imagen')
+        : media_type === 'video' ? T('🎥 Enviou um vídeo', '🎥 Sent a video', '🎥 Envió un video')
+        : media_type ? T('📎 Enviou um arquivo', '📎 Sent a file', '📎 Envió un archivo') : T('Nova mensagem', 'New message', 'Nuevo mensaje')
       pushToBuyer(notifyBuyerId, {
         title: `💬 ${match.name || 'Lead'}`,
         body: preview,

@@ -7,6 +7,7 @@ import { getLocale } from '@/lib/locale'
 import { I18nProvider } from '@/lib/i18n-client'
 import { PrivacyProvider } from '@/lib/privacy-mode'
 import { PwaRegister } from '@/components/pwa-register'
+import { LocaleSync } from '@/components/locale-sync'
 import { SuspendedAccount } from '@/components/dashboard/suspended-account'
 import { MobileBottomNav } from '@/components/mobile/bottom-nav'
 import { MHeader } from '@/components/mobile/m-header'
@@ -65,6 +66,7 @@ export default async function MobileLayout({ children }: { children: React.React
           <MobileBottomNav buyerId={buyer?.id} crmPlan={buyer?.crm_plan || 'free'} />
           <TutorChat offsetBottom={92} />
           {buyer?.id && <PwaRegister buyerId={buyer.id} />}
+          {buyer?.id && <LocaleSync locale={locale} />}
         </div>
       </PrivacyProvider>
     </I18nProvider>

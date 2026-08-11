@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useT } from '@/lib/i18n-client'
 
 interface Stage { id: string; name: string; color: string; position: number }
 interface Pipeline { id: string; name: string; is_default: boolean; position?: number; stages: Stage[] }
@@ -9,6 +10,8 @@ interface Pipeline { id: string; name: string; is_default: boolean; position?: n
 const COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#f97316', '#059669', '#ef4444', '#ec4899', '#06b6d4', '#84cc16']
 
 export default function PipelineSettingsPage() {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [pipelines, setPipelines] = useState<Pipeline[]>([])
   const [selected, setSelected] = useState<Pipeline | null>(null)
   const [buyerId, setBuyerId] = useState('')
@@ -49,11 +52,17 @@ export default function PipelineSettingsPage() {
 
   async function createPipeline() {
     if (!newName.trim()) return
-    const populate_existing = confirm(
+    const populate_existing = confirm(L(
       'Trazer seus leads existentes pra esse novo pipeline?\n\n' +
       'OK = traz todos os seus leads atuais pra primeira coluna\n' +
-      'Cancelar = pipeline vazio (você arrasta os leads que quiser depois)'
-    )
+      'Cancelar = pipeline vazio (você arrasta os leads que quiser depois)',
+      'Bring your existing leads into this new pipeline?\n\n' +
+      'OK = brings all your current leads into the first column\n' +
+      'Cancel = empty pipeline (you drag in the leads you want later)',
+      '¿Traer tus leads existentes a este nuevo pipeline?\n\n' +
+      'OK = trae todos tus leads actuales a la primera columna\n' +
+      'Cancelar = pipeline vacío (arrastras los leads que quieras después)',
+    ))
     await fetch('/api/pipelines', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -64,11 +73,11 @@ export default function PipelineSettingsPage() {
   }
 
   async function deletePipeline(id: string) {
-    if (!confirm('Deletar este pipeline?')) return
+    if (!confirm(L('Deletar este pipeline?', 'Delete this pipeline?', '¿Eliminar este pipeline?'))) return
     const r = await fetch(`/api/pipelines/${id}`, { method: 'DELETE' })
     if (!r.ok) {
       const d = await r.json()
-      alert(d.error || 'Erro ao deletar pipeline')
+      alert(d.error || L('Erro ao deletar pipeline', 'Error deleting pipeline', 'Error al eliminar el pipeline'))
       return
     }
     setSelected(null)
@@ -114,11 +123,11 @@ export default function PipelineSettingsPage() {
 
   async function deleteStage(stageId: string) {
     if (!selected) return
-    if (!confirm('Deletar este estágio?')) return
+    if (!confirm(L('Deletar este estágio?', 'Delete this stage?', '¿Eliminar esta etapa?'))) return
     const r = await fetch(`/api/pipelines/${selected.id}/stages/${stageId}`, { method: 'DELETE' })
     if (!r.ok) {
       const d = await r.json()
-      alert(d.error || 'Erro ao deletar estágio')
+      alert(d.error || L('Erro ao deletar estágio', 'Error deleting stage', 'Error al eliminar la etapa'))
       return
     }
     loadPipelines(buyerId)
@@ -168,19 +177,19 @@ export default function PipelineSettingsPage() {
   return (
     <div className="max-w-3xl mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>Gerenciar Pipelines</h1>
+        <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>{L('Gerenciar Pipelines', 'Manage Pipelines', 'Administrar Pipelines')}</h1>
         <Link href="/dashboard/pipeline" className="text-[13px] font-bold" style={{ color: '#6366f1' }}>
-          ← Voltar ao Kanban
+          {L('← Voltar ao Kanban', '← Back to Kanban', '← Volver al Kanban')}
         </Link>
       </div>
 
       {/* Create new pipeline */}
       <div className="rounded-xl p-4 mb-6 flex gap-3" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
-        <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="Nome do pipeline..."
+        <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder={L('Nome do pipeline...', 'Pipeline name...', 'Nombre del pipeline...')}
           className="flex-1 px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }}
           onKeyDown={e => e.key === 'Enter' && createPipeline()} />
         <button onClick={createPipeline} className="px-4 py-2 rounded-lg text-[13px] font-bold text-white" style={{ background: '#6366f1' }}>
-          Criar Pipeline
+          {L('Criar Pipeline', 'Create Pipeline', 'Crear Pipeline')}
         </button>
       </div>
 
@@ -192,7 +201,7 @@ export default function PipelineSettingsPage() {
           return (
             <div key={p.id} className="flex items-center rounded-xl pl-0.5 pr-1 py-0.5"
               style={{ background: isSel ? '#6366f1' : '#fff', border: `1px solid ${isSel ? '#6366f1' : '#e8ecf4'}` }}>
-              <button onClick={() => movePipeline(idx, -1)} disabled={idx === 0} title="Mover pra esquerda"
+              <button onClick={() => movePipeline(idx, -1)} disabled={idx === 0} title={L('Mover pra esquerda', 'Move left', 'Mover a la izquierda')}
                 className="w-5 h-7 rounded flex items-center justify-center text-[15px] leading-none disabled:opacity-20"
                 style={{ color: ico }}>‹</button>
 
@@ -205,16 +214,16 @@ export default function PipelineSettingsPage() {
                   style={{ border: '1px solid #c7d2fe', color: '#1a1a2e' }} />
               ) : (
                 <button onClick={() => setSelected(p)} onDoubleClick={() => startRenamePipeline(p)}
-                  title="Clicar pra abrir · 2 cliques pra renomear"
+                  title={L('Clicar pra abrir · 2 cliques pra renomear', 'Click to open · double-click to rename', 'Clic para abrir · doble clic para renombrar')}
                   className="px-2 py-1 text-[13px] font-bold whitespace-nowrap"
                   style={{ color: isSel ? '#fff' : '#64748b' }}>
                   {p.name} {p.is_default && '★'}
                 </button>
               )}
 
-              <button onClick={() => startRenamePipeline(p)} title="Renomear"
+              <button onClick={() => startRenamePipeline(p)} title={L('Renomear', 'Rename', 'Renombrar')}
                 className="w-6 h-7 rounded flex items-center justify-center text-[12px] leading-none opacity-80 hover:opacity-100">✏️</button>
-              <button onClick={() => movePipeline(idx, 1)} disabled={idx === pipelines.length - 1} title="Mover pra direita"
+              <button onClick={() => movePipeline(idx, 1)} disabled={idx === pipelines.length - 1} title={L('Mover pra direita', 'Move right', 'Mover a la derecha')}
                 className="w-5 h-7 rounded flex items-center justify-center text-[15px] leading-none disabled:opacity-20"
                 style={{ color: ico }}>›</button>
             </div>
@@ -222,16 +231,20 @@ export default function PipelineSettingsPage() {
         })}
       </div>
       <p className="text-[11px] mb-6" style={{ color: '#94a3b8' }}>
-        Clique pra abrir · ✏️ (ou 2 cliques no nome) pra renomear · ‹ › pra mudar a ordem
+        {L(
+          'Clique pra abrir · ✏️ (ou 2 cliques no nome) pra renomear · ‹ › pra mudar a ordem',
+          'Click to open · ✏️ (or double-click the name) to rename · ‹ › to change the order',
+          'Clic para abrir · ✏️ (o doble clic en el nombre) para renombrar · ‹ › para cambiar el orden',
+        )}
       </p>
 
       {/* Selected pipeline stages */}
       {selected && (
         <div className="rounded-2xl p-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-[16px] font-bold" style={{ color: '#1a1a2e' }}>Estagios: {selected.name}</h2>
+            <h2 className="text-[16px] font-bold" style={{ color: '#1a1a2e' }}>{L('Estagios:', 'Stages:', 'Etapas:')} {selected.name}</h2>
             <button onClick={() => deletePipeline(selected.id)} className="text-[11px] font-bold px-3 py-1 rounded-lg" style={{ color: '#ef4444', background: '#fef2f2' }}>
-              Deletar Pipeline
+              {L('Deletar Pipeline', 'Delete Pipeline', 'Eliminar Pipeline')}
             </button>
           </div>
 
@@ -250,7 +263,7 @@ export default function PipelineSettingsPage() {
                 </div>
                 <span className="text-[11px] font-mono" style={{ color: '#94a3b8' }}>#{idx + 1}</span>
                 <button onClick={() => deleteStage(stage.id)}
-                  title="Deletar estágio"
+                  title={L('Deletar estágio', 'Delete stage', 'Eliminar etapa')}
                   className="w-7 h-7 rounded flex items-center justify-center text-[12px] transition-all hover:bg-red-50"
                   style={{ background: '#fef2f2', color: '#ef4444' }}>
                   🗑
@@ -261,18 +274,18 @@ export default function PipelineSettingsPage() {
 
           {/* Add stage */}
           <div className="flex gap-2 mb-4">
-            <input type="text" value={newStageName} onChange={e => setNewStageName(e.target.value)} placeholder="Novo estagio..."
+            <input type="text" value={newStageName} onChange={e => setNewStageName(e.target.value)} placeholder={L('Novo estagio...', 'New stage...', 'Nueva etapa...')}
               className="flex-1 px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }}
               onKeyDown={e => e.key === 'Enter' && addStage()} />
             <button onClick={addStage} className="px-4 py-2 rounded-lg text-[12px] font-bold" style={{ background: '#eef2ff', color: '#6366f1' }}>
-              + Adicionar
+              {L('+ Adicionar', '+ Add', '+ Agregar')}
             </button>
           </div>
 
           <button onClick={saveStages} disabled={saving}
             className="w-full py-3 rounded-xl text-[14px] font-bold text-white disabled:opacity-50"
             style={{ background: '#6366f1' }}>
-            {saving ? 'Salvando...' : 'Salvar Alteracoes'}
+            {saving ? L('Salvando...', 'Saving...', 'Guardando...') : L('Salvar Alteracoes', 'Save Changes', 'Guardar Cambios')}
           </button>
         </div>
       )}
