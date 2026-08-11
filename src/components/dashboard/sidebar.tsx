@@ -146,6 +146,8 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, podeVerApo
   const buyerLinks = [
     { href: '/dashboard', label: t.sidebar.overview, icon: '📊' },
     { href: '/dashboard/performance', label: t.sidebar.performance, icon: '📈' },
+    // Calculadora de rentabilidade: custo de leads vs receita (2026-08-11)
+    { href: '/dashboard/calculadora', label: t._locale === 'en' ? 'Calculator' : 'Calculadora', icon: '🧮' },
     { href: '/dashboard/leads', label: t.sidebar.leads, icon: '🎯' },
     { href: '/dashboard/pipeline', label: t.sidebar.pipeline, icon: '📋' },
     // Pós-venda: gestão das apólices vendidas (2026-08-03). Só aparece pra quem tem
