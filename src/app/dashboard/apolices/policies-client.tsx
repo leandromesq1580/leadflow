@@ -48,6 +48,15 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
   useEffect(() => {
     fetch('/api/apolices/sync', { cache: 'no-store' }).then(r => r.json()).then(async c => {
       setConector(c)
+      // varredura de fundo (cron das 7:30) parada esperando MFA → mostra o campo
+      // do código já na abertura da página, sem o corretor precisar clicar em nada
+      if (c?.conectado && c?.robo?.awaiting_mfa) {
+        setMfaPedido(true)
+        setAvisoSync(L('⚠️ O portal pediu o código de verificação que chegou no e-mail do agente. Digite aqui:',
+                       '⚠️ The portal asked for the verification code that arrived in the agent email. Type it here:',
+                       '⚠️ El portal pidió el código de verificación que llegó al correo del agente. Escríbelo aquí:'))
+        return
+      }
       // o robô varreu DEPOIS da última importação → o book está atrás do portal:
       // importa sozinho, sem o corretor precisar lembrar de clicar.
       const varrido = c?.robo?.last_run ? new Date(c.robo.last_run).getTime() : 0
