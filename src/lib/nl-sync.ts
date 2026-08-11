@@ -41,7 +41,6 @@ export interface NLStatusRobo {
 /** Acorda o robô que varre o portal de verdade (Playwright no servidor). */
 export async function dispararVarredura(cfg: NLConfig): Promise<{ ok: boolean; erro?: string }> {
   try {
-    // o serviço exige Accept: application/json — sem ele responde um doc de schema
     const r = await fetch(`${cfg.url.replace(/\/$/, '')}/run?k=${encodeURIComponent(cfg.key)}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: '{}',
     })
