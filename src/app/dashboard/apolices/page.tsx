@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 
 export async function generateMetadata() {
   const locale = await getLocale()
-  const title = locale === 'en' ? 'Policies — Lead4Pro' : locale === 'es' ? 'Pólizas — Lead4Pro' : 'Apólices — Lead4Pro'
+  const title = locale === 'en' ? 'Policy Management — Lead4Pro' : locale === 'es' ? 'Gestión de Pólizas — Lead4Pro' : 'Gestão de Apólices — Lead4Pro'
   return { title }
 }
 

@@ -28,7 +28,10 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
   const [edit, setEdit] = useState<Partial<Policy> | null>(null)
   const [aberto, setAberto] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
-  const [conector, setConector] = useState<{ conectado: boolean; seguradora?: string | null; ultimaSync?: string | null } | null>(null)
+  const [conector, setConector] = useState<{
+    conectado: boolean; seguradora?: string | null; ultimaSync?: string | null
+    robo?: { running: boolean; awaiting_mfa: boolean; last_run: string | null; last_error: string | null } | null
+  } | null>(null)
   const [sincronizando, setSincronizando] = useState(false)
   const [avisoSync, setAvisoSync] = useState<string | null>(null)
 
@@ -41,14 +44,70 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
   }
   useEffect(() => { carregar() }, [])
   useEffect(() => {
-    fetch('/api/apolices/sync', { cache: 'no-store' }).then(r => r.json()).then(setConector).catch(() => {})
+    fetch('/api/apolices/sync', { cache: 'no-store' }).then(r => r.json()).then(async c => {
+      setConector(c)
+      // o robô varreu DEPOIS da última importação → o book está atrás do portal:
+      // importa sozinho, sem o corretor precisar lembrar de clicar.
+      const varrido = c?.robo?.last_run ? new Date(c.robo.last_run).getTime() : 0
+      const importado = c?.ultimaSync ? new Date(c.ultimaSync).getTime() : 0
+      if (c?.conectado && varrido > importado && !c?.robo?.running) {
+        try {
+          const r = await fetch('/api/apolices/sync', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ modo: 'importar' }),
+          })
+          if (r.ok) { await carregar(); fetch('/api/apolices/sync', { cache: 'no-store' }).then(x => x.json()).then(setConector).catch(() => {}) }
+        } catch {}
+      }
+    }).catch(() => {})
   }, [])
 
-  /** Puxa o portal da seguradora — atualiza status/pendências sem tocar no que você escreveu. */
+  /**
+   * Puxa o portal DE VERDADE: acorda o robô (Playwright no servidor, ~2-4 min),
+   * acompanha a varredura e só então importa. Antes o botão lia um cache que podia
+   * ter DIAS — parecia atualizado e não era.
+   */
   async function sincronizar() {
     setSincronizando(true); setAvisoSync(null)
     try {
-      const r = await fetch('/api/apolices/sync', { method: 'POST' })
+      const post = (body: any) => fetch('/api/apolices/sync', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      })
+      const v = await post({ modo: 'varrer' })
+      const vd = await v.json()
+      if (!v.ok) { setAvisoSync(vd.error || L('Não consegui acordar o robô do portal.', 'Could not wake the portal robot.', 'No pude despertar el robot del portal.')); setSincronizando(false); return }
+
+      // varredura leva uns minutos — acompanha até terminar (limite ~6 min)
+      setAvisoSync(L('Varrendo o portal da National Life… (~2 a 4 min — pode continuar usando o sistema)',
+                     'Sweeping the National Life portal… (~2–4 min — you can keep using the system)',
+                     'Barriendo el portal de National Life… (~2–4 min — puedes seguir usando el sistema)'))
+      const inicio = Date.now()
+      let pronto = false
+      while (Date.now() - inicio < 6 * 60_000) {
+        await new Promise(res => setTimeout(res, 10_000))
+        const s = await post({ modo: 'status' }).then(r => r.json()).catch(() => null)
+        if (!s) continue
+        if (s.awaiting_mfa) {
+          setAvisoSync(L('⚠️ O portal pediu código de verificação (MFA). Abra o e-mail do agente, pegue o código e informe no painel do robô — depois clique em Atualizar de novo.',
+                         '⚠️ The portal asked for a verification code (MFA). Get the code from the agent email, enter it in the robot panel, then click Refresh again.',
+                         '⚠️ El portal pidió código de verificación (MFA). Toma el código del correo del agente, ingrésalo en el panel del robot y vuelve a hacer clic en Actualizar.'))
+          setSincronizando(false); return
+        }
+        if (s.last_error && !s.running) {
+          setAvisoSync(L(`⚠️ A varredura falhou: ${s.last_error}. Importando a última leitura disponível…`,
+                         `⚠️ The sweep failed: ${s.last_error}. Importing the latest available read…`,
+                         `⚠️ El barrido falló: ${s.last_error}. Importando la última lectura disponible…`))
+          break
+        }
+        if (!s.running) { pronto = true; break }
+      }
+      if (!pronto) {
+        // não terminou no prazo → importa o que tem e avisa (melhor que nada)
+        setAvisoSync(prev => prev?.startsWith('⚠️') ? prev : L('A varredura está demorando — importando a última leitura disponível.',
+          'The sweep is taking long — importing the latest available read.',
+          'El barrido está tardando — importando la última lectura disponible.'))
+      }
+
+      const r = await post({ modo: 'importar' })
       const d = await r.json()
       if (!r.ok) { setAvisoSync(d.error || L('Não consegui atualizar agora.', 'Could not refresh right now.', 'No pude actualizar ahora.')); setSincronizando(false); return }
       const partes = []
@@ -126,7 +185,7 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
     <div className="max-w-[1040px]">
       <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>{L('Apólices', 'Policies', 'Pólizas')}</h1>
+          <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>{L('Gestão de Apólices', 'Policy Management', 'Gestión de Pólizas')}</h1>
           <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>
             {L('Pós-venda: o que precisa da sua ação hoje para não perder cliente nem comissão',
                'Post-sale: what needs your action today so you do not lose the client or the commission',
@@ -163,14 +222,22 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
         </div>
       )}
 
-      {conector?.conectado && conector.ultimaSync && !avisoSync && (
-        <p className="text-[12px] mb-4" style={{ color: '#94a3b8' }}>
-          {L(`Conectado ao portal da ${conector.seguradora} · última leitura`,
-             `Connected to the ${conector.seguradora} portal · last read`,
-             `Conectado al portal de ${conector.seguradora} · última lectura`)}{' '}
-          {new Date(conector.ultimaSync).toLocaleString(t._locale === 'en' ? 'en-US' : t._locale === 'es' ? 'es-US' : 'pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-        </p>
-      )}
+      {conector?.conectado && conector.ultimaSync && !avisoSync && (() => {
+        const fmt = (iso: string) => new Date(iso).toLocaleString(t._locale === 'en' ? 'en-US' : t._locale === 'es' ? 'es-US' : 'pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+        const varrido = conector.robo?.last_run || null
+        const horasAtras = varrido ? (Date.now() - new Date(varrido).getTime()) / 3_600_000 : null
+        const velho = horasAtras != null && horasAtras > 24
+        return (
+          <p className="text-[12px] mb-4" style={{ color: velho ? '#dc2626' : '#94a3b8' }}>
+            {L(`Conectado ao portal da ${conector.seguradora}`, `Connected to the ${conector.seguradora} portal`, `Conectado al portal de ${conector.seguradora}`)}
+            {varrido && <> · {L('portal varrido em', 'portal swept on', 'portal barrido el')} {fmt(varrido)}</>}
+            {' · '}{L('importado em', 'imported on', 'importado el')} {fmt(conector.ultimaSync)}
+            {velho && <b> · {L(`⚠️ dados de ${Math.floor(horasAtras! / 24)} dia(s) atrás — clique em Atualizar do portal`,
+                               `⚠️ data from ${Math.floor(horasAtras! / 24)} day(s) ago — click Refresh from portal`,
+                               `⚠️ datos de hace ${Math.floor(horasAtras! / 24)} día(s) — haz clic en Actualizar del portal`)}</b>}
+          </p>
+        )
+      })()}
 
       {migracao && (
         <div className="rounded-xl p-4 mb-5 text-[13px] font-semibold" style={{ background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e' }}>

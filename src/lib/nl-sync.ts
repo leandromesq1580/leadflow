@@ -30,6 +30,40 @@ export interface NLResultado {
   erro?: string
 }
 
+export interface NLStatusRobo {
+  running: boolean
+  awaiting_mfa: boolean
+  last_run: string | null
+  last_error: string | null
+  portal_last_updated?: string | null
+}
+
+/** Acorda o robô que varre o portal de verdade (Playwright no servidor). */
+export async function dispararVarredura(cfg: NLConfig): Promise<{ ok: boolean; erro?: string }> {
+  try {
+    // o serviço exige Accept: application/json — sem ele responde um doc de schema
+    const r = await fetch(`${cfg.url.replace(/\/$/, '')}/run?k=${encodeURIComponent(cfg.key)}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: '{}',
+    })
+    if (!r.ok) return { ok: false, erro: `robô respondeu ${r.status}` }
+    return { ok: true }
+  } catch (e: any) { return { ok: false, erro: String(e?.message || e) } }
+}
+
+/** O robô está varrendo? Pediu MFA? Quando varreu por último? */
+export async function statusVarredura(cfg: NLConfig): Promise<NLStatusRobo | null> {
+  try {
+    const r = await fetch(`${cfg.url.replace(/\/$/, '')}/status`, { cache: 'no-store', headers: { Accept: 'application/json' } })
+    if (!r.ok) return null
+    const d = await r.json()
+    return {
+      running: !!d.running, awaiting_mfa: !!d.awaiting_mfa,
+      last_run: d.last_run || null, last_error: d.last_error || null,
+      portal_last_updated: d.portal_last_updated || null,
+    }
+  } catch { return null }
+}
+
 /** Configuração do conector deste corretor (null = não conectado). */
 export async function conectorDe(db: Db, buyerId: string): Promise<NLConfig | null> {
   try {
@@ -168,6 +202,8 @@ export function montarDoFeed(d: any): Registro[] {
     const p = pegar(normPol(r.pol), String(r.name || ''))
     p.product = p.product || r.prod
     p.premium_cents = p.premium_cents || centavos(r.mp)
+    // sem prêmio modal? o anualizado ÷ 12 vale mais que nada
+    if (!p.premium_cents) { const a = centavos(r.aap); if (a) p.premium_cents = Math.round(a / 12) }
     p.submitted_at = p.submitted_at || dataUS(r.sub)
     p.issued_at = p.issued_at || dataUS(r.sent)
     if (!p.status) p.status = statusPortal(r.st) || 'submitted'
@@ -211,6 +247,50 @@ export function montarDoFeed(d: any): Registro[] {
     if (!p.status) p.status = 'submitted'
   }
 
+  // 6) iGo completo — a ÚNICA fonte com valor de cobertura (o portal não mostra
+  // face amount em inforce nem em NB). Casa por nome pra ENRIQUECER quem já existe;
+  // aplicação "Started" que não existe em lugar nenhum entra como pendência DO
+  // corretor ("terminar a aplicação") — o limbo só pega as completas não processadas.
+  const igoPorNome = new Map<string, any[]>()
+  for (const r of d.igo_rows || []) {
+    const nome = titulo(nomeDireito(String(r.name || '').replace(/\s*Duplicated Case\s*/i, ' ').trim()))
+    if (!nome) continue
+    const nk = chaveNome(nome)
+    if (!igoPorNome.has(nk)) igoPorNome.set(nk, [])
+    igoPorNome.get(nk)!.push({ ...r, _nome: nome })
+  }
+  for (const [nk, rows] of igoPorNome) {
+    const p = porNome.get(nk)
+    if (p) {
+      // enriquece só sem ambiguidade: 2 aplicações com faces diferentes = não chuta
+      const faces = [...new Set(rows.map(x => centavos(x.face)).filter(Boolean))]
+      if (!p.coverage_cents && faces.length === 1) p.coverage_cents = faces[0] as number
+      if (!p.product) p.product = rows[0].product || null
+      continue
+    }
+    const started = rows.filter(x => /started/i.test(String(x.status || '')))
+    if (!started.length) continue
+    const r0 = started[0]
+    const novo = pegar(null, r0._nome)
+    novo.product = novo.product || r0.product
+    novo.coverage_cents = novo.coverage_cents || centavos(r0.face)
+    novo.submitted_at = novo.submitted_at || dataUS(r0.modified)
+    novo._igo = true
+    if (!novo.status) novo.status = 'submitted'
+    if (!novo.requirements.includes('Terminar a aplicação no iGo')) novo.requirements.push('Terminar a aplicação no iGo')
+  }
+
+  // 7) Underwriting — pendência que só aparece no Case Communication (ex.: pergunta
+  // de replacement sem resposta). Vira requisito visível; o detalhe fica no portal.
+  for (const [pol, v] of Object.entries((d.uw_cases || {}) as Record<string, any>)) {
+    const p = porPol.get(normPol(pol) || '')
+    if (!p) continue
+    p._fonteReq = true
+    const trk = v?.tracker ? ` ${v.tracker}` : ''
+    const req = `Underwriting${trk} — responder o Case Communication no portal`
+    if (!p.requirements.some(x => x.startsWith('Underwriting'))) p.requirements.push(req)
+  }
+
   return lista.filter(p => p.client_name)
 }
 
@@ -222,7 +302,7 @@ export async function sincronizarNL(db: Db, buyerId: string): Promise<NLResultad
 
   let feed: any
   try {
-    const r = await fetch(`${cfg.url.replace(/\/$/, '')}/data?k=${encodeURIComponent(cfg.key)}`, { cache: 'no-store' })
+    const r = await fetch(`${cfg.url.replace(/\/$/, '')}/data?k=${encodeURIComponent(cfg.key)}`, { cache: 'no-store', headers: { Accept: 'application/json' } })
     if (!r.ok) throw new Error(`portal respondeu ${r.status}`)
     feed = await r.json()
   } catch (e: any) {
