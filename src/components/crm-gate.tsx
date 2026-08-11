@@ -34,7 +34,7 @@ export function CrmGate({ children, hasAccess }: Props) {
           {t.crmGate.subtitle}
         </p>
         <p className="text-[12.5px] font-semibold mt-3" style={{ color: '#6366f1' }}>
-          Escolha o plano: quanto maior o compromisso, menor o valor por mês.
+          {t._locale === 'en' ? 'Choose your plan: the longer the commitment, the lower the monthly price.' : t._locale === 'es' ? 'Elige tu plan: a mayor compromiso, menor precio por mes.' : 'Escolha o plano: quanto maior o compromisso, menor o valor por mês.'}
         </p>
       </div>
       <PolicyCheck context="checkout_crm_gate" />

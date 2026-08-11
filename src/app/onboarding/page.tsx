@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { startCheckout } from '@/lib/checkout-client'
 import { useRouter } from 'next/navigation'
+import { useT } from '@/lib/i18n-client'
 
 const US_STATES = [
   'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD',
@@ -10,24 +11,28 @@ const US_STATES = [
   'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC'
 ]
 
-const DAY_TYPES = [
-  { key: 'weekday', label: 'Seg-Sex' },
-  { key: 'saturday', label: 'Sabado' },
-  { key: 'sunday', label: 'Domingo' },
+const DAY_TYPES = (locale: string) => [
+  { key: 'weekday', label: locale === 'en' ? 'Mon-Fri' : locale === 'es' ? 'Lun-Vie' : 'Seg-Sex' },
+  { key: 'saturday', label: locale === 'en' ? 'Saturday' : locale === 'es' ? 'Sábado' : 'Sabado' },
+  { key: 'sunday', label: locale === 'en' ? 'Sunday' : locale === 'es' ? 'Domingo' : 'Domingo' },
 ]
 
-const PERIODS = [
-  { key: 'morning', label: 'Manha' },
-  { key: 'afternoon', label: 'Tarde' },
-  { key: 'evening', label: 'Noite' },
+const PERIODS = (locale: string) => [
+  { key: 'morning', label: locale === 'en' ? 'Morning' : locale === 'es' ? 'Mañana' : 'Manha' },
+  { key: 'afternoon', label: locale === 'en' ? 'Afternoon' : locale === 'es' ? 'Tarde' : 'Tarde' },
+  { key: 'evening', label: locale === 'en' ? 'Evening' : locale === 'es' ? 'Noche' : 'Noite' },
 ]
 
-const ALL_AVAIL = DAY_TYPES.flatMap(d => PERIODS.map(p => `${d.key}_${p.key}`))
+const ALL_AVAIL = DAY_TYPES('pt').flatMap(d => PERIODS('pt').map(p => `${d.key}_${p.key}`))
 
 const TOTAL_STEPS = 5
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
+  const dayTypes = DAY_TYPES(t._locale)
+  const periods = PERIODS(t._locale)
   const [step, setStep] = useState(1)
   const [states, setStates] = useState<string[]>([])
   const [avail, setAvail] = useState<string[]>([])
@@ -111,8 +116,8 @@ export default function OnboardingPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-black mx-auto mb-3" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>L</div>
-          <h1 className="text-[22px] sm:text-[26px] font-extrabold text-white">Bem-vindo ao Lead4Producers</h1>
-          <p className="text-[13px] sm:text-[14px] mt-2" style={{ color: 'rgba(255,255,255,0.5)' }}>Vamos configurar sua conta — leva menos de 2 minutos</p>
+          <h1 className="text-[22px] sm:text-[26px] font-extrabold text-white">{L('Bem-vindo ao Lead4Producers', 'Welcome to Lead4Producers', 'Bienvenido a Lead4Producers')}</h1>
+          <p className="text-[13px] sm:text-[14px] mt-2" style={{ color: 'rgba(255,255,255,0.5)' }}>{L('Vamos configurar sua conta — leva menos de 2 minutos', "Let's set up your account — it takes less than 2 minutes", 'Vamos a configurar tu cuenta — toma menos de 2 minutos')}</p>
         </div>
 
         {/* Progress */}
@@ -127,15 +132,15 @@ export default function OnboardingPage() {
           <div className="rounded-2xl p-6 sm:p-8" style={{ background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <div className="text-center mb-6">
               <span className="text-[40px] block mb-3">👋</span>
-              <h2 className="text-[20px] font-bold text-white mb-2">Como funciona em 3 passos</h2>
-              <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.5)' }}>Veja como Lead4Producers vai funcionar pra voce</p>
+              <h2 className="text-[20px] font-bold text-white mb-2">{L('Como funciona em 3 passos', 'How it works in 3 steps', 'Cómo funciona en 3 pasos')}</h2>
+              <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.5)' }}>{L('Veja como Lead4Producers vai funcionar pra voce', 'See how Lead4Producers will work for you', 'Mira cómo Lead4Producers va a funcionar para ti')}</p>
             </div>
 
             <div className="space-y-3 mb-6">
               {[
-                { icon: '⚙️', title: 'Configure sua conta', desc: 'Estados onde tem licenca + horarios disponiveis' },
-                { icon: '💳', title: 'Compre leads ou assine o CRM', desc: 'Pacote de leads ($22/un) ou CRM Pro ($99/mes) com pipeline e gestao de time' },
-                { icon: '🚀', title: 'Receba leads no WhatsApp', desc: 'Em tempo real. Voce so liga e fecha. Pipeline organiza tudo.' },
+                { icon: '⚙️', title: L('Configure sua conta', 'Set up your account', 'Configura tu cuenta'), desc: L('Estados onde tem licenca + horarios disponiveis', 'States where you are licensed + available hours', 'Estados donde tienes licencia + horarios disponibles') },
+                { icon: '💳', title: L('Compre leads ou assine o CRM', 'Buy leads or subscribe to the CRM', 'Compra leads o suscríbete al CRM'), desc: L('Pacote de leads ($22/un) ou CRM Pro ($99/mes) com pipeline e gestao de time', 'Lead package ($22/each) or CRM Pro ($99/mo) with pipeline and team management', 'Paquete de leads ($22 c/u) o CRM Pro ($99/mes) con pipeline y gestión de equipo') },
+                { icon: '🚀', title: L('Receba leads no WhatsApp', 'Get leads on WhatsApp', 'Recibe leads por WhatsApp'), desc: L('Em tempo real. Voce so liga e fecha. Pipeline organiza tudo.', 'In real time. You just call and close. The pipeline organizes everything.', 'En tiempo real. Tú solo llamas y cierras. El pipeline organiza todo.') },
               ].map((s, i) => (
                 <div key={i} className="flex items-start gap-3 p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)' }}>
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(99,102,241,0.2)' }}>
@@ -152,7 +157,7 @@ export default function OnboardingPage() {
             <button onClick={() => setStep(2)}
               className="w-full py-3.5 rounded-xl font-bold text-[14px] text-white"
               style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-              Vamos comecar →
+              {L('Vamos comecar →', "Let's get started →", 'Empecemos →')}
             </button>
           </div>
         )}
@@ -162,12 +167,12 @@ export default function OnboardingPage() {
           <div className="rounded-2xl p-6 sm:p-8" style={{ background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <div className="flex items-center gap-3 mb-2">
               <span className="text-[24px]">📍</span>
-              <h2 className="text-[18px] font-bold text-white">Seus estados</h2>
+              <h2 className="text-[18px] font-bold text-white">{L('Seus estados', 'Your states', 'Tus estados')}</h2>
             </div>
-            <p className="text-[13px] mb-6" style={{ color: 'rgba(255,255,255,0.4)' }}>Selecione os estados onde voce tem licenca pra vender seguro. Voce so recebera leads desses estados.</p>
+            <p className="text-[13px] mb-6" style={{ color: 'rgba(255,255,255,0.4)' }}>{L('Selecione os estados onde voce tem licenca pra vender seguro. Voce so recebera leads desses estados.', "Select the states where you're licensed to sell insurance. You'll only receive leads from those states.", 'Selecciona los estados donde tienes licencia para vender seguros. Solo recibirás leads de esos estados.')}</p>
             <div className="flex items-center gap-2 mb-3">
-              <button type="button" onClick={() => setStates([...US_STATES])} className="text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all" style={{ background: 'rgba(99,102,241,0.25)', color: '#c4b5fd', border: '1px solid rgba(99,102,241,0.4)' }}>✓ Selecionar todos</button>
-              <button type="button" onClick={() => setStates([])} className="text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}>Limpar</button>
+              <button type="button" onClick={() => setStates([...US_STATES])} className="text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all" style={{ background: 'rgba(99,102,241,0.25)', color: '#c4b5fd', border: '1px solid rgba(99,102,241,0.4)' }}>{L('✓ Selecionar todos', '✓ Select all', '✓ Seleccionar todos')}</button>
+              <button type="button" onClick={() => setStates([])} className="text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}>{L('Limpar', 'Clear', 'Limpiar')}</button>
             </div>
             <div className="flex flex-wrap gap-2 mb-6">
               {US_STATES.map(code => (
@@ -183,16 +188,16 @@ export default function OnboardingPage() {
               ))}
             </div>
             {states.length > 0 && (
-              <p className="text-[12px] mb-4" style={{ color: '#a78bfa' }}>{states.length} estado{states.length > 1 ? 's' : ''} selecionado{states.length > 1 ? 's' : ''}</p>
+              <p className="text-[12px] mb-4" style={{ color: '#a78bfa' }}>{L(`${states.length} estado${states.length > 1 ? 's' : ''} selecionado${states.length > 1 ? 's' : ''}`, `${states.length} state${states.length > 1 ? 's' : ''} selected`, `${states.length} estado${states.length > 1 ? 's' : ''} seleccionado${states.length > 1 ? 's' : ''}`)}</p>
             )}
             <div className="flex gap-3">
               <button onClick={() => setStep(1)} className="px-6 py-3.5 rounded-xl font-bold text-[14px]" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                ← Voltar
+                {L('← Voltar', '← Back', '← Volver')}
               </button>
               <button onClick={() => setStep(3)} disabled={states.length === 0}
                 className="flex-1 py-3.5 rounded-xl font-bold text-[14px] text-white disabled:opacity-30"
                 style={{ background: '#6366f1' }}>
-                Proximo →
+                {L('Proximo →', 'Next →', 'Siguiente →')}
               </button>
             </div>
           </div>
@@ -203,19 +208,19 @@ export default function OnboardingPage() {
           <div className="rounded-2xl p-6 sm:p-8" style={{ background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <div className="flex items-center gap-3 mb-2">
               <span className="text-[24px]">📅</span>
-              <h2 className="text-[18px] font-bold text-white">Disponibilidade</h2>
+              <h2 className="text-[18px] font-bold text-white">{L('Disponibilidade', 'Availability', 'Disponibilidad')}</h2>
             </div>
-            <p className="text-[13px] mb-6" style={{ color: 'rgba(255,255,255,0.4)' }}>Quando voce pode atender? (Opcional — pode pular se quiser so leads)</p>
+            <p className="text-[13px] mb-6" style={{ color: 'rgba(255,255,255,0.4)' }}>{L('Quando voce pode atender? (Opcional — pode pular se quiser so leads)', 'When can you take calls? (Optional — skip it if you only want leads)', '¿Cuándo puedes atender? (Opcional — puedes saltarlo si solo quieres leads)')}</p>
             <div className="flex items-center gap-2 mb-4">
-              <button type="button" onClick={() => setAvail([...ALL_AVAIL])} className="text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all" style={{ background: 'rgba(99,102,241,0.25)', color: '#c4b5fd', border: '1px solid rgba(99,102,241,0.4)' }}>✓ Selecionar todos</button>
-              <button type="button" onClick={() => setAvail([])} className="text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}>Limpar</button>
+              <button type="button" onClick={() => setAvail([...ALL_AVAIL])} className="text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all" style={{ background: 'rgba(99,102,241,0.25)', color: '#c4b5fd', border: '1px solid rgba(99,102,241,0.4)' }}>{L('✓ Selecionar todos', '✓ Select all', '✓ Seleccionar todos')}</button>
+              <button type="button" onClick={() => setAvail([])} className="text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}>{L('Limpar', 'Clear', 'Limpiar')}</button>
             </div>
             <div className="space-y-4 mb-6">
-              {DAY_TYPES.map(day => (
+              {dayTypes.map(day => (
                 <div key={day.key}>
                   <p className="text-[13px] font-bold text-white mb-2">{day.label}</p>
                   <div className="flex gap-2">
-                    {PERIODS.map(period => {
+                    {periods.map(period => {
                       const key = `${day.key}_${period.key}`
                       return (
                         <button key={key} onClick={() => toggleAvail(key)}
@@ -235,12 +240,12 @@ export default function OnboardingPage() {
             </div>
             <div className="flex gap-3">
               <button onClick={() => setStep(2)} className="px-6 py-3.5 rounded-xl font-bold text-[14px]" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                ← Voltar
+                {L('← Voltar', '← Back', '← Volver')}
               </button>
               <button onClick={nextStep}
                 className="flex-1 py-3.5 rounded-xl font-bold text-[14px] text-white"
                 style={{ background: '#6366f1' }}>
-                Proximo →
+                {L('Proximo →', 'Next →', 'Siguiente →')}
               </button>
             </div>
           </div>
@@ -251,8 +256,8 @@ export default function OnboardingPage() {
           <div className="rounded-2xl p-6 sm:p-8" style={{ background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <div className="text-center mb-6">
               <span className="text-[32px] block mb-2">🚀</span>
-              <h2 className="text-[20px] font-bold text-white">Como quer comecar?</h2>
-              <p className="text-[13px] mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Escolha o melhor plano. Pode mudar depois.</p>
+              <h2 className="text-[20px] font-bold text-white">{L('Como quer comecar?', 'How do you want to start?', '¿Cómo quieres empezar?')}</h2>
+              <p className="text-[13px] mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>{L('Escolha o melhor plano. Pode mudar depois.', 'Pick the best plan. You can change it later.', 'Elige el mejor plan. Puedes cambiarlo después.')}</p>
             </div>
 
             <div className="space-y-3 mb-2">
@@ -262,8 +267,8 @@ export default function OnboardingPage() {
                 style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[14px] font-bold text-white">Explorar Gratis</p>
-                    <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Conhecer o sistema, comprar depois</p>
+                    <p className="text-[14px] font-bold text-white">{L('Explorar Gratis', 'Explore for Free', 'Explorar Gratis')}</p>
+                    <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{L('Conhecer o sistema, comprar depois', 'Check out the system, buy later', 'Conoce el sistema, compra después')}</p>
                   </div>
                   <span className="text-[12px] font-bold" style={{ color: 'rgba(255,255,255,0.4)' }}>$0</span>
                 </div>
@@ -277,8 +282,8 @@ export default function OnboardingPage() {
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded text-white" style={{ background: '#6366f1' }}>POPULAR</span>
                     <div>
-                      <p className="text-[14px] font-bold text-white">Comprar 1º Pacote</p>
-                      <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>10 leads exclusivos pra comecar a fechar</p>
+                      <p className="text-[14px] font-bold text-white">{L('Comprar 1º Pacote', 'Buy 1st Package', 'Comprar 1er Paquete')}</p>
+                      <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{L('10 leads exclusivos pra comecar a fechar', '10 exclusive leads to start closing', '10 leads exclusivos para empezar a cerrar')}</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -296,20 +301,20 @@ export default function OnboardingPage() {
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ background: 'linear-gradient(135deg, #a78bfa, #6366f1)', color: '#fff' }}>PRO</span>
                     <div>
-                      <p className="text-[14px] font-bold text-white">CRM Pro + Time</p>
-                      <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Pipeline, gestao de time, follow-ups, anexos</p>
+                      <p className="text-[14px] font-bold text-white">{L('CRM Pro + Time', 'CRM Pro + Team', 'CRM Pro + Equipo')}</p>
+                      <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{L('Pipeline, gestao de time, follow-ups, anexos', 'Pipeline, team management, follow-ups, attachments', 'Pipeline, gestión de equipo, follow-ups, archivos adjuntos')}</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-[16px] font-extrabold text-white">$99</p>
-                    <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>/mes</p>
+                    <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{L('/mes', '/mo', '/mes')}</p>
                   </div>
                 </div>
               </button>
             </div>
 
             <button onClick={() => setStep(3)} className="mt-4 text-[12px] font-medium" style={{ color: 'rgba(255,255,255,0.4)' }}>
-              ← Voltar
+              {L('← Voltar', '← Back', '← Volver')}
             </button>
           </div>
         )}

@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { MetaPixel } from '@/components/meta-pixel'
+import { useT } from '@/lib/i18n-client'
 
 export default function RegisterPage() {
+  const t = useT()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -34,7 +36,7 @@ export default function RegisterPage() {
     })
 
     if (authError) {
-      setError(authError.message === 'User already registered' ? 'Este email ja esta cadastrado.' : authError.message)
+      setError(authError.message === 'User already registered' ? t.auth.alreadyRegistered : authError.message)
       setLoading(false)
       return
     }
@@ -64,9 +66,9 @@ export default function RegisterPage() {
         <div className="text-center max-w-md">
           <div className="rounded-2xl p-10" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
             <p className="text-[40px] mb-4">✉️</p>
-            <h2 className="text-[20px] font-extrabold mb-3" style={{ color: '#1a1a2e' }}>Verifique seu email</h2>
-            <p className="text-[14px] mb-6" style={{ color: '#64748b' }}>Enviamos um link para <strong>{email}</strong>.</p>
-            <Link href="/login" className="inline-block px-6 py-3 rounded-xl text-[14px] font-bold text-white" style={{ background: '#6366f1' }}>Ir para Login</Link>
+            <h2 className="text-[20px] font-extrabold mb-3" style={{ color: '#1a1a2e' }}>{t.auth.checkEmail}</h2>
+            <p className="text-[14px] mb-6" style={{ color: '#64748b' }}>{t.auth.confirmationSent} <strong>{email}</strong>.</p>
+            <Link href="/login" className="inline-block px-6 py-3 rounded-xl text-[14px] font-bold text-white" style={{ background: '#6366f1' }}>{t.auth.backToLogin}</Link>
           </div>
         </div>
       </div>
@@ -81,33 +83,33 @@ export default function RegisterPage() {
             <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-black" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>L</div>
             <span className="text-[20px] font-extrabold" style={{ color: '#1a1a2e' }}>Lead4Producers</span>
           </Link>
-          <p className="mt-3 text-[14px]" style={{ color: '#64748b' }}>Crie sua conta e comece a receber leads</p>
+          <p className="mt-3 text-[14px]" style={{ color: '#64748b' }}>{t.auth.createYourAccount}</p>
         </div>
 
         <div className="rounded-2xl p-8" style={{ background: '#fff', border: '1px solid #e8ecf4', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
           <form onSubmit={handleRegister} className="space-y-5">
             <div>
-              <label className="block text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>Nome completo</label>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" required
+              <label className="block text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>{t.auth.fullName}</label>
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={t.auth.namePlaceholder} required
                 className="w-full px-4 py-3.5 rounded-xl text-[14px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
             </div>
             <div>
-              <label className="block text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>Email</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required
+              <label className="block text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>{t.auth.email}</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.auth.emailPlaceholder} required
                 className="w-full px-4 py-3.5 rounded-xl text-[14px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
             </div>
             <div>
-              <label className="block text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>Telefone / WhatsApp <span style={{ fontWeight: 500, color: '#94a3b8' }}>(opcional)</span></label>
-              <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 (407) 555-1234 (opcional)"
+              <label className="block text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>{t.auth.phoneWhatsapp} <span style={{ fontWeight: 500, color: '#94a3b8' }}>{t.auth.optional}</span></label>
+              <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t.auth.phonePlaceholder}
                 className="w-full px-4 py-3.5 rounded-xl text-[14px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
             </div>
             <div>
-              <label className="block text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>Senha</label>
+              <label className="block text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>{t.auth.password}</label>
               <div className="relative">
-                <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Minimo 6 caracteres" required minLength={6}
+                <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t.auth.passwordMin} required minLength={6}
                   className="w-full px-4 py-3.5 pr-12 rounded-xl text-[14px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
                 <button type="button" onClick={() => setShowPassword(v => !v)}
-                  aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                  aria-label={showPassword ? t.auth.hidePassword : t.auth.showPassword}
                   className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded hover:bg-slate-200 transition-colors"
                   style={{ color: '#64748b' }}>
                   {showPassword ? (
@@ -127,15 +129,15 @@ export default function RegisterPage() {
             {error && <div className="text-[13px] font-semibold px-4 py-3 rounded-xl" style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca' }}>{error}</div>}
             <button type="submit" disabled={loading} className="w-full py-4 rounded-xl font-bold text-[14px] text-white disabled:opacity-50"
               style={{ background: '#6366f1', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
-              {loading ? 'Criando conta...' : 'Criar Conta'}
+              {loading ? t.auth.creatingAccount : t.auth.createAccountBtn}
             </button>
           </form>
           <div className="mt-8 text-center">
-            <span className="text-[14px]" style={{ color: '#64748b' }}>Ja tem conta? </span>
+            <span className="text-[14px]" style={{ color: '#64748b' }}>{t.auth.haveAccount}</span>
             <Link href="/login" className="text-[14px] font-bold" style={{ color: '#6366f1' }}>Fazer login</Link>
           </div>
         </div>
-        <p className="text-center text-[11px] mt-6" style={{ color: '#94a3b8' }}>🔒 Seus dados estao protegidos.</p>
+        <p className="text-center text-[11px] mt-6" style={{ color: '#94a3b8' }}>{t.auth.dataProtected}</p>
       </div>
       <MetaPixel />
     </div>

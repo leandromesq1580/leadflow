@@ -4,8 +4,10 @@ import { useState, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { useT } from '@/lib/i18n-client'
 
 function LoginForm() {
+  const t = useT()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -24,12 +26,12 @@ function LoginForm() {
       const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
 
       if (authError) {
-        setError(authError.message === 'Invalid login credentials' ? 'Email ou senha incorretos' : authError.message)
+        setError(authError.message === 'Invalid login credentials' ? t.auth.wrongCredentials : authError.message)
         setLoading(false)
         return
       }
 
-      if (!data.session) { setError('Sessao nao criada'); setLoading(false); return }
+      if (!data.session) { setError(t.auth.sessionNotCreated); setLoading(false); return }
 
       const ref = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace('https://', '').split('.')[0]
       const cookieValue = btoa(JSON.stringify({ access_token: data.session.access_token, refresh_token: data.session.refresh_token, token_type: 'bearer' }))
@@ -37,7 +39,7 @@ function LoginForm() {
 
       window.location.href = redirect
     } catch (err: any) {
-      setError(err?.message || 'Erro inesperado')
+      setError(err?.message || t.auth.unexpectedError)
       setLoading(false)
     }
   }
@@ -50,23 +52,23 @@ function LoginForm() {
             <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-black" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>L</div>
             <span className="text-[20px] font-extrabold" style={{ color: '#1a1a2e' }}>Lead4Producers</span>
           </Link>
-          <p className="mt-3 text-[14px]" style={{ color: '#64748b' }}>Acesse sua conta</p>
+          <p className="mt-3 text-[14px]" style={{ color: '#64748b' }}>{t.auth.accessAccount}</p>
         </div>
 
         <div className="rounded-2xl p-8" style={{ background: '#fff', border: '1px solid #e8ecf4', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="block text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>Email</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required autoComplete="email"
+              <label className="block text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>{t.auth.email}</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.auth.emailPlaceholder} required autoComplete="email"
                 className="w-full px-4 py-3.5 rounded-xl text-[14px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
             </div>
             <div>
-              <label className="block text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>Senha</label>
+              <label className="block text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>{t.auth.password}</label>
               <div className="relative">
-                <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Sua senha" required autoComplete="current-password"
+                <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t.auth.passwordPlaceholder} required autoComplete="current-password"
                   className="w-full px-4 py-3.5 pr-12 rounded-xl text-[14px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
                 <button type="button" onClick={() => setShowPassword(v => !v)}
-                  aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                  aria-label={showPassword ? t.auth.hidePassword : t.auth.showPassword}
                   className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded hover:bg-slate-200 transition-colors"
                   style={{ color: '#64748b' }}>
                   {showPassword ? (
@@ -83,18 +85,18 @@ function LoginForm() {
                 </button>
               </div>
               <div className="mt-2 text-right">
-                <Link href="/reset-password" className="text-[12px] font-semibold" style={{ color: '#6366f1' }}>Esqueci a senha</Link>
+                <Link href="/reset-password" className="text-[12px] font-semibold" style={{ color: '#6366f1' }}>{t.auth.forgotPassword}</Link>
               </div>
             </div>
             {error && <div className="text-[13px] font-semibold px-4 py-3 rounded-xl" style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca' }}>{error}</div>}
             <button type="submit" disabled={loading} className="w-full py-4 rounded-xl font-bold text-[14px] text-white disabled:opacity-50"
               style={{ background: '#6366f1', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
-              {loading ? 'Entrando...' : 'Entrar'}
+              {loading ? t.auth.signingIn : t.auth.signIn}
             </button>
           </form>
           <div className="mt-8 text-center">
-            <span className="text-[14px]" style={{ color: '#64748b' }}>Nao tem conta? </span>
-            <Link href="/register" className="text-[14px] font-bold" style={{ color: '#6366f1' }}>Criar conta</Link>
+            <span className="text-[14px]" style={{ color: '#64748b' }}>{t.auth.noAccount}</span>
+            <Link href="/register" className="text-[14px] font-bold" style={{ color: '#6366f1' }}>{t.auth.createAccount}</Link>
           </div>
         </div>
       </div>
