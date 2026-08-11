@@ -47,20 +47,46 @@ export interface Policy {
   updated_at: string
 }
 
-export const BUCKETS: { key: Bucket; label: string; icon: string; color: string; bg: string; hint: string }[] = [
-  { key: 'urgente', label: 'Urgente', icon: '🔴', color: '#b91c1c', bg: '#fef2f2',
-    hint: 'Dinheiro parado ou apólice prestes a cair. Se cair, você perde o cliente E a comissão volta (chargeback).' },
-  { key: 'assinatura', label: 'Cobrar assinatura', icon: '🟠', color: '#b45309', bg: '#fffbeb',
-    hint: 'A apólice foi emitida, mas falta o cliente assinar (eDelivery, recibo, alteração). Sem isso a entrega não conclui.' },
-  { key: 'nao_processada', label: 'Não processadas', icon: '📤', color: '#4f46e5', bg: '#eef2ff',
-    hint: 'Enviadas para a seguradora e ainda sem retorno. Acima de 5 dias, é hora de cobrar.' },
-  { key: 'acompanhar', label: 'Acompanhar', icon: '🔵', color: '#0369a1', bg: '#f0f9ff',
-    hint: 'Emitidas aguardando ativar — confirmar 1º pagamento e vigência.' },
-  { key: 'em_dia', label: 'Em dia', icon: '✅', color: '#047857', bg: '#ecfdf5',
-    hint: 'Ativas e sem pendência. Momento de pedir indicação e revisar cobertura.' },
-  { key: 'encerrada', label: 'Recuperar', icon: '⚪', color: '#64748b', bg: '#f8fafc',
-    hint: 'Caducadas, canceladas ou recusadas — vale uma tentativa de recuperação.' },
-]
+/** Locale das funções compartilhadas (default 'pt' — retrocompatível). */
+export type PolicyLocale = 'pt' | 'en' | 'es'
+const pick = (locale: PolicyLocale) => (pt: string, en: string, es: string) =>
+  locale === 'en' ? en : locale === 'es' ? es : pt
+
+export function BUCKETS(locale: PolicyLocale = 'pt'): { key: Bucket; label: string; icon: string; color: string; bg: string; hint: string }[] {
+  const L = pick(locale)
+  return [
+    { key: 'urgente', label: L('Urgente', 'Urgent', 'Urgente'), icon: '🔴', color: '#b91c1c', bg: '#fef2f2',
+      hint: L(
+        'Dinheiro parado ou apólice prestes a cair. Se cair, você perde o cliente E a comissão volta (chargeback).',
+        'Money on hold or a policy about to lapse. If it lapses, you lose the client AND the commission comes back (chargeback).',
+        'Dinero detenido o póliza a punto de caer. Si cae, pierdes al cliente Y la comisión se devuelve (chargeback).') },
+    { key: 'assinatura', label: L('Cobrar assinatura', 'Chase signature', 'Pedir firma'), icon: '🟠', color: '#b45309', bg: '#fffbeb',
+      hint: L(
+        'A apólice foi emitida, mas falta o cliente assinar (eDelivery, recibo, alteração). Sem isso a entrega não conclui.',
+        'The policy was issued, but the client still needs to sign (eDelivery, receipt, amendment). Without it, delivery is not complete.',
+        'La póliza fue emitida, pero falta que el cliente firme (eDelivery, recibo, enmienda). Sin eso la entrega no se completa.') },
+    { key: 'nao_processada', label: L('Não processadas', 'Not processed', 'Sin procesar'), icon: '📤', color: '#4f46e5', bg: '#eef2ff',
+      hint: L(
+        'Enviadas para a seguradora e ainda sem retorno. Acima de 5 dias, é hora de cobrar.',
+        'Submitted to the carrier with no response yet. Past 5 days, it is time to follow up.',
+        'Enviadas a la aseguradora y todavía sin respuesta. Pasados 5 días, es hora de dar seguimiento.') },
+    { key: 'acompanhar', label: L('Acompanhar', 'Follow up', 'Dar seguimiento'), icon: '🔵', color: '#0369a1', bg: '#f0f9ff',
+      hint: L(
+        'Emitidas aguardando ativar — confirmar 1º pagamento e vigência.',
+        'Issued and waiting to activate — confirm the first payment and effective date.',
+        'Emitidas en espera de activarse — confirma el primer pago y la fecha de vigencia.') },
+    { key: 'em_dia', label: L('Em dia', 'In good standing', 'Al día'), icon: '✅', color: '#047857', bg: '#ecfdf5',
+      hint: L(
+        'Ativas e sem pendência. Momento de pedir indicação e revisar cobertura.',
+        'Active with nothing pending. A good time to ask for referrals and review coverage.',
+        'Activas y sin pendientes. Buen momento para pedir referidos y revisar la cobertura.') },
+    { key: 'encerrada', label: L('Recuperar', 'Win back', 'Recuperar'), icon: '⚪', color: '#64748b', bg: '#f8fafc',
+      hint: L(
+        'Caducadas, canceladas ou recusadas — vale uma tentativa de recuperação.',
+        'Lapsed, cancelled or declined — worth a win-back attempt.',
+        'Caducadas, canceladas o rechazadas — vale la pena intentar recuperarlas.') },
+  ]
+}
 
 const DIA = 86400_000
 export function diasDesde(d?: string | null): number | null {
@@ -92,28 +118,47 @@ export function bucketOf(p: Policy): Bucket {
 }
 
 /** Frase de ação sugerida quando o corretor não escreveu uma. */
-export function acaoSugerida(p: Policy): string {
+export function acaoSugerida(p: Policy, locale: PolicyLocale = 'pt'): string {
   if (p.next_action) return p.next_action
+  const L = pick(locale)
   const b = bucketOf(p)
   const venceEm = diasAte(p.due_date)
   const divida = p.amount_due_cents ? `$${(p.amount_due_cents / 100).toFixed(2)}` : null
   if (b === 'urgente') {
-    if (divida && venceEm !== null) return `Ligar e cobrar o pagamento de ${divida} — prazo em ${venceEm} dia(s).`
-    if (divida) return `Ligar e cobrar o pagamento de ${divida}.`
-    return 'Apólice em risco — falar com o cliente hoje.'
+    if (divida && venceEm !== null) return L(
+      `Ligar e cobrar o pagamento de ${divida} — prazo em ${venceEm} dia(s).`,
+      `Call and collect the ${divida} payment — due in ${venceEm} day(s).`,
+      `Llamar y cobrar el pago de ${divida} — vence en ${venceEm} día(s).`)
+    if (divida) return L(
+      `Ligar e cobrar o pagamento de ${divida}.`,
+      `Call and collect the ${divida} payment.`,
+      `Llamar y cobrar el pago de ${divida}.`)
+    return L('Apólice em risco — falar com o cliente hoje.',
+      'Policy at risk — talk to the client today.',
+      'Póliza en riesgo — habla con el cliente hoy.')
   }
   if (b === 'assinatura') {
     const req = (p.requirements || []).join(', ')
     const d = diasDesde(p.issued_at)
-    return `Cobrar assinatura${req ? `: ${req}` : ''}${d !== null ? ` — parado há ${d} dia(s)` : ''}.`
+    return L(
+      `Cobrar assinatura${req ? `: ${req}` : ''}${d !== null ? ` — parado há ${d} dia(s)` : ''}.`,
+      `Chase the signature${req ? `: ${req}` : ''}${d !== null ? ` — stalled for ${d} day(s)` : ''}.`,
+      `Pedir la firma${req ? `: ${req}` : ''}${d !== null ? ` — detenido hace ${d} día(s)` : ''}.`)
   }
   if (b === 'nao_processada') {
     const d = diasDesde(p.submitted_at)
-    return `Cobrar a seguradora — ${d} dia(s) sem processar a aplicação.`
+    return L(
+      `Cobrar a seguradora — ${d} dia(s) sem processar a aplicação.`,
+      `Follow up with the carrier — ${d} day(s) without processing the application.`,
+      `Dar seguimiento a la aseguradora — ${d} día(s) sin procesar la aplicación.`)
   }
-  if (b === 'acompanhar') return 'Confirmar o primeiro pagamento e a data de vigência.'
-  if (b === 'em_dia') return 'Em dia. Boa hora para pedir indicação ou revisar a cobertura.'
-  return 'Tentar recuperar o cliente.'
+  if (b === 'acompanhar') return L('Confirmar o primeiro pagamento e a data de vigência.',
+    'Confirm the first payment and the effective date.',
+    'Confirmar el primer pago y la fecha de vigencia.')
+  if (b === 'em_dia') return L('Em dia. Boa hora para pedir indicação ou revisar a cobertura.',
+    'In good standing. A good time to ask for referrals or review coverage.',
+    'Al día. Buen momento para pedir referidos o revisar la cobertura.')
+  return L('Tentar recuperar o cliente.', 'Try to win the client back.', 'Intentar recuperar al cliente.')
 }
 
 /** Ordena por urgência real dentro do bucket (prazo mais curto / parado há mais tempo). */
@@ -137,7 +182,7 @@ export interface PolicyKpis {
 }
 
 export function kpisDe(lista: Policy[]): PolicyKpis {
-  const porBucket = BUCKETS.reduce((acc, b) => ({ ...acc, [b.key]: 0 }), {} as Record<Bucket, number>)
+  const porBucket = BUCKETS().reduce((acc, b) => ({ ...acc, [b.key]: 0 }), {} as Record<Bucket, number>)
   let ativas = 0, pendentes = 0, emRisco = 0, premio = 0, cobertura = 0
   for (const p of lista) {
     const b = bucketOf(p)
@@ -152,9 +197,21 @@ export function kpisDe(lista: Policy[]): PolicyKpis {
 export const money = (cents?: number | null) =>
   cents == null ? '—' : `$${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: cents % 100 ? 2 : 0, maximumFractionDigits: 2 })}`
 
-export const STATUS_LABEL: Record<PolicyStatus, string> = {
-  submitted: 'Enviada', issued: 'Emitida', active: 'Ativa', at_risk: 'Em risco',
-  lapsed: 'Caducada', cancelled: 'Cancelada', declined: 'Recusada',
+export function STATUS_LABEL(locale: PolicyLocale = 'pt'): Record<PolicyStatus, string> {
+  const L = pick(locale)
+  return {
+    submitted: L('Enviada', 'Submitted', 'Enviada'),
+    issued: L('Emitida', 'Issued', 'Emitida'),
+    active: L('Ativa', 'Active', 'Activa'),
+    at_risk: L('Em risco', 'At risk', 'En riesgo'),
+    lapsed: L('Caducada', 'Lapsed', 'Caducada'),
+    cancelled: L('Cancelada', 'Cancelled', 'Cancelada'),
+    declined: L('Recusada', 'Declined', 'Rechazada'),
+  }
 }
 
-export const REQUISITOS_COMUNS = ['eDelivery', 'Policy Receipt', 'Amendment', 'ID Verification', 'Illustration', 'Exame médico', '1º prêmio']
+export function REQUISITOS_COMUNS(locale: PolicyLocale = 'pt'): string[] {
+  const L = pick(locale)
+  return ['eDelivery', 'Policy Receipt', 'Amendment', 'ID Verification', 'Illustration',
+    L('Exame médico', 'Medical exam', 'Examen médico'), L('1º prêmio', '1st premium', '1er pago')]
+}

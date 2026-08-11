@@ -1,7 +1,11 @@
 'use client'
 
+import { useT } from '@/lib/i18n-client'
+
 /** Tela exibida quando o comprador está com is_active=false. Bloqueia toda a plataforma. */
 export function SuspendedAccount({ name }: { name: string }) {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   async function logout() {
     try {
       const { createBrowserClient } = await import('@supabase/ssr')
@@ -20,12 +24,12 @@ export function SuspendedAccount({ name }: { name: string }) {
         <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ background: '#fef2f2' }}>
           <span className="text-[34px]">🔒</span>
         </div>
-        <h1 className="text-[20px] font-extrabold mb-2" style={{ color: '#1a1a2e' }}>Conta suspensa</h1>
+        <h1 className="text-[20px] font-extrabold mb-2" style={{ color: '#1a1a2e' }}>{L('Conta suspensa', 'Account suspended', 'Cuenta suspendida')}</h1>
         <p className="text-[14px] leading-relaxed mb-1" style={{ color: '#64748b' }}>
-          Olá{name ? `, ${name.split(' ')[0]}` : ''}. Seu acesso ao Lead4Producers está temporariamente desativado.
+          {L('Olá', 'Hello', 'Hola')}{name ? `, ${name.split(' ')[0]}` : ''}. {L('Seu acesso ao Lead4Producers está temporariamente desativado.', 'Your access to Lead4Producers is temporarily disabled.', 'Tu acceso a Lead4Producers está temporalmente desactivado.')}
         </p>
         <p className="text-[13px] leading-relaxed mb-6" style={{ color: '#94a3b8' }}>
-          Para reativar sua conta e voltar a receber leads, fale com a nossa equipe.
+          {L('Para reativar sua conta e voltar a receber leads, fale com a nossa equipe.', 'To reactivate your account and start receiving leads again, talk to our team.', 'Para reactivar tu cuenta y volver a recibir leads, habla con nuestro equipo.')}
         </p>
         <a
           href="https://wa.me/17867442126"
@@ -34,10 +38,10 @@ export function SuspendedAccount({ name }: { name: string }) {
           className="block w-full py-3 rounded-xl text-[14px] font-bold text-white mb-3"
           style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
         >
-          💬 Falar com o suporte
+          💬 {L('Falar com o suporte', 'Talk to support', 'Hablar con soporte')}
         </a>
         <button onClick={logout} className="text-[13px] font-semibold" style={{ color: '#94a3b8' }}>
-          Sair
+          {L('Sair', 'Sign out', 'Salir')}
         </button>
       </div>
     </div>

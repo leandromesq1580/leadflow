@@ -81,7 +81,7 @@ export default function MobileLeads() {
 
       <div className="m-pad">
         {!leads && !err && <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 60 }}><div className="m-spin" /></div>}
-        {err && <p className="m-muted" style={{ textAlign: 'center', paddingTop: 40 }}>Não consegui carregar agora.</p>}
+        {err && <p className="m-muted" style={{ textAlign: 'center', paddingTop: 40 }}>{L('Não consegui carregar agora.', "Couldn't load right now.", 'No pude cargar ahora.')}</p>}
         {leads && shown.length === 0 && <p className="m-muted" style={{ textAlign: 'center', paddingTop: 40, fontSize: 14 }}>{L('Nenhum lead aqui.', 'No leads here.', 'Sin leads aquí.')}</p>}
 
         {shown.map(l => {
@@ -93,7 +93,7 @@ export default function MobileLeads() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ margin: 0, fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.name}</p>
                   <p className="m-muted" style={{ margin: '2px 0 0', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {[[l.city, l.state].filter(Boolean).join(', '), statusLabel(l.status), timeAgo(l.created_at)].filter(Boolean).join(' · ')}
+                    {[[l.city, l.state].filter(Boolean).join(', '), statusLabel(l.status, loc), timeAgo(l.created_at, loc)].filter(Boolean).join(' · ')}
                   </p>
                 </div>
               </Link>

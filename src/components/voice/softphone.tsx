@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { CallScriptPanel } from './call-script-panel'
+import { useT } from '@/lib/i18n-client'
 
 /** Dispara uma ligação de qualquer lugar do app: callLead('+1...', 'Nome', leadId). */
 export function callLead(phone: string, name?: string, leadId?: string) {
@@ -17,6 +18,8 @@ function fmt(s: number) {
 
 /** Softphone global — inicializa o Device 1x e atende os eventos de ligação. */
 export function Softphone() {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [status, setStatus] = useState<Status>('off')
   const [info, setInfo] = useState<{ name?: string; phone?: string }>({})
   const [seconds, setSeconds] = useState(0)
@@ -101,7 +104,7 @@ export function Softphone() {
     // Sem device? Tenta ativar AGORA (recupera token que falhou no load da página).
     if (!deviceRef.current) {
       const ok = await initDevice()
-      if (!ok) { alert('Não consegui ativar o telefone agora. Recarregue a página (F5) e tente de novo — se persistir, verifique a permissão de microfone do navegador.'); return }
+      if (!ok) { alert(L('Não consegui ativar o telefone agora. Recarregue a página (F5) e tente de novo — se persistir, verifique a permissão de microfone do navegador.', 'Could not activate the phone right now. Reload the page (F5) and try again — if it persists, check the browser microphone permission.', 'No pude activar el teléfono ahora. Recarga la página (F5) e inténtalo de nuevo — si persiste, revisa el permiso de micrófono del navegador.')); return }
     }
     const device = deviceRef.current
     setInfo({ name: detail.name, phone: detail.phone }); setMuted(false); setStatus('connecting')
@@ -138,7 +141,7 @@ export function Softphone() {
   const active = status === 'connecting' || status === 'ringing' || status === 'incall'
   if (!active) return null
 
-  const label = status === 'connecting' ? 'Conectando…' : status === 'ringing' ? 'Chamando…' : fmt(seconds)
+  const label = status === 'connecting' ? L('Conectando…', 'Connecting…', 'Conectando…') : status === 'ringing' ? L('Chamando…', 'Ringing…', 'Llamando…') : fmt(seconds)
 
   return (
     <>
@@ -160,11 +163,11 @@ export function Softphone() {
         <button onClick={toggleMute} disabled={status !== 'incall'} style={{
           flex: 1, height: 40, borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)',
           background: muted ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.06)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: status === 'incall' ? 'pointer' : 'default', opacity: status === 'incall' ? 1 : 0.5,
-        }}>{muted ? '🔇 Mudo' : '🎙 Mutar'}</button>
+        }}>{muted ? L('🔇 Mudo', '🔇 Muted', '🔇 Silenciado') : L('🎙 Mutar', '🎙 Mute', '🎙 Silenciar')}</button>
         <button onClick={hangup} style={{
           flex: 1, height: 40, borderRadius: 10, border: 'none',
           background: '#ef4444', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-        }}>Desligar</button>
+        }}>{L('Desligar', 'Hang up', 'Colgar')}</button>
       </div>
     </div>
     </>

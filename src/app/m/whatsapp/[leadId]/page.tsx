@@ -63,7 +63,7 @@ export default function MobileThread() {
     <div>
       {/* header da conversa */}
       <div className="m-chat-head">
-        <button onClick={() => router.back()} className="m-tap" style={{ background: 'none', border: 'none', color: 'var(--m-text)', display: 'flex', cursor: 'pointer', padding: 0 }} aria-label="Voltar"><MIcon name="arrowLeft" size={24} /></button>
+        <button onClick={() => router.back()} className="m-tap" style={{ background: 'none', border: 'none', color: 'var(--m-text)', display: 'flex', cursor: 'pointer', padding: 0 }} aria-label={L('Voltar', 'Back', 'Volver')}><MIcon name="arrowLeft" size={24} /></button>
         <div className="m-av" style={{ width: 38, height: 38, fontSize: 13, background: avatarBg(lead?.name || '?') }}>{getInitials(lead?.name || '?')}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ margin: 0, fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lead?.name || '…'}</p>

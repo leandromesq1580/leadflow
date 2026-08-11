@@ -16,6 +16,7 @@ export function WaConnectCard() {
   const [creating, setCreating] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
 
   async function poll() {
     try {
@@ -38,11 +39,11 @@ export function WaConnectCard() {
     try {
       const r = await fetch('/api/whatsapp/connect', { method: 'POST' })
       const d = await r.json()
-      if (!r.ok) throw new Error(d.error || 'Erro ao conectar')
+      if (!r.ok) throw new Error(d.error || L('Erro ao conectar', 'Error connecting', 'Error al conectar'))
       // re-poll imediatamente
       poll()
     } catch (e: any) {
-      setErr(e?.message || 'Falha')
+      setErr(e?.message || L('Falha', 'Failed', 'Falló'))
     } finally {
       setCreating(false)
     }

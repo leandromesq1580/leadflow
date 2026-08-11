@@ -113,7 +113,7 @@ export default function MobilePipeline() {
 
       {/* loading */}
       {!noPipeline && !cards && !err && <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80 }}><div className="m-spin" /></div>}
-      {err && <p className="m-muted" style={{ textAlign: 'center', paddingTop: 60 }}>Não consegui carregar agora.</p>}
+      {err && <p className="m-muted" style={{ textAlign: 'center', paddingTop: 60 }}>{L('Não consegui carregar agora.', "Couldn't load right now.", 'No pude cargar ahora.')}</p>}
 
       {/* stage selector */}
       {!noPipeline && pipeline && cards && (
@@ -138,7 +138,7 @@ export default function MobilePipeline() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ margin: 0, fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.lead.name}</p>
                       <p className="m-muted" style={{ margin: '2px 0 0', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {[[c.lead.city, c.lead.state].filter(Boolean).join(', '), timeAgo(c.lead.created_at)].filter(Boolean).join(' · ')}
+                        {[[c.lead.city, c.lead.state].filter(Boolean).join(', '), timeAgo(c.lead.created_at, loc)].filter(Boolean).join(' · ')}
                       </p>
                     </div>
                   </Link>

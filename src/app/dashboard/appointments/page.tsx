@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { faixaDeHoras } from '@/lib/calendar-hours'
 import { TimePicker } from '@/components/time-picker'
+import { useT } from '@/lib/i18n-client'
 
 type EventKind = 'appointment' | 'followup' | 'event' | 'task'
 
@@ -27,8 +28,16 @@ interface CalendarEvent {
 
 type View = 'month' | 'week' | 'day'
 
-const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-const MONTHS_PT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+const WEEKDAYS = (locale: string) => locale === 'en'
+  ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  : locale === 'es'
+    ? ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+    : ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+const MONTHS = (locale: string) => locale === 'en'
+  ? ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+  : locale === 'es'
+    ? ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+    : ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
 function hourLabel(h: number) {
   const period = h >= 12 ? 'PM' : 'AM'
@@ -37,6 +46,9 @@ function hourLabel(h: number) {
 }
 
 export default function AppointmentsPage() {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
+  const dateLocale = t._locale === 'en' ? 'en-US' : t._locale === 'es' ? 'es-US' : 'pt-BR'
   const [buyerId, setBuyerId] = useState('')
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(true)
@@ -122,18 +134,18 @@ export default function AppointmentsPage() {
   }
 
   const headerTxt = view === 'month'
-    ? `${MONTHS_PT[anchor.getMonth()]} ${anchor.getFullYear()}`
+    ? `${MONTHS(t._locale)[anchor.getMonth()]} ${anchor.getFullYear()}`
     : view === 'week'
-      ? `Semana de ${new Date(rangeFrom).toLocaleDateString('pt-BR')}`
-      : anchor.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+      ? `${L('Semana de', 'Week of', 'Semana del')} ${new Date(rangeFrom).toLocaleDateString(dateLocale)}`
+      : anchor.toLocaleDateString(dateLocale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
   return (
     <div className="max-w-[1200px]">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <div>
-          <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>📅 Agenda</h1>
-          <p className="text-[13px]" style={{ color: '#64748b' }}>Eventos, tarefas, reuniões e appointments unificados</p>
+          <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>📅 {L('Agenda', 'Calendar', 'Agenda')}</h1>
+          <p className="text-[13px]" style={{ color: '#64748b' }}>{L('Eventos, tarefas, reuniões e appointments unificados', 'Events, tasks, meetings and appointments in one place', 'Eventos, tareas, reuniones y appointments en un solo lugar')}</p>
         </div>
         <div className="flex items-center gap-2">
           {/* Create menu */}
@@ -141,7 +153,7 @@ export default function AppointmentsPage() {
             <button onClick={() => setShowCreateMenu(!showCreateMenu)}
               className="px-4 py-2 rounded-lg text-[12px] font-bold text-white flex items-center gap-1.5"
               style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 4px 14px rgba(99,102,241,0.25)' }}>
-              + Criar ▾
+              + {L('Criar', 'Create', 'Crear')} ▾
             </button>
             {showCreateMenu && (
               <>
@@ -152,13 +164,13 @@ export default function AppointmentsPage() {
                     className="w-full text-left px-3 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-emerald-50 flex items-center gap-2"
                     style={{ color: '#1a1a2e' }}>
                     <span className="w-2 h-2 rounded-full" style={{ background: '#10b981' }} />
-                    📆 Evento
+                    📆 {L('Evento', 'Event', 'Evento')}
                   </button>
                   <button onClick={() => { setCreating('task'); setShowCreateMenu(false) }}
                     className="w-full text-left px-3 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-sky-50 flex items-center gap-2"
                     style={{ color: '#1a1a2e' }}>
                     <span className="w-2 h-2 rounded-full" style={{ background: '#0ea5e9' }} />
-                    ☐ Tarefa
+                    ☐ {L('Tarefa', 'Task', 'Tarea')}
                   </button>
                 </div>
               </>
@@ -167,14 +179,14 @@ export default function AppointmentsPage() {
           <button onClick={() => setAnchor(new Date())}
             className="px-3 py-2 rounded-lg text-[12px] font-bold"
             style={{ background: '#eef2ff', color: '#6366f1' }}>
-            Hoje
+            {L('Hoje', 'Today', 'Hoy')}
           </button>
           <div className="flex rounded-lg p-1" style={{ background: '#f1f5f9' }}>
             {(['day', 'week', 'month'] as View[]).map(v => (
               <button key={v} onClick={() => setView(v)}
                 className="px-3 py-1 rounded-md text-[11px] font-bold transition-all capitalize"
                 style={{ background: view === v ? '#fff' : 'transparent', color: view === v ? '#6366f1' : '#64748b' }}>
-                {v === 'day' ? 'Dia' : v === 'week' ? 'Semana' : 'Mês'}
+                {v === 'day' ? L('Dia', 'Day', 'Día') : v === 'week' ? L('Semana', 'Week', 'Semana') : L('Mês', 'Month', 'Mes')}
               </button>
             ))}
           </div>
@@ -188,7 +200,7 @@ export default function AppointmentsPage() {
         <button onClick={goNext} className="w-8 h-8 rounded-lg text-[14px] font-bold" style={{ background: '#f8f9fc', color: '#64748b' }}>›</button>
       </div>
 
-      {loading && <div className="text-center py-10 text-[12px]" style={{ color: '#94a3b8' }}>Carregando...</div>}
+      {loading && <div className="text-center py-10 text-[12px]" style={{ color: '#94a3b8' }}>{L('Carregando...', 'Loading...', 'Cargando...')}</div>}
 
       {!loading && view === 'month' && <MonthView onDia={(d) => { setAnchor(d); setView('day') }} anchor={anchor} events={events} onClick={setSelectedEvent} />}
       {!loading && view === 'week' && <WeekView anchor={anchor} events={events} onClick={setSelectedEvent} />}
@@ -197,11 +209,11 @@ export default function AppointmentsPage() {
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-4 mt-5 text-[11px]" style={{ color: '#64748b' }}>
         <LegendItem color="#6366f1" kind="appointment" label="Appointment" />
-        <LegendItem color="#10b981" kind="event" label="Evento" />
-        <LegendItem color="#0ea5e9" kind="task" label="Tarefa" />
-        <LegendItem color="#8b5cf6" kind="followup" label="Reunião (follow-up)" />
-        <LegendItem color="#f59e0b" kind="followup" label="Ligação (follow-up)" />
-        <LegendItem color="#ef4444" kind="followup" label="Não compareceu" />
+        <LegendItem color="#10b981" kind="event" label={L('Evento', 'Event', 'Evento')} />
+        <LegendItem color="#0ea5e9" kind="task" label={L('Tarefa', 'Task', 'Tarea')} />
+        <LegendItem color="#8b5cf6" kind="followup" label={L('Reunião (follow-up)', 'Meeting (follow-up)', 'Reunión (follow-up)')} />
+        <LegendItem color="#f59e0b" kind="followup" label={L('Ligação (follow-up)', 'Call (follow-up)', 'Llamada (follow-up)')} />
+        <LegendItem color="#ef4444" kind="followup" label={L('Não compareceu', 'No-show', 'No se presentó')} />
       </div>
 
       {selectedEvent && (
@@ -313,6 +325,8 @@ function EventPill({ event, onClick, compact }: { event: CalendarEvent; onClick:
 const VISIVEIS_NO_MES = 4
 
 function MonthView({ anchor, events, onClick, onDia }: { anchor: Date; events: CalendarEvent[]; onClick: (e: CalendarEvent) => void; onDia: (d: Date) => void }) {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1)
   const start = new Date(first); start.setDate(first.getDate() - first.getDay())
   const days: Date[] = []
@@ -325,7 +339,7 @@ function MonthView({ anchor, events, onClick, onDia }: { anchor: Date; events: C
   return (
     <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
       <div className="grid grid-cols-7">
-        {WEEKDAYS.map(w => (
+        {WEEKDAYS(t._locale).map(w => (
           <div key={w} className="px-3 py-2 text-center text-[10px] font-bold uppercase tracking-wider"
             style={{ background: '#f8f9fc', color: '#94a3b8' }}>
             {w}
@@ -355,7 +369,7 @@ function MonthView({ anchor, events, onClick, onDia }: { anchor: Date; events: C
                   <button onClick={ev => { ev.stopPropagation(); onDia(d) }}
                     className="text-[9px] font-bold px-1 rounded"
                     style={{ color: '#6366f1', background: '#eef2ff', cursor: 'pointer', border: 'none' }}
-                    title="Ver todos deste dia">
+                    title={L('Ver todos deste dia', 'See all for this day', 'Ver todos de este día')}>
                     +{dayEvents.length - VISIVEIS_NO_MES}
                   </button>
                 )}
@@ -374,6 +388,7 @@ function MonthView({ anchor, events, onClick, onDia }: { anchor: Date; events: C
 }
 
 function WeekView({ anchor, events, onClick }: { anchor: Date; events: CalendarEvent[]; onClick: (e: CalendarEvent) => void }) {
+  const t = useT()
   const start = new Date(anchor); start.setDate(anchor.getDate() - anchor.getDay()); start.setHours(0, 0, 0, 0)
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(start); d.setDate(start.getDate() + i); return d
@@ -392,7 +407,7 @@ function WeekView({ anchor, events, onClick }: { anchor: Date; events: CalendarE
           return (
             <div key={i} className="p-2 text-center"
               style={{ background: isToday ? '#eef2ff' : '#f8f9fc', borderLeft: '1px solid #f1f5f9' }}>
-              <p className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>{WEEKDAYS[i]}</p>
+              <p className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>{WEEKDAYS(t._locale)[i]}</p>
               <p className="text-[18px] font-extrabold" style={{ color: isToday ? '#6366f1' : '#1a1a2e' }}>{d.getDate()}</p>
             </div>
           )
@@ -459,6 +474,9 @@ function DayView({ anchor, events, onClick }: { anchor: Date; events: CalendarEv
 }
 
 function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onClose: () => void; onChanged: () => void }) {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
+  const dateLocale = t._locale === 'en' ? 'en-US' : t._locale === 'es' ? 'es-US' : 'pt-BR'
   const startDate = new Date(event.start)
   const [editing, setEditing] = useState(false)
   const [newDate, setNewDate] = useState(startDate.toISOString().slice(0, 10))
@@ -473,7 +491,7 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
     : 'start_at'
 
   async function reschedule() {
-    if (!newDate || !newTime) { alert('Data e hora obrigatórias'); return }
+    if (!newDate || !newTime) { alert(L('Data e hora obrigatórias', 'Date and time are required', 'Fecha y hora obligatorias')); return }
     setBusy(true)
     const iso = new Date(`${newDate}T${newTime}:00`).toISOString()
     const r = await fetch(endpointBase, {
@@ -483,7 +501,7 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
     })
     setBusy(false)
     if (r.ok) onChanged()
-    else alert('Erro ao reagendar')
+    else alert(L('Erro ao reagendar', 'Error rescheduling', 'Error al reprogramar'))
   }
 
   async function toggleComplete() {
@@ -531,23 +549,23 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
     })
     setBusy(false)
     if (r.ok) onChanged()
-    else alert('Erro ao mudar a cor')
+    else alert(L('Erro ao mudar a cor', 'Error changing the color', 'Error al cambiar el color'))
   }
 
   async function del() {
-    if (!confirm('Deletar este item? Ação não pode ser desfeita.')) return
+    if (!confirm(L('Deletar este item? Ação não pode ser desfeita.', 'Delete this item? This cannot be undone.', '¿Eliminar este elemento? Esta acción no se puede deshacer.'))) return
     setBusy(true)
     const r = await fetch(endpointBase, { method: 'DELETE' })
     setBusy(false)
     if (r.ok) onChanged()
-    else alert('Erro ao deletar')
+    else alert(L('Erro ao deletar', 'Error deleting', 'Error al eliminar'))
   }
 
   const kindLabel: Record<EventKind, string> = {
     appointment: 'APPOINTMENT',
     followup: (event.subtitle || 'FOLLOW-UP').toUpperCase(),
-    event: 'EVENTO',
-    task: 'TAREFA',
+    event: L('EVENTO', 'EVENT', 'EVENTO'),
+    task: L('TAREFA', 'TASK', 'TAREA'),
   }
 
   return (
@@ -570,21 +588,21 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
 
         <div className="rounded-xl p-4 mb-3" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
           <div className="flex items-center justify-between">
-            <p className="text-[11px] font-bold uppercase" style={{ color: '#94a3b8' }}>Quando</p>
+            <p className="text-[11px] font-bold uppercase" style={{ color: '#94a3b8' }}>{L('Quando', 'When', 'Cuándo')}</p>
             {!editing && (
               <button onClick={() => setEditing(true)} className="text-[11px] font-bold" style={{ color: '#6366f1' }}>
-                ✎ Reagendar
+                ✎ {L('Reagendar', 'Reschedule', 'Reprogramar')}
               </button>
             )}
           </div>
           {!editing ? (
             <p className="text-[14px] font-bold mt-1" style={{ color: '#1a1a2e' }}>
-              {startDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
-              {' às '}
+              {startDate.toLocaleDateString(dateLocale, { weekday: 'long', day: '2-digit', month: 'long' })}
+              {L(' às ', ' at ', ' a las ')}
               {startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
               {event.end && (
                 <span className="text-[12px] font-medium ml-1" style={{ color: '#64748b' }}>
-                  até {new Date(event.end).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                  {L('até', 'until', 'hasta')} {new Date(event.end).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                 </span>
               )}
             </p>
@@ -596,7 +614,7 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
                 className="px-2 py-2 rounded-lg text-[12px] bg-white border border-[#c7d2fe]" />
               <button onClick={reschedule} disabled={busy}
                 className="px-3 py-2 rounded-lg text-[11px] font-bold text-white disabled:opacity-50" style={{ background: '#6366f1' }}>
-                Salvar
+                {L('Salvar', 'Save', 'Guardar')}
               </button>
               <button onClick={() => setEditing(false)} className="text-[11px] font-bold" style={{ color: '#94a3b8' }}>×</button>
             </div>
@@ -605,7 +623,7 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
 
         {(event.description || event.title) && (
           <div className="rounded-xl p-4 mb-3" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
-            <p className="text-[11px] font-bold uppercase mb-1" style={{ color: '#94a3b8' }}>Descrição</p>
+            <p className="text-[11px] font-bold uppercase mb-1" style={{ color: '#94a3b8' }}>{L('Descrição', 'Description', 'Descripción')}</p>
             <p className="text-[13px] whitespace-pre-wrap" style={{ color: '#1a1a2e' }}>
               {event.description || event.title}
             </p>
@@ -614,17 +632,17 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
 
         {event.location && (
           <div className="rounded-xl p-4 mb-3" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
-            <p className="text-[11px] font-bold uppercase mb-1" style={{ color: '#94a3b8' }}>📍 Local</p>
+            <p className="text-[11px] font-bold uppercase mb-1" style={{ color: '#94a3b8' }}>📍 {L('Local', 'Location', 'Lugar')}</p>
             <p className="text-[13px]" style={{ color: '#1a1a2e' }}>{event.location}</p>
           </div>
         )}
 
         {(event.kind === 'task' || event.kind === 'event') && (
           <div className="rounded-xl p-4 mb-3" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
-            <p className="text-[11px] font-bold uppercase mb-2" style={{ color: '#94a3b8' }}>Cor</p>
+            <p className="text-[11px] font-bold uppercase mb-2" style={{ color: '#94a3b8' }}>{L('Cor', 'Color', 'Color')}</p>
             <div className="flex gap-2.5">
               {ITEM_COLORS.map(c => (
-                <button key={c} type="button" disabled={busy} onClick={() => changeColor(c)} aria-label={`Cor ${c}`}
+                <button key={c} type="button" disabled={busy} onClick={() => changeColor(c)} aria-label={`${L('Cor', 'Color', 'Color')} ${c}`}
                   className="w-7 h-7 rounded-full"
                   style={{ background: c, boxShadow: event.color === c ? `0 0 0 2px #fff, 0 0 0 4px ${c}` : 'none', transform: event.color === c ? 'scale(1.12)' : 'scale(1)', transition: 'all .12s', cursor: 'pointer' }} />
               ))}
@@ -640,7 +658,7 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
               color: event.completed ? '#64748b' : '#065f46',
               border: `1px solid ${event.completed ? '#cbd5e1' : '#a7f3d0'}`,
             }}>
-            {event.completed ? '↺ Marcar pendente' : '✓ Marcar concluído'}
+            {event.completed ? L('↺ Marcar pendente', '↺ Mark as pending', '↺ Marcar pendiente') : L('✓ Marcar concluído', '✓ Mark as done', '✓ Marcar completado')}
           </button>
 
           {(event.kind === 'appointment' || event.kind === 'followup') && (
@@ -651,7 +669,7 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
                 color: '#dc2626',
                 border: '1px solid #fecaca',
               }}>
-              {event.status === 'no_show' ? '↺ Desfazer "Não compareceu"' : '✗ Marcar como Não Compareceu'}
+              {event.status === 'no_show' ? L('↺ Desfazer "Não compareceu"', '↺ Undo "No-show"', '↺ Deshacer "No se presentó"') : L('✗ Marcar como Não Compareceu', '✗ Mark as No-show', '✗ Marcar como No se presentó')}
             </button>
           )}
 
@@ -659,14 +677,14 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
             <a href={`/dashboard/pipeline?lead=${event.lead_id}`}
               className="block w-full text-center py-3 rounded-xl text-[13px] font-bold text-white"
               style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-              Abrir lead no Pipeline →
+              {L('Abrir lead no Pipeline →', 'Open lead in Pipeline →', 'Abrir lead en Pipeline →')}
             </a>
           )}
 
           <button onClick={del} disabled={busy}
             className="block w-full text-center py-2.5 rounded-xl text-[12px] font-bold disabled:opacity-50"
             style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
-            🗑 Deletar
+            🗑 {L('Deletar', 'Delete', 'Eliminar')}
           </button>
         </div>
       </div>
@@ -683,6 +701,8 @@ function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
   onClose: () => void
   onCreated: () => void
 }) {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [date, setDate] = useState(anchor.toISOString().slice(0, 10))
@@ -696,13 +716,12 @@ function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
   const isEvent = kind === 'event'
   const [color, setColor] = useState(isEvent ? '#10b981' : '#0ea5e9')
   const icon = isEvent ? '📆' : '☐'
-  const label = isEvent ? 'Evento' : 'Tarefa'
 
   async function save() {
     setError('')
-    if (!title.trim()) { setError('Título obrigatório'); return }
-    if (!date) { setError('Data obrigatória'); return }
-    if (!allDay && !time) { setError('Hora obrigatória'); return }
+    if (!title.trim()) { setError(L('Título obrigatório', 'Title is required', 'Título obligatorio')); return }
+    if (!date) { setError(L('Data obrigatória', 'Date is required', 'Fecha obligatoria')); return }
+    if (!allDay && !time) { setError(L('Hora obrigatória', 'Time is required', 'Hora obligatoria')); return }
 
     setSaving(true)
     const start_at = allDay
@@ -730,7 +749,7 @@ function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
     if (r.ok) onCreated()
     else {
       const d = await r.json()
-      setError(d.error || 'Erro ao salvar')
+      setError(d.error || L('Erro ao salvar', 'Error saving', 'Error al guardar'))
     }
   }
 
@@ -739,12 +758,12 @@ function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
       <div className="mx-auto max-w-[520px] rounded-2xl p-6" style={{ background: '#fff' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-2 mb-4">
           <span className="text-[22px]">{icon}</span>
-          <h2 className="text-[20px] font-extrabold" style={{ color: '#1a1a2e' }}>Novo {label}</h2>
+          <h2 className="text-[20px] font-extrabold" style={{ color: '#1a1a2e' }}>{isEvent ? L('Novo Evento', 'New Event', 'Nuevo evento') : L('Nova Tarefa', 'New Task', 'Nueva tarea')}</h2>
         </div>
 
         <div className="space-y-3">
           <input value={title} onChange={e => setTitle(e.target.value)}
-            placeholder={isEvent ? 'Título do evento' : 'O que precisa ser feito?'}
+            placeholder={isEvent ? L('Título do evento', 'Event title', 'Título del evento') : L('O que precisa ser feito?', 'What needs to be done?', '¿Qué hay que hacer?')}
             autoFocus
             className="w-full px-3 py-3 rounded-xl text-[14px] font-bold focus:outline-none focus:ring-2 focus:ring-indigo-200"
             style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
@@ -752,20 +771,20 @@ function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
           {isEvent && (
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={allDay} onChange={e => setAllDay(e.target.checked)} />
-              <span className="text-[12px]" style={{ color: '#64748b' }}>Dia inteiro</span>
+              <span className="text-[12px]" style={{ color: '#64748b' }}>{L('Dia inteiro', 'All day', 'Todo el día')}</span>
             </label>
           )}
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>Data</label>
+              <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>{L('Data', 'Date', 'Fecha')}</label>
               <input type="date" value={date} onChange={e => setDate(e.target.value)}
                 className="w-full mt-1 px-3 py-2 rounded-lg text-[13px]" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
             </div>
             {!allDay && (
               <div>
                 <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>
-                  {isEvent ? 'Início' : 'Hora'}
+                  {isEvent ? L('Início', 'Start', 'Inicio') : L('Hora', 'Time', 'Hora')}
                 </label>
                 <div className="mt-1">
                   <TimePicker value={time} onChange={setTime} />
@@ -776,7 +795,7 @@ function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
 
           {isEvent && !allDay && (
             <div>
-              <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>Fim (opcional)</label>
+              <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>{L('Fim (opcional)', 'End (optional)', 'Fin (opcional)')}</label>
               <div className="mt-1">
                 <TimePicker value={endTime} onChange={setEndTime} />
               </div>
@@ -785,25 +804,25 @@ function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
 
           {isEvent && (
             <div>
-              <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>📍 Local (opcional)</label>
+              <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>📍 {L('Local (opcional)', 'Location (optional)', 'Lugar (opcional)')}</label>
               <input value={location} onChange={e => setLocation(e.target.value)}
-                placeholder="Endereço ou link da reunião"
+                placeholder={L('Endereço ou link da reunião', 'Address or meeting link', 'Dirección o enlace de la reunión')}
                 className="w-full mt-1 px-3 py-2 rounded-lg text-[13px]" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
             </div>
           )}
 
           <div>
-            <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>Descrição (opcional)</label>
+            <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>{L('Descrição (opcional)', 'Description (optional)', 'Descripción (opcional)')}</label>
             <textarea value={description} onChange={e => setDescription(e.target.value)}
               rows={3}
               className="w-full mt-1 px-3 py-2 rounded-lg text-[13px] resize-none" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
           </div>
 
           <div>
-            <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>Cor</label>
+            <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>{L('Cor', 'Color', 'Color')}</label>
             <div className="flex gap-2.5 mt-2">
               {ITEM_COLORS.map(c => (
-                <button key={c} type="button" onClick={() => setColor(c)} aria-label={`Cor ${c}`}
+                <button key={c} type="button" onClick={() => setColor(c)} aria-label={`${L('Cor', 'Color', 'Color')} ${c}`}
                   className="w-7 h-7 rounded-full"
                   style={{ background: c, boxShadow: color === c ? `0 0 0 2px #fff, 0 0 0 4px ${c}` : 'none', transform: color === c ? 'scale(1.12)' : 'scale(1)', transition: 'all .12s', cursor: 'pointer' }} />
               ))}
@@ -814,11 +833,11 @@ function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
         {error && <p className="text-[12px] mt-3 px-3 py-2 rounded-lg" style={{ background: '#fef2f2', color: '#dc2626' }}>⚠️ {error}</p>}
 
         <div className="flex justify-end gap-3 mt-5">
-          <button onClick={onClose} className="px-4 py-2 text-[13px] font-semibold" style={{ color: '#64748b' }}>Cancelar</button>
+          <button onClick={onClose} className="px-4 py-2 text-[13px] font-semibold" style={{ color: '#64748b' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
           <button onClick={save} disabled={saving || !title.trim()}
             className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50"
             style={{ background: color }}>
-            {saving ? 'Salvando...' : `Criar ${label.toLowerCase()}`}
+            {saving ? L('Salvando...', 'Saving...', 'Guardando...') : isEvent ? L('Criar evento', 'Create event', 'Crear evento') : L('Criar tarefa', 'Create task', 'Crear tarea')}
           </button>
         </div>
       </div>

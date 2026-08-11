@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { AVAILABLE_VARS } from '@/lib/template-render'
+import { useT } from '@/lib/i18n-client'
 
 interface Template {
   id: string; buyer_id: string | null; name: string; type: 'whatsapp' | 'email'
@@ -9,6 +10,8 @@ interface Template {
 }
 
 export default function TemplatesPage() {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [templates, setTemplates] = useState<Template[]>([])
   const [buyerId, setBuyerId] = useState('')
   const [loading, setLoading] = useState(true)
@@ -66,7 +69,7 @@ export default function TemplatesPage() {
   }
 
   async function remove(id: string) {
-    if (!confirm('Deletar esse template?')) return
+    if (!confirm(L('Deletar esse template?', 'Delete this template?', '¿Eliminar este template?'))) return
     await fetch(`/api/templates/${id}`, { method: 'DELETE' })
     load(buyerId)
   }
@@ -78,12 +81,12 @@ export default function TemplatesPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>Templates</h1>
-          <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>Mensagens prontas pra WhatsApp e Email</p>
+          <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>{L('Mensagens prontas pra WhatsApp e Email', 'Ready-made messages for WhatsApp and Email', 'Mensajes listos para WhatsApp y Email')}</p>
         </div>
         <button onClick={() => { setEditing(null); setShowNew(true) }}
           className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-white"
           style={{ background: '#6366f1' }}>
-          + Novo Template
+          + {L('Novo Template', 'New Template', 'Nuevo Template')}
         </button>
       </div>
 
@@ -107,7 +110,7 @@ export default function TemplatesPage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>{t.name}</p>
-                {t.is_system && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: '#fef3c7', color: '#92400e' }}>Sistema</span>}
+                {t.is_system && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: '#fef3c7', color: '#92400e' }}>{L('Sistema', 'System', 'Sistema')}</span>}
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: t.type === 'whatsapp' ? '#dcfce7' : '#eef2ff', color: t.type === 'whatsapp' ? '#15803d' : '#4f46e5' }}>
                   {t.type}
                 </span>
@@ -120,7 +123,7 @@ export default function TemplatesPage() {
                   <button onClick={() => { setEditing(t); setShowNew(false) }}
                     className="text-[11px] font-bold px-3 py-1.5 rounded-lg"
                     style={{ background: '#eef2ff', color: '#6366f1' }}>
-                    Editar
+                    {L('Editar', 'Edit', 'Editar')}
                   </button>
                   <button onClick={() => remove(t.id)}
                     className="text-[11px] font-bold px-3 py-1.5 rounded-lg"
@@ -133,7 +136,7 @@ export default function TemplatesPage() {
                 <button onClick={() => { setEditing({ ...t, is_system: false, id: '', buyer_id: buyerId }); setShowNew(true) }}
                   className="text-[11px] font-bold px-3 py-1.5 rounded-lg"
                   style={{ background: '#eef2ff', color: '#6366f1' }}>
-                  Duplicar
+                  {L('Duplicar', 'Duplicate', 'Duplicar')}
                 </button>
               )}
             </div>
@@ -150,6 +153,8 @@ function TemplateForm({ template, onCancel, onSave, saving }: {
   onSave: (data: Partial<Template>) => void
   saving: boolean
 }) {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [name, setName] = useState(template?.name || '')
   const [type, setType] = useState<'whatsapp' | 'email'>(template?.type || 'whatsapp')
   const [subject, setSubject] = useState(template?.subject || '')
@@ -162,17 +167,17 @@ function TemplateForm({ template, onCancel, onSave, saving }: {
 
   return (
     <div className="rounded-2xl p-6 mb-6" style={{ background: '#fff', border: '2px solid #6366f1' }}>
-      <h3 className="text-[16px] font-bold mb-4" style={{ color: '#1a1a2e' }}>{template ? 'Editar Template' : 'Novo Template'}</h3>
+      <h3 className="text-[16px] font-bold mb-4" style={{ color: '#1a1a2e' }}>{template ? L('Editar Template', 'Edit Template', 'Editar Template') : L('Novo Template', 'New Template', 'Nuevo Template')}</h3>
 
       <div className="grid grid-cols-2 gap-3 mb-3">
         <div>
-          <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>Nome</label>
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Primeiro contato"
+          <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Nome', 'Name', 'Nombre')}</label>
+          <input value={name} onChange={e => setName(e.target.value)} placeholder={L('Ex: Primeiro contato', 'E.g.: First contact', 'Ej: Primer contacto')}
             className="w-full px-3 py-2 rounded-lg text-[13px]"
             style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
         </div>
         <div>
-          <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>Tipo</label>
+          <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Tipo', 'Type', 'Tipo')}</label>
           <select value={type} onChange={e => setType(e.target.value as any)}
             className="w-full px-3 py-2 rounded-lg text-[13px] cursor-pointer"
             style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
@@ -184,8 +189,8 @@ function TemplateForm({ template, onCancel, onSave, saving }: {
 
       {type === 'email' && (
         <div className="mb-3">
-          <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>Assunto</label>
-          <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Ex: Boas-vindas"
+          <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Assunto', 'Subject', 'Asunto')}</label>
+          <input value={subject} onChange={e => setSubject(e.target.value)} placeholder={L('Ex: Boas-vindas', 'E.g.: Welcome', 'Ej: Bienvenida')}
             className="w-full px-3 py-2 rounded-lg text-[13px]"
             style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
         </div>
@@ -193,10 +198,10 @@ function TemplateForm({ template, onCancel, onSave, saving }: {
 
       <div className="mb-3">
         <div className="flex items-center justify-between mb-1">
-          <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Mensagem</label>
+          <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Mensagem', 'Message', 'Mensaje')}</label>
           <button type="button" onClick={() => setShowVars(!showVars)}
             className="text-[11px] font-bold" style={{ color: '#6366f1' }}>
-            {showVars ? '▼' : '▶'} Variáveis disponíveis
+            {showVars ? '▼' : '▶'} {L('Variáveis disponíveis', 'Available variables', 'Variables disponibles')}
           </button>
         </div>
         {showVars && (
@@ -214,17 +219,17 @@ function TemplateForm({ template, onCancel, onSave, saving }: {
           </div>
         )}
         <textarea value={body} onChange={e => setBody(e.target.value)}
-          rows={6} placeholder="Oi {primeiro_nome}! Aqui eh {agente}..."
+          rows={6} placeholder={L('Oi {primeiro_nome}! Aqui eh {agente}...', 'Hi {primeiro_nome}! This is {agente}...', '¡Hola {primeiro_nome}! Soy {agente}...')}
           className="w-full px-3 py-2 rounded-lg text-[13px] resize-none font-mono"
           style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
       </div>
 
       <div className="flex gap-2 justify-end">
-        <button onClick={onCancel} className="px-4 py-2 text-[13px] font-semibold" style={{ color: '#94a3b8' }}>Cancelar</button>
+        <button onClick={onCancel} className="px-4 py-2 text-[13px] font-semibold" style={{ color: '#94a3b8' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
         <button onClick={() => onSave({ name, type, subject: subject || null, body })} disabled={saving || !name || !body}
           className="px-5 py-2 rounded-lg text-[13px] font-bold text-white disabled:opacity-50"
           style={{ background: '#6366f1' }}>
-          {saving ? 'Salvando...' : 'Salvar'}
+          {saving ? L('Salvando...', 'Saving...', 'Guardando...') : L('Salvar', 'Save', 'Guardar')}
         </button>
       </div>
     </div>

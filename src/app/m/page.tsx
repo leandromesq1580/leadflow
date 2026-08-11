@@ -39,7 +39,7 @@ export default function MobileHome() {
     return <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 140 }}><div className="m-spin" /></div>
   }
   if (err || !d) {
-    return <div className="m-pad" style={{ paddingTop: 120, textAlign: 'center' }}><p className="m-muted">Não consegui carregar agora. Puxe pra atualizar.</p></div>
+    return <div className="m-pad" style={{ paddingTop: 120, textAlign: 'center' }}><p className="m-muted">{loc === 'en' ? "Couldn't load right now. Pull to refresh." : loc === 'es' ? 'No pude cargar ahora. Desliza para actualizar.' : 'Não consegui carregar agora. Puxe pra atualizar.'}</p></div>
   }
 
   const greet = loc === 'en' ? 'Hello' : loc === 'es' ? 'Hola' : 'Olá'
@@ -118,7 +118,7 @@ export default function MobileHome() {
                 {[l.city, l.state].filter(Boolean).join(', ')}{l.interest ? ` · ${l.interest}` : ''}
               </p>
             </div>
-            <span className="m-faint" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>{timeAgo(l.created_at)}</span>
+            <span className="m-faint" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>{timeAgo(l.created_at, loc)}</span>
           </Link>
         ))
       )}

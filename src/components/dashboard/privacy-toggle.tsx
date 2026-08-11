@@ -1,9 +1,12 @@
 'use client'
 
 import { usePrivacy } from '@/lib/privacy-mode'
+import { useT } from '@/lib/i18n-client'
 
 export function PrivacyToggle() {
   const { enabled, toggle } = usePrivacy()
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   return (
     <button
       onClick={toggle}
@@ -13,10 +16,14 @@ export function PrivacyToggle() {
         color: enabled ? '#fff' : '#64748b',
         border: `1px solid ${enabled ? '#0f172a' : '#e8ecf4'}`,
       }}
-      title={enabled ? 'Modo apresentação ATIVO (telefones/emails ocultos)' : 'Ativar modo apresentação'}
+      title={enabled
+        ? L('Modo apresentação ATIVO (telefones/emails ocultos)', 'Presentation mode ON (phones/emails hidden)', 'Modo presentación ACTIVO (teléfonos/emails ocultos)')
+        : L('Ativar modo apresentação', 'Enable presentation mode', 'Activar modo presentación')}
     >
       <span className="text-[14px]" aria-hidden>{enabled ? '🙈' : '👁️'}</span>
-      <span className="flex-1 text-left">{enabled ? 'Apresentação ON' : 'Apresentação'}</span>
+      <span className="flex-1 text-left">{enabled
+        ? L('Apresentação ON', 'Presentation ON', 'Presentación ON')
+        : L('Apresentação', 'Presentation', 'Presentación')}</span>
       <span
         className="w-7 h-4 rounded-full relative"
         style={{ background: enabled ? '#10b981' : '#cbd5e1' }}

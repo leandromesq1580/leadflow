@@ -79,7 +79,7 @@ export default function MobileLeadDetail() {
             <div style={{ display: 'flex', gap: 7, justifyContent: 'center', marginTop: 13, flexWrap: 'wrap' }}>
               {lead.state && <span className="m-chip">{lead.state}</span>}
               {lead.interest && <span className="m-chip">{lead.interest}</span>}
-              <span className="m-chip on m-tap" onClick={() => setSheet('status')} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>{statusLabel(lead.status)} <MIcon name="chevron" size={13} /></span>
+              <span className="m-chip on m-tap" onClick={() => setSheet('status')} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>{statusLabel(lead.status, loc)} <MIcon name="chevron" size={13} /></span>
             </div>
           </div>
 
@@ -139,7 +139,7 @@ export default function MobileLeadDetail() {
               [L('Cidade', 'City', 'Ciudad'), [lead.city, lead.state].filter(Boolean).join(', ') || '—'],
               [L('Interesse', 'Interest', 'Interés'), lead.interest || '—'],
               [L('Origem', 'Source', 'Origen'), lead.campaign_name || '—'],
-              [L('Recebido', 'Received', 'Recibido'), timeAgo(lead.created_at)],
+              [L('Recebido', 'Received', 'Recibido'), timeAgo(lead.created_at, loc)],
             ].map(([k, v], i, arr) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 0', borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
                 <span className="m-muted" style={{ fontSize: 13 }}>{k}</span>
@@ -173,10 +173,10 @@ export default function MobileLeadDetail() {
                 <div key={a.id} className="m-card" style={{ padding: 13, marginBottom: 9, display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div className="m-icb"><MIcon name="clock" size={16} /></div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>{statusLabel(a.action)}</p>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>{statusLabel(a.action, loc)}</p>
                     {a.notes && <p className="m-muted" style={{ margin: '2px 0 0', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.notes}</p>}
                   </div>
-                  <span className="m-faint" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>{timeAgo(a.created_at)}</span>
+                  <span className="m-faint" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>{timeAgo(a.created_at, loc)}</span>
                 </div>
               ))}
             </>

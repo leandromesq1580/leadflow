@@ -5,6 +5,7 @@ import {
   BUCKETS, bucketOf, acaoSugerida, ordenar, money, diasAte, diasDesde,
   STATUS_LABEL, REQUISITOS_COMUNS, type Policy, type Bucket, type PolicyKpis,
 } from '@/lib/insurance-policies'
+import { useT } from '@/lib/i18n-client'
 
 /**
  * Tela de Apólices (pós-venda) — traz o modelo do "Status do Book" pro Lead4Pro,
@@ -12,6 +13,12 @@ import {
  * O corretor vê o que fazer HOJE: buckets de ação calculados por data/pendência.
  */
 export function PoliciesClient({ buyerId }: { buyerId: string }) {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
+  const loc = t._locale
+  const buckets = BUCKETS(loc)
+  const statusLabels = STATUS_LABEL(loc)
+  const dias = (n: number) => L(`${n} dia(s)`, `${n} day(s)`, `${n} día(s)`)
   const [lista, setLista] = useState<Policy[]>([])
   const [kpis, setKpis] = useState<PolicyKpis | null>(null)
   const [carregando, setCarregando] = useState(true)
@@ -43,16 +50,20 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
     try {
       const r = await fetch('/api/apolices/sync', { method: 'POST' })
       const d = await r.json()
-      if (!r.ok) { setAvisoSync(d.error || 'Não consegui atualizar agora.'); setSincronizando(false); return }
+      if (!r.ok) { setAvisoSync(d.error || L('Não consegui atualizar agora.', 'Could not refresh right now.', 'No pude actualizar ahora.')); setSincronizando(false); return }
       const partes = []
-      if (d.novas) partes.push(`${d.novas} nova(s)`)
-      if (d.atualizadas) partes.push(`${d.atualizadas} atualizada(s)`)
+      if (d.novas) partes.push(L(`${d.novas} nova(s)`, `${d.novas} new`, `${d.novas} nueva(s)`))
+      if (d.atualizadas) partes.push(L(`${d.atualizadas} atualizada(s)`, `${d.atualizadas} updated`, `${d.atualizadas} actualizada(s)`))
       setAvisoSync(partes.length
-        ? `Portal lido: ${partes.join(' · ')}. ${d.semMudanca} sem mudança.`
-        : `Tudo em dia — nenhuma mudança no portal (${d.semMudanca} apólices conferidas).`)
+        ? L(`Portal lido: ${partes.join(' · ')}. ${d.semMudanca} sem mudança.`,
+            `Portal read: ${partes.join(' · ')}. ${d.semMudanca} unchanged.`,
+            `Portal leído: ${partes.join(' · ')}. ${d.semMudanca} sin cambios.`)
+        : L(`Tudo em dia — nenhuma mudança no portal (${d.semMudanca} apólices conferidas).`,
+            `All caught up — no changes on the portal (${d.semMudanca} policies checked).`,
+            `Todo al día — sin cambios en el portal (${d.semMudanca} pólizas revisadas).`))
       await carregar()
       fetch('/api/apolices/sync', { cache: 'no-store' }).then(r => r.json()).then(setConector).catch(() => {})
-    } catch { setAvisoSync('Erro de conexão com o portal.') }
+    } catch { setAvisoSync(L('Erro de conexão com o portal.', 'Connection error with the portal.', 'Error de conexión con el portal.')) }
     setSincronizando(false)
   }
 
@@ -74,7 +85,7 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
   }, [visiveis])
 
   async function salvar() {
-    if (!edit?.client_name?.trim()) { alert('Informe o nome do cliente.'); return }
+    if (!edit?.client_name?.trim()) { alert(L('Informe o nome do cliente.', 'Enter the client name.', 'Ingresa el nombre del cliente.')); return }
     setSalvando(true)
     try {
       const metodo = edit.id ? 'PATCH' : 'POST'
@@ -83,14 +94,14 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
         body: JSON.stringify(edit),
       })
       const d = await r.json()
-      if (!r.ok) { alert(d.error || 'Não consegui salvar.'); setSalvando(false); return }
+      if (!r.ok) { alert(d.error || L('Não consegui salvar.', 'Could not save.', 'No pude guardar.')); setSalvando(false); return }
       setEdit(null); await carregar()
-    } catch { alert('Erro de conexão.') }
+    } catch { alert(L('Erro de conexão.', 'Connection error.', 'Error de conexión.')) }
     setSalvando(false)
   }
 
   async function excluir(id: string) {
-    if (!confirm('Excluir esta apólice do seu acompanhamento?')) return
+    if (!confirm(L('Excluir esta apólice do seu acompanhamento?', 'Remove this policy from your tracking?', '¿Eliminar esta póliza de tu seguimiento?'))) return
     await fetch(`/api/apolices?id=${id}`, { method: 'DELETE' })
     carregar()
   }
@@ -115,26 +126,31 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
     <div className="max-w-[1040px]">
       <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>Apólices</h1>
+          <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>{L('Apólices', 'Policies', 'Pólizas')}</h1>
           <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>
-            Pós-venda: o que precisa da sua ação hoje para não perder cliente nem comissão
+            {L('Pós-venda: o que precisa da sua ação hoje para não perder cliente nem comissão',
+               'Post-sale: what needs your action today so you do not lose the client or the commission',
+               'Posventa: lo que necesita tu acción hoy para no perder al cliente ni la comisión')}
           </p>
         </div>
         <div className="flex gap-2">
-          <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar cliente ou nº da apólice…"
+          <input value={busca} onChange={e => setBusca(e.target.value)}
+            placeholder={L('Buscar cliente ou nº da apólice…', 'Search client or policy no.…', 'Buscar cliente o nº de póliza…')}
             className="px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4', width: 250 }} />
           {conector?.conectado && (
             <button onClick={sincronizar} disabled={sincronizando}
               className="px-4 py-2 rounded-xl text-[13px] font-bold"
               style={{ background: '#fff', border: '1px solid #e8ecf4', color: sincronizando ? '#94a3b8' : '#0f766e' }}
-              title={`Ler o portal da ${conector.seguradora} agora`}>
-              {sincronizando ? '⏳ Lendo o portal…' : '🔄 Atualizar do portal'}
+              title={L(`Ler o portal da ${conector.seguradora} agora`, `Read the ${conector.seguradora} portal now`, `Leer el portal de ${conector.seguradora} ahora`)}>
+              {sincronizando
+                ? L('⏳ Lendo o portal…', '⏳ Reading the portal…', '⏳ Leyendo el portal…')
+                : L('🔄 Atualizar do portal', '🔄 Refresh from portal', '🔄 Actualizar del portal')}
             </button>
           )}
           <button onClick={() => setEdit({ status: 'submitted', premium_mode: 'monthly', requirements: [] })}
             className="px-4 py-2 rounded-xl text-[13px] font-bold text-white"
             style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
-            + Nova apólice
+            {L('+ Nova apólice', '+ New policy', '+ Nueva póliza')}
           </button>
         </div>
       </div>
@@ -149,24 +165,32 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
 
       {conector?.conectado && conector.ultimaSync && !avisoSync && (
         <p className="text-[12px] mb-4" style={{ color: '#94a3b8' }}>
-          Conectado ao portal da {conector.seguradora} · última leitura{' '}
-          {new Date(conector.ultimaSync).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+          {L(`Conectado ao portal da ${conector.seguradora} · última leitura`,
+             `Connected to the ${conector.seguradora} portal · last read`,
+             `Conectado al portal de ${conector.seguradora} · última lectura`)}{' '}
+          {new Date(conector.ultimaSync).toLocaleString(t._locale === 'en' ? 'en-US' : t._locale === 'es' ? 'es-US' : 'pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
         </p>
       )}
 
       {migracao && (
         <div className="rounded-xl p-4 mb-5 text-[13px] font-semibold" style={{ background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e' }}>
-          ⚠️ Recurso em ativação — rode a migration <b>036_policies.sql</b> no Supabase para começar a usar.
+          {L('⚠️ Recurso em ativação — rode a migration ', '⚠️ Feature being activated — run the ', '⚠️ Función en activación — ejecuta la migración ')}
+          <b>036_policies.sql</b>
+          {L(' no Supabase para começar a usar.', ' migration in Supabase to start using it.', ' en Supabase para empezar a usarla.')}
         </div>
       )}
 
       {/* KPIs */}
       {kpis && (
         <div className="grid grid-cols-4 gap-4 mb-6">
-          <K label="No book" valor={kpis.total} sub={`${money(kpis.coberturaCents)} de cobertura ativa`} />
-          <K label="Ativas e em dia" valor={kpis.ativas} cor="#059669" sub={`${money(kpis.premioMensalCents)}/mês em prêmio`} />
-          <K label="Com pendência" valor={kpis.pendentes} cor="#b45309" sub="documento ou assinatura" />
-          <K label="Em risco" valor={kpis.emRisco} cor={kpis.emRisco > 0 ? '#b91c1c' : '#94a3b8'} sub="caducando ou caducadas" />
+          <K label={L('No book', 'In the book', 'En el book')} valor={kpis.total}
+            sub={L(`${money(kpis.coberturaCents)} de cobertura ativa`, `${money(kpis.coberturaCents)} in active coverage`, `${money(kpis.coberturaCents)} de cobertura activa`)} />
+          <K label={L('Ativas e em dia', 'Active, in good standing', 'Activas y al día')} valor={kpis.ativas} cor="#059669"
+            sub={L(`${money(kpis.premioMensalCents)}/mês em prêmio`, `${money(kpis.premioMensalCents)}/mo in premium`, `${money(kpis.premioMensalCents)}/mes en prima`)} />
+          <K label={L('Com pendência', 'With pending items', 'Con pendientes')} valor={kpis.pendentes} cor="#b45309"
+            sub={L('documento ou assinatura', 'document or signature', 'documento o firma')} />
+          <K label={L('Em risco', 'At risk', 'En riesgo')} valor={kpis.emRisco} cor={kpis.emRisco > 0 ? '#b91c1c' : '#94a3b8'}
+            sub={L('caducando ou caducadas', 'lapsing or lapsed', 'por caducar o caducadas')} />
         </div>
       )}
 
@@ -175,9 +199,9 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
         <button onClick={() => setFiltro('todas')}
           className="px-3.5 py-1.5 rounded-full text-[12px] font-bold"
           style={{ background: filtro === 'todas' ? '#6366f1' : '#f1f5f9', color: filtro === 'todas' ? '#fff' : '#64748b' }}>
-          Todas ({lista.length})
+          {L('Todas', 'All', 'Todas')} ({lista.length})
         </button>
-        {BUCKETS.map(b => {
+        {buckets.map(b => {
           const n = kpis?.porBucket?.[b.key] ?? 0
           if (n === 0 && b.key !== 'urgente') return null
           const on = filtro === b.key
@@ -192,20 +216,22 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
       </div>
 
       {carregando ? (
-        <p className="text-[13px]" style={{ color: '#94a3b8' }}>Carregando…</p>
+        <p className="text-[13px]" style={{ color: '#94a3b8' }}>{L('Carregando…', 'Loading…', 'Cargando…')}</p>
       ) : lista.length === 0 ? (
         <div className="rounded-2xl p-8 text-center" style={{ background: '#fff', border: '1px dashed #cbd5e1' }}>
-          <p className="text-[15px] font-bold mb-1" style={{ color: '#1a1a2e' }}>Nenhuma apólice cadastrada</p>
+          <p className="text-[15px] font-bold mb-1" style={{ color: '#1a1a2e' }}>{L('Nenhuma apólice cadastrada', 'No policies yet', 'Ninguna póliza registrada')}</p>
           <p className="text-[13px] mb-4" style={{ color: '#64748b' }}>
-            Registre as apólices vendidas para acompanhar assinaturas pendentes, pagamentos em risco e o que a seguradora ainda não processou.
+            {L('Registre as apólices vendidas para acompanhar assinaturas pendentes, pagamentos em risco e o que a seguradora ainda não processou.',
+               'Log the policies you sold to track pending signatures, at-risk payments and what the carrier has not processed yet.',
+               'Registra las pólizas vendidas para dar seguimiento a firmas pendientes, pagos en riesgo y lo que la aseguradora aún no procesó.')}
           </p>
           <button onClick={() => setEdit({ status: 'submitted', premium_mode: 'monthly', requirements: [] })}
             className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-white" style={{ background: '#6366f1' }}>
-            + Cadastrar a primeira
+            {L('+ Cadastrar a primeira', '+ Add the first one', '+ Registrar la primera')}
           </button>
         </div>
       ) : (
-        BUCKETS.map(b => {
+        buckets.map(b => {
           const itens = porBucket.get(b.key) || []
           if (itens.length === 0) return null
           return (
@@ -226,7 +252,7 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
                       opacity: p.done_at ? 0.55 : 1,
                     }}>
                       <div className="flex items-start gap-3">
-                        <button onClick={() => marcarFeito(p)} title={p.done_at ? 'Reabrir' : 'Marcar como feito'}
+                        <button onClick={() => marcarFeito(p)} title={p.done_at ? L('Reabrir', 'Reopen', 'Reabrir') : L('Marcar como feito', 'Mark as done', 'Marcar como hecho')}
                           className="mt-0.5 w-5 h-5 rounded flex items-center justify-center text-[12px] font-bold flex-shrink-0"
                           style={{ border: `2px solid ${p.done_at ? '#10b981' : '#cbd5e1'}`, background: p.done_at ? '#10b981' : '#fff', color: '#fff' }}>
                           {p.done_at ? '✓' : ''}
@@ -235,17 +261,17 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-[15px] font-extrabold" style={{ color: '#1a1a2e' }}>{p.client_name}</p>
                             <span className="text-[11px] font-bold px-2 py-0.5 rounded-md" style={{ background: '#eef2ff', color: '#4f46e5' }}>
-                              {STATUS_LABEL[p.status]}
+                              {statusLabels[p.status]}
                             </span>
                           </div>
                           <p className="text-[12px] mt-0.5" style={{ color: '#94a3b8' }}>
                             {[p.policy_number, p.carrier, p.product,
-                              p.premium_cents ? `${money(p.premium_cents)}/${p.premium_mode === 'annual' ? 'ano' : 'mês'}` : null,
-                              p.coverage_cents ? `${money(p.coverage_cents)} de cobertura` : null,
+                              p.premium_cents ? `${money(p.premium_cents)}/${p.premium_mode === 'annual' ? L('ano', 'yr', 'año') : L('mês', 'mo', 'mes')}` : null,
+                              p.coverage_cents ? L(`${money(p.coverage_cents)} de cobertura`, `${money(p.coverage_cents)} coverage`, `${money(p.coverage_cents)} de cobertura`) : null,
                             ].filter(Boolean).join(' · ')}
                           </p>
 
-                          <p className="text-[13px] font-bold mt-2" style={{ color: b.color }}>{acaoSugerida(p)}</p>
+                          <p className="text-[13px] font-bold mt-2" style={{ color: b.color }}>{acaoSugerida(p, loc)}</p>
 
                           {(p.requirements || []).length > 0 && (
                             <div className="flex gap-1.5 flex-wrap mt-2">
@@ -272,26 +298,28 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
                             )}
                             <button onClick={() => setAberto(open ? null : p.id)}
                               className="px-3 py-1.5 rounded-lg text-[12px] font-bold" style={{ background: '#f8fafc', color: '#64748b' }}>
-                              {open ? '▾ Ocultar detalhes' : '▸ Detalhes para decidir'}
+                              {open
+                                ? L('▾ Ocultar detalhes', '▾ Hide details', '▾ Ocultar detalles')
+                                : L('▸ Detalhes para decidir', '▸ Details to decide', '▸ Detalles para decidir')}
                             </button>
                             <button onClick={() => setEdit(p)} className="px-3 py-1.5 rounded-lg text-[12px] font-bold" style={{ background: '#f8fafc', color: '#64748b' }}>
-                              ✏️ Editar
+                              {L('✏️ Editar', '✏️ Edit', '✏️ Editar')}
                             </button>
                           </div>
 
                           {open && (
                             <div className="mt-3 pt-3 grid grid-cols-2 gap-x-6 gap-y-2" style={{ borderTop: '1px solid #f1f5f9' }}>
                               {[
-                                ['Dívida', p.amount_due_cents ? money(p.amount_due_cents) : null],
-                                ['Prazo', p.due_date ? `${p.due_date}${venceEm !== null ? ` (${venceEm} dia(s))` : ''}` : null],
-                                ['Cobertura', p.coverage_cents ? money(p.coverage_cents) : null],
-                                ['Prêmio', p.premium_cents ? `${money(p.premium_cents)}/${p.premium_mode === 'annual' ? 'ano' : 'mês'}` : null],
-                                ['Enviada em', p.submitted_at],
-                                ['Emitida em', p.issued_at],
-                                ['Vigente desde', p.effective_date],
-                                ['Pago até', p.paid_through],
-                                ['Beneficiário', p.beneficiary],
-                                ['Parada há', paradoHa !== null ? `${paradoHa} dia(s)` : null],
+                                [L('Dívida', 'Amount due', 'Deuda'), p.amount_due_cents ? money(p.amount_due_cents) : null],
+                                [L('Prazo', 'Deadline', 'Plazo'), p.due_date ? `${p.due_date}${venceEm !== null ? ` (${dias(venceEm)})` : ''}` : null],
+                                [L('Cobertura', 'Coverage', 'Cobertura'), p.coverage_cents ? money(p.coverage_cents) : null],
+                                [L('Prêmio', 'Premium', 'Prima'), p.premium_cents ? `${money(p.premium_cents)}/${p.premium_mode === 'annual' ? L('ano', 'yr', 'año') : L('mês', 'mo', 'mes')}` : null],
+                                [L('Enviada em', 'Submitted on', 'Enviada el'), p.submitted_at],
+                                [L('Emitida em', 'Issued on', 'Emitida el'), p.issued_at],
+                                [L('Vigente desde', 'Effective since', 'Vigente desde'), p.effective_date],
+                                [L('Pago até', 'Paid through', 'Pagado hasta'), p.paid_through],
+                                [L('Beneficiário', 'Beneficiary', 'Beneficiario'), p.beneficiary],
+                                [L('Parada há', 'Stalled for', 'Detenida hace'), paradoHa !== null ? dias(paradoHa) : null],
                               ].filter(([, v]) => v).map(([k, v]) => (
                                 <div key={String(k)}>
                                   <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{k}</p>
@@ -300,12 +328,12 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
                               ))}
                               {p.notes && (
                                 <div className="col-span-2 mt-1">
-                                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Histórico / leitura do caso</p>
+                                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Histórico / leitura do caso', 'History / case notes', 'Historial / lectura del caso')}</p>
                                   <p className="text-[13px] whitespace-pre-wrap" style={{ color: '#334155' }}>{p.notes}</p>
                                 </div>
                               )}
                               <div className="col-span-2">
-                                <button onClick={() => excluir(p.id)} className="text-[11px] font-bold" style={{ color: '#dc2626' }}>Excluir apólice</button>
+                                <button onClick={() => excluir(p.id)} className="text-[11px] font-bold" style={{ color: '#dc2626' }}>{L('Excluir apólice', 'Delete policy', 'Eliminar póliza')}</button>
                               </div>
                             </div>
                           )}
@@ -327,14 +355,14 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
           <div onClick={e => e.stopPropagation()} className="rounded-2xl p-6"
             style={{ background: '#fff', width: 620, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,0.25)' }}>
             <p className="text-[18px] font-extrabold mb-4" style={{ color: '#1a1a2e' }}>
-              {edit.id ? 'Editar apólice' : 'Nova apólice'}
+              {edit.id ? L('Editar apólice', 'Edit policy', 'Editar póliza') : L('Nova apólice', 'New policy', 'Nueva póliza')}
             </p>
 
             <div className="grid grid-cols-2 gap-3">
               {([
-                ['client_name', 'Cliente *', 'text'], ['policy_number', 'Nº da apólice', 'text'],
-                ['client_phone', 'Telefone', 'text'], ['client_email', 'E-mail', 'email'],
-                ['carrier', 'Seguradora', 'text'], ['product', 'Produto', 'text'],
+                ['client_name', L('Cliente *', 'Client *', 'Cliente *'), 'text'], ['policy_number', L('Nº da apólice', 'Policy no.', 'Nº de póliza'), 'text'],
+                ['client_phone', L('Telefone', 'Phone', 'Teléfono'), 'text'], ['client_email', L('E-mail', 'Email', 'Correo'), 'email'],
+                ['carrier', L('Seguradora', 'Carrier', 'Aseguradora'), 'text'], ['product', L('Produto', 'Product', 'Producto'), 'text'],
               ] as const).map(([campo, label, tipo]) => (
                 <div key={campo}>
                   <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{label}</label>
@@ -344,36 +372,36 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
               ))}
 
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>Prêmio ($)</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Prêmio ($)', 'Premium ($)', 'Prima ($)')}</label>
                 <input type="number" step="0.01" value={edit.premium_cents ? edit.premium_cents / 100 : ''}
                   onChange={e => setEdit({ ...edit, premium_cents: e.target.value ? Math.round(parseFloat(e.target.value) * 100) : null })}
                   className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }} />
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>Cobertura ($)</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Cobertura ($)', 'Coverage ($)', 'Cobertura ($)')}</label>
                 <input type="number" value={edit.coverage_cents ? edit.coverage_cents / 100 : ''}
                   onChange={e => setEdit({ ...edit, coverage_cents: e.target.value ? Math.round(parseFloat(e.target.value) * 100) : null })}
                   className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }} />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>Situação</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Situação', 'Status', 'Estado')}</label>
                 <select value={edit.status || 'submitted'} onChange={e => setEdit({ ...edit, status: e.target.value as any })}
                   className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }}>
-                  {Object.entries(STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  {Object.entries(statusLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>Periodicidade</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Periodicidade', 'Frequency', 'Periodicidad')}</label>
                 <select value={edit.premium_mode || 'monthly'} onChange={e => setEdit({ ...edit, premium_mode: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }}>
-                  <option value="monthly">Mensal</option><option value="annual">Anual</option>
+                  <option value="monthly">{L('Mensal', 'Monthly', 'Mensual')}</option><option value="annual">{L('Anual', 'Annual', 'Anual')}</option>
                 </select>
               </div>
 
               {([
-                ['submitted_at', 'Enviada em'], ['issued_at', 'Emitida em'],
-                ['effective_date', 'Vigente desde'], ['paid_through', 'Pago até'],
+                ['submitted_at', L('Enviada em', 'Submitted on', 'Enviada el')], ['issued_at', L('Emitida em', 'Issued on', 'Emitida el')],
+                ['effective_date', L('Vigente desde', 'Effective since', 'Vigente desde')], ['paid_through', L('Pago até', 'Paid through', 'Pagado hasta')],
               ] as const).map(([campo, label]) => (
                 <div key={campo}>
                   <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{label}</label>
@@ -383,22 +411,22 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
               ))}
 
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>Dívida ($)</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Dívida ($)', 'Amount due ($)', 'Deuda ($)')}</label>
                 <input type="number" step="0.01" value={edit.amount_due_cents ? edit.amount_due_cents / 100 : ''}
                   onChange={e => setEdit({ ...edit, amount_due_cents: e.target.value ? Math.round(parseFloat(e.target.value) * 100) : null })}
                   className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }} />
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>Prazo do aviso</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Prazo do aviso', 'Notice deadline', 'Plazo del aviso')}</label>
                 <input type="date" value={edit.due_date || ''} onChange={e => setEdit({ ...edit, due_date: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }} />
               </div>
             </div>
 
             <div className="mt-3">
-              <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: '#94a3b8' }}>Pendências</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: '#94a3b8' }}>{L('Pendências', 'Pending items', 'Pendientes')}</label>
               <div className="flex gap-1.5 flex-wrap">
-                {REQUISITOS_COMUNS.map(r => {
+                {REQUISITOS_COMUNS(loc).map(r => {
                   const on = (edit.requirements || []).includes(r)
                   return (
                     <button key={r} type="button"
@@ -413,13 +441,13 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
             </div>
 
             <div className="mt-3">
-              <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>Ação recomendada (opcional)</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Ação recomendada (opcional)', 'Recommended action (optional)', 'Acción recomendada (opcional)')}</label>
               <input value={edit.next_action || ''} onChange={e => setEdit({ ...edit, next_action: e.target.value })}
-                placeholder="Deixe vazio para o sistema sugerir automaticamente"
+                placeholder={L('Deixe vazio para o sistema sugerir automaticamente', 'Leave empty and the system suggests one automatically', 'Déjalo vacío para que el sistema sugiera automáticamente')}
                 className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }} />
             </div>
             <div className="mt-3">
-              <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>Histórico / observações</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Histórico / observações', 'History / notes', 'Historial / notas')}</label>
               <textarea value={edit.notes || ''} onChange={e => setEdit({ ...edit, notes: e.target.value })} rows={3}
                 className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }} />
             </div>
@@ -427,11 +455,11 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
             <div className="flex gap-2 mt-5">
               <button onClick={() => setEdit(null)} disabled={salvando}
                 className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold" style={{ background: '#f1f5f9', color: '#475569' }}>
-                Cancelar
+                {L('Cancelar', 'Cancel', 'Cancelar')}
               </button>
               <button onClick={salvar} disabled={salvando}
                 className="flex-1 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50" style={{ background: '#6366f1' }}>
-                {salvando ? 'Salvando…' : 'Salvar apólice'}
+                {salvando ? L('Salvando…', 'Saving…', 'Guardando…') : L('Salvar apólice', 'Save policy', 'Guardar póliza')}
               </button>
             </div>
           </div>

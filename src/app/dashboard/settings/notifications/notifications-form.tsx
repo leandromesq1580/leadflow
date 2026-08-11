@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { playReminderSound } from '@/components/dashboard/meeting-banner'
+import { useT } from '@/lib/i18n-client'
 
 interface Buyer {
   id: string
@@ -25,10 +26,10 @@ interface Prefs {
 }
 
 const INTERVAL_OPTIONS = [5, 10, 15, 30, 45, 60, 90, 120, 240]
-const SOUND_OPTIONS: { id: Prefs['sound_file']; label: string; description: string }[] = [
-  { id: 'chime', label: 'Chime', description: 'Três tons subindo, agradável' },
-  { id: 'alarm', label: 'Alarm', description: 'Beep agudo, mais urgente' },
-  { id: 'bell', label: 'Bell', description: 'Sino, decay longo' },
+const soundOptions = (L: (pt: string, en: string, es: string) => string): { id: Prefs['sound_file']; label: string; description: string }[] => [
+  { id: 'chime', label: 'Chime', description: L('Três tons subindo, agradável', 'Three rising tones, pleasant', 'Tres tonos ascendentes, agradable') },
+  { id: 'alarm', label: 'Alarm', description: L('Beep agudo, mais urgente', 'Sharp beep, more urgent', 'Bip agudo, más urgente') },
+  { id: 'bell', label: 'Bell', description: L('Sino, decay longo', 'Bell, long decay', 'Campana, sonido prolongado') },
 ]
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -44,6 +45,8 @@ interface Props {
 }
 
 export function NotificationsForm({ buyer, initialPrefs }: Props) {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [prefs, setPrefs] = useState<Prefs>(initialPrefs)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -75,12 +78,12 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
     setEnabling(true)
     try {
       if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        alert('Seu navegador não suporta push notifications.')
+        alert(L('Seu navegador não suporta push notifications.', 'Your browser does not support push notifications.', 'Tu navegador no soporta notificaciones push.'))
         return
       }
       const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
       if (!vapid) {
-        alert('Push não configurado no servidor (VAPID ausente).')
+        alert(L('Push não configurado no servidor (VAPID ausente).', 'Push is not configured on the server (missing VAPID).', 'Push no está configurado en el servidor (falta VAPID).'))
         return
       }
       const permission = await Notification.requestPermission()
@@ -109,7 +112,7 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
       })
       setPushSubscribed(true)
     } catch (e: any) {
-      alert('Falha ao ativar push: ' + (e?.message || 'erro'))
+      alert(L('Falha ao ativar push: ', 'Failed to enable push: ', 'Error al activar push: ') + (e?.message || L('erro', 'error', 'error')))
     } finally {
       setEnabling(false)
     }
@@ -127,12 +130,12 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
       })
       if (!r.ok) {
         const d = await r.json().catch(() => ({}))
-        throw new Error(d.error || `Erro ${r.status}`)
+        throw new Error(d.error || `${L('Erro', 'Error', 'Error')} ${r.status}`)
       }
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } catch (e: any) {
-      setError(e?.message || 'Falha ao salvar')
+      setError(e?.message || L('Falha ao salvar', 'Failed to save', 'Error al guardar'))
     } finally {
       setSaving(false)
     }
@@ -147,24 +150,24 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
       )}
       {saved && (
         <div className="px-5 py-3 rounded-xl text-[13px] font-semibold" style={{ background: '#ecfdf5', color: '#10b981', border: '1px solid #a7f3d0' }}>
-          ✅ Preferências salvas
+          ✅ {L('Preferências salvas', 'Preferences saved', 'Preferencias guardadas')}
         </div>
       )}
 
       {/* Browser permission */}
       <Section
-        title="Notificações do navegador"
-        subtitle="Recebe push mesmo com a aba fechada (precisa permitir uma vez)"
+        title={L('Notificações do navegador', 'Browser notifications', 'Notificaciones del navegador')}
+        subtitle={L('Recebe push mesmo com a aba fechada (precisa permitir uma vez)', 'Get push even with the tab closed (you only need to allow it once)', 'Recibe push aunque la pestaña esté cerrada (solo necesitas permitirlo una vez)')}
       >
         <div className="flex items-center justify-between">
           <div>
             <PermissionBadge state={pushPerm} subscribed={pushSubscribed} />
             <p className="text-[11px] mt-1.5" style={{ color: '#94a3b8' }}>
-              {pushPerm === 'granted' && pushSubscribed && 'Tudo certo. Notificações chegarão neste dispositivo.'}
-              {pushPerm === 'granted' && !pushSubscribed && 'Permissão concedida mas não inscrito. Clique em "Ativar".'}
-              {pushPerm === 'default' && 'Clique em "Ativar" e aceite no popup do navegador.'}
-              {pushPerm === 'denied' && 'Bloqueado. Vá nas configurações do site no navegador pra liberar.'}
-              {pushPerm === 'unsupported' && 'Este navegador não suporta push notifications.'}
+              {pushPerm === 'granted' && pushSubscribed && L('Tudo certo. Notificações chegarão neste dispositivo.', 'All set. Notifications will arrive on this device.', 'Todo listo. Las notificaciones llegarán a este dispositivo.')}
+              {pushPerm === 'granted' && !pushSubscribed && L('Permissão concedida mas não inscrito. Clique em "Ativar".', 'Permission granted but not subscribed. Click "Enable".', 'Permiso concedido pero sin suscripción. Haz clic en "Activar".')}
+              {pushPerm === 'default' && L('Clique em "Ativar" e aceite no popup do navegador.', 'Click "Enable" and accept in the browser popup.', 'Haz clic en "Activar" y acepta en el popup del navegador.')}
+              {pushPerm === 'denied' && L('Bloqueado. Vá nas configurações do site no navegador pra liberar.', 'Blocked. Go to the site settings in your browser to allow it.', 'Bloqueado. Ve a la configuración del sitio en el navegador para permitirlo.')}
+              {pushPerm === 'unsupported' && L('Este navegador não suporta push notifications.', 'This browser does not support push notifications.', 'Este navegador no soporta notificaciones push.')}
             </p>
           </div>
           {pushPerm !== 'denied' && pushPerm !== 'unsupported' && !pushSubscribed && (
@@ -174,7 +177,7 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
               className="px-4 py-2 rounded-xl text-[12px] font-bold text-white whitespace-nowrap disabled:opacity-50"
               style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
             >
-              {enabling ? 'Ativando...' : 'Ativar notificações'}
+              {enabling ? L('Ativando...', 'Enabling...', 'Activando...') : L('Ativar notificações', 'Enable notifications', 'Activar notificaciones')}
             </button>
           )}
         </div>
@@ -182,25 +185,25 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
 
       {/* Banner + push intervals */}
       <Section
-        title="Banner ao vivo + Push"
-        subtitle="Faixa colorida no topo do dashboard com countdown ao vivo. Toca som quando entra em cada faixa de tempo."
+        title={L('Banner ao vivo + Push', 'Live banner + Push', 'Banner en vivo + Push')}
+        subtitle={L('Faixa colorida no topo do dashboard com countdown ao vivo. Toca som quando entra em cada faixa de tempo.', 'Colored bar at the top of the dashboard with a live countdown. Plays a sound when each time window starts.', 'Franja de color en la parte superior del dashboard con cuenta regresiva en vivo. Suena al entrar en cada franja de tiempo.')}
       >
         <div className="space-y-4">
           <Toggle
-            label="Banner no app"
-            description="Mostra a próxima reunião com countdown ao vivo no topo do dashboard"
+            label={L('Banner no app', 'In-app banner', 'Banner en la app')}
+            description={L('Mostra a próxima reunião com countdown ao vivo no topo do dashboard', 'Shows your next meeting with a live countdown at the top of the dashboard', 'Muestra la próxima reunión con cuenta regresiva en vivo en la parte superior del dashboard')}
             checked={prefs.banner_enabled}
             onChange={v => setPrefs(p => ({ ...p, banner_enabled: v }))}
           />
           <Toggle
-            label="Push do navegador"
-            description="Notificação nativa do sistema (mesmo com aba fechada)"
+            label={L('Push do navegador', 'Browser push', 'Push del navegador')}
+            description={L('Notificação nativa do sistema (mesmo com aba fechada)', 'Native system notification (even with the tab closed)', 'Notificación nativa del sistema (aunque la pestaña esté cerrada)')}
             checked={prefs.push_enabled}
             onChange={v => setPrefs(p => ({ ...p, push_enabled: v }))}
           />
           <div>
             <p className="text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>
-              Avisar quanto tempo antes? <span className="font-normal" style={{ color: '#94a3b8' }}>(escolha 1 ou mais)</span>
+              {L('Avisar quanto tempo antes?', 'How long before should we alert you?', '¿Con cuánta anticipación avisarte?')} <span className="font-normal" style={{ color: '#94a3b8' }}>{L('(escolha 1 ou mais)', '(choose 1 or more)', '(elige 1 o más)')}</span>
             </p>
             <IntervalChips
               selected={prefs.reminder_intervals}
@@ -212,13 +215,13 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
 
       {/* Sound */}
       <Section
-        title="Alerta sonoro"
-        subtitle="Toca um som quando o evento entra em cada faixa de tempo configurada acima"
+        title={L('Alerta sonoro', 'Sound alert', 'Alerta sonora')}
+        subtitle={L('Toca um som quando o evento entra em cada faixa de tempo configurada acima', 'Plays a sound when the event enters each time window set above', 'Suena cuando el evento entra en cada franja de tiempo configurada arriba')}
       >
         <div className="space-y-4">
           <Toggle
-            label="Tocar som"
-            description="Sons gerados localmente — não consome banda"
+            label={L('Tocar som', 'Play sound', 'Reproducir sonido')}
+            description={L('Sons gerados localmente — não consome banda', 'Sounds generated locally — uses no bandwidth', 'Sonidos generados localmente — no consume datos')}
             checked={prefs.sound_enabled}
             onChange={v => setPrefs(p => ({ ...p, sound_enabled: v }))}
           />
@@ -226,9 +229,9 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
           {prefs.sound_enabled && (
             <>
               <div>
-                <p className="text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>Tipo de som</p>
+                <p className="text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>{L('Tipo de som', 'Sound type', 'Tipo de sonido')}</p>
                 <div className="grid sm:grid-cols-3 gap-2">
-                  {SOUND_OPTIONS.map(opt => {
+                  {soundOptions(L).map(opt => {
                     const active = prefs.sound_file === opt.id
                     return (
                       <button
@@ -271,7 +274,7 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
                 className="px-4 py-2 rounded-xl text-[12px] font-bold"
                 style={{ background: '#f1f5f9', color: '#1a1a2e', border: '1px solid #e8ecf4' }}
               >
-                ▶ Testar som
+                ▶ {L('Testar som', 'Test sound', 'Probar sonido')}
               </button>
             </>
           )}
@@ -283,21 +286,21 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
         title="WhatsApp"
         subtitle={
           phoneForWhatsApp
-            ? `Manda mensagem pro seu WhatsApp (${phoneForWhatsApp}). Útil quando o app está fechado.`
-            : 'Cadastre seu WhatsApp em Perfil pra ativar este canal.'
+            ? L(`Manda mensagem pro seu WhatsApp (${phoneForWhatsApp}). Útil quando o app está fechado.`, `Sends a message to your WhatsApp (${phoneForWhatsApp}). Useful when the app is closed.`, `Envía un mensaje a tu WhatsApp (${phoneForWhatsApp}). Útil cuando la app está cerrada.`)
+            : L('Cadastre seu WhatsApp em Perfil pra ativar este canal.', 'Add your WhatsApp in Profile to enable this channel.', 'Registra tu WhatsApp en Perfil para activar este canal.')
         }
       >
         <div className="space-y-4">
           <Toggle
-            label="WhatsApp lembrete"
-            description="Envia mensagem via wa-bridge"
+            label={L('WhatsApp lembrete', 'WhatsApp reminder', 'Recordatorio por WhatsApp')}
+            description={L('Envia mensagem via wa-bridge', 'Sends a message via wa-bridge', 'Envía un mensaje vía wa-bridge')}
             checked={prefs.whatsapp_enabled}
             disabled={!phoneForWhatsApp}
             onChange={v => setPrefs(p => ({ ...p, whatsapp_enabled: v }))}
           />
           {prefs.whatsapp_enabled && (
             <div>
-              <p className="text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>Avisar quanto tempo antes?</p>
+              <p className="text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>{L('Avisar quanto tempo antes?', 'How long before should we alert you?', '¿Con cuánta anticipación avisarte?')}</p>
               <IntervalChips
                 selected={prefs.whatsapp_intervals}
                 onToggle={m => toggleInterval('whatsapp_intervals', m)}
@@ -310,19 +313,19 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
       {/* Email */}
       <Section
         title="Email"
-        subtitle={buyer.email ? `Envia email pra ${buyer.email}.` : 'Cadastre seu email em Perfil pra ativar este canal.'}
+        subtitle={buyer.email ? L(`Envia email pra ${buyer.email}.`, `Sends an email to ${buyer.email}.`, `Envía un email a ${buyer.email}.`) : L('Cadastre seu email em Perfil pra ativar este canal.', 'Add your email in Profile to enable this channel.', 'Registra tu email en Perfil para activar este canal.')}
       >
         <div className="space-y-4">
           <Toggle
-            label="Email lembrete"
-            description="Bom pra eventos importantes onde você quer um registro"
+            label={L('Email lembrete', 'Email reminder', 'Recordatorio por email')}
+            description={L('Bom pra eventos importantes onde você quer um registro', 'Great for important events where you want a record', 'Ideal para eventos importantes donde quieres un registro')}
             checked={prefs.email_enabled}
             disabled={!buyer.email}
             onChange={v => setPrefs(p => ({ ...p, email_enabled: v }))}
           />
           {prefs.email_enabled && (
             <div>
-              <p className="text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>Avisar quanto tempo antes?</p>
+              <p className="text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>{L('Avisar quanto tempo antes?', 'How long before should we alert you?', '¿Con cuánta anticipación avisarte?')}</p>
               <IntervalChips
                 selected={prefs.email_intervals}
                 onToggle={m => toggleInterval('email_intervals', m)}
@@ -340,14 +343,14 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
           className="px-6 py-3 rounded-xl text-[14px] font-bold text-white disabled:opacity-50"
           style={{ background: '#6366f1', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}
         >
-          {saving ? 'Salvando...' : 'Salvar preferências'}
+          {saving ? L('Salvando...', 'Saving...', 'Guardando...') : L('Salvar preferências', 'Save preferences', 'Guardar preferencias')}
         </button>
         <a
           href="/dashboard/settings"
           className="text-[13px] font-semibold"
           style={{ color: '#64748b' }}
         >
-          ← Voltar pra configurações
+          ← {L('Voltar pra configurações', 'Back to settings', 'Volver a configuración')}
         </a>
       </div>
     </div>
@@ -412,11 +415,13 @@ function IntervalChips({ selected, onToggle }: { selected: number[]; onToggle: (
 }
 
 function PermissionBadge({ state, subscribed }: { state: 'default' | 'granted' | 'denied' | 'unsupported'; subscribed: boolean }) {
-  const label = state === 'unsupported' ? 'Sem suporte'
-    : state === 'denied' ? 'Bloqueado'
-    : state === 'granted' && subscribed ? 'Inscrito'
-    : state === 'granted' ? 'Permitido'
-    : 'Não solicitado'
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
+  const label = state === 'unsupported' ? L('Sem suporte', 'Not supported', 'Sin soporte')
+    : state === 'denied' ? L('Bloqueado', 'Blocked', 'Bloqueado')
+    : state === 'granted' && subscribed ? L('Inscrito', 'Subscribed', 'Suscrito')
+    : state === 'granted' ? L('Permitido', 'Allowed', 'Permitido')
+    : L('Não solicitado', 'Not requested', 'No solicitado')
   const color = state === 'granted' && subscribed ? '#10b981'
     : state === 'denied' ? '#dc2626'
     : '#64748b'

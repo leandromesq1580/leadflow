@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useT } from '@/lib/i18n-client'
 
 interface Analytics {
   kpis: {
@@ -18,6 +19,8 @@ interface Leader {
 }
 
 export default function PerformancePage() {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [buyerId, setBuyerId] = useState('')
   const [isAgency, setIsAgency] = useState(false)
   const [days, setDays] = useState(30)
@@ -63,8 +66,8 @@ export default function PerformancePage() {
     setLoading(false)
   }
 
-  if (loading) return <div className="p-8 text-[13px]" style={{ color: '#64748b' }}>Carregando...</div>
-  if (!data) return <div className="p-8 text-[13px]" style={{ color: '#64748b' }}>Sem dados</div>
+  if (loading) return <div className="p-8 text-[13px]" style={{ color: '#64748b' }}>{L('Carregando...', 'Loading...', 'Cargando...')}</div>
+  if (!data) return <div className="p-8 text-[13px]" style={{ color: '#64748b' }}>{L('Sem dados', 'No data', 'Sin datos')}</div>
 
   const maxDaily = Math.max(1, ...data.daily.values)
   const funnelMax = Math.max(1, ...data.funnel.map(f => f.count))
@@ -74,7 +77,7 @@ export default function PerformancePage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>Performance</h1>
-          <p className="text-[14px]" style={{ color: '#64748b' }}>KPIs, ROI por fonte e funil de conversão</p>
+          <p className="text-[14px]" style={{ color: '#64748b' }}>{L('KPIs, ROI por fonte e funil de conversão', 'KPIs, ROI by source and conversion funnel', 'KPIs, ROI por fuente y embudo de conversión')}</p>
         </div>
         <div className="flex rounded-lg p-1" style={{ background: '#f1f5f9' }}>
           {[7, 30, 90].map(d => (
@@ -90,10 +93,10 @@ export default function PerformancePage() {
       {/* KPIs */}
       <div className="grid grid-cols-4 gap-3 mb-6">
         {[
-          { label: 'Leads recebidos', value: data.kpis.total_received, color: '#6366f1' },
-          { label: 'Contatados', value: `${data.kpis.contact_rate}%`, sub: `${data.kpis.total_contacted} leads`, color: '#f59e0b' },
-          { label: 'Convertidos', value: `${data.kpis.conversion_rate}%`, sub: `${data.kpis.total_converted} leads`, color: '#10b981' },
-          { label: 'Faturamento', value: `$${(data.kpis.total_revenue ?? 0).toLocaleString('en-US')}`, sub: `${data.kpis.total_converted} contratos fechados`, color: '#ec4899' },
+          { label: L('Leads recebidos', 'Leads received', 'Leads recibidos'), value: data.kpis.total_received, color: '#6366f1' },
+          { label: L('Contatados', 'Contacted', 'Contactados'), value: `${data.kpis.contact_rate}%`, sub: `${data.kpis.total_contacted} leads`, color: '#f59e0b' },
+          { label: L('Convertidos', 'Converted', 'Convertidos'), value: `${data.kpis.conversion_rate}%`, sub: `${data.kpis.total_converted} leads`, color: '#10b981' },
+          { label: L('Faturamento', 'Revenue', 'Facturación'), value: `$${(data.kpis.total_revenue ?? 0).toLocaleString('en-US')}`, sub: `${data.kpis.total_converted} ${L('contratos fechados', 'contracts closed', 'contratos cerrados')}`, color: '#ec4899' },
         ].map((k, i) => (
           <div key={i} className="rounded-xl p-4" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
             <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{k.label}</p>
@@ -105,7 +108,7 @@ export default function PerformancePage() {
 
       {/* Daily chart */}
       <div className="rounded-2xl p-5 mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-        <p className="text-[13px] font-bold mb-3" style={{ color: '#1a1a2e' }}>Leads por dia</p>
+        <p className="text-[13px] font-bold mb-3" style={{ color: '#1a1a2e' }}>{L('Leads por dia', 'Leads per day', 'Leads por día')}</p>
         <div className="flex items-end gap-1 h-[120px]">
           {data.daily.values.map((v, i) => (
             <div key={i} className="flex-1 h-full flex flex-col justify-end items-center group relative">
@@ -126,9 +129,9 @@ export default function PerformancePage() {
       {/* Funnel + By Source */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-          <p className="text-[13px] font-bold mb-3" style={{ color: '#1a1a2e' }}>Funil (pipeline atual)</p>
+          <p className="text-[13px] font-bold mb-3" style={{ color: '#1a1a2e' }}>{L('Funil (pipeline atual)', 'Funnel (current pipeline)', 'Embudo (pipeline actual)')}</p>
           {data.funnel.length === 0 ? (
-            <p className="text-[12px]" style={{ color: '#94a3b8' }}>Nenhum lead no pipeline</p>
+            <p className="text-[12px]" style={{ color: '#94a3b8' }}>{L('Nenhum lead no pipeline', 'No leads in the pipeline', 'Ningún lead en el pipeline')}</p>
           ) : data.funnel.map(f => (
             <div key={f.stage} className="mb-2">
               <div className="flex justify-between text-[11px] mb-1">
@@ -143,9 +146,9 @@ export default function PerformancePage() {
         </div>
 
         <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-          <p className="text-[13px] font-bold mb-3" style={{ color: '#1a1a2e' }}>ROI por fonte</p>
+          <p className="text-[13px] font-bold mb-3" style={{ color: '#1a1a2e' }}>{L('ROI por fonte', 'ROI by source', 'ROI por fuente')}</p>
           {Object.keys(data.by_source).length === 0 ? (
-            <p className="text-[12px]" style={{ color: '#94a3b8' }}>Sem dados</p>
+            <p className="text-[12px]" style={{ color: '#94a3b8' }}>{L('Sem dados', 'No data', 'Sin datos')}</p>
           ) : Object.entries(data.by_source).map(([src, s]) => {
             const rate = s.received > 0 ? ((s.converted / s.received) * 100).toFixed(1) : '0'
             return (
@@ -154,7 +157,7 @@ export default function PerformancePage() {
                 <div className="text-right">
                   <span style={{ color: '#64748b' }}>{s.received} → </span>
                   <span className="font-bold" style={{ color: '#10b981' }}>{s.converted} ({rate}%)</span>
-                  <div style={{ color: '#94a3b8', fontSize: 10 }}>${s.spent.toFixed(0)} faturado</div>
+                  <div style={{ color: '#94a3b8', fontSize: 10 }}>${s.spent.toFixed(0)} {L('faturado', 'in revenue', 'facturado')}</div>
                 </div>
               </div>
             )
@@ -165,15 +168,15 @@ export default function PerformancePage() {
       {/* Leaderboard (agency only) */}
       {isAgency && leaders.length > 0 && (
         <div className="rounded-2xl p-5 mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-          <p className="text-[13px] font-bold mb-3" style={{ color: '#1a1a2e' }}>🏆 Ranking do Time ({days}d)</p>
+          <p className="text-[13px] font-bold mb-3" style={{ color: '#1a1a2e' }}>🏆 {L('Ranking do Time', 'Team Ranking', 'Ranking del Equipo')} ({days}d)</p>
           <table className="w-full text-[12px]">
             <thead>
               <tr style={{ color: '#94a3b8' }} className="text-[10px] uppercase tracking-wider">
                 <th className="text-left py-2">#</th>
-                <th className="text-left py-2">Agente</th>
-                <th className="text-right py-2">Recebidos</th>
-                <th className="text-right py-2">Convertidos</th>
-                <th className="text-right py-2">Taxa</th>
+                <th className="text-left py-2">{L('Agente', 'Agent', 'Agente')}</th>
+                <th className="text-right py-2">{L('Recebidos', 'Received', 'Recibidos')}</th>
+                <th className="text-right py-2">{L('Convertidos', 'Converted', 'Convertidos')}</th>
+                <th className="text-right py-2">{L('Taxa', 'Rate', 'Tasa')}</th>
               </tr>
             </thead>
             <tbody>

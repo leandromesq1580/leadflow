@@ -159,7 +159,7 @@ export default function MobileCreditos() {
       </div>
 
       {!d && !err && <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 70 }}><div className="m-spin" /></div>}
-      {err && <p className="m-muted" style={{ textAlign: 'center', paddingTop: 40 }}>Não consegui carregar agora.</p>}
+      {err && <p className="m-muted" style={{ textAlign: 'center', paddingTop: 40 }}>{L('Não consegui carregar agora.', "Couldn't load right now.", 'No pude cargar ahora.')}</p>}
 
       {d && (
         <div className="m-pad" style={{ paddingTop: 8 }}>
@@ -307,7 +307,7 @@ export default function MobileCreditos() {
                 <div key={h.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 0', borderBottom: i < d.history.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
                   <div>
                     <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>{h.total_purchased} {h.type === 'appointment' ? 'Appts' : 'Leads'}</p>
-                    <p className="m-muted" style={{ margin: '1px 0 0', fontSize: 11 }}>{new Date(h.purchased_at).toLocaleDateString('pt-BR')} · {h.total_purchased - h.total_used} {L('restantes', 'left', 'restantes')}</p>
+                    <p className="m-muted" style={{ margin: '1px 0 0', fontSize: 11 }}>{new Date(h.purchased_at).toLocaleDateString(loc === 'en' ? 'en-US' : loc === 'es' ? 'es-US' : 'pt-BR')} · {h.total_purchased - h.total_used} {L('restantes', 'left', 'restantes')}</p>
                   </div>
                   <span className="m-faint" style={{ fontSize: 12 }}>${h.price_per_unit}/{L('un', 'un', 'un')}</span>
                 </div>

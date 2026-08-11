@@ -1,12 +1,15 @@
 'use client'
 
 import { useState } from 'react'
+import { useT } from '@/lib/i18n-client'
 
 export function DismissButton() {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [loading, setLoading] = useState(false)
 
   async function dismiss() {
-    if (!confirm('Esconder o checklist? Voce pode reativar nas configuracoes.')) return
+    if (!confirm(L('Esconder o checklist? Voce pode reativar nas configuracoes.', 'Hide the checklist? You can re-enable it in settings.', '¿Ocultar el checklist? Puedes reactivarlo en configuración.'))) return
     setLoading(true)
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -28,7 +31,7 @@ export function DismissButton() {
 
   return (
     <button onClick={dismiss} disabled={loading} className="text-[11px] font-semibold disabled:opacity-50" style={{ color: '#94a3b8' }}>
-      {loading ? '...' : 'Esconder ✕'}
+      {loading ? '...' : L('Esconder ✕', 'Hide ✕', 'Ocultar ✕')}
     </button>
   )
 }

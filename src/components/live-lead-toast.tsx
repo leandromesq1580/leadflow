@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useT } from '@/lib/i18n-client'
 
 interface Props {
   badge: string      // "novo lead exclusivo"
@@ -29,6 +30,8 @@ function initials(n: string): string { return n.split(' ').map(w => w[0]).join('
 interface ToastData { name: string; city: string; st: string; ago: string; hue: number }
 
 export function LiveLeadToast({ badge, interest, now, minsAgo }: Props) {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [toast, setToast] = useState<ToastData | null>(null)
   const [closed, setClosed] = useState(false)
   const hideRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -87,7 +90,7 @@ export function LiveLeadToast({ badge, interest, now, minsAgo }: Props) {
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#10b981' }} /> {toast.ago}
             </p>
           </div>
-          <button onClick={() => setClosed(true)} aria-label="Fechar" className="text-[15px] leading-none p-1 -mt-1 -mr-1" style={{ color: '#cbd5e1' }}>×</button>
+          <button onClick={() => setClosed(true)} aria-label={L('Fechar', 'Close', 'Cerrar')} className="text-[15px] leading-none p-1 -mt-1 -mr-1" style={{ color: '#cbd5e1' }}>×</button>
         </div>
       </div>
     </>

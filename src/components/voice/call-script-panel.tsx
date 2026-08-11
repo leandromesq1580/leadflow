@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { aplicarNome, type CallScript } from '@/lib/call-script'
+import { useT } from '@/lib/i18n-client'
 
 interface Assist { etapa_num: number; sugestao: string; motivo?: string; em: string }
 
@@ -16,6 +17,8 @@ interface Assist { etapa_num: number; sugestao: string; motivo?: string; em: str
  * sozinho quando a ligação termina. Nova ligação recomeça da etapa 1.
  */
 export function CallScriptPanel({ ativa, leadName, callSid }: { ativa: boolean; leadName?: string; callSid?: string }) {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [cfg, setCfg] = useState<{ enabled: boolean; script: CallScript } | null>(null)
   const [etapa, setEtapa] = useState(0)
   const [mini, setMini] = useState(false)
@@ -67,7 +70,7 @@ export function CallScriptPanel({ ativa, leadName, callSid }: { ativa: boolean; 
         background: '#0f172a', color: '#fff', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)',
         fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 12px 40px rgba(0,0,0,0.35)',
       }}>
-        📜 Roteiro · etapa {etapa + 1}/{etapas.length}
+        📜 {L('Roteiro', 'Script', 'Guion')} · {L('etapa', 'step', 'etapa')} {etapa + 1}/{etapas.length}
       </button>
     )
   }
@@ -84,10 +87,10 @@ export function CallScriptPanel({ ativa, leadName, callSid }: { ativa: boolean; 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 15 }}>📜</span>
           <p style={{ margin: 0, flex: 1, fontSize: 13, fontWeight: 800 }}>
-            {cfg.script.nome} · <span style={{ color: '#a5b4fc' }}>etapa {etapa + 1} de {etapas.length}</span>
-            {ouvindo && <span title="IA ouvindo a ligação" style={{ marginLeft: 6, fontSize: 10, color: '#34d399', fontWeight: 700 }}>● ouvindo</span>}
+            {cfg.script.nome} · <span style={{ color: '#a5b4fc' }}>{L('etapa', 'step', 'etapa')} {etapa + 1} {L('de', 'of', 'de')} {etapas.length}</span>
+            {ouvindo && <span title={L('IA ouvindo a ligação', 'AI listening to the call', 'IA escuchando la llamada')} style={{ marginLeft: 6, fontSize: 10, color: '#34d399', fontWeight: 700 }}>● {L('ouvindo', 'listening', 'escuchando')}</span>}
           </p>
-          <button onClick={() => setMini(true)} title="Minimizar"
+          <button onClick={() => setMini(true)} title={L('Minimizar', 'Minimize', 'Minimizar')}
             style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 14, padding: 2 }}>—</button>
         </div>
         {/* trilha de etapas clicável */}
@@ -106,7 +109,7 @@ export function CallScriptPanel({ ativa, leadName, callSid }: { ativa: boolean; 
       <div style={{ padding: '12px 14px', overflowY: 'auto', flex: 1 }}>
         {assist?.sugestao && (
           <div style={{ marginBottom: 12, borderRadius: 12, padding: '10px 12px', background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.45)' }}>
-            <p style={{ margin: 0, fontSize: 10.5, fontWeight: 800, color: '#34d399', letterSpacing: 0.5 }}>💡 IA SUGERE AGORA</p>
+            <p style={{ margin: 0, fontSize: 10.5, fontWeight: 800, color: '#34d399', letterSpacing: 0.5 }}>💡 {L('IA SUGERE AGORA', 'AI SUGGESTS NOW', 'LA IA SUGIERE AHORA')}</p>
             <p style={{ margin: '5px 0 0', fontSize: 13.5, lineHeight: 1.45, color: '#ecfdf5', fontWeight: 600 }}>{assist.sugestao}</p>
             {assist.motivo && <p style={{ margin: '4px 0 0', fontSize: 10.5, color: '#6ee7b7' }}>{assist.motivo}</p>}
           </div>
@@ -136,16 +139,16 @@ export function CallScriptPanel({ ativa, leadName, callSid }: { ativa: boolean; 
       {/* avanço */}
       <div style={{ padding: '10px 14px 12px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         {e.gatilho && (
-          <p style={{ margin: '0 0 8px', fontSize: 11, color: '#94a3b8' }}>✅ Avance quando: <b style={{ color: '#cbd5e1' }}>{e.gatilho}</b></p>
+          <p style={{ margin: '0 0 8px', fontSize: 11, color: '#94a3b8' }}>✅ {L('Avance quando:', 'Move on when:', 'Avanza cuando:')} <b style={{ color: '#cbd5e1' }}>{e.gatilho}</b></p>
         )}
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => irManual(Math.max(0, etapa - 1))} disabled={etapa === 0}
             style={{ padding: '9px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: etapa === 0 ? 'default' : 'pointer', opacity: etapa === 0 ? 0.4 : 1 }}>
-            ← Voltar
+            ← {L('Voltar', 'Back', 'Volver')}
           </button>
           <button onClick={() => irManual(Math.min(etapas.length - 1, etapa + 1))} disabled={etapa >= etapas.length - 1}
             style={{ flex: 1, padding: '9px 12px', borderRadius: 10, border: 'none', background: etapa >= etapas.length - 1 ? 'rgba(52,211,153,0.25)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', fontSize: 12.5, fontWeight: 800, cursor: etapa >= etapas.length - 1 ? 'default' : 'pointer' }}>
-            {etapa >= etapas.length - 1 ? '🏁 Última etapa — feche a venda' : 'Próxima etapa →'}
+            {etapa >= etapas.length - 1 ? L('🏁 Última etapa — feche a venda', '🏁 Last step — close the sale', '🏁 Última etapa — cierra la venta') : L('Próxima etapa →', 'Next step →', 'Siguiente etapa →')}
           </button>
         </div>
       </div>

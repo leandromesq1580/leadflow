@@ -47,7 +47,7 @@ export default function MobileIndicacoes() {
       </div>
 
       {!ref && !err && <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80 }}><div className="m-spin" /></div>}
-      {err && <p className="m-muted" style={{ textAlign: 'center', paddingTop: 40 }}>Não consegui carregar agora.</p>}
+      {err && <p className="m-muted" style={{ textAlign: 'center', paddingTop: 40 }}>{L('Não consegui carregar agora.', "Couldn't load right now.", 'No pude cargar ahora.')}</p>}
 
       {ref && (
         <div className="m-pad" style={{ paddingTop: 8 }}>
@@ -80,7 +80,7 @@ export default function MobileIndicacoes() {
               {ref.rewards.map((rw, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 0', borderBottom: i < ref.rewards.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rw.name || 'Anônimo'}</p>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rw.name || L('Anônimo', 'Anonymous', 'Anónimo')}</p>
                     <p className="m-muted" style={{ margin: '1px 0 0', fontSize: 12 }}>{triggerLabel(rw.trigger)}</p>
                   </div>
                   <span style={{ fontSize: 13, fontWeight: 700, color: rw.cents ? '#34d399' : 'var(--m-faint)' }}>{rw.cents ? `+$${(rw.cents / 100).toFixed(0)}` : '—'}</span>

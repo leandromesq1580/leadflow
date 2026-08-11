@@ -56,7 +56,7 @@ export default function MobileWhatsApp() {
 
       <div className="m-pad">
         {!convs && !err && <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 60 }}><div className="m-spin" /></div>}
-        {err && <p className="m-muted" style={{ textAlign: 'center', paddingTop: 40 }}>Não consegui carregar agora.</p>}
+        {err && <p className="m-muted" style={{ textAlign: 'center', paddingTop: 40 }}>{L('Não consegui carregar agora.', "Couldn't load right now.", 'No pude cargar ahora.')}</p>}
         {convs && shown.length === 0 && <p className="m-muted" style={{ textAlign: 'center', paddingTop: 40, fontSize: 14 }}>{L('Nenhuma conversa ainda.', 'No chats yet.', 'Sin conversaciones.')}</p>}
 
         {shown.map(c => (
@@ -65,7 +65,7 @@ export default function MobileWhatsApp() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                 <p style={{ margin: 0, fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.lead_name || c.lead_phone}</p>
-                <span className="m-faint" style={{ fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>{timeAgo(c.last_sent_at)}</span>
+                <span className="m-faint" style={{ fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>{timeAgo(c.last_sent_at, loc)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                 <p className="m-muted" style={{ margin: '3px 0 0', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

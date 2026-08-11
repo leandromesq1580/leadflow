@@ -48,7 +48,7 @@ export default function MobileAvisos() {
     setSaving(true); setMsg(''); setSaved(false)
     try {
       const r = await fetch('/api/notification-preferences', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ buyer_id: buyerId, ...p }) })
-      if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Erro') }
+      if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || L('Erro', 'Error', 'Error')) }
       setSaved(true); setTimeout(() => setSaved(false), 2500)
     } catch (e: any) { setMsg(e?.message || L('Falha ao salvar.', 'Save failed.', 'Error.')) }
     setSaving(false)
@@ -65,7 +65,7 @@ export default function MobileAvisos() {
       </div>
 
       {!p && !err && <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 70 }}><div className="m-spin" /></div>}
-      {err && <p className="m-muted" style={{ textAlign: 'center', paddingTop: 40 }}>Não consegui carregar agora.</p>}
+      {err && <p className="m-muted" style={{ textAlign: 'center', paddingTop: 40 }}>{L('Não consegui carregar agora.', "Couldn't load right now.", 'No pude cargar ahora.')}</p>}
 
       {p && (
         <div className="m-pad" style={{ paddingTop: 8 }}>

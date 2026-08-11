@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useT } from '@/lib/i18n-client'
 
 interface Msg {
   id: string
@@ -9,15 +10,17 @@ interface Msg {
   created_at?: number
 }
 
-const SUGGESTIONS = [
-  'Quais são os produtos de life insurance mais vendidos nos EUA?',
-  'Cliente tem pressão alta: quais options?',
-  'Explica a diferença entre term life e whole life.',
-  'Como abordar um lead pela primeira vez no WhatsApp?',
-  'Cliente não domina inglês: como explicar indexed universal life?',
+const suggestions = (L: (pt: string, en: string, es: string) => string) => [
+  L('Quais são os produtos de life insurance mais vendidos nos EUA?', 'What are the best-selling life insurance products in the US?', '¿Cuáles son los productos de life insurance más vendidos en EE.UU.?'),
+  L('Cliente tem pressão alta: quais options?', 'My client has high blood pressure: what are the options?', 'Cliente con presión alta: ¿qué opciones hay?'),
+  L('Explica a diferença entre term life e whole life.', 'Explain the difference between term life and whole life.', 'Explícame la diferencia entre term life y whole life.'),
+  L('Como abordar um lead pela primeira vez no WhatsApp?', 'How do I approach a lead for the first time on WhatsApp?', '¿Cómo abordar a un lead por primera vez en WhatsApp?'),
+  L('Cliente não domina inglês: como explicar indexed universal life?', 'My client isn\'t fluent in English: how do I explain indexed universal life?', 'Cliente que no domina inglés: ¿cómo explicarle el indexed universal life?'),
 ]
 
 export default function AiConsultPage() {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [messages, setMessages] = useState<Msg[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -57,18 +60,18 @@ export default function AiConsultPage() {
         body: JSON.stringify({ message: text.trim() }),
       })
       const d = await r.json()
-      if (!r.ok) throw new Error(d.error || 'Erro ao consultar')
+      if (!r.ok) throw new Error(d.error || L('Erro ao consultar', 'Request failed', 'Error al consultar'))
       const aiMsg: Msg = { id: `ai-${Date.now()}`, role: 'assistant', text: d.reply || '' }
       setMessages(m => [...m, aiMsg])
     } catch (e) {
-      setError((e as Error)?.message || 'Falha')
+      setError((e as Error)?.message || L('Falha', 'Failed', 'Falla'))
     } finally {
       setSending(false)
     }
   }
 
   async function resetThread() {
-    if (!confirm('Começar nova conversa? O histórico atual será perdido.')) return
+    if (!confirm(L('Começar nova conversa? O histórico atual será perdido.', 'Start a new conversation? The current history will be lost.', '¿Comenzar una nueva conversación? El historial actual se perderá.'))) return
     await fetch('/api/ai-consult', { method: 'DELETE' })
     setMessages([])
     setError(null)
@@ -81,19 +84,19 @@ export default function AiConsultPage() {
           <div className="flex items-center gap-2">
             <span className="text-[22px]">🤖</span>
             <h1 className="text-[22px] font-extrabold" style={{ color: '#1a1a2e' }}>
-              Especialista em Life Insurance
+              {L('Especialista em Life Insurance', 'Life Insurance Specialist', 'Especialista en Life Insurance')}
             </h1>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold" style={{ background: '#eef2ff', color: '#6366f1' }}>AI</span>
           </div>
           <p className="text-[13px] mt-1" style={{ color: '#94a3b8' }}>
-            Tire dúvidas sobre produtos, underwriting, abordagem de cliente, objeções e mais.
+            {L('Tire dúvidas sobre produtos, underwriting, abordagem de cliente, objeções e mais.', 'Get answers about products, underwriting, client approach, objections and more.', 'Resuelve dudas sobre productos, underwriting, cómo abordar al cliente, objeciones y más.')}
           </p>
         </div>
         {messages.length > 0 && (
           <button onClick={resetThread}
             className="px-3 py-1.5 rounded-lg text-[11px] font-bold"
             style={{ background: '#fee2e2', color: '#dc2626' }}>
-            Nova conversa
+            {L('Nova conversa', 'New conversation', 'Nueva conversación')}
           </button>
         )}
       </div>
@@ -102,18 +105,18 @@ export default function AiConsultPage() {
         {/* Thread */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {loading ? (
-            <p className="text-center text-[13px]" style={{ color: '#94a3b8' }}>Carregando...</p>
+            <p className="text-center text-[13px]" style={{ color: '#94a3b8' }}>{L('Carregando...', 'Loading...', 'Cargando...')}</p>
           ) : messages.length === 0 ? (
             <div>
               <div className="text-center py-8">
                 <p className="text-[32px] mb-2">💡</p>
-                <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>Como posso ajudar hoje?</p>
+                <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>{L('Como posso ajudar hoje?', 'How can I help today?', '¿Cómo puedo ayudar hoy?')}</p>
                 <p className="text-[12px] mt-1 max-w-md mx-auto" style={{ color: '#94a3b8' }}>
-                  Pergunte sobre produtos, como abordar leads, objeções comuns, underwriting — o que precisar.
+                  {L('Pergunte sobre produtos, como abordar leads, objeções comuns, underwriting — o que precisar.', 'Ask about products, how to approach leads, common objections, underwriting — whatever you need.', 'Pregunta sobre productos, cómo abordar leads, objeciones comunes, underwriting — lo que necesites.')}
                 </p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-xl mx-auto mt-6">
-                {SUGGESTIONS.map((s, i) => (
+                {suggestions(L).map((s, i) => (
                   <button key={i} onClick={() => send(s)}
                     className="text-left px-4 py-3 rounded-xl text-[13px] transition-all hover:-translate-y-0.5"
                     style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#475569' }}>
@@ -135,7 +138,7 @@ export default function AiConsultPage() {
                   }}>
                   {m.role === 'assistant' && (
                     <p className="text-[10px] font-extrabold uppercase tracking-wider mb-1.5" style={{ color: '#6366f1' }}>
-                      🤖 Especialista
+                      🤖 {L('Especialista', 'Specialist', 'Especialista')}
                     </p>
                   )}
                   <p className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{m.text}</p>
@@ -149,7 +152,7 @@ export default function AiConsultPage() {
                 <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ background: '#6366f1' }} />
                 <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ background: '#6366f1', animationDelay: '150ms' }} />
                 <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ background: '#6366f1', animationDelay: '300ms' }} />
-                <span className="text-[12px] ml-1" style={{ color: '#94a3b8' }}>Pensando...</span>
+                <span className="text-[12px] ml-1" style={{ color: '#94a3b8' }}>{L('Pensando...', 'Thinking...', 'Pensando...')}</span>
               </div>
             </div>
           )}
@@ -174,7 +177,7 @@ export default function AiConsultPage() {
               onKeyDown={e => {
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input) }
               }}
-              placeholder="Pergunte sobre produtos, objeções, underwriting..."
+              placeholder={L('Pergunte sobre produtos, objeções, underwriting...', 'Ask about products, objections, underwriting...', 'Pregunta sobre productos, objeciones, underwriting...')}
               rows={1}
               disabled={sending}
               className="flex-1 px-4 py-3 rounded-xl text-[13.5px] resize-none max-h-32 focus:outline-none focus:ring-2 focus:ring-indigo-200"
@@ -183,11 +186,11 @@ export default function AiConsultPage() {
             <button type="submit" disabled={!input.trim() || sending}
               className="px-5 py-3 rounded-xl text-[13px] font-bold text-white disabled:opacity-50 flex-shrink-0"
               style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
-              {sending ? '...' : 'Enviar'}
+              {sending ? '...' : L('Enviar', 'Send', 'Enviar')}
             </button>
           </form>
           <p className="text-[10px] mt-2 text-center" style={{ color: '#c0c8d4' }}>
-            Enter pra enviar · Shift+Enter pra pular linha · Respostas da IA podem conter erros — sempre confirme com a seguradora
+            {L('Enter pra enviar · Shift+Enter pra pular linha · Respostas da IA podem conter erros — sempre confirme com a seguradora', 'Enter to send · Shift+Enter for a new line · AI answers may contain errors — always confirm with the carrier', 'Enter para enviar · Shift+Enter para saltar de línea · Las respuestas de la IA pueden contener errores — confirma siempre con la aseguradora')}
           </p>
         </div>
       </div>

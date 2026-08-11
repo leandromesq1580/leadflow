@@ -232,11 +232,11 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, podeVerApo
                   background: isActive ? '#eef2ff' : 'transparent',
                   opacity: locked ? 0.5 : 1,
                 }}
-                title={locked ? 'Disponível no plano completo' : undefined}
+                title={locked ? (t._locale === 'en' ? 'Available on the full plan' : t._locale === 'es' ? 'Disponible en el plan completo' : 'Disponível no plano completo') : undefined}
               >
                 <span className="text-[16px]">{link.icon}</span>
                 <span className="flex-1">{link.label}</span>
-                {locked && <span className="text-[12px]" aria-label="bloqueado">🔒</span>}
+                {locked && <span className="text-[12px]" aria-label={t._locale === 'en' ? 'locked' : t._locale === 'es' ? 'bloqueado' : 'bloqueado'}>🔒</span>}
                 {showBadge && (
                   <span className="text-[10px] font-extrabold text-white rounded-full flex items-center justify-center"
                     style={{ background: '#ef4444', minWidth: 18, height: 18, padding: '0 5px', boxShadow: '0 1px 3px rgba(239,68,68,0.35)' }}>

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useT } from '@/lib/i18n-client'
 import { getInitials } from '@/lib/utils'
 
 // BrandMark — mesmo do desktop (tile escuro + raio âmbar).
@@ -21,6 +22,8 @@ function BrandMark({ size = 28 }: { size?: number }) {
 }
 
 export function MHeader({ userName }: { userName?: string }) {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => (t._locale === 'en' ? en : t._locale === 'es' ? es : pt)
   const pathname = usePathname()
   // Esconde o cabeçalho de marca nas telas de chat em tela cheia (conversa + AI).
   if (/^\/m\/(whatsapp\/[^/]+|ai)$/.test(pathname)) return null
@@ -30,7 +33,7 @@ export function MHeader({ userName }: { userName?: string }) {
         <BrandMark size={28} />
         <span className="m-brand-name">Lead4Pro</span>
       </Link>
-      <Link href="/m/mais" className="m-header-av" aria-label="Menu">
+      <Link href="/m/mais" className="m-header-av" aria-label={L('Menu', 'Menu', 'Menú')}>
         {getInitials(userName || 'L4')}
       </Link>
     </header>

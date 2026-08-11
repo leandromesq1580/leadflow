@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { TRAINING_MODULES, type TrainingVideo } from '@/lib/training-content'
+import { getTrainingModules, type TrainingVideo } from '@/lib/training-content'
+import { useT } from '@/lib/i18n-client'
 
 /**
  * 🎓 Treinamento — curso da plataforma organizado por TEMAS (módulos curados).
@@ -9,6 +10,9 @@ import { TRAINING_MODULES, type TrainingVideo } from '@/lib/training-content'
  * cai na lista automática da pasta (fallback), e sem nada mostra "em preparação".
  */
 export default function TreinamentoPage() {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
+  const modules = useMemo(() => getTrainingModules(t._locale), [t._locale])
   const [autoVideos, setAutoVideos] = useState<TrainingVideo[]>([])
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -16,8 +20,8 @@ export default function TreinamentoPage() {
   const [broken, setBroken] = useState<Record<string, boolean>>({})
   const [done, setDone] = useState<Record<string, boolean>>({})
 
-  const hasCurated = TRAINING_MODULES.some(m => m.videos.length > 0)
-  const curatedIds = useMemo(() => new Set(TRAINING_MODULES.flatMap(m => m.videos.map(v => v.id))), [])
+  const hasCurated = modules.some(m => m.videos.length > 0)
+  const curatedIds = useMemo(() => new Set(modules.flatMap(m => m.videos.map(v => v.id))), [modules])
 
   useEffect(() => {
     try { setDone(JSON.parse(localStorage.getItem('l4p_training_done') || '{}')) } catch {}
@@ -43,13 +47,13 @@ export default function TreinamentoPage() {
   }
 
   const totalLessons = useMemo(
-    () => (hasCurated ? TRAINING_MODULES.reduce((a, m) => a + m.videos.length, 0) + extras.length : autoVideos.length),
-    [hasCurated, autoVideos, extras],
+    () => (hasCurated ? modules.reduce((a, m) => a + m.videos.length, 0) + extras.length : autoVideos.length),
+    [hasCurated, autoVideos, extras, modules],
   )
   const doneCount = useMemo(() => {
-    const ids = hasCurated ? [...TRAINING_MODULES.flatMap(m => m.videos.map(v => v.id)), ...extras.map(v => v.id)] : autoVideos.map(v => v.id)
+    const ids = hasCurated ? [...modules.flatMap(m => m.videos.map(v => v.id)), ...extras.map(v => v.id)] : autoVideos.map(v => v.id)
     return ids.filter(id => done[id]).length
-  }, [hasCurated, autoVideos, extras, done])
+  }, [hasCurated, autoVideos, extras, done, modules])
 
   const card = (v: TrainingVideo, idx: number) => (
     <button key={v.id} onClick={() => { setPlaying(v); markDone(v.id) }} className="text-left rounded-2xl overflow-hidden transition-all hover:shadow-lg"
@@ -66,10 +70,10 @@ export default function TreinamentoPage() {
         <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <span style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(15,23,42,0.72)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, paddingLeft: 4 }}>▶</span>
         </span>
-        {done[v.id] && <span style={{ position: 'absolute', top: 8, right: 8, background: '#10b981', color: '#fff', fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 999 }}>✓ assistida</span>}
+        {done[v.id] && <span style={{ position: 'absolute', top: 8, right: 8, background: '#10b981', color: '#fff', fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 999 }}>{L('✓ assistida', '✓ watched', '✓ vista')}</span>}
       </div>
       <div className="p-4">
-        <p className="text-[11px] font-bold uppercase tracking-wide mb-1" style={{ color: '#94a3b8' }}>Aula {idx + 1}</p>
+        <p className="text-[11px] font-bold uppercase tracking-wide mb-1" style={{ color: '#94a3b8' }}>{L('Aula', 'Lesson', 'Clase')} {idx + 1}</p>
         <p className="text-[14px] font-bold leading-snug" style={{ color: '#1a1a2e' }}>{v.title}</p>
       </div>
     </button>
@@ -77,19 +81,19 @@ export default function TreinamentoPage() {
 
   return (
     <div className="max-w-[1040px]">
-      <h1 className="text-[24px] font-extrabold mb-1" style={{ color: '#1a1a2e' }}>🎓 Treinamento</h1>
-      <p className="text-[14px] mb-2" style={{ color: '#64748b' }}>Aprenda a plataforma por temas — vídeos curtos e direto ao ponto.</p>
+      <h1 className="text-[24px] font-extrabold mb-1" style={{ color: '#1a1a2e' }}>🎓 {L('Treinamento', 'Training', 'Entrenamiento')}</h1>
+      <p className="text-[14px] mb-2" style={{ color: '#64748b' }}>{L('Aprenda a plataforma por temas — vídeos curtos e direto ao ponto.', 'Learn the platform by topic — short, to-the-point videos.', 'Aprende la plataforma por temas — videos cortos y al grano.')}</p>
       {totalLessons > 0 && (
         <p className="text-[12px] mb-6 font-semibold" style={{ color: doneCount === totalLessons ? '#059669' : '#94a3b8' }}>
-          {doneCount}/{totalLessons} aulas assistidas{doneCount === totalLessons ? ' — curso completo! 🎉' : ''}
+          {doneCount}/{totalLessons} {L('aulas assistidas', 'lessons watched', 'clases vistas')}{doneCount === totalLessons ? L(' — curso completo! 🎉', ' — course complete! 🎉', ' — ¡curso completo! 🎉') : ''}
         </p>
       )}
 
       {loading ? (
-        <p className="text-[13px]" style={{ color: '#94a3b8' }}>Carregando aulas…</p>
+        <p className="text-[13px]" style={{ color: '#94a3b8' }}>{L('Carregando aulas…', 'Loading lessons…', 'Cargando clases…')}</p>
       ) : hasCurated ? (
         <>
-          {TRAINING_MODULES.filter(m => m.videos.length > 0).map(m => (
+          {modules.filter(m => m.videos.length > 0).map(m => (
             <div key={m.key} className="mb-8">
               <h2 className="text-[17px] font-extrabold mb-1" style={{ color: '#1a1a2e' }}>{m.icon} {m.title}</h2>
               <p className="text-[13px] mb-4" style={{ color: '#64748b' }}>{m.desc}</p>
@@ -100,8 +104,8 @@ export default function TreinamentoPage() {
           ))}
           {extras.length > 0 && (
             <div className="mb-8">
-              <h2 className="text-[17px] font-extrabold mb-1" style={{ color: '#1a1a2e' }}>🆕 Novas aulas</h2>
-              <p className="text-[13px] mb-4" style={{ color: '#64748b' }}>Acabaram de chegar — em breve entram num módulo.</p>
+              <h2 className="text-[17px] font-extrabold mb-1" style={{ color: '#1a1a2e' }}>🆕 {L('Novas aulas', 'New lessons', 'Nuevas clases')}</h2>
+              <p className="text-[13px] mb-4" style={{ color: '#64748b' }}>{L('Acabaram de chegar — em breve entram num módulo.', 'Just arrived — they will join a module soon.', 'Acaban de llegar — pronto entran a un módulo.')}</p>
               <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
                 {extras.map((v, i) => card(v, i))}
               </div>
@@ -114,9 +118,9 @@ export default function TreinamentoPage() {
         </div>
       ) : (
         <div className="rounded-2xl p-8 text-center" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-          <p className="text-[15px] font-bold mb-1" style={{ color: '#1a1a2e' }}>📹 Aulas em preparação</p>
-          <p className="text-[13px]" style={{ color: '#64748b' }}>Os vídeos de treinamento estão sendo organizados por tema — volta em breve!</p>
-          {isAdmin && <p className="text-[12px] mt-3" style={{ color: '#94a3b8' }}>(admin: os módulos são preenchidos em src/lib/training-content.ts a partir da pasta do Drive)</p>}
+          <p className="text-[15px] font-bold mb-1" style={{ color: '#1a1a2e' }}>📹 {L('Aulas em preparação', 'Lessons in the works', 'Clases en preparación')}</p>
+          <p className="text-[13px]" style={{ color: '#64748b' }}>{L('Os vídeos de treinamento estão sendo organizados por tema — volta em breve!', 'The training videos are being organized by topic — check back soon!', 'Los videos de entrenamiento se están organizando por tema — ¡vuelve pronto!')}</p>
+          {isAdmin && <p className="text-[12px] mt-3" style={{ color: '#94a3b8' }}>{L('(admin: os módulos são preenchidos em src/lib/training-content.ts a partir da pasta do Drive)', '(admin: modules are filled in src/lib/training-content.ts from the Drive folder)', '(admin: los módulos se llenan en src/lib/training-content.ts desde la carpeta de Drive)')}</p>}
         </div>
       )}
 
@@ -125,7 +129,7 @@ export default function TreinamentoPage() {
           <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 960 }}>
             <div className="flex items-center justify-between mb-2">
               <p className="text-[15px] font-bold text-white truncate pr-4">{playing.title}</p>
-              <button onClick={() => setPlaying(null)} className="px-3 py-1.5 rounded-lg text-[13px] font-bold" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff' }}>✕ Fechar</button>
+              <button onClick={() => setPlaying(null)} className="px-3 py-1.5 rounded-lg text-[13px] font-bold" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff' }}>{L('✕ Fechar', '✕ Close', '✕ Cerrar')}</button>
             </div>
             <div style={{ aspectRatio: '16/9', background: '#000', borderRadius: 12, overflow: 'hidden' }}>
               {playing.media === 'storage' ? (

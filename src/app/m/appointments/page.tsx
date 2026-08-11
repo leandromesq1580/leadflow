@@ -74,7 +74,7 @@ export default function MobileAppointments() {
 
       <div className="m-pad" style={{ paddingTop: 6 }}>
         {!events && !err && <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 60 }}><div className="m-spin" /></div>}
-        {err && <p className="m-muted" style={{ textAlign: 'center', paddingTop: 40 }}>Não consegui carregar agora.</p>}
+        {err && <p className="m-muted" style={{ textAlign: 'center', paddingTop: 40 }}>{L('Não consegui carregar agora.', "Couldn't load right now.", 'No pude cargar ahora.')}</p>}
         {events && events.length === 0 && (
           <div style={{ textAlign: 'center', paddingTop: 50 }}>
             <div className="m-icb" style={{ width: 60, height: 60, borderRadius: 18, margin: '0 auto 16px' }}><MIcon name="calendar" size={26} /></div>

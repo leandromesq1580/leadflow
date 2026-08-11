@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useT } from '@/lib/i18n-client'
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
@@ -14,6 +15,8 @@ interface Props {
 }
 
 export function PwaRegister({ buyerId }: Props) {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [showPrompt, setShowPrompt] = useState(false)
   const [subscribed, setSubscribed] = useState(false)
 
@@ -36,7 +39,7 @@ export function PwaRegister({ buyerId }: Props) {
 
   async function enable() {
     const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-    if (!vapid) { alert('Push não configurado'); return }
+    if (!vapid) { alert(L('Push não configurado', 'Push not configured', 'Push no configurado')); return }
     try {
       const permission = await Notification.requestPermission()
       if (permission !== 'granted') { setShowPrompt(false); return }
@@ -75,18 +78,18 @@ export function PwaRegister({ buyerId }: Props) {
       <div className="flex items-start gap-3">
         <span className="text-[24px]">🔔</span>
         <div className="flex-1">
-          <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>Receba notificações de leads novos</p>
-          <p className="text-[12px] mt-1" style={{ color: '#64748b' }}>Seja o primeiro a responder. Ative notificações no navegador.</p>
+          <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>{L('Receba notificações de leads novos', 'Get notified about new leads', 'Recibe notificaciones de leads nuevos')}</p>
+          <p className="text-[12px] mt-1" style={{ color: '#64748b' }}>{L('Seja o primeiro a responder. Ative notificações no navegador.', 'Be the first to respond. Enable browser notifications.', 'Sé el primero en responder. Activa las notificaciones en el navegador.')}</p>
           <div className="flex gap-2 mt-3">
             <button onClick={enable}
               className="px-4 py-1.5 rounded-lg text-[12px] font-bold text-white"
               style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-              Ativar
+              {L('Ativar', 'Enable', 'Activar')}
             </button>
             <button onClick={() => setShowPrompt(false)}
               className="px-4 py-1.5 rounded-lg text-[12px] font-bold"
               style={{ color: '#64748b' }}>
-              Depois
+              {L('Depois', 'Later', 'Después')}
             </button>
           </div>
         </div>

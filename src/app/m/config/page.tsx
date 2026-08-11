@@ -75,7 +75,7 @@ export default function MobileConfig() {
           availability: avail.map(a => { const [day_type, period] = a.split('_'); return { day_type, period } }),
         }),
       })
-      if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Erro') }
+      if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || L('Erro', 'Error', 'Error')) }
       setSaved(true); setTimeout(() => setSaved(false), 2500)
     } catch (e: any) { setErr(e?.message || L('Falha ao salvar.', 'Save failed.', 'Error al guardar.')) }
     setSaving(false)
@@ -105,7 +105,7 @@ export default function MobileConfig() {
               <div style={{ flex: 1 }}><label style={labelCls}>{L('Telefone', 'Phone', 'Teléfono')}</label><input className="m-input" value={phone} onChange={e => setPhone(e.target.value)} /></div>
               <div style={{ flex: 1 }}><label style={labelCls}>WhatsApp</label><input className="m-input" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} /></div>
             </div>
-            <div><label style={labelCls}>Cal.com</label><input className="m-input" value={calLink} onChange={e => setCalLink(e.target.value)} placeholder="https://cal.com/seu-nome" /></div>
+            <div><label style={labelCls}>Cal.com</label><input className="m-input" value={calLink} onChange={e => setCalLink(e.target.value)} placeholder={L('https://cal.com/seu-nome', 'https://cal.com/your-name', 'https://cal.com/tu-nombre')} /></div>
           </div>
 
           {/* Estados */}
