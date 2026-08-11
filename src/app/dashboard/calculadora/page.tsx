@@ -39,6 +39,8 @@ export default function CalculadoraPage() {
   const [adv, setAdv] = useState(75)          // % adiantamento
   // projeção
   const [leadsMes, setLeadsMes] = useState(50)
+  // simulador de compra — quantidade livre; escolher pacote também ajusta o custo/lead
+  const [qtd, setQtd] = useState(25)
 
   const [reais, setReais] = useState<Reais | null>(null)
 
@@ -89,6 +91,18 @@ export default function CalculadoraPage() {
     const roi = investimento > 0 ? (liquido / investimento) * 100 : 0
     return { comissaoTotal, adiantamento, diferido, leadsPara1, gasto, comCb, gastoReal, ganhoAdel, ganhoTotal, clientes, investimento, adiantamentos, diferidos, liquido, roi }
   }, [taxa, custo, cb, ap, com, adv, leadsMes])
+
+  // qualquer quantidade de leads → mesmos parâmetros dos sliders
+  const simular = (leads: number, custoLead = custo) => {
+    const fechamentos = leads * (taxa / 100) * (1 - cb / 100)
+    const investimento = leads * custoLead
+    const adiantamentos = fechamentos * calc.adiantamento
+    const diferidos = fechamentos * calc.diferido
+    const liquido = adiantamentos - investimento
+    const roi = investimento > 0 ? (liquido / investimento) * 100 : 0
+    return { leads, fechamentos, investimento, adiantamentos, diferidos, liquido, roi }
+  }
+  const compra = simular(qtd)
 
   const usarReais = () => {
     if (!reais) return
@@ -186,6 +200,60 @@ export default function CalculadoraPage() {
         </div>
       </div>
 
+      {/* SIMULADOR DE COMPRA — quantidade livre de leads; pacote também ajusta o custo */}
+      <div style={card} className="mt-4 overflow-hidden">
+        <div className="flex items-center justify-between gap-3 flex-wrap px-5 py-3" style={{ background: '#f8fafc', borderBottom: '1px solid #eef2f7' }}>
+          <p style={secTitle}>🛒 {L('SIMULE SUA COMPRA DE LEADS', 'SIMULATE YOUR LEAD PURCHASE', 'SIMULA TU COMPRA DE LEADS')}</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* pacotes reais da casa (âncora stripe.ts jul/2026): 10=$28, 25=$26, 50=$23 */}
+            {[{ q: 10, p: 28 }, { q: 25, p: 26 }, { q: 50, p: 23 }].map(pk => (
+              <button key={pk.q} onClick={() => { setQtd(pk.q); setCusto(pk.p) }}
+                className="px-3 py-1.5 rounded-lg text-[12px] font-bold"
+                style={qtd === pk.q && custo === pk.p
+                  ? { background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff' }
+                  : { background: '#fff', border: '1px solid #e8ecf4', color: '#475569' }}>
+                {pk.q} leads · ${pk.p}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="px-5 pt-4">
+          <div className="flex items-center gap-3">
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b', whiteSpace: 'nowrap' }}>{L('Quantidade livre:', 'Any quantity:', 'Cantidad libre:')}</span>
+            {range(qtd, setQtd, 5, 1000, 5)}
+            <span style={{ fontSize: 16, fontWeight: 800, color: '#1a1a2e', minWidth: 44, textAlign: 'right' }}>{qtd}</span>
+          </div>
+          <p style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 6 }}>
+            {L(`1 fechamento paga ${Math.ceil(calc.adiantamento / Math.max(1, custo))} leads (adiantamento de ${money(calc.adiantamento)} ÷ ${money(custo)}/lead)`,
+               `1 close pays for ${Math.ceil(calc.adiantamento / Math.max(1, custo))} leads (${money(calc.adiantamento)} advance ÷ ${money(custo)}/lead)`,
+               `1 cierre paga ${Math.ceil(calc.adiantamento / Math.max(1, custo))} leads (adelanto de ${money(calc.adiantamento)} ÷ ${money(custo)}/lead)`)}
+          </p>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 p-5">
+          <div className="text-center">
+            <p style={secTitle}>↘ {L('INVESTIMENTO', 'INVESTMENT', 'INVERSIÓN')}</p>
+            <p style={{ fontSize: 22, fontWeight: 800, color: '#dc2626', marginTop: 4 }}>{money(compra.investimento)}</p>
+          </div>
+          <div className="text-center">
+            <p style={secTitle}>🎯 {L('FECHAMENTOS', 'CLOSES', 'CIERRES')}</p>
+            <p style={{ fontSize: 22, fontWeight: 800, color: '#1a1a2e', marginTop: 4 }}>{compra.fechamentos.toFixed(1)}</p>
+          </div>
+          <div className="text-center">
+            <p style={secTitle}>↗ {L('ADIANTAMENTOS', 'ADVANCES', 'ADELANTOS')}</p>
+            <p style={{ fontSize: 22, fontWeight: 800, color: '#059669', marginTop: 4 }}>{money(compra.adiantamentos)}</p>
+          </div>
+          <div className="text-center">
+            <p style={secTitle}>🕓 {L('DIFERIDOS', 'DEFERRED', 'DIFERIDOS')}</p>
+            <p style={{ fontSize: 22, fontWeight: 800, color: '#059669', marginTop: 4 }}>{money(compra.diferidos)}</p>
+          </div>
+          <div className="rounded-xl p-3 text-center col-span-2 lg:col-span-1" style={{ background: '#1a1a2e' }}>
+            <p style={{ ...secTitle, color: '#a5b4fc', justifyContent: 'center' }}>{L('GANHO LÍQUIDO', 'NET PROFIT', 'GANANCIA NETA')}</p>
+            <p style={{ fontSize: 24, fontWeight: 800, color: compra.liquido >= 0 ? '#fff' : '#fca5a5', marginTop: 2 }}>{money(compra.liquido)}</p>
+            <p style={{ fontSize: 11, color: '#94a3b8' }}>ROI: {Math.round(compra.roi)}%</p>
+          </div>
+        </div>
+      </div>
+
       <div style={card} className="mt-4 overflow-hidden">
         <div className="flex items-center justify-between gap-4 flex-wrap px-5 py-3" style={{ background: '#f8fafc', borderBottom: '1px solid #eef2f7' }}>
           <p style={secTitle}>🗓 {L('PROJEÇÃO MENSAL', 'MONTHLY PROJECTION', 'PROYECCIÓN MENSUAL')}</p>
@@ -247,6 +315,71 @@ export default function CalculadoraPage() {
             <p style={{ fontSize: 11, color: '#d1fae5' }}>{L('com diferidos', 'incl. deferred', 'con diferidos')}</p>
           </div>
         </div>
+      </div>
+
+      {/* ESCALA — o mesmo cenário em 10→500 leads/mês, lado a lado */}
+      <div style={card} className="mt-4 overflow-hidden">
+        <div className="px-5 py-3" style={{ background: '#f8fafc', borderBottom: '1px solid #eef2f7' }}>
+          <p style={secTitle}>📶 {L('E SE EU COMPRAR MAIS? — ESCALA', 'WHAT IF I BUY MORE? — SCALE', '¿Y SI COMPRO MÁS? — ESCALA')}</p>
+        </div>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse', minWidth: 640 }}>
+            <thead>
+              <tr style={{ color: '#64748b', fontSize: 11, fontWeight: 800, letterSpacing: 0.4 }}>
+                <th style={{ textAlign: 'left', padding: '10px 20px' }}>{L('LEADS/MÊS', 'LEADS/MO', 'LEADS/MES')}</th>
+                <th style={{ textAlign: 'right', padding: '10px 12px' }}>{L('FECHAMENTOS', 'CLOSES', 'CIERRES')}</th>
+                <th style={{ textAlign: 'right', padding: '10px 12px' }}>{L('INVESTIMENTO', 'INVESTMENT', 'INVERSIÓN')}</th>
+                <th style={{ textAlign: 'right', padding: '10px 12px' }}>{L('LÍQUIDO/MÊS', 'NET/MO', 'NETO/MES')}</th>
+                <th style={{ textAlign: 'right', padding: '10px 12px' }}>ROI</th>
+                <th style={{ textAlign: 'right', padding: '10px 20px' }}>{L('GANHO ANUAL*', 'YEARLY PROFIT*', 'GANANCIA ANUAL*')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[10, 25, 50, 100, 200, 330, 500].map(n => {
+                const s = simular(n)
+                const atual = Math.abs(n - leadsMes) === Math.min(...[10, 25, 50, 100, 200, 330, 500].map(x => Math.abs(x - leadsMes)))
+                return (
+                  <tr key={n} style={{ borderTop: '1px solid #f1f5f9', background: atual ? '#eef2ff' : undefined, fontWeight: atual ? 800 : 500, color: '#1a1a2e' }}>
+                    <td style={{ padding: '9px 20px' }}>{n}{atual && <span style={{ fontSize: 10, color: '#6366f1', marginLeft: 6 }}>◀ {L('você', 'you', 'tú')}</span>}</td>
+                    <td style={{ textAlign: 'right', padding: '9px 12px' }}>{s.fechamentos.toFixed(1)}</td>
+                    <td style={{ textAlign: 'right', padding: '9px 12px', color: '#dc2626' }}>{money(s.investimento)}</td>
+                    <td style={{ textAlign: 'right', padding: '9px 12px', color: s.liquido >= 0 ? '#059669' : '#dc2626' }}>{money(s.liquido)}</td>
+                    <td style={{ textAlign: 'right', padding: '9px 12px' }}>{Math.round(s.roi)}%</td>
+                    <td style={{ textAlign: 'right', padding: '9px 20px', color: '#059669', fontWeight: 700 }}>{money((s.liquido + s.diferidos) * 12)}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+        <p style={{ fontSize: 11, color: '#94a3b8', padding: '8px 20px 12px' }}>
+          * {L('líquido + diferidos × 12, no custo/lead atual de', 'net + deferred × 12, at the current cost/lead of', 'neto + diferidos × 12, al costo/lead actual de')} {money(custo)}
+        </p>
+      </div>
+
+      {/* CRESCIMENTO — acumulado mês a mês no cenário atual */}
+      <div style={card} className="mt-4 overflow-hidden">
+        <div className="flex items-center justify-between gap-3 flex-wrap px-5 py-3" style={{ background: '#f8fafc', borderBottom: '1px solid #eef2f7' }}>
+          <p style={secTitle}>📈 {L('CRESCIMENTO ACUMULADO — 12 MESES', 'CUMULATIVE GROWTH — 12 MONTHS', 'CRECIMIENTO ACUMULADO — 12 MESES')}</p>
+          <span style={{ fontSize: 12, color: '#64748b' }}>{leadsMes} {L('leads/mês', 'leads/mo', 'leads/mes')} · {money(calc.liquido + calc.diferidos)}/{L('mês', 'mo', 'mes')}</span>
+        </div>
+        <div className="flex items-end gap-2 px-5 pt-6 pb-2" style={{ height: 170 }}>
+          {Array.from({ length: 12 }, (_, i) => {
+            const v = (calc.liquido + calc.diferidos) * (i + 1)
+            const max = Math.max(1, (calc.liquido + calc.diferidos) * 12)
+            const h = Math.max(4, (Math.max(0, v) / max) * 120)
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1" title={money(v)}>
+                {(i === 0 || i === 5 || i === 11) && <span style={{ fontSize: 10, fontWeight: 700, color: '#059669' }}>{money(v)}</span>}
+                <div style={{ width: '100%', maxWidth: 42, height: h, borderRadius: '6px 6px 2px 2px', background: 'linear-gradient(180deg,#10b981,#059669)' }} />
+                <span style={{ fontSize: 10, color: '#94a3b8' }}>{i + 1}</span>
+              </div>
+            )
+          })}
+        </div>
+        <p style={{ fontSize: 11, color: '#94a3b8', padding: '0 20px 14px' }}>
+          {L('Ganho acumulado (líquido + diferidos) mantendo o ritmo atual.', 'Cumulative profit (net + deferred) keeping the current pace.', 'Ganancia acumulada (neto + diferidos) manteniendo el ritmo actual.')}
+        </p>
       </div>
 
       <p className="mt-4 text-[12px]" style={{ color: '#94a3b8' }}>
