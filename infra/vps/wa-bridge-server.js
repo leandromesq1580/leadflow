@@ -2,6 +2,7 @@ const express = require("express");
 const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
 const qrcode = require("qrcode");
 const fs = require("fs");
+const { execFileSync } = require("child_process");
 
 const app = express();
 app.use(express.json({ limit: "50mb" }));
@@ -61,6 +62,25 @@ async function uploadToStorage(buffer, filename, mimetype) {
 // comportamento atual (WA serve a versao mais nova). Com a env = forca aquela versao,
 // pra contornar quebra de downloadMedia quando o WA atualiza e o wwebjs 1.34.7 nao
 // acompanha. So a bridge que TIVER a env usa isso; as outras ficam iguais.
+// === ECONOMIA DE MEMORIA (opt-in por instancia: env CHROME_LEAN=1) ===
+// Diagnostico 2026-08-07: 46 bridges x ~1,1 GB de Chrome numa caixa de 47 GB. RAM e
+// swap 100% cheios -> o renderer morre no meio do downloadMedia e a funcao devolve
+// VAZIO sem lancar erro (por isso nao existe nenhum log de midia). Texto passa;
+// imagem, audio e documento se perdem. Estas flags cortam processos e limitam o heap.
+// SEM a env, nada muda: a frota segue exatamente como esta.
+const CHROME_LEAN = (process.env.CHROME_LEAN || "").trim() === "1";
+const LEAN_ARGS = CHROME_LEAN ? [
+  "--disable-features=IsolateOrigins,site-per-process",
+  "--renderer-process-limit=2",
+  "--js-flags=--max-old-space-size=512",
+  "--disable-gpu",
+  "--disable-extensions",
+  "--disable-background-networking",
+  "--disable-sync",
+  "--disable-default-apps",
+  "--mute-audio",
+] : [];
+
 const WA_WEB_VERSION = (process.env.WA_WEB_VERSION || "").trim();
 
 // === BLINDAGEM (2026-07-24, autorizada): auto-recovery de init/QR/envio ===
@@ -95,7 +115,7 @@ const client = new Client({
   } : {}),
   puppeteer: {
     headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", ...LEAN_ARGS],
   },
 });
 
@@ -606,12 +626,40 @@ app.post("/send", async (req, res) => {
     if (mediaUrl) {
       const mr = await fetch(mediaUrl);
       if (!mr.ok) throw new Error(`Media fetch ${mr.status}`);
-      const buf = Buffer.from(await mr.arrayBuffer());
-      const mime = mediaMimetype || mr.headers.get("content-type") || "application/octet-stream";
-      const filename = mediaFilename || "file";
+      let buf = Buffer.from(await mr.arrayBuffer());
+      let mime = mediaMimetype || mr.headers.get("content-type") || "application/octet-stream";
+      let filename = mediaFilename || "file";
+      let isAudio = (mime || "").startsWith("audio/");
+      // VOICE NOTE: o WhatsApp Web atual so aceita ptt em ogg/opus. O MediaRecorder
+      // do navegador grava webm/mp4 e o envio quebrava com o erro minificado "t".
+      // Converte com ffmpeg (webm/opus = remux -c:a copy, instantaneo; AAC re-encoda).
+      if (isAudio && !/ogg/i.test(mime)) {
+        const tmpIn = `/tmp/wa-audio-${process.pid}-${Date.now()}.in`;
+        const tmpOut = tmpIn.replace(/\.in$/, ".ogg");
+        try {
+          fs.writeFileSync(tmpIn, buf);
+          try { execFileSync("ffmpeg", ["-y", "-i", tmpIn, "-vn", "-c:a", "copy", tmpOut], { stdio: "ignore" }); }
+          catch (e1) { execFileSync("ffmpeg", ["-y", "-i", tmpIn, "-vn", "-c:a", "libopus", "-b:a", "32k", tmpOut], { stdio: "ignore" }); }
+          buf = fs.readFileSync(tmpOut);
+          mime = "audio/ogg; codecs=opus";
+          filename = filename.replace(/\.[A-Za-z0-9]+$/, "") + ".ogg";
+        } catch (e) {
+          console.error(`[${INSTANCE_NAME}][SEND] conversao de audio falhou (${e.message}) — enviando como arquivo`);
+          isAudio = false;
+        } finally {
+          try { fs.unlinkSync(tmpIn); } catch (e2) {}
+          try { fs.unlinkSync(tmpOut); } catch (e3) {}
+        }
+      }
       const media = new MessageMedia(mime, buf.toString("base64"), filename);
-      const isAudio = (mime || "").startsWith("audio/");
-      sent = await withTimeout(client.sendMessage(chatId, media, { caption: message || undefined, sendAudioAsVoice: isAudio }), 45000, "SEND");
+      try {
+        sent = await withTimeout(client.sendMessage(chatId, media, { caption: message || undefined, sendAudioAsVoice: isAudio }), 45000, "SEND");
+      } catch (e) {
+        if (!isAudio) throw e;
+        // voice recusado mesmo em ogg → nao perde a mensagem: vai como arquivo comum
+        console.error(`[${INSTANCE_NAME}][SEND] voice falhou (${e.message}) — reenviando como arquivo`);
+        sent = await withTimeout(client.sendMessage(chatId, media, { caption: message || undefined }), 45000, "SEND");
+      }
     } else sent = await withTimeout(client.sendMessage(chatId, message), 45000, "SEND");
     // GRUPO (@g.us) as vezes devolve undefined no whatsapp-web.js. Isso NAO e Chrome
     // degradado: falha SO esta mensagem, sem derrubar a sessao inteira da bridge.
