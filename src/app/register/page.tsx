@@ -29,6 +29,21 @@ export default function RegisterPage() {
     setLoading(true)
     setError('')
 
+    // Domínio digitado errado passa no formato mas cria conta-fantasma que nunca
+    // recebe email (caso real: reginamoyess@gmail.vom, 12/08) — barra na porta.
+    const dominio = email.trim().toLowerCase().split('@')[1] || ''
+    const TYPOS = /\.(vom|con|cpm|cm|comm|ocm)$|^(gmial|gamil|gnail|gmaill|hotmial|hotmil|outlok|yahooo)\./
+    if (TYPOS.test(dominio)) {
+      const certo = dominio.replace(/\.(vom|con|cpm|comm|ocm)$/, '.com').replace(/^gmial\.|^gamil\.|^gnail\.|^gmaill\./, 'gmail.').replace(/^hotmial\.|^hotmil\./, 'hotmail.').replace(/^outlok\./, 'outlook.').replace(/^yahooo\./, 'yahoo.')
+      setError(t._locale === 'en'
+        ? `This email domain looks mistyped ("${dominio}"). Did you mean @${certo}?`
+        : t._locale === 'es'
+          ? `El dominio del correo parece mal escrito ("${dominio}"). ¿Quisiste decir @${certo}?`
+          : `O domínio do email parece digitado errado ("${dominio}"). Você quis dizer @${certo}?`)
+      setLoading(false)
+      return
+    }
+
     const supabase = createClient()
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email, password,
