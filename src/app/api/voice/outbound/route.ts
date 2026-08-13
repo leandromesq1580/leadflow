@@ -37,15 +37,17 @@ export async function POST(request: NextRequest) {
   const db = createAdminClient()
   const callerId = await pickCallerId(db, target)
 
-  // TRANSCRIÇÃO AO VIVO (teste da Fase 2 do roteiro, 2026-08-08) — gated por conta em
-  // settings.call_transcription.buyers. Fora da lista, NADA muda no TwiML. Desligar =
-  // tirar o buyer da lista (sem deploy). O texto chega por webhook em quase tempo real;
-  // consumimos "1 fork" do teto de 4 por chamada (AMD usa outro).
+  // TRANSCRIÇÃO AO VIVO — liga quando o buyer tem o ADD-ON "IA na Ligação" ativo
+  // (settings.ia_ligacao_addon, gravado pelo webhook do Stripe) OU está na lista de
+  // cortesia settings.call_transcription.buyers (legado/admin). Fora dos dois, NADA
+  // muda no TwiML — transcrição custa por minuto, o gate É a cobrança.
   let transcricao = ''
   try {
-    const { data } = await db.from('settings').select('value').eq('key', 'call_transcription').maybeSingle()
-    const liberados: string[] = (data?.value as any)?.buyers || []
-    if (params.buyerId && liberados.includes(params.buyerId)) {
+    const { data } = await db.from('settings').select('key, value').in('key', ['call_transcription', 'ia_ligacao_addon'])
+    const mapa = Object.fromEntries((data || []).map(r => [r.key, r.value as any]))
+    const liberados: string[] = mapa.call_transcription?.buyers || []
+    const addonAtivo = !!mapa.ia_ligacao_addon?.[params.buyerId || '']?.active
+    if (params.buyerId && (addonAtivo || liberados.includes(params.buyerId))) {
       const tCb = `${VOICE_TRANSCRIPTION_URL}?buyer_id=${encodeURIComponent(params.buyerId)}&lead_id=${encodeURIComponent(params.leadId || '')}`
       transcricao =
         `<Start><Transcription statusCallbackUrl="${xmlEscape(tCb)}" languageCode="pt-BR" track="both_tracks" partialResults="false" transcriptionEngine="google"/></Start>`

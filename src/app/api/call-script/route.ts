@@ -34,7 +34,23 @@ export async function GET() {
   const db = createAdminClient()
   const caller = await callerBuyer(db)
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  return NextResponse.json(await ler(db, caller.id))
+
+  // Estado do add-on IA na Ligação + uso do mês (franquia fair-use de 600 min).
+  // Cortesia legada (call_transcription.buyers) conta como ativo — mesma regra do gate.
+  let ia: { ativa: boolean; minutos: number; ligacoes: number; franquia: number } = { ativa: false, minutos: 0, ligacoes: 0, franquia: 600 }
+  try {
+    const mes = new Date().toISOString().slice(0, 7)
+    const { data } = await db.from('settings').select('key, value')
+      .in('key', ['ia_ligacao_addon', 'call_transcription', `ia_uso:${caller.id}:${mes}`])
+    const mapa = Object.fromEntries((data || []).map(r => [r.key, r.value as any]))
+    const cortesia: string[] = mapa.call_transcription?.buyers || []
+    ia.ativa = !!mapa.ia_ligacao_addon?.[caller.id]?.active || cortesia.includes(caller.id)
+    const uso = mapa[`ia_uso:${caller.id}:${mes}`] || {}
+    ia.minutos = uso.minutos || 0
+    ia.ligacoes = uso.ligacoes || 0
+  } catch { /* painel degrada sem quebrar o roteiro */ }
+
+  return NextResponse.json({ ...(await ler(db, caller.id)), ia })
 }
 
 export async function PUT(request: NextRequest) {

@@ -51,6 +51,28 @@ export async function POST(request: NextRequest) {
         atual.meta.erro = `${p.TranscriptionErrorCode || ''} ${p.TranscriptionError || ''}`.trim()
         console.error('[voice/transcription] erro:', atual.meta.erro, 'call', callSid)
       }
+      // CONTADOR DE MINUTOS do add-on IA na Ligação: no fim da transcrição, soma a
+      // duração (started→stopped) no mês corrente do buyer. Franquia é fair-use —
+      // aqui só medimos; quem exibe e conversa upgrade é a página do Roteiro.
+      if (evento === 'transcription-stopped' && atual.meta['transcription-started']) {
+        try {
+          const ini = new Date(String(atual.meta['transcription-started'])).getTime()
+          const fim = new Date(String(p.Timestamp || Date.now())).getTime()
+          const minutos = Math.max(0, Math.round((fim - ini) / 60_000))
+          const bid = String(atual.meta.buyer_id || p.buyer_id || '')
+          if (minutos > 0 && bid) {
+            const mes = new Date().toISOString().slice(0, 7)
+            const chaveUso = `ia_uso:${bid}:${mes}`
+            const { data: uso } = await db.from('settings').select('value').eq('key', chaveUso).maybeSingle()
+            const v = ((uso?.value as any) || { minutos: 0, ligacoes: 0 })
+            v.minutos = (v.minutos || 0) + minutos
+            v.ligacoes = (v.ligacoes || 0) + 1
+            await db.from('settings').upsert(
+              { key: chaveUso, value: v, updated_at: new Date().toISOString() }, { onConflict: 'key' },
+            )
+          }
+        } catch { /* medição nunca derruba o webhook */ }
+      }
     }
 
     atual.meta.buyer_id = p.buyer_id || new URL(request.url).searchParams.get('buyer_id') || atual.meta.buyer_id

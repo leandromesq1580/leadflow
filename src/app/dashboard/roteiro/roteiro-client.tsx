@@ -20,12 +20,38 @@ export function RoteiroClient() {
   const [salvando, setSalvando] = useState(false)
   const [aviso, setAviso] = useState<string | null>(null)
   const [aberta, setAberta] = useState<number | null>(0)
+  const [ia, setIa] = useState<{ ativa: boolean; minutos: number; ligacoes: number; franquia: number } | null>(null)
+  const [assinando, setAssinando] = useState(false)
 
   useEffect(() => {
     fetch('/api/call-script', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null))
-      .then(d => { if (d) { setEnabled(!!d.enabled); setScript(d.script) } })
+      .then(d => { if (d) { setEnabled(!!d.enabled); setScript(d.script); setIa(d.ia || null) } })
       .catch(() => {}).finally(() => setCarregando(false))
   }, [])
+
+  // voltou do checkout do add-on? o webhook leva uns segundos — fica de olho
+  useEffect(() => {
+    if (ia?.ativa) return
+    const p = new URLSearchParams(window.location.search)
+    if (p.get('addon') !== 'ok') return
+    const timer = setInterval(async () => {
+      try {
+        const d = await fetch('/api/call-script', { cache: 'no-store' }).then(r => r.json())
+        if (d?.ia?.ativa) { setIa(d.ia); clearInterval(timer) }
+      } catch {}
+    }, 3000)
+    return () => clearInterval(timer)
+  }, [ia?.ativa])
+
+  async function assinarIa() {
+    setAssinando(true)
+    try {
+      const r = await fetch('/api/roteiro/checkout', { method: 'POST' })
+      const d = await r.json()
+      if (!r.ok || !d.url) { setAviso(d.error || L('Não consegui abrir o pagamento.', 'Could not open checkout.', 'No pude abrir el pago.')); setAssinando(false); return }
+      window.location.href = d.url
+    } catch { setAviso(L('Erro de conexão.', 'Connection error.', 'Error de conexión.')); setAssinando(false) }
+  }
 
   async function salvar(patch: { enabled?: boolean; script?: CallScript }, rotulo: string) {
     setSalvando(true); setAviso(null)
@@ -106,6 +132,44 @@ export function RoteiroClient() {
           {enabled ? L('Desligar', 'Turn off', 'Desactivar') : L('Ativar apoio', 'Turn on support', 'Activar apoyo')}
         </button>
       </div>
+
+      {/* add-on IA na Ligação ($49/mês): a transcrição+sugestão ao vivo é paga; o roteiro estático segue grátis */}
+      {ia?.ativa ? (
+        <div className="rounded-2xl p-5 mb-5" style={{ background: '#eef2ff', border: '1px solid #c7d2fe' }}>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-[14px] font-bold" style={{ color: '#3730a3' }}>🤖 {L('IA na Ligação — ativa', 'AI on the Call — active', 'IA en la Llamada — activa')}</p>
+              <p className="text-[12px] mt-0.5" style={{ color: '#6366f1' }}>
+                {L('Nas suas ligações, o painel mostra "● ouvindo" e o cartão verde com a sugestão quando o cliente fala.',
+                   'On your calls, the panel shows "● listening" and the green card with the suggestion when the client speaks.',
+                   'En tus llamadas, el panel muestra "● escuchando" y la tarjeta verde con la sugerencia cuando el cliente habla.')}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-[18px] font-extrabold" style={{ color: ia.minutos > ia.franquia ? '#d97706' : '#3730a3' }}>
+                {ia.minutos} <span className="text-[12px] font-semibold">/ {ia.franquia} min</span>
+              </p>
+              <p className="text-[11px]" style={{ color: '#818cf8' }}>{L('escutados este mês', 'listened this month', 'escuchados este mes')} · {ia.ligacoes} {L('ligações', 'calls', 'llamadas')}</p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-2xl p-5 mb-5 flex items-center gap-4 flex-wrap" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+          <div className="flex-1 min-w-[260px]">
+            <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>🤖 {L('IA na Ligação', 'AI on the Call', 'IA en la Llamada')} <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#eef2ff', color: '#6366f1' }}>{L('ADD-ON', 'ADD-ON', 'ADD-ON')}</span></p>
+            <p className="text-[12px] mt-0.5" style={{ color: '#64748b' }}>
+              {L('A IA escuta sua ligação AO VIVO e sugere a resposta do seu script na hora — inclusive o contorno da objeção que o cliente acabou de levantar. Inclui 600 min de escuta/mês.',
+                 'The AI listens to your call LIVE and suggests your script’s answer on the spot — including the rebuttal to the objection the client just raised. Includes 600 min of listening/mo.',
+                 'La IA escucha tu llamada EN VIVO y sugiere la respuesta de tu guion al instante — incluido el manejo de la objeción que el cliente acaba de plantear. Incluye 600 min de escucha/mes.')}
+            </p>
+          </div>
+          <button onClick={assinarIa} disabled={assinando}
+            className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-60"
+            style={{ background: 'linear-gradient(135deg,#6366f1,#4f46e5)', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
+            {assinando ? L('Abrindo…', 'Opening…', 'Abriendo…') : L('Assinar — $49/mês', 'Subscribe — $49/mo', 'Suscribir — $49/mes')}
+          </button>
+        </div>
+      )}
 
       {aviso && (
         <div className="rounded-xl p-3 mb-4 text-[13px] font-semibold" style={{ background: '#f0fdfa', border: '1px solid #99f6e4', color: '#0f766e' }}>

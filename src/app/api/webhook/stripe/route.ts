@@ -49,10 +49,10 @@ export async function POST(request: NextRequest) {
         break
       }
 
-      // Add-on Gestão de Apólices: a concessão acontece no customer.subscription.created
-      // (marca metadata.addon) — aqui não há crédito nem nada a fazer.
-      if (session.metadata?.addon === 'apolices') {
-        console.log(`[Stripe Webhook] checkout do add-on apólices concluído para ${session.metadata?.buyer_id}`)
+      // Add-ons (apólices, IA na ligação…): a concessão acontece no
+      // customer.subscription.created (marca metadata.addon) — aqui não há crédito.
+      if (session.metadata?.addon) {
+        console.log(`[Stripe Webhook] checkout do add-on ${session.metadata.addon} concluído para ${session.metadata?.buyer_id}`)
         break
       }
 
@@ -164,19 +164,21 @@ export async function POST(request: NextRequest) {
       const buyerId = sub.metadata?.buyer_id
       const interval = (sub.metadata?.interval as 'month' | 'year') || 'month'
 
-      // ⚠️ ADD-ON Gestão de Apólices ($39): NÃO é assinatura de CRM — sem esta saída,
-      // o bloco abaixo ligaria crm_plan='pro' pra quem só pagou o add-on e trocaria o
-      // crm_subscription_id do buyer. Aqui só liga/desliga o acesso em settings.
-      if (sub.metadata?.addon === 'apolices') {
+      // ⚠️ ADD-ONS (apólices $39, ia_ligacao $49): NÃO são assinatura de CRM — sem esta
+      // saída, o bloco abaixo ligaria crm_plan='pro' pra quem só pagou o add-on e
+      // trocaria o crm_subscription_id do buyer. Aqui só liga/desliga em settings
+      // (`<addon>_addon` = { buyerId: {active, sub_id, status} }).
+      if (sub.metadata?.addon && ['apolices', 'ia_ligacao'].includes(sub.metadata.addon)) {
         if (buyerId) {
+          const chaveAddon = `${sub.metadata.addon}_addon`
           const ativo = sub.status === 'active' || sub.status === 'trialing'
-          const { data: cur } = await supabase.from('settings').select('value').eq('key', 'apolices_addon').maybeSingle()
+          const { data: cur } = await supabase.from('settings').select('value').eq('key', chaveAddon).maybeSingle()
           const mapa = ((cur?.value as Record<string, any>) || {})
           mapa[buyerId] = { active: ativo, sub_id: sub.id, status: sub.status, updated_at: new Date().toISOString() }
           await supabase.from('settings').upsert(
-            { key: 'apolices_addon', value: mapa, updated_at: new Date().toISOString() }, { onConflict: 'key' },
+            { key: chaveAddon, value: mapa, updated_at: new Date().toISOString() }, { onConflict: 'key' },
           )
-          console.log(`[Stripe Webhook] add-on apólices ${ativo ? 'ATIVO' : `inativo (${sub.status})`} para ${buyerId}`)
+          console.log(`[Stripe Webhook] add-on ${sub.metadata.addon} ${ativo ? 'ATIVO' : `inativo (${sub.status})`} para ${buyerId}`)
         }
         break
       }
@@ -231,16 +233,17 @@ export async function POST(request: NextRequest) {
       const sub = event.data.object as Stripe.Subscription
       const buyerId = sub.metadata?.buyer_id
 
-      // Add-on cancelado → só desliga o acesso à Gestão de Apólices; CRM intacto.
-      if (sub.metadata?.addon === 'apolices') {
+      // Add-on cancelado → só desliga o acesso daquele add-on; CRM intacto.
+      if (sub.metadata?.addon && ['apolices', 'ia_ligacao'].includes(sub.metadata.addon)) {
         if (buyerId) {
-          const { data: cur } = await supabase.from('settings').select('value').eq('key', 'apolices_addon').maybeSingle()
+          const chaveAddon = `${sub.metadata.addon}_addon`
+          const { data: cur } = await supabase.from('settings').select('value').eq('key', chaveAddon).maybeSingle()
           const mapa = ((cur?.value as Record<string, any>) || {})
           mapa[buyerId] = { ...(mapa[buyerId] || {}), active: false, status: 'cancelled', updated_at: new Date().toISOString() }
           await supabase.from('settings').upsert(
-            { key: 'apolices_addon', value: mapa, updated_at: new Date().toISOString() }, { onConflict: 'key' },
+            { key: chaveAddon, value: mapa, updated_at: new Date().toISOString() }, { onConflict: 'key' },
           )
-          console.log(`[Stripe Webhook] add-on apólices CANCELADO para ${buyerId}`)
+          console.log(`[Stripe Webhook] add-on ${sub.metadata.addon} CANCELADO para ${buyerId}`)
         }
         break
       }
