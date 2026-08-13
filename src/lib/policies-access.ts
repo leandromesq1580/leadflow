@@ -34,7 +34,7 @@ const NEGADO: AcessoApolices = { pode: false, bookDe: '' }
 export async function acessoApolices(db: Db, buyerId?: string | null): Promise<AcessoApolices> {
   if (!buyerId) return NEGADO
   try {
-    const { data } = await db.from('settings').select('key, value').in('key', ['policies_access', 'nl_agent'])
+    const { data } = await db.from('settings').select('key, value').in('key', ['policies_access', 'nl_agent', 'apolices_addon'])
     const mapa = Object.fromEntries((data || []).map(r => [r.key, r.value as any]))
     const acesso = mapa.policies_access || {}
 
@@ -44,8 +44,12 @@ export async function acessoApolices(db: Db, buyerId?: string | null): Promise<A
     const liberados = Array.isArray(acesso.buyers) ? acesso.buyers.map(String) : []
     if (liberados.includes(buyerId)) return { pode: true, bookDe: buyerId }
 
+    // Conector self-service (add-on $39, 12/08/2026): além do conector, o add-on
+    // precisa estar ATIVO — cancelou a assinatura, o acesso fecha (o conector e o
+    // book ficam guardados; reativar religa sem reconectar).
     const conector = mapa.nl_agent?.[buyerId]
-    return conector?.url && conector?.key ? { pode: true, bookDe: buyerId } : NEGADO
+    const addonAtivo = !!mapa.apolices_addon?.[buyerId]?.active
+    return conector?.url && conector?.key && addonAtivo ? { pode: true, bookDe: buyerId } : NEGADO
   } catch { return NEGADO }
 }
 

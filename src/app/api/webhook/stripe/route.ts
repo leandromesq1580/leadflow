@@ -49,6 +49,13 @@ export async function POST(request: NextRequest) {
         break
       }
 
+      // Add-on Gestão de Apólices: a concessão acontece no customer.subscription.created
+      // (marca metadata.addon) — aqui não há crédito nem nada a fazer.
+      if (session.metadata?.addon === 'apolices') {
+        console.log(`[Stripe Webhook] checkout do add-on apólices concluído para ${session.metadata?.buyer_id}`)
+        break
+      }
+
       const buyerId = session.metadata?.buyer_id
       const productType = session.metadata?.product_type as 'lead' | 'cold_lead' | 'appointment'
       const quantity = parseInt(session.metadata?.quantity || '0', 10)
@@ -156,6 +163,24 @@ export async function POST(request: NextRequest) {
       const sub = event.data.object as Stripe.Subscription
       const buyerId = sub.metadata?.buyer_id
       const interval = (sub.metadata?.interval as 'month' | 'year') || 'month'
+
+      // ⚠️ ADD-ON Gestão de Apólices ($39): NÃO é assinatura de CRM — sem esta saída,
+      // o bloco abaixo ligaria crm_plan='pro' pra quem só pagou o add-on e trocaria o
+      // crm_subscription_id do buyer. Aqui só liga/desliga o acesso em settings.
+      if (sub.metadata?.addon === 'apolices') {
+        if (buyerId) {
+          const ativo = sub.status === 'active' || sub.status === 'trialing'
+          const { data: cur } = await supabase.from('settings').select('value').eq('key', 'apolices_addon').maybeSingle()
+          const mapa = ((cur?.value as Record<string, any>) || {})
+          mapa[buyerId] = { active: ativo, sub_id: sub.id, status: sub.status, updated_at: new Date().toISOString() }
+          await supabase.from('settings').upsert(
+            { key: 'apolices_addon', value: mapa, updated_at: new Date().toISOString() }, { onConflict: 'key' },
+          )
+          console.log(`[Stripe Webhook] add-on apólices ${ativo ? 'ATIVO' : `inativo (${sub.status})`} para ${buyerId}`)
+        }
+        break
+      }
+
       if (buyerId) {
         const status = sub.status === 'active' || sub.status === 'trialing' ? 'active' : 'inactive'
         const expiresAt = sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null
@@ -179,6 +204,8 @@ export async function POST(request: NextRequest) {
             const outras = await stripe.subscriptions.list({ customer: sub.customer, limit: 20 })
             for (const velha of outras.data) {
               if (velha.id === sub.id) continue
+              // add-on convive com o CRM — não é duplicata, não cancela
+              if (velha.metadata?.addon) continue
               if (!['active', 'past_due', 'unpaid', 'trialing'].includes(velha.status)) continue
               await stripe.subscriptions.cancel(velha.id)
               console.log(`[Stripe Webhook] 1-por-cliente: duplicada ${velha.id} (${velha.status}) cancelada em favor de ${sub.id}`)
@@ -203,6 +230,21 @@ export async function POST(request: NextRequest) {
     case 'customer.subscription.deleted': {
       const sub = event.data.object as Stripe.Subscription
       const buyerId = sub.metadata?.buyer_id
+
+      // Add-on cancelado → só desliga o acesso à Gestão de Apólices; CRM intacto.
+      if (sub.metadata?.addon === 'apolices') {
+        if (buyerId) {
+          const { data: cur } = await supabase.from('settings').select('value').eq('key', 'apolices_addon').maybeSingle()
+          const mapa = ((cur?.value as Record<string, any>) || {})
+          mapa[buyerId] = { ...(mapa[buyerId] || {}), active: false, status: 'cancelled', updated_at: new Date().toISOString() }
+          await supabase.from('settings').upsert(
+            { key: 'apolices_addon', value: mapa, updated_at: new Date().toISOString() }, { onConflict: 'key' },
+          )
+          console.log(`[Stripe Webhook] add-on apólices CANCELADO para ${buyerId}`)
+        }
+        break
+      }
+
       if (buyerId) {
         // Só zera a conta se a sub deletada ainda for a ATUAL do buyer — evita marcar como
         // cancelado quando um UPGRADE cancela a sub antiga e o buyer já migrou pra uma nova.

@@ -2,6 +2,7 @@ import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { PoliciesClient } from './policies-client'
+import { ApolicesOnboard } from './apolices-onboard'
 import { acessoApolices } from '@/lib/policies-access'
 import { getLocale } from '@/lib/locale'
 
@@ -21,8 +22,12 @@ export default async function ApolicesPage() {
   const db = createAdminClient()
   const { data: buyer } = await db.from('buyers').select('id').eq('auth_user_id', user.id).single()
   if (!buyer) redirect('/login')
-  // quem não foi liberado (nem conectou a própria seguradora) não entra nem pela URL
   const acesso = await acessoApolices(db, buyer.id)
-  if (!acesso.pode) redirect('/dashboard')
-  return <PoliciesClient buyerId={acesso.bookDe} />
+  if (acesso.pode) return <PoliciesClient buyerId={acesso.bookDe} />
+
+  // Sem acesso: a feature agora é VENDÁVEL (add-on $39, 12/08/2026) — em vez de
+  // esconder, mostra a página de venda; pagou → formulário de conexão do portal.
+  const { data: addonRow } = await db.from('settings').select('value').eq('key', 'apolices_addon').maybeSingle()
+  const addonAtivo = !!((addonRow?.value as Record<string, { active?: boolean }>) || {})[buyer.id]?.active
+  return <ApolicesOnboard addonAtivo={addonAtivo} />
 }

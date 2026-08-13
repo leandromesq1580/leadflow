@@ -150,11 +150,9 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, podeVerApo
     { href: '/dashboard/calculadora', label: t._locale === 'en' ? 'Calculator' : 'Calculadora', icon: '🧮' },
     { href: '/dashboard/leads', label: t.sidebar.leads, icon: '🎯' },
     { href: '/dashboard/pipeline', label: t.sidebar.pipeline, icon: '📋' },
-    // Pós-venda: gestão das apólices vendidas (2026-08-03). Só aparece pra quem tem
-    // acesso — nada de cadeado/upsell aqui: quem não foi liberado nem vê que existe.
-    ...(podeVerApolices === true
-      ? [{ href: '/dashboard/apolices', label: t._locale === 'en' ? 'Policy Management' : t._locale === 'es' ? 'Gestión de Pólizas' : 'Gestão de Apólices', icon: '🛡️' }]
-      : []),
+    // Pós-venda: gestão das apólices (2026-08-03). Desde 12/08 é add-on VENDÁVEL
+    // ($39/mês) — aparece pra todo mundo; quem não assinou cai na página de venda.
+    { href: '/dashboard/apolices', label: t._locale === 'en' ? 'Policy Management' : t._locale === 'es' ? 'Gestión de Pólizas' : 'Gestão de Apólices', icon: '🛡️' },
     { href: '/dashboard/community', label: t._locale === 'en' ? 'Community' : t._locale === 'es' ? 'Comunidad' : 'Comunidade', icon: '🤝' },
     { href: '/dashboard/treinamento', label: t._locale === 'en' ? 'Training' : t._locale === 'es' ? 'Entrenamiento' : 'Treinamento', icon: '🎓' },
     { href: '/dashboard/notas', label: t._locale === 'en' ? 'Notes' : 'Notas', icon: '🗒️' },

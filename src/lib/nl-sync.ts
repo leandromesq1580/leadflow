@@ -18,7 +18,23 @@ import type { PolicyStatus } from './insurance-policies'
 
 type Db = ReturnType<typeof createAdminClient>
 
-export interface NLConfig { url: string; key: string; agent?: string; last_sync?: string }
+export interface NLConfig {
+  url: string
+  key: string
+  agent?: string
+  last_sync?: string
+  /** id do cliente no robô multi-tenant (buyer_id); ausente = instância raiz (legado) */
+  client?: string
+}
+
+/** monta a query com a chave e, quando multi-tenant, o cliente */
+const q = (cfg: NLConfig, comKey: boolean) => {
+  const p = new URLSearchParams()
+  if (comKey) p.set('k', cfg.key)
+  if (cfg.client) p.set('client', cfg.client)
+  const s = p.toString()
+  return s ? `?${s}` : ''
+}
 
 export interface NLResultado {
   ok: boolean
@@ -41,7 +57,7 @@ export interface NLStatusRobo {
 /** Acorda o robô que varre o portal de verdade (Playwright no servidor). */
 export async function dispararVarredura(cfg: NLConfig): Promise<{ ok: boolean; erro?: string }> {
   try {
-    const r = await fetch(`${cfg.url.replace(/\/$/, '')}/run?k=${encodeURIComponent(cfg.key)}`, {
+    const r = await fetch(`${cfg.url.replace(/\/$/, '')}/run${q(cfg, true)}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: '{}',
     })
     if (!r.ok) return { ok: false, erro: `robô respondeu ${r.status}` }
@@ -52,7 +68,7 @@ export async function dispararVarredura(cfg: NLConfig): Promise<{ ok: boolean; e
 /** Entrega o código MFA (que chegou no e-mail do agente) pro robô continuar. */
 export async function enviarCodigoMfa(cfg: NLConfig, code: string): Promise<{ ok: boolean; erro?: string }> {
   try {
-    const r = await fetch(`${cfg.url.replace(/\/$/, '')}/mfa?k=${encodeURIComponent(cfg.key)}`, {
+    const r = await fetch(`${cfg.url.replace(/\/$/, '')}/mfa${q(cfg, true)}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }),
     })
     const d = await r.json().catch(() => ({}))
@@ -64,7 +80,7 @@ export async function enviarCodigoMfa(cfg: NLConfig, code: string): Promise<{ ok
 /** O robô está varrendo? Pediu MFA? Quando varreu por último? */
 export async function statusVarredura(cfg: NLConfig): Promise<NLStatusRobo | null> {
   try {
-    const r = await fetch(`${cfg.url.replace(/\/$/, '')}/status`, { cache: 'no-store', headers: { Accept: 'application/json' } })
+    const r = await fetch(`${cfg.url.replace(/\/$/, '')}/status${q(cfg, false)}`, { cache: 'no-store', headers: { Accept: 'application/json' } })
     if (!r.ok) return null
     const d = await r.json()
     return {
@@ -313,7 +329,7 @@ export async function sincronizarNL(db: Db, buyerId: string): Promise<NLResultad
 
   let feed: any
   try {
-    const r = await fetch(`${cfg.url.replace(/\/$/, '')}/data?k=${encodeURIComponent(cfg.key)}`, { cache: 'no-store', headers: { Accept: 'application/json' } })
+    const r = await fetch(`${cfg.url.replace(/\/$/, '')}/data${q(cfg, true)}`, { cache: 'no-store', headers: { Accept: 'application/json' } })
     if (!r.ok) throw new Error(`portal respondeu ${r.status}`)
     feed = await r.json()
   } catch (e: any) {
