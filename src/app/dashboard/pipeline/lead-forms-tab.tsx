@@ -98,6 +98,7 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
    *  primeiro render apagaria o que estava guardado). Também protege a troca de lead. */
   const pularGravacao = useRef(true)
   const timerRascunho = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const timerServidor = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => { load() }, [leadId])
 
@@ -105,6 +106,7 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
   // useState) — no initializer o servidor renderiza diferente do navegador e quebra.
   useEffect(() => {
     pularGravacao.current = true
+    let tsLocal = 0
     try {
       const cru = localStorage.getItem(chaveRascunho(leadId))
       if (cru) {
@@ -113,13 +115,32 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
           setF({ ...blank(), ...d.f })
           if (d.show) setShow(true)
           setRascunhoEm(d.ts || null)
+          tsLocal = d.ts || 0
         } else {
           localStorage.removeItem(chaveRascunho(leadId))   // velho demais: não ressuscita
         }
       }
     } catch { /* storage bloqueado (Safari privado) — segue sem rascunho */ }
     const t = setTimeout(() => { pularGravacao.current = false }, 0)
-    return () => clearTimeout(t)
+
+    // Rascunho do SERVIDOR (14/08): começou no computador, continua no celular —
+    // e o "Ver como" enxerga. O mais NOVO vence (local vs servidor por timestamp).
+    let vivo = true
+    fetch(`/api/leads/${leadId}/form-draft`, { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        if (!vivo) return
+        const srv = d?.draft?.data as { ts?: number; show?: boolean; f?: Record<string, any> } | undefined
+        if (srv?.f && (srv.ts || 0) > tsLocal && Date.now() - (srv.ts || 0) < RASCUNHO_VALIDADE) {
+          pularGravacao.current = true
+          setF({ ...blank(), ...srv.f })
+          if (srv.show) setShow(true)
+          setRascunhoEm(srv.ts || null)
+          setTimeout(() => { pularGravacao.current = false }, 0)
+        }
+      })
+      .catch(() => {})
+    return () => { vivo = false; clearTimeout(t) }
   }, [leadId])
 
   // Guarda a cada pausa de meio segundo. Nada digitado, nada guardado — e apagar tudo
@@ -129,22 +150,36 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
     if (timerRascunho.current) clearTimeout(timerRascunho.current)
     if (!temConteudo(f)) {
       try { localStorage.removeItem(chaveRascunho(leadId)) } catch {}
-      if (rascunhoEm) setRascunhoEm(null)
+      if (rascunhoEm) {
+        setRascunhoEm(null)
+        // apagou tudo de propósito → o espelho do servidor morre junto
+        fetch(`/api/leads/${leadId}/form-draft`, { method: 'DELETE' }).catch(() => {})
+      }
       return
     }
     timerRascunho.current = setTimeout(() => {
+      const ts = Date.now()
       try {
-        const ts = Date.now()
         localStorage.setItem(chaveRascunho(leadId), JSON.stringify({ v: 1, ts, show, f }))
         setRascunhoEm(ts)
       } catch { /* sem storage: o formulário continua funcionando, só não sobrevive */ }
+      // espelho no servidor, com pausa maior (não vale um PUT por tecla)
+      if (timerServidor.current) clearTimeout(timerServidor.current)
+      timerServidor.current = setTimeout(() => {
+        fetch(`/api/leads/${leadId}/form-draft`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ buyer_id: buyerId, data: { v: 1, ts, show, f } }),
+        }).catch(() => {})
+      }, 1500)
     }, 500)
     return () => { if (timerRascunho.current) clearTimeout(timerRascunho.current) }
   }, [f, show, leadId, rascunhoEm])
 
   function descartarRascunho() {
     if (timerRascunho.current) clearTimeout(timerRascunho.current)
+    if (timerServidor.current) clearTimeout(timerServidor.current)
     try { localStorage.removeItem(chaveRascunho(leadId)) } catch {}
+    fetch(`/api/leads/${leadId}/form-draft`, { method: 'DELETE' }).catch(() => {})
     setRascunhoEm(null)
   }
 

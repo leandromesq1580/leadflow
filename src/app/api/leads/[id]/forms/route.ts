@@ -19,6 +19,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       .from('lead_forms')
       .select('*')
       .eq('lead_id', leadId)
+      .neq('form_type', 'draft')   // rascunho em andamento não é histórico
       .order('created_at', { ascending: false })
     if (error) {
       if (MISSING_TABLE.test(error.message)) return NextResponse.json({ forms: [], needsMigration: true })
