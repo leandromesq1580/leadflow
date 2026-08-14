@@ -1297,7 +1297,6 @@ const CONFIG = {
 
 /* aviso na tela se subir sem configurar — melhor gritar do que perder lead em silêncio */
 (()=>{ const falta=[];
-  if(CONFIG.agendamento.includes('SEU-LINK')) falta.push('scheduling link');
   if(CONFIG.whatsapp.includes('SEUNUMERO'))   falta.push('WhatsApp');
   if(!falta.length) return;
   const a=document.createElement('div');
@@ -1624,6 +1623,27 @@ const CAL=(()=>{
   addEventListener('hashchange',rota);
   rota();
 })();
+</script>
+<script>
+/* AGENDAMENTO NATIVO (14/08): o CONFIRMAR grava direto no pipeline + agenda do time — sem Cal.com */
+(()=>{const ir=document.getElementById('fxIr');if(!ir)return;
+ir.addEventListener('click',async e=>{
+  if(ir.getAttribute('aria-disabled')==='true')return;
+  e.preventDefault();
+  let u;try{u=new URL(ir.href)}catch{return}
+  const p=Object.fromEntries(u.searchParams.entries());
+  const orig=ir.innerHTML;ir.textContent='…';ir.style.pointerEvents='none';
+  try{
+    const r=await fetch('/api/nova/agendar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome:p.name||'',email:p.email||'',telefone:p.phone||'',licenca:p.licenca||'',estado:p.estado||'',fuso:p.fuso||'',slot:p.slot||'',idioma:'en'})});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(d.error||'erro');
+    document.getElementById('calConf').innerHTML='<b style="font-size:18px">✅ You’re booked!</b><br><span style="opacity:.85;font-size:13.5px">Our team got your slot — confirmation is on its way via WhatsApp and email.</span>';
+    try{localStorage.removeItem('l4p_agendamento')}catch{}
+  }catch(err){
+    ir.style.pointerEvents='';ir.textContent='Something failed — try again in a moment';
+    setTimeout(()=>{ir.innerHTML=orig},2800);
+  }
+});})();
 </script>
 </body>
 </html>
