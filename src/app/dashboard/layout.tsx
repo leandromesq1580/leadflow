@@ -19,6 +19,7 @@ import { LeadGate } from '@/components/dashboard/lead-gate'
 import { getLocale } from '@/lib/locale'
 import { I18nProvider } from '@/lib/i18n-client'
 import { LocaleSync } from '@/components/locale-sync'
+import { TopBar } from '@/components/dashboard/topbar'
 import { PrivacyProvider } from '@/lib/privacy-mode'
 import { redirect } from 'next/navigation'
 
@@ -76,6 +77,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <div className="hidden md:block">
           <Sidebar type="buyer" userName={buyer?.name || user!.email || ''} isAgency={buyer?.is_agency || false} buyerId={buyer?.id} crmPlan={buyer?.crm_plan || 'free'} isAdmin={!!buyer?.is_admin} podeVerApolices={podeApolices} />
         </div>
+        <div className="flex-1 flex flex-col min-w-0">
+        <TopBar buyerId={buyer?.id} />
         <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-auto" data-crm-plan={buyer?.crm_plan || 'free'}>
           {impAs && <ImpersonationBanner name={impAs} />}
           {buyer?.id && <MeetingBanner buyerId={buyer.id} />}
@@ -86,6 +89,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </LeadGate>
           </AppointmentGate>
         </main>
+        </div>
         {buyer?.id && <PwaRegister buyerId={buyer.id} />}
         {buyer?.id && <LocaleSync locale={locale} />}
         <MobileNav userName={buyer?.name || user!.email || ''} isAgency={buyer?.is_agency || false} buyerId={buyer?.id} crmPlan={buyer?.crm_plan || 'free'} isAdmin={!!buyer?.is_admin} podeVerApolices={podeApolices} />

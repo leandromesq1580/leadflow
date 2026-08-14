@@ -56,6 +56,19 @@ export default async function DashboardPage() {
     remaining = totalPurchased - lc.reduce((s, c) => s + c.total_used, 0)
   } catch {}
 
+  // série de leads/dia dos últimos 14 dias — sparkline do KPI (reconcept Fase 3)
+  let leads14: number[] = []
+  try {
+    const desde = new Date(Date.now() - 14 * 86_400_000)
+    const { data } = await db.from('leads').select('created_at').eq('assigned_to', buyer.id).gte('created_at', desde.toISOString()).limit(5000)
+    const dias = Array.from({ length: 14 }, () => 0)
+    for (const l of data || []) {
+      const idx = Math.floor((Date.now() - new Date(l.created_at).getTime()) / 86_400_000)
+      if (idx >= 0 && idx < 14) dias[13 - idx]++
+    }
+    leads14 = dias
+  } catch {}
+
   let recentLeads: Array<{ id: string; name: string; email: string; phone: string; city: string; state: string; status: string; interest: string; created_at: string }> = []
   try { const { data } = await db.from('leads').select('*').eq('assigned_to', buyer.id).order('created_at', { ascending: false }).limit(6); recentLeads = data || [] } catch {}
 
@@ -126,7 +139,7 @@ export default async function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-        <StatCard label={t.dashboardHome.kpiTotal} value={totalLeads} icon="👥" />
+        <StatCard label={t.dashboardHome.kpiTotal} value={totalLeads} icon="👥" spark={leads14} />
         <StatCard label={t.dashboardHome.kpiAwaiting} value={newLeads} icon="📞" accent={newLeads > 0} change={newLeads > 0 ? t.dashboardHome.kpiAwaitingCta : undefined} trend="up" />
         <StatCard label={t.dashboardHome.kpiConverted} value={converted} icon="🏆" change={totalLeads > 0 ? t.dashboardHome.kpiRate(Math.round((converted / totalLeads) * 100)) : undefined} trend="up" />
         <StatCard label={t.dashboardHome.kpiCredits} value={remaining} icon="💳" />
