@@ -34,7 +34,7 @@
   --glow:0 0 44px rgba(124,58,237,.28);
 }
 *{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{background:var(--bg);color:var(--txt);font:16px/1.62 'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 ::selection{background:rgba(124,58,237,.45)}
 img,svg{display:block;max-width:100%}
@@ -82,7 +82,7 @@ header.nav{position:sticky;top:0;z-index:60;background:rgba(4,6,12,.82);backdrop
 .nav-in{display:flex;align-items:center;justify-content:space-between;height:64px}
 .logo{display:flex;align-items:center;gap:10px;font-weight:900;font-size:19px;letter-spacing:-.02em}
 .logo-ico{width:34px;height:34px;border-radius:10px;background:var(--grad);display:grid;place-items:center;box-shadow:var(--glow)}
-.nav-cta{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#0f172a;font-weight:800;font-size:14px;padding:10px 20px;border-radius:999px}
+.nav-cta{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#0f172a;font-weight:800;white-space:nowrap;font-size:14px;padding:10px 20px;border-radius:999px}
 
 /* ---------- HERO ---------- */
 .hero{position:relative;padding:clamp(56px,8vw,96px) 0 clamp(56px,7vw,88px);overflow:hidden}
@@ -538,7 +538,7 @@ footer{border-top:1px solid var(--line);padding:44px 0 54px;background:var(--bg)
       <a href="/nova" style="padding:6px 8px;border-radius:8px;color:var(--mut,#94a3b8);text-decoration:none">PT</a>
       <a href="/nova/es" aria-current="true" style="padding:6px 8px;border-radius:8px;background:rgba(139,92,246,.18);color:#c4b5fd;text-decoration:none">ES</a>
     </nav>
-    <a class="nav-cta" href="#consultoria">Agendar consultoría</a>
+    <a class="nav-cta" href="#consultoria">Agendar<span class="m-x"> consultoría</span></a>
   </div>
 </header>
 
@@ -1653,7 +1653,7 @@ const LUGARES=[['Orlando','FL'],['Pompano Beach','FL'],['Deerfield Beach','FL'],
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 let fechado=false,el=null,hideT=null;
 const css=document.createElement('style');
-css.textContent='@keyframes l4pToastIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}} .l4pToast{position:fixed;left:14px;bottom:14px;z-index:80;width:290px;max-width:calc(100vw - 28px);animation:l4pToastIn .45s cubic-bezier(.16,1,.3,1)} .l4pToast .c{background:#fff;color:#1a1a2e;border-radius:14px;padding:11px 13px;display:flex;gap:10px;align-items:flex-start;box-shadow:0 14px 44px rgba(0,0,0,.35);line-height:1.35} .l4pToast .av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;position:relative} .l4pToast .av i{position:absolute;right:-2px;bottom:-2px;width:10px;height:10px;border-radius:50%;background:#10b981;border:2px solid #fff} .l4pToast b.n{font-size:13px} .l4pToast .bd{display:inline-block;background:#d1fae5;color:#047857;font-size:9px;font-weight:800;letter-spacing:.04em;padding:3px 7px;border-radius:99px;margin:3px 0;white-space:nowrap;line-height:1} .l4pToast .ln{font-size:11.5px;color:#475569} .l4pToast .ag{font-size:10.5px;color:#10b981;font-weight:700;margin-top:2px} .l4pToast .x{margin-left:auto;background:none;border:0;color:#94a3b8;font-size:13px;cursor:pointer;padding:2px;line-height:1}';
+css.textContent='@keyframes l4pToastIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}} .l4pToast{position:fixed;left:14px;bottom:14px;z-index:80;width:290px;max-width:calc(100vw - 28px);animation:l4pToastIn .45s cubic-bezier(.16,1,.3,1)} .l4pToast .c{background:#fff;color:#1a1a2e;border-radius:14px;padding:11px 13px;display:flex;gap:10px;align-items:flex-start;box-shadow:0 14px 44px rgba(0,0,0,.35);line-height:1.35} .l4pToast .av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;position:relative} .l4pToast .av i{position:absolute;right:-2px;bottom:-2px;width:10px;height:10px;border-radius:50%;background:#10b981;border:2px solid #fff} .l4pToast b.n{font-size:13px} .l4pToast .bd{display:inline-block;background:#d1fae5;color:#047857;font-size:9px;font-weight:800;letter-spacing:.04em;padding:3px 7px;border-radius:99px;margin:3px 0;white-space:nowrap;line-height:1} .l4pToast .ln{font-size:11.5px;color:#475569} .l4pToast .ag{font-size:10.5px;color:#10b981;font-weight:700;margin-top:2px} .l4pToast .x{margin-left:auto;background:none;border:0;color:#94a3b8;font-size:13px;cursor:pointer;padding:2px;line-height:1} @media (max-width:480px){.l4pToast{left:12px;right:12px;width:auto;top:122px;bottom:auto}.l4pToast .c{padding:8px 10px;gap:8px;border-radius:12px}.l4pToast .av{width:26px;height:26px;font-size:9px}.l4pToast b.n{font-size:11.5px}.l4pToast .bd{font-size:7.5px;padding:2px 6px}.l4pToast .ln{font-size:10px}.l4pToast .ag{font-size:9.5px}}';
 document.head.appendChild(css);
 function mostra(){
   if(fechado||location.hash.indexOf('#/agendar')===0)return;
