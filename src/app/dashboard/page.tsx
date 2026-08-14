@@ -6,6 +6,7 @@ import { timeAgo, getInitials } from '@/lib/utils'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { OnboardingChecklist } from '@/components/onboarding-checklist'
+import { SpeedToLead } from '@/components/speed-to-lead'
 import { StaleLeadsAlert } from '@/components/stale-leads-alert'
 import { QueuePositionCard } from '@/components/queue-position-card'
 import { PrivatePhone } from '@/components/private-field'
@@ -62,6 +63,9 @@ export default async function DashboardPage() {
 
   return (
     <div className="max-w-[1040px] mx-auto">
+      {/* Speed-to-Lead (reconcept Fase 1): leads sem contato com cronômetro correndo */}
+      <SpeedToLead />
+
       {/* Onboarding Checklist */}
       <OnboardingChecklist buyerId={buyer.id} />
 

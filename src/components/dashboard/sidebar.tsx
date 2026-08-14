@@ -143,33 +143,53 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, podeVerApo
   const upcomingMeetings = useUpcomingMeetings(type === 'buyer' ? buyerId : undefined)
   const communityUnread = useCommunityUnread(type === 'buyer' ? buyerId : undefined)
 
-  const buyerLinks = [
-    { href: '/dashboard', label: t.sidebar.overview, icon: '📊' },
-    { href: '/dashboard/performance', label: t.sidebar.performance, icon: '📈' },
-    // Calculadora de rentabilidade: custo de leads vs receita (2026-08-11)
-    { href: '/dashboard/calculadora', label: t._locale === 'en' ? 'Calculator' : 'Calculadora', icon: '🧮' },
-    { href: '/dashboard/leads', label: t.sidebar.leads, icon: '🎯' },
-    { href: '/dashboard/pipeline', label: t.sidebar.pipeline, icon: '📋' },
-    // Pós-venda: gestão das apólices (2026-08-03). Desde 12/08 é add-on VENDÁVEL
-    // ($39/mês) — aparece pra todo mundo; quem não assinou cai na página de venda.
-    { href: '/dashboard/apolices', label: t._locale === 'en' ? 'Policy Management' : t._locale === 'es' ? 'Gestión de Pólizas' : 'Gestão de Apólices', icon: '🛡️' },
-    { href: '/dashboard/community', label: t._locale === 'en' ? 'Community' : t._locale === 'es' ? 'Comunidad' : 'Comunidade', icon: '🤝' },
-    { href: '/dashboard/treinamento', label: t._locale === 'en' ? 'Training' : t._locale === 'es' ? 'Entrenamiento' : 'Treinamento', icon: '🎓' },
-    { href: '/dashboard/notas', label: t._locale === 'en' ? 'Notes' : 'Notas', icon: '🗒️' },
-    { href: '/dashboard/whatsapp', label: t.sidebar.whatsapp, icon: '💬' },
-    // Appointments logo abaixo do WhatsApp
-    { href: '/dashboard/appointments', label: t.sidebar.appointments, icon: '📅' },
-    { href: '/dashboard/ai-consult', label: t._locale === 'en' ? 'AI Specialist' : t._locale === 'es' ? 'Especialista IA' : 'Especialista AI', icon: '🤖' },
-    { href: '/dashboard/templates', label: t.sidebar.templates, icon: '📝' },
-    // Roteiro de venda ao lado do telefone (2026-08-08) — o apoio em si é opt-in
-    { href: '/dashboard/roteiro', label: t._locale === 'en' ? 'Call Script' : t._locale === 'es' ? 'Guion' : 'Roteiro', icon: '📜' },
-    { href: '/dashboard/automations', label: t.sidebar.automations, icon: '⚡' },
-    { href: '/dashboard/sequences', label: t.sidebar.sequences, icon: '🔁' },
-    { href: '/dashboard/settings/notifications', label: t._locale === 'en' ? 'Reminders' : t._locale === 'es' ? 'Avisos' : 'Avisos', icon: '🔔' },
-    { href: '/dashboard/team', label: t.sidebar.team, icon: '👥' },
-    { href: '/dashboard/referral', label: t.sidebar.referral, icon: '🎁' },
-    { href: '/dashboard/credits', label: t.sidebar.credits, icon: '💳' },
-    { href: '/dashboard/settings', label: t.sidebar.settings, icon: '⚙️' },
+  // MENU AGRUPADO (reconcept Fase 1, 2026-08-14): 4 grupos por lógica de trabalho.
+  // Mesmos itens e rotas de sempre — só a organização mudou (casca, não função).
+  const L3 = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
+  const buyerGroups = [
+    {
+      titulo: L3('Vendas', 'Sales', 'Ventas'),
+      itens: [
+        { href: '/dashboard', label: t.sidebar.overview, icon: '📊' },
+        { href: '/dashboard/performance', label: t.sidebar.performance, icon: '📈' },
+        { href: '/dashboard/calculadora', label: t._locale === 'en' ? 'Calculator' : 'Calculadora', icon: '🧮' },
+        { href: '/dashboard/leads', label: t.sidebar.leads, icon: '🎯' },
+        { href: '/dashboard/pipeline', label: t.sidebar.pipeline, icon: '📋' },
+        // add-on vendável ($39/mês): todo mundo vê; sem assinatura cai na página de venda
+        { href: '/dashboard/apolices', label: t._locale === 'en' ? 'Policy Management' : t._locale === 'es' ? 'Gestión de Pólizas' : 'Gestão de Apólices', icon: '🛡️' },
+        { href: '/dashboard/appointments', label: t.sidebar.appointments, icon: '📅' },
+      ],
+    },
+    {
+      titulo: L3('Comunicação', 'Communication', 'Comunicación'),
+      itens: [
+        { href: '/dashboard/whatsapp', label: t.sidebar.whatsapp, icon: '💬' },
+        // Roteiro + IA na ligação (add-on $49): apoio em si é opt-in
+        { href: '/dashboard/roteiro', label: t._locale === 'en' ? 'Call Script' : t._locale === 'es' ? 'Guion' : 'Roteiro', icon: '📜' },
+        { href: '/dashboard/ai-consult', label: t._locale === 'en' ? 'AI Specialist' : t._locale === 'es' ? 'Especialista IA' : 'Especialista AI', icon: '🤖' },
+        { href: '/dashboard/templates', label: t.sidebar.templates, icon: '📝' },
+        { href: '/dashboard/automations', label: t.sidebar.automations, icon: '⚡' },
+        { href: '/dashboard/sequences', label: t.sidebar.sequences, icon: '🔁' },
+        { href: '/dashboard/settings/notifications', label: t._locale === 'en' ? 'Reminders' : t._locale === 'es' ? 'Avisos' : 'Avisos', icon: '🔔' },
+        { href: '/dashboard/notas', label: t._locale === 'en' ? 'Notes' : 'Notas', icon: '🗒️' },
+      ],
+    },
+    {
+      titulo: L3('Crescimento', 'Growth', 'Crecimiento'),
+      itens: [
+        { href: '/dashboard/community', label: t._locale === 'en' ? 'Community' : t._locale === 'es' ? 'Comunidad' : 'Comunidade', icon: '🤝' },
+        { href: '/dashboard/treinamento', label: t._locale === 'en' ? 'Training' : t._locale === 'es' ? 'Entrenamiento' : 'Treinamento', icon: '🎓' },
+        { href: '/dashboard/referral', label: t.sidebar.referral, icon: '🎁' },
+      ],
+    },
+    {
+      titulo: L3('Conta', 'Account', 'Cuenta'),
+      itens: [
+        { href: '/dashboard/team', label: t.sidebar.team, icon: '👥' },
+        { href: '/dashboard/credits', label: t.sidebar.credits, icon: '💳' },
+        { href: '/dashboard/settings', label: t.sidebar.settings, icon: '⚙️' },
+      ],
+    },
   ]
 
   const adminLinks = [
@@ -184,7 +204,10 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, podeVerApo
     { href: '/admin/settings', label: t.sidebar.settings, icon: '⚙️' },
   ]
 
-  const links = type === 'admin' ? adminLinks : buyerLinks
+  // admin continua em lista única; comprador ganha os grupos
+  const grupos = type === 'admin'
+    ? [{ titulo: t.sidebar.menu, itens: adminLinks }]
+    : buyerGroups
 
   async function handleLogout() {
     const { createBrowserClient } = await import('@supabase/ssr')
@@ -210,11 +233,13 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, podeVerApo
         </Link>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4">
-        <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest" style={{ color: '#94a3b8' }}>{t.sidebar.menu}</p>
+      {/* Navigation — grupos por lógica de trabalho (reconcept Fase 1) */}
+      <nav className="flex-1 px-3 py-4 overflow-y-auto">
+        {grupos.map((grupo, gi) => (
+        <div key={grupo.titulo} className={gi > 0 ? 'mt-5' : ''}>
+        <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest" style={{ color: '#94a3b8' }}>{grupo.titulo}</p>
         <div className="space-y-0.5">
-          {links.map((link) => {
+          {grupo.itens.map((link) => {
             const isActive = pathname === link.href ||
               (link.href !== '/dashboard' && link.href !== '/admin' && pathname.startsWith(link.href))
 
@@ -259,6 +284,8 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, podeVerApo
             )
           })}
         </div>
+        </div>
+        ))}
       </nav>
 
       {/* User */}
