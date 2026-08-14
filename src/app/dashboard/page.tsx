@@ -74,6 +74,17 @@ export default async function DashboardPage() {
 
   const firstName = buyer.name?.split(' ')[0] || ''
 
+  // Saudação viva (reconcept): muda com a hora do dia (fuso Eastern, padrão da
+  // casa — FL/MA) e escreve a data por extenso no idioma da conta.
+  const horaET = Number(new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone: 'America/New_York' }).format(new Date()))
+  const saudacao = horaET >= 5 && horaET < 12
+    ? (locale === 'en' ? 'Good morning' : locale === 'es' ? 'Buenos días' : 'Bom dia')
+    : horaET >= 12 && horaET < 18
+      ? (locale === 'en' ? 'Good afternoon' : locale === 'es' ? 'Buenas tardes' : 'Boa tarde')
+      : (locale === 'en' ? 'Good evening' : locale === 'es' ? 'Buenas noches' : 'Boa noite')
+  const dataLonga = new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : locale === 'es' ? 'es-419' : 'pt-BR',
+    { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/New_York' }).format(new Date())
+
   return (
     <div className="max-w-[1040px] mx-auto">
       {/* Speed-to-Lead (reconcept Fase 1): leads sem contato com cronômetro correndo */}
@@ -92,10 +103,10 @@ export default async function DashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-3">
         <div>
           <h1 className="text-[22px] sm:text-[26px] font-extrabold tracking-tight" style={{ color: 'var(--fg)' }}>
-            {t.dashboardHome.helloGreeting(firstName)}
+            {saudacao}, {firstName} 👋
           </h1>
           <p className="text-[13px] sm:text-[14px] mt-1" style={{ color: 'var(--fg-secondary)' }}>
-            {t.dashboardHome.subtitle}
+            {t.dashboardHome.subtitle} — {dataLonga}
           </p>
         </div>
         <Link href="/dashboard/credits"

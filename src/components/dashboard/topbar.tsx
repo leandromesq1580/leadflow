@@ -17,7 +17,24 @@ export function TopBar({ buyerId }: { buyerId?: string }) {
   const pathname = usePathname()
   const [aberto, setAberto] = useState(false)
   const [n, setN] = useState({ wa: 0, comunidade: 0, reunioes: 0, semContato: 0 })
+  const [creditos, setCreditos] = useState<number | null>(null)
   const caixa = useRef<HTMLDivElement>(null)
+
+  // saldo de créditos sempre à vista (reconcept): carrega, atualiza a cada 5 min
+  // e quando a aba volta ao foco (ex.: acabou de comprar em outra aba)
+  useEffect(() => {
+    if (!buyerId) return
+    let vivo = true
+    const carregarSaldo = () => fetch('/api/home', { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (vivo && d && typeof d.remaining === 'number') setCreditos(d.remaining) })
+      .catch(() => {})
+    carregarSaldo()
+    const timer = setInterval(carregarSaldo, 5 * 60_000)
+    const foco = () => carregarSaldo()
+    window.addEventListener('focus', foco)
+    return () => { vivo = false; clearInterval(timer); window.removeEventListener('focus', foco) }
+  }, [buyerId])
 
   useEffect(() => {
     if (!buyerId) return
@@ -94,6 +111,26 @@ export function TopBar({ buyerId }: { buyerId?: string }) {
       </p>
 
       <div className="flex items-center gap-2">
+        {creditos !== null && (
+          <Link href="/dashboard/credits"
+            className="flex items-center gap-2 pl-3 pr-1.5 py-1.5 rounded-xl transition-transform hover:scale-[1.03]"
+            title={creditos === 0
+              ? L('Sem créditos — próximo lead não chega! Clique pra recarregar', 'No credits — your next lead will not arrive! Click to top up', 'Sin créditos — ¡tu próximo lead no llega! Haz clic para recargar')
+              : L('Seu saldo de leads', 'Your lead balance', 'Tu saldo de leads')}
+            style={{
+              background: creditos === 0 ? 'var(--err-soft)' : 'var(--bg-soft)',
+              border: `1px solid ${creditos === 0 ? 'var(--err-line)' : 'var(--border)'}`,
+            }}>
+            <span className="text-[10px] font-extrabold uppercase" style={{ letterSpacing: '0.12em', color: creditos === 0 ? '#ef4444' : 'var(--fg-muted)' }}>
+              ⚡ {L('Créditos', 'Credits', 'Créditos')}
+            </span>
+            <span className="text-[14px] font-extrabold" style={{ color: creditos === 0 ? '#ef4444' : 'var(--fg)', fontVariantNumeric: 'tabular-nums' }}>
+              {creditos}
+            </span>
+            <span className="w-6 h-6 rounded-lg flex items-center justify-center text-[13px] font-extrabold text-white"
+              style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)' }}>+</span>
+          </Link>
+        )}
         <Link href="/dashboard/leads"
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12.5px] font-bold text-white transition-transform hover:scale-[1.03]"
           style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)', boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}>
