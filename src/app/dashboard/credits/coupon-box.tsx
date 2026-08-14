@@ -95,7 +95,7 @@ export function CouponBox() {
           onClick={() => validate(input)}
           disabled={busy || !input.trim()}
           className="px-4 py-2 rounded-lg text-[13px] font-bold text-white disabled:opacity-50"
-          style={{ background: '#6366f1' }}
+          style={{ background: 'var(--accent)' }}
         >
           {busy ? '...' : L('Aplicar', 'Apply', 'Aplicar')}
         </button>

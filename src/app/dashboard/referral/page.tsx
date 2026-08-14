@@ -72,7 +72,7 @@ export default function ReferralPage() {
       <p className="text-[14px] mb-6" style={{ color: 'var(--fg-secondary)' }}>{L('Indique corretores e ganhe crédito em dólar', 'Refer agents and earn credit in dollars', 'Recomienda agentes y gana crédito en dólares')}</p>
 
       {/* Credit card */}
-      <div className="rounded-2xl p-6 mb-6 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #1e1b4b, #312e81)' }}>
+      <div className="rounded-2xl p-6 mb-6 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #190f3a, #3b1d7a)' }}>
         <div className="flex justify-between items-start">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.5)' }}>{L('Seu crédito', 'Your credit', 'Tu crédito')}</p>
@@ -96,7 +96,7 @@ export default function ReferralPage() {
       </div>
 
       {/* Regras — o cliente precisa entender antes de indicar (feedback 2026-07-30) */}
-      <div className="rounded-2xl p-5 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+      <div className="rounded-2xl p-5 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
         <p className="text-[13px] font-bold mb-3" style={{ color: 'var(--fg)' }}>📋 {L('Como funciona', 'How it works', 'Cómo funciona')}</p>
         <ol className="space-y-2.5 text-[12.5px]" style={{ color: 'var(--fg-secondary)' }}>
           {t._locale === 'en' ? (
@@ -122,7 +122,7 @@ export default function ReferralPage() {
             </>
           )}
         </ol>
-        <div className="mt-3 pt-3 text-[11.5px]" style={{ borderTop: '1px solid #f1f5f9', color: 'var(--fg-muted)' }}>
+        <div className="mt-3 pt-3 text-[11.5px]" style={{ borderTop: '1px solid var(--bg-soft)', color: 'var(--fg-muted)' }}>
           {t._locale === 'en' ? (
             <>
               <b style={{ color: 'var(--fg-secondary)' }}>Rules:</b> 1 reward per referral (on their first purchase) ·
@@ -149,20 +149,20 @@ export default function ReferralPage() {
       </div>
 
       {/* Share link */}
-      <div className="rounded-2xl p-5 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+      <div className="rounded-2xl p-5 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
         <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--fg-muted)' }}>{L('Seu link de indicação', 'Your referral link', 'Tu enlace de referido')}</p>
         <div className="flex gap-2">
           <input readOnly value={link}
             className="flex-1 px-3 py-2 rounded-lg text-[12px] font-mono"
-            style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
+            style={{ background: 'var(--bg)', border: '1px solid var(--border)' }} />
           <button onClick={copy}
             className="px-4 py-2 rounded-lg text-[12px] font-bold"
-            style={{ background: copied ? '#10b981' : 'var(--accent-light)', color: copied ? 'var(--bg-card)' : '#6366f1' }}>
+            style={{ background: copied ? '#10b981' : 'var(--accent-light)', color: copied ? 'var(--bg-card)' : 'var(--accent)' }}>
             {copied ? L('✓ Copiado', '✓ Copied', '✓ Copiado') : L('Copiar', 'Copy', 'Copiar')}
           </button>
           <button onClick={share}
             className="px-4 py-2 rounded-lg text-[12px] font-bold text-white"
-            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+            style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)' }}>
             {L('Compartilhar', 'Share', 'Compartir')}
           </button>
         </div>
@@ -184,11 +184,11 @@ export default function ReferralPage() {
 
       {/* Rewards list */}
       {data.rewards.length > 0 && (
-        <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+        <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <p className="text-[13px] font-bold mb-3" style={{ color: 'var(--fg)' }}>{L('Histórico', 'History', 'Historial')}</p>
           <div className="space-y-2">
             {data.rewards.map((r, i) => (
-              <div key={i} className="flex justify-between items-center py-2" style={{ borderBottom: i < data.rewards.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+              <div key={i} className="flex justify-between items-center py-2" style={{ borderBottom: i < data.rewards.length - 1 ? '1px solid var(--bg-soft)' : 'none' }}>
                 <div>
                   <p className="text-[13px] font-bold" style={{ color: 'var(--fg)' }}>{r.name}</p>
                   <p className="text-[11px]" style={{ color: 'var(--fg-muted)' }}>{triggerLabels(L)[r.trigger]} · {new Date(r.granted_at).toLocaleDateString(t._locale === 'en' ? 'en-US' : t._locale === 'es' ? 'es-US' : 'pt-BR')}</p>

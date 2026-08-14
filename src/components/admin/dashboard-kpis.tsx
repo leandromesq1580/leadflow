@@ -66,7 +66,7 @@ export function DashboardKpis() {
         {PERIODS.map(p => (
           <button key={p.key} onClick={() => setPeriod(p.key)}
             className="px-4 py-1.5 rounded-full text-[12px] font-bold transition-all"
-            style={{ background: period === p.key ? '#6366f1' : 'var(--bg-soft)', color: period === p.key ? 'var(--bg-card)' : '#64748b' }}>
+            style={{ background: period === p.key ? 'var(--accent)' : 'var(--bg-soft)', color: period === p.key ? 'var(--bg-card)' : '#64748b' }}>
             {p.label}
           </button>
         ))}

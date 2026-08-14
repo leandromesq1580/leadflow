@@ -93,6 +93,13 @@ export function TopBar({ buyerId }: { buyerId?: string }) {
         {chave ? paginas[chave] : 'Lead4Pro'}
       </p>
 
+      <div className="flex items-center gap-2">
+        <Link href="/dashboard/leads"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12.5px] font-bold text-white transition-transform hover:scale-[1.03]"
+          style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)', boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}>
+          + {L('Novo Lead', 'New Lead', 'Nuevo Lead')}
+        </Link>
+
       <div ref={caixa} className="relative">
         <button onClick={() => setAberto(v => !v)} aria-label={L('Notificações', 'Notifications', 'Notificaciones')}
           className="relative w-9 h-9 rounded-xl flex items-center justify-center text-[16px] transition-transform hover:scale-105"
@@ -134,6 +141,7 @@ export function TopBar({ buyerId }: { buyerId?: string }) {
             )}
           </div>
         )}
+      </div>
       </div>
     </header>
   )

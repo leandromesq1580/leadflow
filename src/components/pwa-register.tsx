@@ -74,7 +74,7 @@ export function PwaRegister({ buyerId }: Props) {
 
   return (
     <div className="fixed bottom-4 right-4 z-50 max-w-sm rounded-2xl p-4 shadow-xl"
-      style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
       <div className="flex items-start gap-3">
         <span className="text-[24px]">🔔</span>
         <div className="flex-1">
@@ -83,7 +83,7 @@ export function PwaRegister({ buyerId }: Props) {
           <div className="flex gap-2 mt-3">
             <button onClick={enable}
               className="px-4 py-1.5 rounded-lg text-[12px] font-bold text-white"
-              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+              style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)' }}>
               {L('Ativar', 'Enable', 'Activar')}
             </button>
             <button onClick={() => setShowPrompt(false)}

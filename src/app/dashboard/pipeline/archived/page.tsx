@@ -114,7 +114,7 @@ export default function ArchivedLeadsPage() {
           <Link
             href="/dashboard/pipeline"
             className="flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] font-semibold transition-all hover:shadow-sm"
-            style={{ background: 'var(--bg-card)', color: 'var(--fg-secondary)', border: '1px solid #e8ecf4' }}
+            style={{ background: 'var(--bg-card)', color: 'var(--fg-secondary)', border: '1px solid var(--border)' }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 12H5" />
@@ -142,7 +142,7 @@ export default function ArchivedLeadsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full px-4 py-2.5 rounded-xl text-[13px] outline-none transition-all focus:shadow-sm"
-          style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', color: 'var(--fg)' }}
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--fg)' }}
         />
       </div>
 
@@ -154,7 +154,7 @@ export default function ArchivedLeadsPage() {
       ) : filtered.length === 0 ? (
         <div
           className="text-center py-20 rounded-2xl"
-          style={{ background: 'var(--bg-card)', border: '1px dashed #e8ecf4' }}
+          style={{ background: 'var(--bg-card)', border: '1px dashed var(--border)' }}
         >
           <div
             className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
@@ -179,7 +179,7 @@ export default function ArchivedLeadsPage() {
             <div
               key={l.id}
               className="p-4 rounded-2xl flex items-center gap-4 transition-all hover:shadow-sm"
-              style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
             >
               {/* Avatar */}
               <div
@@ -219,7 +219,7 @@ export default function ArchivedLeadsPage() {
                 onClick={() => reactivate(l.id)}
                 disabled={reactivating === l.id}
                 className="px-4 py-2 rounded-xl text-[12px] font-bold transition-all hover:shadow-sm disabled:opacity-50 flex items-center gap-1.5 flex-shrink-0"
-                style={{ background: '#6366f1', color: '#fff' }}
+                style={{ background: 'var(--accent)', color: '#fff' }}
               >
                 {reactivating === l.id ? (
                   L('Reativando...', 'Reactivating...', 'Reactivando...')

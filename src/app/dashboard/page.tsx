@@ -39,7 +39,7 @@ export default async function DashboardPage() {
           </div>
           <h2 className="text-lg font-bold" style={{ color: 'var(--fg)' }}>{t.dashboardHome.setupAccount}</h2>
           <p className="text-sm mt-1 mb-5" style={{ color: 'var(--fg-muted)' }}>{t.dashboardHome.setupHelp}</p>
-          <a href="/dashboard" className="inline-block px-5 py-2.5 rounded-xl text-sm font-bold text-white" style={{ background: '#6366f1' }}>{t.dashboardHome.reload}</a>
+          <a href="/dashboard" className="inline-block px-5 py-2.5 rounded-xl text-sm font-bold text-white" style={{ background: 'var(--accent)' }}>{t.dashboardHome.reload}</a>
         </div>
       </div>
     )
@@ -100,14 +100,14 @@ export default async function DashboardPage() {
         </div>
         <Link href="/dashboard/credits"
           className="flex items-center gap-2 px-5 py-3 rounded-xl text-[13px] font-bold text-white hover:opacity-90"
-          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
+          style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)', boxShadow: '0 4px 14px rgba(124,58,237,0.3)' }}>
           <span>✦</span> {t.dashboardHome.buyCredits}
         </Link>
       </div>
 
       {/* Credits Banner */}
-      <div className="rounded-2xl p-6 mb-6 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 100%)' }}>
-        <div className="absolute top-0 right-0 w-80 h-80 rounded-full" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.3), transparent 70%)', transform: 'translate(20%, -40%)' }} />
+      <div className="rounded-2xl p-6 mb-6 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #190f3a 0%, #3b1d7a 40%, #6d28d9 100%)' }}>
+        <div className="absolute top-0 right-0 w-80 h-80 rounded-full" style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.3), transparent 70%)', transform: 'translate(20%, -40%)' }} />
         <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full" style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.2), transparent 70%)', transform: 'translate(-30%, 30%)' }} />
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-4">
@@ -131,7 +131,7 @@ export default async function DashboardPage() {
           </div>
           {totalPurchased > 0 && (
             <div className="h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }}>
-              <div className="h-2 rounded-full" style={{ background: 'linear-gradient(90deg, #818cf8, #a78bfa, #c4b5fd)', width: `${Math.max(Math.round((remaining / totalPurchased) * 100), 3)}%` }} />
+              <div className="h-2 rounded-full" style={{ background: 'linear-gradient(90deg, #a78bfa, #a78bfa, #c4b5fd)', width: `${Math.max(Math.round((remaining / totalPurchased) * 100), 3)}%` }} />
             </div>
           )}
         </div>
@@ -139,20 +139,20 @@ export default async function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-        <StatCard label={t.dashboardHome.kpiTotal} value={totalLeads} icon="👥" spark={leads14} />
-        <StatCard label={t.dashboardHome.kpiAwaiting} value={newLeads} icon="📞" accent={newLeads > 0} change={newLeads > 0 ? t.dashboardHome.kpiAwaitingCta : undefined} trend="up" />
-        <StatCard label={t.dashboardHome.kpiConverted} value={converted} icon="🏆" change={totalLeads > 0 ? t.dashboardHome.kpiRate(Math.round((converted / totalLeads) * 100)) : undefined} trend="up" />
-        <StatCard label={t.dashboardHome.kpiCredits} value={remaining} icon="💳" />
+        <StatCard label={t.dashboardHome.kpiTotal} value={totalLeads} icon="👥" spark={leads14} cor="violet" />
+        <StatCard label={t.dashboardHome.kpiAwaiting} value={newLeads} icon="📞" accent={newLeads > 0} cor="red" change={newLeads > 0 ? t.dashboardHome.kpiAwaitingCta : undefined} trend="up" />
+        <StatCard label={t.dashboardHome.kpiConverted} value={converted} icon="🏆" cor="green" change={totalLeads > 0 ? t.dashboardHome.kpiRate(Math.round((converted / totalLeads) * 100)) : undefined} trend="up" />
+        <StatCard label={t.dashboardHome.kpiCredits} value={remaining} icon="💳" cor="amber" />
       </div>
 
       {/* Leads Table */}
-      <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-        <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: '1px solid #e8ecf4' }}>
+      <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: '1px solid var(--border)' }}>
           <div>
             <h2 className="text-[16px] font-bold" style={{ color: 'var(--fg)' }}>{t.dashboardHome.recentLeads}</h2>
             <p className="text-[12px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>{t.dashboardHome.recentLeadsSub}</p>
           </div>
-          <Link href="/dashboard/leads" className="text-[13px] font-semibold flex items-center gap-1" style={{ color: '#6366f1' }}>
+          <Link href="/dashboard/leads" className="text-[13px] font-semibold flex items-center gap-1" style={{ color: 'var(--accent)' }}>
             {t.dashboardHome.seeAll} <span>→</span>
           </Link>
         </div>
@@ -164,7 +164,7 @@ export default async function DashboardPage() {
                 key={lead.id}
                 href={`/dashboard/leads/${lead.id}`}
                 className="flex items-center gap-4 px-6 py-4 group"
-                style={{ borderBottom: i < recentLeads.length - 1 ? '1px solid #f1f5f9' : 'none' }}
+                style={{ borderBottom: i < recentLeads.length - 1 ? '1px solid var(--bg-soft)' : 'none' }}
               >
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[12px] font-bold text-white flex-shrink-0"
                   style={{ background: `hsl(${(lead.name.charCodeAt(0) * 37) % 360}, 65%, 55%)` }}>
@@ -175,7 +175,7 @@ export default async function DashboardPage() {
                   <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{lead.city}, {lead.state} · {lead.interest}</p>
                 </div>
                 <div className="hidden sm:block">
-                  <PrivatePhone value={lead.phone} className="text-[13px] font-semibold" style={{ color: '#6366f1' }} />
+                  <PrivatePhone value={lead.phone} className="text-[13px] font-semibold" style={{ color: 'var(--accent)' }} />
                 </div>
                 <Badge status={lead.status} />
                 <span className="text-[12px] whitespace-nowrap" style={{ color: 'var(--fg-muted)' }}>{timeAgo(lead.created_at, locale)}</span>
@@ -192,7 +192,7 @@ export default async function DashboardPage() {
             <p className="text-[14px] max-w-sm mx-auto mb-6" style={{ color: 'var(--fg-muted)' }}>{t.dashboardHome.emptyHelp}</p>
             <Link href="/dashboard/credits"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-[14px] font-bold text-white"
-              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
+              style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)', boxShadow: '0 4px 14px rgba(124,58,237,0.3)' }}>
               <span>✦</span> {t.dashboardHome.buyCredits}
             </Link>
           </div>
@@ -207,7 +207,7 @@ export default async function DashboardPage() {
             { step: '02', icon: '⚡', title: t.dashboardHome.tip2Title, desc: t.dashboardHome.tip2Desc },
             { step: '03', icon: '🏆', title: t.dashboardHome.tip3Title, desc: t.dashboardHome.tip3Desc },
           ].map((tip) => (
-            <div key={tip.step} className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+            <div key={tip.step} className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-2xl">{tip.icon}</span>
                 <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--fg-muted)' }}>{t.dashboardHome.step} {tip.step}</span>

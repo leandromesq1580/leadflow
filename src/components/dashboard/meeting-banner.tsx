@@ -193,7 +193,7 @@ export function MeetingBanner({ buyerId }: Props) {
   const intervals = [...prefs.reminder_intervals].sort((a, b) => a - b)
   const closest = intervals.find(i => min <= i) ?? Math.max(...intervals)
 
-  let bg = 'linear-gradient(135deg, #6366f1, #8b5cf6)'
+  let bg = 'linear-gradient(135deg, var(--accent), #8b5cf6)'
   let pulse = false
   let icon = '⏰'
   if (min < 5 || (min === 5 && sec === 0)) {

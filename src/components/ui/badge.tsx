@@ -16,7 +16,7 @@ const styles: Record<string, { bg: string; fg: string; dot: string }> = {
   contacted: { bg: 'var(--warn-soft)', fg: '#f59e0b', dot: '#f59e0b' },
   converted: { bg: '#ecfdf5', fg: '#10b981', dot: '#10b981' },
   lost: { bg: 'var(--bg-soft)', fg: '#94a3b8', dot: '#94a3b8' },
-  scheduled: { bg: 'var(--accent-light)', fg: '#6366f1', dot: '#6366f1' },
+  scheduled: { bg: 'var(--accent-light)', fg: 'var(--accent)', dot: 'var(--accent)' },
   confirmed: { bg: '#ecfdf5', fg: '#10b981', dot: '#10b981' },
   completed: { bg: '#ecfdf5', fg: '#10b981', dot: '#10b981' },
   no_show: { bg: 'var(--err-soft)', fg: '#ef4444', dot: '#ef4444' },

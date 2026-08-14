@@ -38,8 +38,8 @@ export async function CrmSubscribersPanel() {
   const mrr = payers.length * 99
 
   return (
-    <div className="rounded-2xl overflow-hidden mb-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
-      <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-2" style={{ borderBottom: '1px solid #e8ecf4' }}>
+    <div className="rounded-2xl overflow-hidden mb-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+      <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-2" style={{ borderBottom: '1px solid var(--border)' }}>
         <h2 className="text-[15px] font-bold" style={{ color: 'var(--fg)' }}>💳 CRM Pro — quem paga</h2>
         <span className="text-[13px] font-extrabold" style={{ color: '#15803d' }}>MRR ${mrr.toLocaleString()} · {payers.length} pagante{payers.length === 1 ? '' : 's'} · {courtesy.length} cortesia</span>
       </div>
@@ -48,7 +48,7 @@ export async function CrmSubscribersPanel() {
       ) : (
         <div>
           {payers.map((b) => (
-            <Link key={b.id} href={`/admin/buyers/${b.id}`} className="flex items-center gap-4 px-6 py-3 hover:bg-slate-50" style={{ borderBottom: '1px solid #f1f5f9' }}>
+            <Link key={b.id} href={`/admin/buyers/${b.id}`} className="flex items-center gap-4 px-6 py-3 hover:bg-slate-50" style={{ borderBottom: '1px solid var(--bg-soft)' }}>
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-bold truncate" style={{ color: 'var(--fg)' }}>{b.name}</p>
                 <p className="text-[11px] truncate" style={{ color: 'var(--fg-muted)' }}>{b.email}</p>
@@ -61,7 +61,7 @@ export async function CrmSubscribersPanel() {
             </Link>
           ))}
           {courtesy.map((b, i) => (
-            <Link key={b.id} href={`/admin/buyers/${b.id}`} className="flex items-center gap-4 px-6 py-3 hover:bg-slate-50" style={{ borderBottom: i < courtesy.length - 1 ? '1px solid #f1f5f9' : 'none', opacity: 0.7 }}>
+            <Link key={b.id} href={`/admin/buyers/${b.id}`} className="flex items-center gap-4 px-6 py-3 hover:bg-slate-50" style={{ borderBottom: i < courtesy.length - 1 ? '1px solid var(--bg-soft)' : 'none', opacity: 0.7 }}>
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-semibold truncate" style={{ color: 'var(--fg-secondary)' }}>{b.name}</p>
                 <p className="text-[11px] truncate" style={{ color: 'var(--fg-muted)' }}>{b.email}</p>

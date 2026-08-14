@@ -33,13 +33,13 @@ export function UpsellGate({ feature, icon, tagline }: Props) {
     <div className="max-w-[760px] mx-auto py-6">
       {/* Hero: feature travada */}
       <div className="relative overflow-hidden rounded-3xl p-8 mb-6 text-center"
-        style={{ background: 'linear-gradient(135deg, #1e1b4b, #312e81 60%, #4338ca)' }}>
+        style={{ background: 'linear-gradient(135deg, #190f3a, #3b1d7a 60%, #6d28d9)' }}>
         {/* preview "borrado" decorativo atrás */}
         <div aria-hidden className="absolute inset-0 opacity-20"
-          style={{ background: 'radial-gradient(circle at 30% 20%, #a78bfa 0, transparent 40%), radial-gradient(circle at 80% 70%, #6366f1 0, transparent 45%)', filter: 'blur(8px)' }} />
+          style={{ background: 'radial-gradient(circle at 30% 20%, #a78bfa 0, transparent 40%), radial-gradient(circle at 80% 70%, var(--accent) 0, transparent 45%)', filter: 'blur(8px)' }} />
         <div className="relative">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full mb-4 text-[11px] font-bold uppercase tracking-wider"
-            style={{ background: 'rgba(255,255,255,0.12)', color: '#c7d2fe' }}>
+            style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(139,92,246,0.35)' }}>
             {L('🔒 Recurso do plano completo', '🔒 Full-plan feature', '🔒 Función del plan completo')}
           </div>
           <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 text-[40px]"
@@ -47,12 +47,12 @@ export function UpsellGate({ feature, icon, tagline }: Props) {
             {icon}
           </div>
           <h1 className="text-[26px] font-extrabold text-white mb-2">{feature} {L('está a um clique', 'is one click away', 'está a un clic')}</h1>
-          <p className="text-[14px] max-w-md mx-auto" style={{ color: '#c7d2fe' }}>{tagline}</p>
+          <p className="text-[14px] max-w-md mx-auto" style={{ color: 'rgba(139,92,246,0.35)' }}>{tagline}</p>
         </div>
       </div>
 
       {/* O que vem no plano completo */}
-      <div className="rounded-2xl p-6 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+      <div className="rounded-2xl p-6 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
         <p className="text-[13px] font-bold uppercase tracking-wider mb-4" style={{ color: 'var(--fg-muted)' }}>
           {L('Com o plano completo você ganha', 'With the full plan you get', 'Con el plan completo obtienes')}
         </p>
@@ -70,16 +70,16 @@ export function UpsellGate({ feature, icon, tagline }: Props) {
       </div>
 
       {/* CTA — 4 planos (2026-07-29): antes só o mensal $99, perdendo o upsell */}
-      <div className="rounded-2xl p-6" style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)', border: '1px solid #c7d2fe' }}>
-        <p className="text-[13px] text-center mb-1 font-bold" style={{ color: '#3730a3' }}>
+      <div className="rounded-2xl p-6" style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)', border: '1px solid rgba(139,92,246,0.35)' }}>
+        <p className="text-[13px] text-center mb-1 font-bold" style={{ color: '#5b21b6' }}>
           {L('Escolha seu plano — quanto maior o compromisso, menor o valor por mês', 'Choose your plan — the longer the commitment, the lower the monthly price', 'Elige tu plan: a mayor compromiso, menor precio por mes')}
         </p>
-        <p className="text-[12.5px] text-center mb-5" style={{ color: '#4f46e5' }}>
+        <p className="text-[12.5px] text-center mb-5" style={{ color: '#6d28d9' }}>
           {L('Desbloqueie tudo pra fechar mais.', 'Unlock everything to close more.', 'Desbloquea todo para cerrar más.')}
         </p>
         <PolicyCheck context="checkout_upsell" />
         <CrmPlansGrid />
-        <p className="text-[11px] mt-4 text-center" style={{ color: '#818cf8' }}>{L('Cancele quando quiser · Sem fidelidade', 'Cancel anytime · No contracts', 'Cancela cuando quieras · Sin permanencia')}</p>
+        <p className="text-[11px] mt-4 text-center" style={{ color: '#a78bfa' }}>{L('Cancele quando quiser · Sem fidelidade', 'Cancel anytime · No contracts', 'Cancela cuando quieras · Sin permanencia')}</p>
       </div>
     </div>
   )

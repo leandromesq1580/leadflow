@@ -41,7 +41,7 @@ export function TutorChat({ offsetBottom = 24 }: { offsetBottom?: number }) {
     return (
       <button onClick={() => setOpen(true)} aria-label={L('Pergunte à Zoe', 'Ask Zoe', 'Pregúntale a Zoe')}
         className="flex items-center gap-2.5 pl-1.5 pr-5 py-1.5 rounded-full text-[14px] font-bold text-white transition-all hover:shadow-xl"
-        style={{ position: 'fixed', right: 20, bottom: offsetBottom, zIndex: 70, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 8px 24px rgba(99,102,241,0.4)', border: 'none', cursor: 'pointer' }}>
+        style={{ position: 'fixed', right: 20, bottom: offsetBottom, zIndex: 70, background: 'linear-gradient(135deg,var(--accent),#8b5cf6)', boxShadow: '0 8px 24px rgba(124,58,237,0.4)', border: 'none', cursor: 'pointer' }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/zoe.jpg" alt="Zoe" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.85)', display: 'block' }} />
         Zoe
@@ -50,8 +50,8 @@ export function TutorChat({ offsetBottom = 24 }: { offsetBottom?: number }) {
   }
 
   return (
-    <div style={{ position: 'fixed', right: 20, bottom: offsetBottom, zIndex: 70, width: 'min(400px, calc(100vw - 32px))', height: `min(560px, calc(100vh - ${offsetBottom + 76}px))`, background: 'var(--bg-card)', border: '1px solid #e8ecf4', borderRadius: 18, boxShadow: '0 20px 60px rgba(15,23,42,0.25)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: 'linear-gradient(135deg,#1e1b4b,#312e81)' }}>
+    <div style={{ position: 'fixed', right: 20, bottom: offsetBottom, zIndex: 70, width: 'min(400px, calc(100vw - 32px))', height: `min(560px, calc(100vh - ${offsetBottom + 76}px))`, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: '0 20px 60px rgba(15,23,42,0.25)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: 'linear-gradient(135deg,#190f3a,#3b1d7a)' }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/zoe.jpg" alt="Zoe" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.35)', display: 'block' }} />
         <div className="flex-1">
@@ -72,7 +72,7 @@ export function TutorChat({ offsetBottom = 24 }: { offsetBottom?: number }) {
             ].map(s => (
               <button key={s} onClick={() => ask(s)}
                 className="block w-full text-left px-3 py-2 mb-2 rounded-xl text-[13px] font-semibold transition-all hover:shadow-sm"
-                style={{ background: 'var(--accent-light)', color: '#4f46e5', border: '1px solid #e0e7ff', cursor: 'pointer' }}>
+                style={{ background: 'var(--accent-light)', color: '#6d28d9', border: '1px solid #e0e7ff', cursor: 'pointer' }}>
                 {s}
               </button>
             ))}
@@ -86,7 +86,7 @@ export function TutorChat({ offsetBottom = 24 }: { offsetBottom?: number }) {
           return (
             <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '88%' }}>
               <div className="px-3.5 py-2.5 rounded-2xl text-[13.5px]" style={{
-                background: m.role === 'user' ? '#6366f1' : 'var(--bg-soft)',
+                background: m.role === 'user' ? 'var(--accent)' : 'var(--bg-soft)',
                 color: m.role === 'user' ? '#fff' : '#1e293b',
                 whiteSpace: 'pre-wrap', lineHeight: 1.55,
                 borderBottomRightRadius: m.role === 'user' ? 6 : 16,
@@ -97,7 +97,7 @@ export function TutorChat({ offsetBottom = 24 }: { offsetBottom?: number }) {
                   {sugs.map((s, k) => (
                     <button key={k} onClick={() => ask(s)}
                       className="text-left px-3 py-2 rounded-xl text-[12.5px] font-semibold transition-all hover:shadow-sm"
-                      style={{ background: 'var(--accent-light)', color: '#4f46e5', border: '1px solid #e0e7ff', cursor: 'pointer' }}>
+                      style={{ background: 'var(--accent-light)', color: '#6d28d9', border: '1px solid #e0e7ff', cursor: 'pointer' }}>
                       👉 {s}
                     </button>
                   ))}
@@ -108,15 +108,15 @@ export function TutorChat({ offsetBottom = 24 }: { offsetBottom?: number }) {
         })}
         {busy && <div className="px-3.5 py-2.5 rounded-2xl text-[13px]" style={{ background: 'var(--bg-soft)', color: 'var(--fg-muted)', alignSelf: 'flex-start' }}>{L('Zoe está digitando…', 'Zoe is typing…', 'Zoe está escribiendo…')}</div>}
       </div>
-      <div className="flex gap-2 p-3" style={{ borderTop: '1px solid #e8ecf4' }}>
+      <div className="flex gap-2 p-3" style={{ borderTop: '1px solid var(--border)' }}>
         <input value={draft} onChange={e => setDraft(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') ask() }}
           placeholder={L('Como faço pra…?', 'How do I…?', '¿Cómo hago para…?')}
           className="flex-1 px-3.5 py-2.5 rounded-xl text-[13.5px] outline-none"
-          style={{ border: '1px solid #e8ecf4', background: 'var(--bg-soft)', color: '#1e293b' }} />
+          style={{ border: '1px solid var(--border)', background: 'var(--bg-soft)', color: '#1e293b' }} />
         <button onClick={() => ask()} disabled={busy || !draft.trim()}
           className="px-4 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50"
-          style={{ background: '#6366f1', border: 'none', cursor: 'pointer' }}>➤</button>
+          style={{ background: 'var(--accent)', border: 'none', cursor: 'pointer' }}>➤</button>
       </div>
     </div>
   )

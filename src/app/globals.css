@@ -8,8 +8,9 @@
   --fg-secondary: #64748b;
   --fg-muted: #94a3b8;
   --border: #e8ecf4;
-  --accent: #6366f1;
-  --accent-light: #eef2ff;
+  /* reconcept: acento oficial passou de indigo pra VIOLETA (paleta do dono) */
+  --accent: #7c3aed;
+  --accent-light: #f2edff;
   --success: #10b981;
   --warning: #f59e0b;
   --error: #ef4444;
@@ -26,14 +27,16 @@
    As telas usam os tokens acima — quem ainda tem cor cravada segue claro até a
    próxima fase. Landing/login/admin e o app /m não participam por enquanto. */
 [data-theme="dark"] {
-  --bg: #0f0d17;
-  --bg-card: #171522;
-  --bg-soft: #1e1b2c;
+  /* paleta EXATA do conceito do dono: espaço profundo + violeta */
+  --bg: #0b0f1c;
+  --bg-card: #131226;
+  --bg-soft: #1b1832;
   --fg: #ececf4;
   --fg-secondary: #a5a2b8;
   --fg-muted: #747188;
-  --border: #292540;
-  --accent-light: #251f3d;
+  --border: #272144;
+  --accent: #8b5cf6;
+  --accent-light: #251d49;
   --ok-soft: #10231a;   --ok-line: #1e4d35;
   --warn-soft: #292013; --warn-line: #56431c;
   --err-soft: #2a1616;  --err-line: #562323;

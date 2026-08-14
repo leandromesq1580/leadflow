@@ -220,9 +220,9 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, podeVerApo
   const initials = userName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U'
 
   return (
-    <aside className="w-[260px] min-h-screen flex flex-col" style={{ background: 'var(--bg-card)', borderRight: '1px solid #e8ecf4' }}>
+    <aside className="w-[260px] min-h-screen flex flex-col" style={{ background: 'var(--bg-card)', borderRight: '1px solid var(--border)' }}>
       {/* Logo */}
-      <div className="px-6 h-[72px] flex items-center" style={{ borderBottom: '1px solid #e8ecf4' }}>
+      <div className="px-6 h-[72px] flex items-center" style={{ borderBottom: '1px solid var(--border)' }}>
         <Link href="/" className="flex items-center gap-2.5">
           <BrandMark size={32} />
           <span className="text-[17px] font-extrabold" style={{ color: 'var(--fg)', letterSpacing: '-0.02em' }}>
@@ -254,8 +254,10 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, podeVerApo
                 href={link.href}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-opacity"
                 style={{
-                  color: isActive ? '#6366f1' : 'var(--fg-secondary)',
+                  // pílula ativa do conceito: fundo violeta suave + texto forte
+                  color: isActive ? 'var(--fg)' : 'var(--fg-secondary)',
                   background: isActive ? 'var(--accent-light)' : 'transparent',
+                  boxShadow: isActive ? 'inset 2.5px 0 0 var(--accent)' : 'none',
                   opacity: locked ? 0.5 : 1,
                 }}
                 title={locked ? (t._locale === 'en' ? 'Available on the full plan' : t._locale === 'es' ? 'Disponible en el plan completo' : 'Disponível no plano completo') : undefined}
@@ -271,7 +273,7 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, podeVerApo
                 )}
                 {showApptBadge && (
                   <span className="text-[10px] font-extrabold text-white rounded-full flex items-center justify-center"
-                    style={{ background: '#6366f1', minWidth: 18, height: 18, padding: '0 5px', boxShadow: '0 1px 3px rgba(99,102,241,0.35)' }}>
+                    style={{ background: 'var(--accent)', minWidth: 18, height: 18, padding: '0 5px', boxShadow: '0 1px 3px rgba(124,58,237,0.35)' }}>
                     {upcomingMeetings > 99 ? '99+' : upcomingMeetings}
                   </span>
                 )}
@@ -290,9 +292,9 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, podeVerApo
       </nav>
 
       {/* User */}
-      <div className="px-4 py-5" style={{ borderTop: '1px solid #e8ecf4' }}>
+      <div className="px-4 py-5" style={{ borderTop: '1px solid var(--border)' }}>
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white" style={{ background: 'linear-gradient(135deg, #6366f1, #a78bfa)' }}>
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white" style={{ background: 'linear-gradient(135deg, var(--accent), #a78bfa)' }}>
             {initials}
           </div>
           <div className="flex-1 min-w-0">

@@ -57,7 +57,7 @@ export function WaConnectCard() {
 
   if (loading) {
     return (
-      <div className="rounded-2xl p-6 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+      <div className="rounded-2xl p-6 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
         <p className="text-[13px]" style={{ color: 'var(--fg-muted)' }}>{t.waConnect.loading}</p>
       </div>
     )
@@ -66,7 +66,7 @@ export function WaConnectCard() {
   const status = state?.status || 'not_configured'
 
   return (
-    <div className="rounded-2xl p-6 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+    <div className="rounded-2xl p-6 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
       <div className="flex items-center gap-2 mb-4">
         <span className="text-[18px]">💬</span>
         <h2 className="text-[15px] font-bold" style={{ color: 'var(--fg)' }}>{t.waConnect.title}</h2>

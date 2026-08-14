@@ -25,7 +25,7 @@ export function BuyCheckoutCta({ packageId, label, block }: Props) {
     <button
       onClick={go}
       className={`${block ? 'flex w-full' : 'inline-flex'} items-center justify-center gap-2 rounded-xl font-bold text-white text-center px-6 py-2.5 text-[13px]`}
-      style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 4px 20px rgba(99,102,241,0.35)' }}
+      style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)', boxShadow: '0 4px 20px rgba(124,58,237,0.35)' }}
     >
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
         <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />

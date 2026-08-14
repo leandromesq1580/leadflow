@@ -51,12 +51,12 @@ export function CrmPlansGrid({ landing = false }: { landing?: boolean }) {
         ]
         return (
           <div key={plan.key} className="relative rounded-2xl p-6 flex flex-col"
-            style={{ background: 'var(--bg-card)', border: `${hot ? 2 : 1}px solid ${hot ? '#6366f1' : 'var(--border)'}`, boxShadow: hot ? '0 12px 32px rgba(99,102,241,0.18)' : 'none' }}>
+            style={{ background: 'var(--bg-card)', border: `${hot ? 2 : 1}px solid ${hot ? 'var(--accent)' : 'var(--border)'}`, boxShadow: hot ? '0 12px 32px rgba(124,58,237,0.18)' : 'none' }}>
             {hot && (
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-extrabold uppercase tracking-wide px-3 py-1 rounded-full text-white"
-                style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>{L('Mais popular', 'Most popular', 'Más popular')}</span>
+                style={{ background: 'linear-gradient(135deg,var(--accent),#8b5cf6)' }}>{L('Mais popular', 'Most popular', 'Más popular')}</span>
             )}
-            <div className="text-[13px] font-bold uppercase tracking-wide" style={{ color: hot ? '#6366f1' : 'var(--fg-secondary)' }}>{planLabel(plan)}</div>
+            <div className="text-[13px] font-bold uppercase tracking-wide" style={{ color: hot ? 'var(--accent)' : 'var(--fg-secondary)' }}>{planLabel(plan)}</div>
             <div className="mt-2 flex items-baseline gap-1">
               <span className="text-[34px] font-extrabold leading-none" style={{ color: 'var(--fg)' }}>{fmtMonth(plan.perMonth)}</span>
               <span className="text-[13px]" style={{ color: 'var(--fg-muted)' }}>{L('/mês', '/mo', '/mes')}</span>
@@ -86,8 +86,8 @@ export function CrmPlansGrid({ landing = false }: { landing?: boolean }) {
             <button onClick={() => subscribe(plan)} disabled={!!loading}
               className="mt-5 w-full py-3 rounded-xl text-[13px] font-bold disabled:opacity-50 transition-all"
               style={hot
-                ? { background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: 'var(--bg-card)', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }
-                : { background: 'var(--accent-light)', color: '#6366f1' }}>
+                ? { background: 'linear-gradient(135deg,var(--accent),#8b5cf6)', color: 'var(--bg-card)', boxShadow: '0 4px 14px rgba(124,58,237,0.3)' }
+                : { background: 'var(--accent-light)', color: 'var(--accent)' }}>
               {loading === plan.key ? L('Redirecionando...', 'Redirecting...', 'Redirigiendo...') : L('Assinar', 'Subscribe', 'Suscribirme')}
             </button>
             <div className="mt-2 text-center text-[10px]" style={{ color: 'var(--fg-muted)' }}>{L('Renova automático · cancele quando quiser', 'Auto-renews · cancel anytime', 'Renovación automática · cancela cuando quieras')}</div>

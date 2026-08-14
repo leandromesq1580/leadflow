@@ -13,7 +13,7 @@ interface Props {
   buyerId: string
 }
 
-const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#ef4444', 'var(--fg-secondary)']
+const COLORS = ['var(--accent)', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#ef4444', 'var(--fg-secondary)']
 
 export function TagPicker({ leadId, buyerId }: Props) {
   const [allTags, setAllTags] = useState<Tag[]>([])
@@ -84,7 +84,7 @@ export function TagPicker({ leadId, buyerId }: Props) {
       </div>
 
       {picking && (
-        <div className="mt-2 p-3 rounded-lg" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }}>
+        <div className="mt-2 p-3 rounded-lg" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
           {availableTags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-2">
               {availableTags.map(t => (
@@ -97,7 +97,7 @@ export function TagPicker({ leadId, buyerId }: Props) {
             </div>
           )}
           {!creating ? (
-            <button onClick={() => setCreating(true)} className="text-[11px] font-bold" style={{ color: '#6366f1' }}>
+            <button onClick={() => setCreating(true)} className="text-[11px] font-bold" style={{ color: 'var(--accent)' }}>
               + Criar nova tag
             </button>
           ) : (
@@ -105,7 +105,7 @@ export function TagPicker({ leadId, buyerId }: Props) {
               <input value={newName} onChange={e => setNewName(e.target.value)}
                 placeholder="Nome da tag" autoFocus
                 className="flex-1 px-2 py-1 rounded text-[11px]"
-                style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }} />
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }} />
               <div className="flex gap-0.5">
                 {COLORS.map(c => (
                   <button key={c} onClick={() => setNewColor(c)}
@@ -114,7 +114,7 @@ export function TagPicker({ leadId, buyerId }: Props) {
                 ))}
               </div>
               <button onClick={createTag} className="px-2 py-1 rounded text-[11px] font-bold text-white"
-                style={{ background: '#6366f1' }}>
+                style={{ background: 'var(--accent)' }}>
                 Criar
               </button>
             </div>

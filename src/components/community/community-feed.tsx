@@ -90,7 +90,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
   const dark = theme === 'dark'
   const T = dark
     ? { card: '#16161f', border: '#262633', text: '#f5f5f7', muted: '#9aa0ac', accent: '#a78bfa', accentBg: '#241f3d', input: '#0f0f17', win: '#34d399', winBg: '#10261d', winText: '#6ee7b7', tag: '#20202c', chip: '#16161f' }
-    : { card: '#ffffff', border: 'var(--border)', text: '#1a1a2e', muted: '#64748b', accent: '#6366f1', accentBg: 'var(--accent-light)', input: '#ffffff', win: '#059669', winBg: '#ecfdf5', winText: '#047857', tag: 'var(--bg-soft)', chip: '#ffffff' }
+    : { card: '#ffffff', border: 'var(--border)', text: '#1a1a2e', muted: '#64748b', accent: 'var(--accent)', accentBg: 'var(--accent-light)', input: '#ffffff', win: '#059669', winBg: '#ecfdf5', winText: '#047857', tag: 'var(--bg-soft)', chip: '#ffffff' }
   const bodyColor = dark ? '#d6d8de' : '#334155'
 
   const [me, setMe] = useState<Me | null>(null)

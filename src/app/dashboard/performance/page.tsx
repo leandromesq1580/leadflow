@@ -83,7 +83,7 @@ export default function PerformancePage() {
           {[7, 30, 90].map(d => (
             <button key={d} onClick={() => setDays(d)}
               className="px-3 py-1.5 rounded-md text-[11px] font-bold transition-all"
-              style={{ background: days === d ? 'var(--bg-card)' : 'transparent', color: days === d ? '#6366f1' : '#64748b' }}>
+              style={{ background: days === d ? 'var(--bg-card)' : 'transparent', color: days === d ? 'var(--accent)' : '#64748b' }}>
               {d}d
             </button>
           ))}
@@ -93,12 +93,12 @@ export default function PerformancePage() {
       {/* KPIs */}
       <div className="grid grid-cols-4 gap-3 mb-6">
         {[
-          { label: L('Leads recebidos', 'Leads received', 'Leads recibidos'), value: data.kpis.total_received, color: '#6366f1' },
+          { label: L('Leads recebidos', 'Leads received', 'Leads recibidos'), value: data.kpis.total_received, color: 'var(--accent)' },
           { label: L('Contatados', 'Contacted', 'Contactados'), value: `${data.kpis.contact_rate}%`, sub: `${data.kpis.total_contacted} leads`, color: '#f59e0b' },
           { label: L('Convertidos', 'Converted', 'Convertidos'), value: `${data.kpis.conversion_rate}%`, sub: `${data.kpis.total_converted} leads`, color: '#10b981' },
           { label: L('Faturamento', 'Revenue', 'Facturación'), value: `$${(data.kpis.total_revenue ?? 0).toLocaleString('en-US')}`, sub: `${data.kpis.total_converted} ${L('contratos fechados', 'contracts closed', 'contratos cerrados')}`, color: '#ec4899' },
         ].map((k, i) => (
-          <div key={i} className="rounded-xl p-4" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+          <div key={i} className="rounded-xl p-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
             <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{k.label}</p>
             <p className="text-[22px] font-extrabold mt-1" style={{ color: k.color }}>{k.value}</p>
             {k.sub && <p className="text-[10px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>{k.sub}</p>}
@@ -107,13 +107,13 @@ export default function PerformancePage() {
       </div>
 
       {/* Daily chart */}
-      <div className="rounded-2xl p-5 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+      <div className="rounded-2xl p-5 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
         <p className="text-[13px] font-bold mb-3" style={{ color: 'var(--fg)' }}>{L('Leads por dia', 'Leads per day', 'Leads por día')}</p>
         <div className="flex items-end gap-1 h-[120px]">
           {data.daily.values.map((v, i) => (
             <div key={i} className="flex-1 h-full flex flex-col justify-end items-center group relative">
               <div className="w-full rounded-t transition-all hover:opacity-80"
-                style={{ height: `${(v / maxDaily) * 100}%`, background: 'linear-gradient(180deg, #6366f1, #8b5cf6)', minHeight: v > 0 ? 2 : 0 }}>
+                style={{ height: `${(v / maxDaily) * 100}%`, background: 'linear-gradient(180deg, var(--accent), #8b5cf6)', minHeight: v > 0 ? 2 : 0 }}>
                 <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold opacity-0 group-hover:opacity-100 px-1.5 py-0.5 rounded"
                   style={{ background: '#1a1a2e', color: '#fff' }}>{v}</span>
               </div>
@@ -128,7 +128,7 @@ export default function PerformancePage() {
 
       {/* Funnel + By Source */}
       <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+        <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <p className="text-[13px] font-bold mb-3" style={{ color: 'var(--fg)' }}>{L('Funil (pipeline atual)', 'Funnel (current pipeline)', 'Embudo (pipeline actual)')}</p>
           {data.funnel.length === 0 ? (
             <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{L('Nenhum lead no pipeline', 'No leads in the pipeline', 'Ningún lead en el pipeline')}</p>
@@ -136,23 +136,23 @@ export default function PerformancePage() {
             <div key={f.stage} className="mb-2">
               <div className="flex justify-between text-[11px] mb-1">
                 <span style={{ color: 'var(--fg)' }}>{f.stage}</span>
-                <span className="font-bold" style={{ color: '#6366f1' }}>{f.count}</span>
+                <span className="font-bold" style={{ color: 'var(--accent)' }}>{f.count}</span>
               </div>
               <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-soft)' }}>
-                <div className="h-full rounded-full" style={{ width: `${(f.count / funnelMax) * 100}%`, background: 'linear-gradient(90deg, #6366f1, #8b5cf6)' }} />
+                <div className="h-full rounded-full" style={{ width: `${(f.count / funnelMax) * 100}%`, background: 'linear-gradient(90deg, var(--accent), #8b5cf6)' }} />
               </div>
             </div>
           ))}
         </div>
 
-        <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+        <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <p className="text-[13px] font-bold mb-3" style={{ color: 'var(--fg)' }}>{L('ROI por fonte', 'ROI by source', 'ROI por fuente')}</p>
           {Object.keys(data.by_source).length === 0 ? (
             <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{L('Sem dados', 'No data', 'Sin datos')}</p>
           ) : Object.entries(data.by_source).map(([src, s]) => {
             const rate = s.received > 0 ? ((s.converted / s.received) * 100).toFixed(1) : '0'
             return (
-              <div key={src} className="flex justify-between text-[11px] py-2" style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <div key={src} className="flex justify-between text-[11px] py-2" style={{ borderBottom: '1px solid var(--bg-soft)' }}>
                 <span style={{ color: 'var(--fg)' }} className="capitalize">{src}</span>
                 <div className="text-right">
                   <span style={{ color: 'var(--fg-secondary)' }}>{s.received} → </span>
@@ -167,7 +167,7 @@ export default function PerformancePage() {
 
       {/* Leaderboard (agency only) */}
       {isAgency && leaders.length > 0 && (
-        <div className="rounded-2xl p-5 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+        <div className="rounded-2xl p-5 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <p className="text-[13px] font-bold mb-3" style={{ color: 'var(--fg)' }}>🏆 {L('Ranking do Time', 'Team Ranking', 'Ranking del Equipo')} ({days}d)</p>
           <table className="w-full text-[12px]">
             <thead>
@@ -181,7 +181,7 @@ export default function PerformancePage() {
             </thead>
             <tbody>
               {leaders.map((l, i) => (
-                <tr key={l.buyer_id} style={{ borderTop: '1px solid #f1f5f9' }}>
+                <tr key={l.buyer_id} style={{ borderTop: '1px solid var(--bg-soft)' }}>
                   <td className="py-2.5">
                     {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : <span style={{ color: 'var(--fg-muted)' }}>{i + 1}</span>}
                   </td>

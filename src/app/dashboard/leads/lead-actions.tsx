@@ -15,12 +15,12 @@ export function LeadActions() {
       <div className="flex gap-2">
         <button onClick={() => setMode('manual')}
           className="px-4 py-2 rounded-xl text-[12px] font-bold text-white transition-all hover:opacity-90"
-          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 4px 14px rgba(99,102,241,0.25)' }}>
+          style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)', boxShadow: '0 4px 14px rgba(124,58,237,0.25)' }}>
           {L('+ Adicionar Lead', '+ Add Lead', '+ Agregar Lead')}
         </button>
         <button onClick={() => setMode('import')}
           className="px-4 py-2 rounded-xl text-[12px] font-bold transition-all hover:opacity-90"
-          style={{ background: 'var(--accent-light)', color: '#6366f1', border: '1px solid #c7d2fe' }}>
+          style={{ background: 'var(--accent-light)', color: 'var(--accent)', border: '1px solid rgba(139,92,246,0.35)' }}>
           {L('📂 Importar CSV', '📂 Import CSV', '📂 Importar CSV')}
         </button>
       </div>
@@ -75,25 +75,25 @@ function ManualLeadModal({ onClose }: { onClose: () => void }) {
           <div>
             <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Nome *', 'Name *', 'Nombre *')}</label>
             <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} autoFocus placeholder={L('João Silva', 'John Smith', 'Juan Pérez')}
-              className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
+              className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Telefone', 'Phone', 'Teléfono')}</label>
               <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+1 407 555-0101"
-                className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
+                className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }} />
             </div>
             <div>
               <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>Email</label>
               <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder={L('joao@email.com', 'john@email.com', 'juan@email.com')} type="email"
-                className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
+                className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Estado', 'State', 'Estado')}</label>
               <select value={form.state} onChange={e => setForm({ ...form, state: e.target.value })}
-                className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }}>
+                className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
                 <option value="">—</option>
                 {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -101,18 +101,18 @@ function ManualLeadModal({ onClose }: { onClose: () => void }) {
             <div>
               <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Cidade', 'City', 'Ciudad')}</label>
               <input value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} placeholder="Orlando"
-                className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
+                className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }} />
             </div>
           </div>
           <div>
             <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Interesse', 'Interest', 'Interés')}</label>
             <input value={form.interest} onChange={e => setForm({ ...form, interest: e.target.value })}
-              className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
+              className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }} />
           </div>
           <div>
             <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Notas', 'Notes', 'Notas')}</label>
             <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} placeholder={L('Como chegou, observações...', 'How they came in, notes...', 'Cómo llegó, observaciones...')}
-              className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px] resize-none" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
+              className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px] resize-none" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }} />
           </div>
         </div>
 
@@ -122,7 +122,7 @@ function ManualLeadModal({ onClose }: { onClose: () => void }) {
           <button onClick={onClose} className="px-4 py-2 text-[13px] font-semibold" style={{ color: 'var(--fg-secondary)' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
           <button onClick={save} disabled={saving || !form.name.trim()}
             className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+            style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)' }}>
             {saving ? L('Salvando...', 'Saving...', 'Guardando...') : L('Adicionar', 'Add', 'Agregar')}
           </button>
         </div>
@@ -229,7 +229,7 @@ function ImportCsvModal({ onClose }: { onClose: () => void }) {
             <div className="mb-4">
               <button onClick={() => fileRef.current?.click()}
                 className="w-full py-8 rounded-xl text-[13px] font-bold transition-all hover:border-indigo-400"
-                style={{ background: 'var(--bg)', color: '#6366f1', border: '2px dashed #c7d2fe' }}>
+                style={{ background: 'var(--bg)', color: 'var(--accent)', border: '2px dashed rgba(139,92,246,0.35)' }}>
                 {L('📂 Clique para selecionar arquivo CSV', '📂 Click to select a CSV file', '📂 Haz clic para seleccionar el archivo CSV')}
               </button>
               <input ref={fileRef} type="file" accept=".csv,.txt" onChange={handleFile} className="hidden" />
@@ -240,7 +240,7 @@ function ImportCsvModal({ onClose }: { onClose: () => void }) {
                 <p className="text-[12px] font-bold mb-2" style={{ color: 'var(--fg)' }}>
                   ✅ {parsed.length} {L('leads detectados — preview (primeiros 5):', 'leads detected — preview (first 5):', 'leads detectados — vista previa (primeros 5):')}
                 </p>
-                <div className="rounded-lg overflow-hidden" style={{ border: '1px solid #e8ecf4' }}>
+                <div className="rounded-lg overflow-hidden" style={{ border: '1px solid var(--border)' }}>
                   <table className="w-full text-[11px]">
                     <thead>
                       <tr style={{ background: 'var(--bg)' }}>
@@ -252,7 +252,7 @@ function ImportCsvModal({ onClose }: { onClose: () => void }) {
                     </thead>
                     <tbody>
                       {parsed.slice(0, 5).map((row, i) => (
-                        <tr key={i} style={{ borderTop: '1px solid #f1f5f9' }}>
+                        <tr key={i} style={{ borderTop: '1px solid var(--bg-soft)' }}>
                           <td className="px-2 py-1.5" style={{ color: 'var(--fg)' }}>{row.name}</td>
                           <td className="px-2 py-1.5" style={{ color: 'var(--fg-secondary)' }}>{row.phone}</td>
                           <td className="px-2 py-1.5" style={{ color: 'var(--fg-secondary)' }}>{row.email}</td>
@@ -271,7 +271,7 @@ function ImportCsvModal({ onClose }: { onClose: () => void }) {
               <button onClick={onClose} className="px-4 py-2 text-[13px] font-semibold" style={{ color: 'var(--fg-secondary)' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
               <button onClick={submit} disabled={importing || parsed.length === 0}
                 className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+                style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)' }}>
                 {importing ? L('Importando...', 'Importing...', 'Importando...') : L(`Importar ${parsed.length} leads`, `Import ${parsed.length} leads`, `Importar ${parsed.length} leads`)}
               </button>
             </div>
@@ -299,7 +299,7 @@ function ImportCsvModal({ onClose }: { onClose: () => void }) {
             )}
             <button onClick={onClose}
               className="w-full py-3 rounded-xl text-[13px] font-bold text-white"
-              style={{ background: '#6366f1' }}>
+              style={{ background: 'var(--accent)' }}>
               {L('Fechar', 'Close', 'Cerrar')}
             </button>
           </div>

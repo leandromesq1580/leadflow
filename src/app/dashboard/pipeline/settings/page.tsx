@@ -178,17 +178,17 @@ export default function PipelineSettingsPage() {
     <div className="max-w-3xl mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{L('Gerenciar Pipelines', 'Manage Pipelines', 'Administrar Pipelines')}</h1>
-        <Link href="/dashboard/pipeline" className="text-[13px] font-bold" style={{ color: '#6366f1' }}>
+        <Link href="/dashboard/pipeline" className="text-[13px] font-bold" style={{ color: 'var(--accent)' }}>
           {L('← Voltar ao Kanban', '← Back to Kanban', '← Volver al Kanban')}
         </Link>
       </div>
 
       {/* Create new pipeline */}
-      <div className="rounded-xl p-4 mb-6 flex gap-3" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }}>
+      <div className="rounded-xl p-4 mb-6 flex gap-3" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
         <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder={L('Nome do pipeline...', 'Pipeline name...', 'Nombre del pipeline...')}
-          className="flex-1 px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }}
+          className="flex-1 px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid var(--border)' }}
           onKeyDown={e => e.key === 'Enter' && createPipeline()} />
-        <button onClick={createPipeline} className="px-4 py-2 rounded-lg text-[13px] font-bold text-white" style={{ background: '#6366f1' }}>
+        <button onClick={createPipeline} className="px-4 py-2 rounded-lg text-[13px] font-bold text-white" style={{ background: 'var(--accent)' }}>
           {L('Criar Pipeline', 'Create Pipeline', 'Crear Pipeline')}
         </button>
       </div>
@@ -197,10 +197,10 @@ export default function PipelineSettingsPage() {
       <div className="flex gap-2 mb-2 flex-wrap items-center">
         {pipelines.map((p, idx) => {
           const isSel = selected?.id === p.id
-          const ico = isSel ? '#c7d2fe' : '#94a3b8'
+          const ico = isSel ? 'rgba(139,92,246,0.35)' : '#94a3b8'
           return (
             <div key={p.id} className="flex items-center rounded-xl pl-0.5 pr-1 py-0.5"
-              style={{ background: isSel ? '#6366f1' : 'var(--bg-card)', border: `1px solid ${isSel ? '#6366f1' : 'var(--border)'}` }}>
+              style={{ background: isSel ? 'var(--accent)' : 'var(--bg-card)', border: `1px solid ${isSel ? 'var(--accent)' : 'var(--border)'}` }}>
               <button onClick={() => movePipeline(idx, -1)} disabled={idx === 0} title={L('Mover pra esquerda', 'Move left', 'Mover a la izquierda')}
                 className="w-5 h-7 rounded flex items-center justify-center text-[15px] leading-none disabled:opacity-20"
                 style={{ color: ico }}>‹</button>
@@ -211,7 +211,7 @@ export default function PipelineSettingsPage() {
                   onBlur={saveRenamePipeline}
                   onKeyDown={e => { if (e.key === 'Enter') saveRenamePipeline(); if (e.key === 'Escape') setEditingPipelineId(null) }}
                   className="px-2 py-1 rounded-lg text-[13px] font-bold w-36"
-                  style={{ border: '1px solid #c7d2fe', color: 'var(--fg)' }} />
+                  style={{ border: '1px solid rgba(139,92,246,0.35)', color: 'var(--fg)' }} />
               ) : (
                 <button onClick={() => setSelected(p)} onDoubleClick={() => startRenamePipeline(p)}
                   title={L('Clicar pra abrir · 2 cliques pra renomear', 'Click to open · double-click to rename', 'Clic para abrir · doble clic para renombrar')}
@@ -240,7 +240,7 @@ export default function PipelineSettingsPage() {
 
       {/* Selected pipeline stages */}
       {selected && (
-        <div className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+        <div className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[16px] font-bold" style={{ color: 'var(--fg)' }}>{L('Estagios:', 'Stages:', 'Etapas:')} {selected.name}</h2>
             <button onClick={() => deletePipeline(selected.id)} className="text-[11px] font-bold px-3 py-1 rounded-lg" style={{ color: '#ef4444', background: 'var(--err-soft)' }}>
@@ -254,7 +254,7 @@ export default function PipelineSettingsPage() {
                 <input type="color" value={stage.color} onChange={e => updateStage(idx, 'color', e.target.value)}
                   className="w-8 h-8 rounded cursor-pointer border-0" />
                 <input type="text" value={stage.name} onChange={e => updateStage(idx, 'name', e.target.value)}
-                  className="flex-1 px-3 py-1.5 rounded-lg text-[13px] font-semibold" style={{ border: '1px solid #e8ecf4' }} />
+                  className="flex-1 px-3 py-1.5 rounded-lg text-[13px] font-semibold" style={{ border: '1px solid var(--border)' }} />
                 <div className="flex gap-1">
                   <button onClick={() => moveStage(idx, -1)} disabled={idx === 0}
                     className="w-7 h-7 rounded flex items-center justify-center text-[12px] disabled:opacity-20" style={{ background: 'var(--border)' }}>↑</button>
@@ -275,16 +275,16 @@ export default function PipelineSettingsPage() {
           {/* Add stage */}
           <div className="flex gap-2 mb-4">
             <input type="text" value={newStageName} onChange={e => setNewStageName(e.target.value)} placeholder={L('Novo estagio...', 'New stage...', 'Nueva etapa...')}
-              className="flex-1 px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }}
+              className="flex-1 px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid var(--border)' }}
               onKeyDown={e => e.key === 'Enter' && addStage()} />
-            <button onClick={addStage} className="px-4 py-2 rounded-lg text-[12px] font-bold" style={{ background: 'var(--accent-light)', color: '#6366f1' }}>
+            <button onClick={addStage} className="px-4 py-2 rounded-lg text-[12px] font-bold" style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>
               {L('+ Adicionar', '+ Add', '+ Agregar')}
             </button>
           </div>
 
           <button onClick={saveStages} disabled={saving}
             className="w-full py-3 rounded-xl text-[14px] font-bold text-white disabled:opacity-50"
-            style={{ background: '#6366f1' }}>
+            style={{ background: 'var(--accent)' }}>
             {saving ? L('Salvando...', 'Saving...', 'Guardando...') : L('Salvar Alteracoes', 'Save Changes', 'Guardar Cambios')}
           </button>
         </div>

@@ -88,7 +88,7 @@ export default async function CreditsPage({
       {/* CRM Pro — assinante ATIVO vê status + troca de plano; trial/free/expirado vê a grade dos 4 planos */}
       {isActiveSub ? (
         <div className="mb-8">
-          <div className="rounded-2xl p-6 mb-5 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #1e1b4b, #312e81)', border: 'none' }}>
+          <div className="rounded-2xl p-6 mb-5 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #190f3a, #3b1d7a)', border: 'none' }}>
             <div>
               <p className="text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#a78bfa' }}>{L('Plano CRM', 'CRM Plan', 'Plan CRM')}</p>
               <p className="text-[20px] font-extrabold" style={{ color: '#fff' }}>CRM Pro{currentPlanLabel ? ` — ${currentPlanLabel}` : ''}</p>
@@ -145,12 +145,12 @@ export default async function CreditsPage({
 
       {/* Balance — o card de appointment só aparece pra quem AINDA tem saldo pago (fulfillment) */}
       <div className={`grid ${totalAppts > 0 ? 'grid-cols-2' : 'grid-cols-1'} gap-4 mb-8`}>
-        <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+        <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Leads Disponiveis', 'Available Leads', 'Leads Disponibles')}</p>
-          <p className="text-[32px] font-extrabold mt-1" style={{ color: '#6366f1' }}>{totalLeads}</p>
+          <p className="text-[32px] font-extrabold mt-1" style={{ color: 'var(--accent)' }}>{totalLeads}</p>
         </div>
         {totalAppts > 0 && (
-          <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+          <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
             <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Appointments Disponiveis', 'Available Appointments', 'Appointments Disponibles')}</p>
             <p className="text-[32px] font-extrabold mt-1" style={{ color: '#f59e0b' }}>{totalAppts}</p>
             <p className="text-[11px] mt-1" style={{ color: 'var(--fg-muted)' }}>{L('Saldo já pago — será entregue normalmente.', 'Already paid — will be delivered as usual.', 'Saldo ya pagado — se entregará normalmente.')}</p>
@@ -165,11 +165,11 @@ export default async function CreditsPage({
       <div className="grid grid-cols-3 gap-4 mb-8">
         {leadPackages.map((pkg) => {
           return (
-            <div key={pkg.id} className="rounded-2xl p-6 relative" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+            <div key={pkg.id} className="rounded-2xl p-6 relative" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
               <p className="text-[13px] font-medium" style={{ color: 'var(--fg-secondary)' }}>{pkg.quantity} Leads</p>
               <p className="text-[32px] font-extrabold mt-1" style={{ color: 'var(--fg)' }}>${pkg.totalDisplay}</p>
               <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>${pkg.pricePerUnit}/lead</p>
-              <BuyButton packageId={pkg.id} color="#6366f1" />
+              <BuyButton packageId={pkg.id} color="var(--accent)" />
             </div>
           )
         })}
@@ -180,7 +180,7 @@ export default async function CreditsPage({
       <p className="text-[13px] mb-4" style={{ color: 'var(--fg-muted)' }}>{L('Leads que nao foram distribuidos a tempo. Preco reduzido, entrega imediata.', 'Leads that were not distributed in time. Reduced price, instant delivery.', 'Leads que no se distribuyeron a tiempo. Precio reducido, entrega inmediata.')}</p>
       <div className="grid grid-cols-3 gap-4 mb-8">
         {PRODUCTS.cold_lead.packages.map((pkg) => (
-          <div key={pkg.id} className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+          <div key={pkg.id} className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
             <p className="text-[13px] font-medium" style={{ color: 'var(--fg-secondary)' }}>{pkg.quantity} {L('Leads Frios', 'Cold Leads', 'Leads Fríos')}</p>
             <p className="text-[32px] font-extrabold mt-1" style={{ color: 'var(--fg)' }}>${pkg.totalDisplay}</p>
             <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>${pkg.pricePerUnit}/lead</p>
@@ -191,11 +191,11 @@ export default async function CreditsPage({
 
       {/* Purchase History */}
       <h2 className="text-[16px] font-bold mb-4" style={{ color: 'var(--fg)' }}>{L('Historico de Compras', 'Purchase History', 'Historial de Compras')}</h2>
-      <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+      <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
         {allCredits.length > 0 ? (
           <div>
             {allCredits.map((c, i) => (
-              <div key={c.id} className="flex items-center gap-4 px-6 py-4" style={{ borderBottom: i < allCredits.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+              <div key={c.id} className="flex items-center gap-4 px-6 py-4" style={{ borderBottom: i < allCredits.length - 1 ? '1px solid var(--bg-soft)' : 'none' }}>
                 <span className="text-[20px]">{c.type === 'lead' ? '📋' : '📅'}</span>
                 <div className="flex-1">
                   <p className="text-[14px] font-semibold" style={{ color: 'var(--fg)' }}>

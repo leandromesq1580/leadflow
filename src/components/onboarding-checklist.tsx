@@ -41,10 +41,10 @@ export async function OnboardingChecklist({ buyerId }: Props) {
   const pct = Math.round((completed / total) * 100)
 
   return (
-    <div className="rounded-2xl mb-6 overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff, #f8f9fc)', border: '1px solid #e8ecf4', boxShadow: '0 4px 14px rgba(99,102,241,0.06)' }}>
-      <div className="px-6 pt-5 pb-4 flex items-center justify-between" style={{ borderBottom: '1px solid #f1f5f9' }}>
+    <div className="rounded-2xl mb-6 overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff, #f8f9fc)', border: '1px solid var(--border)', boxShadow: '0 4px 14px rgba(124,58,237,0.06)' }}>
+      <div className="px-6 pt-5 pb-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--bg-soft)' }}>
         <div>
-          <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: '#6366f1' }}>Progresso da configuracao</p>
+          <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>Progresso da configuracao</p>
           <p className="text-[16px] font-extrabold mt-0.5" style={{ color: 'var(--fg)' }}>{completed} de {total} completos</p>
         </div>
         <DismissButton />
@@ -53,7 +53,7 @@ export async function OnboardingChecklist({ buyerId }: Props) {
       {/* Progress bar */}
       <div className="px-6 pt-3">
         <div className="h-2 rounded-full" style={{ background: 'var(--bg-soft)' }}>
-          <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #6366f1, #8b5cf6)' }} />
+          <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: 'linear-gradient(90deg, var(--accent), #8b5cf6)' }} />
         </div>
       </div>
 
@@ -70,7 +70,7 @@ export async function OnboardingChecklist({ buyerId }: Props) {
                   <p className="text-[13px] font-bold" style={{ color: 'var(--fg)' }}>{item.label}</p>
                   <p className="text-[11px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>{item.desc}</p>
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-1 rounded-md" style={{ background: 'var(--accent-light)', color: '#6366f1' }}>Fazer</span>
+                <span className="text-[11px] font-bold px-2.5 py-1 rounded-md" style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>Fazer</span>
               </Link>
             ) : (
               <div className="flex items-center gap-3 py-2.5 px-3 rounded-xl" style={{ opacity: item.done ? 0.6 : 1 }}>

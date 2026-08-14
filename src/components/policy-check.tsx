@@ -42,15 +42,15 @@ export function PolicyCheck({ context, dark = false }: { context: string; dark?:
   const mut = dark ? 'var(--m-muted, #94a3b8)' : '#64748b'
   return (
     <div className="rounded-xl p-4 mb-4" style={{
-      background: dark ? 'rgba(99,102,241,0.10)' : 'var(--accent-light)',
-      border: `1px solid ${dark ? 'rgba(99,102,241,0.35)' : '#c7d2fe'}`,
+      background: dark ? 'rgba(124,58,237,0.10)' : 'var(--accent-light)',
+      border: `1px solid ${dark ? 'rgba(124,58,237,0.35)' : 'rgba(139,92,246,0.35)'}`,
     }}>
       <p className="text-[13px] font-bold" style={{ color: ink }}>{L('📜 Antes de comprar: aceite a Política de Leads e Uso', '📜 Before you buy: accept the Leads & Usage Policy', '📜 Antes de comprar: acepta la Política de Leads y Uso')}</p>
       <p className="text-[12px] mt-1" style={{ color: mut }}>
         {L('Regras de entrega, janelas de horário, garantia de troca (14 dias / 8 tentativas), leads frios, gravação de ligações e SMS automático.',
           'Delivery rules, time windows, exchange guarantee (14 days / 8 attempts), cold leads, call recording, and automatic SMS.',
           'Reglas de entrega, ventanas de horario, garantía de cambio (14 días / 8 intentos), leads fríos, grabación de llamadas y SMS automático.')}{' '}
-        <a href="/politicas" target="_blank" rel="noopener noreferrer" className="font-bold underline" style={{ color: '#6366f1' }}>
+        <a href="/politicas" target="_blank" rel="noopener noreferrer" className="font-bold underline" style={{ color: 'var(--accent)' }}>
           {L('Ler a política completa ↗', 'Read the full policy ↗', 'Leer la política completa ↗')}
         </a>
         {t._locale === 'en' ? ' (policy text in Portuguese — English version available upon request)' : t._locale === 'es' ? ' (texto en portugués — versión en inglés disponible bajo solicitud)' : ''}

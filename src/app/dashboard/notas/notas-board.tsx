@@ -73,7 +73,7 @@ export function NotasBoard() {
         </span>
         <button onClick={() => mut(bs => [...bs, newLicenseBlock(L)])}
           className="px-3.5 py-2 rounded-xl text-[13px] font-bold text-white transition-opacity hover:opacity-90"
-          style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
+          style={{ background: 'linear-gradient(135deg,var(--accent),#8b5cf6)', boxShadow: '0 4px 14px rgba(124,58,237,0.3)' }}>
           {L('+ Novo bloco', '+ New block', '+ Nuevo bloque')}
         </button>
       </div>
@@ -121,7 +121,7 @@ function BlockCard({ block, onTitle, onNotes, onToggle, onItemLabel, onRemoveIte
   const pct = total ? Math.round((done / total) * 100) : 0
 
   return (
-    <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', boxShadow: '0 1px 3px rgba(15,23,42,0.04)' }}>
+    <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: '0 1px 3px rgba(15,23,42,0.04)' }}>
       <div className="flex items-start gap-3">
         <input value={block.title} onChange={e => onTitle(e.target.value)} placeholder={L('Nome da pessoa', 'Person\'s name', 'Nombre de la persona')}
           className="flex-1 text-[16px] font-extrabold bg-transparent outline-none" style={{ color: 'var(--fg)' }} />
@@ -134,7 +134,7 @@ function BlockCard({ block, onTitle, onNotes, onToggle, onItemLabel, onRemoveIte
       <div className="flex items-center gap-2.5 mt-3 mb-3">
         <span className="text-[11px] font-bold tabular-nums" style={{ color: pct === 100 ? '#10b981' : 'var(--fg-secondary)', minWidth: 32 }}>{pct}%</span>
         <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
-          <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: pct === 100 ? '#10b981' : 'linear-gradient(90deg,#6366f1,#8b5cf6)' }} />
+          <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: pct === 100 ? '#10b981' : 'linear-gradient(90deg,var(--accent),#8b5cf6)' }} />
         </div>
       </div>
 
@@ -143,7 +143,7 @@ function BlockCard({ block, onTitle, onNotes, onToggle, onItemLabel, onRemoveIte
           <div key={it.id} className="group flex items-center gap-2.5 py-1.5 px-1 rounded-lg hover:bg-slate-50">
             <button onClick={() => onToggle(it.id)} aria-label={it.done ? L('desmarcar', 'uncheck', 'desmarcar') : L('marcar', 'check', 'marcar')}
               className="shrink-0 w-[18px] h-[18px] rounded-[5px] flex items-center justify-center transition-all"
-              style={{ background: it.done ? '#6366f1' : 'var(--bg-card)', border: `1.5px solid ${it.done ? '#6366f1' : '#cbd5e1'}` }}>
+              style={{ background: it.done ? 'var(--accent)' : 'var(--bg-card)', border: `1.5px solid ${it.done ? 'var(--accent)' : '#cbd5e1'}` }}>
               {it.done && <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 6" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
             </button>
             <input value={it.label} onChange={e => onItemLabel(it.id, e.target.value)} placeholder={L('Descreva a etapa…', 'Describe the step…', 'Describe la etapa…')}
@@ -155,14 +155,14 @@ function BlockCard({ block, onTitle, onNotes, onToggle, onItemLabel, onRemoveIte
         ))}
       </div>
 
-      <button onClick={onAddItem} className="mt-1.5 text-[12.5px] font-semibold px-1 py-1 rounded-lg transition-colors hover:bg-indigo-50" style={{ color: '#6366f1' }}>
+      <button onClick={onAddItem} className="mt-1.5 text-[12.5px] font-semibold px-1 py-1 rounded-lg transition-colors hover:bg-indigo-50" style={{ color: 'var(--accent)' }}>
         {L('+ Adicionar item', '+ Add item', '+ Agregar ítem')}
       </button>
 
-      <div className="mt-3 pt-3" style={{ borderTop: '1px solid #f1f5f9' }}>
+      <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--bg-soft)' }}>
         <textarea value={block.notes} onChange={e => onNotes(e.target.value)} rows={2} placeholder={L('Anotações…', 'Notes…', 'Notas…')}
           className="w-full text-[13px] resize-y rounded-xl px-3 py-2 outline-none"
-          style={{ background: 'var(--bg-soft)', border: '1px solid #e8ecf4', color: '#334155', minHeight: 48 }} />
+          style={{ background: 'var(--bg-soft)', border: '1px solid var(--border)', color: '#334155', minHeight: 48 }} />
       </div>
     </div>
   )

@@ -83,7 +83,7 @@ export function CrmChangePlan({ currentPlan }: { currentPlan: string | null }) {
               className="mt-5 w-full py-3 rounded-xl text-[13px] font-bold disabled:opacity-60 transition-all"
               style={isCurrent
                 ? { background: '#ecfdf5', color: '#059669', cursor: 'default' }
-                : { background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
+                : { background: 'linear-gradient(135deg,var(--accent),#8b5cf6)', color: '#fff', boxShadow: '0 4px 14px rgba(124,58,237,0.3)' }}>
               {isCurrent ? L('Plano atual', 'Current plan', 'Plan actual') : loading === plan.key ? L('Trocando...', 'Switching...', 'Cambiando...') : L('Trocar para este', 'Switch to this plan', 'Cambiar a este')}
             </button>
           </div>

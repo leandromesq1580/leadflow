@@ -175,7 +175,7 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
               onClick={enablePush}
               disabled={enabling}
               className="px-4 py-2 rounded-xl text-[12px] font-bold text-white whitespace-nowrap disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+              style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)' }}
             >
               {enabling ? L('Ativando...', 'Enabling...', 'Activando...') : L('Ativar notificações', 'Enable notifications', 'Activar notificaciones')}
             </button>
@@ -240,12 +240,12 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
                         className="text-left rounded-xl p-3 transition-all"
                         style={{
                           background: active ? 'var(--accent-light)' : 'var(--bg)',
-                          border: `1px solid ${active ? '#6366f1' : 'var(--border)'}`,
+                          border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
                           color: 'var(--fg)',
                         }}
                       >
                         <p className="text-[13px] font-extrabold flex items-center gap-1.5">
-                          {active && <span style={{ color: '#6366f1' }}>●</span>}
+                          {active && <span style={{ color: 'var(--accent)' }}>●</span>}
                           {opt.label}
                         </p>
                         <p className="text-[11px] mt-0.5" style={{ color: 'var(--fg-secondary)' }}>{opt.description}</p>
@@ -272,7 +272,7 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
                 type="button"
                 onClick={() => playReminderSound(prefs.sound_file, prefs.sound_volume)}
                 className="px-4 py-2 rounded-xl text-[12px] font-bold"
-                style={{ background: 'var(--bg-soft)', color: 'var(--fg)', border: '1px solid #e8ecf4' }}
+                style={{ background: 'var(--bg-soft)', color: 'var(--fg)', border: '1px solid var(--border)' }}
               >
                 ▶ {L('Testar som', 'Test sound', 'Probar sonido')}
               </button>
@@ -341,7 +341,7 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
           onClick={save}
           disabled={saving}
           className="px-6 py-3 rounded-xl text-[14px] font-bold text-white disabled:opacity-50"
-          style={{ background: '#6366f1', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}
+          style={{ background: 'var(--accent)', boxShadow: '0 4px 14px rgba(124,58,237,0.3)' }}
         >
           {saving ? L('Salvando...', 'Saving...', 'Guardando...') : L('Salvar preferências', 'Save preferences', 'Guardar preferencias')}
         </button>
@@ -359,7 +359,7 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
 
 function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+    <div className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
       <h2 className="text-[15px] font-bold" style={{ color: 'var(--fg)' }}>{title}</h2>
       {subtitle && <p className="text-[12px] mt-0.5 mb-4" style={{ color: 'var(--fg-muted)' }}>{subtitle}</p>}
       {children}
@@ -401,9 +401,9 @@ function IntervalChips({ selected, onToggle }: { selected: number[]; onToggle: (
             onClick={() => onToggle(min)}
             className="px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all"
             style={{
-              background: active ? '#6366f1' : 'var(--bg)',
+              background: active ? 'var(--accent)' : 'var(--bg)',
               color: active ? '#fff' : 'var(--fg-secondary)',
-              border: `1px solid ${active ? '#6366f1' : 'var(--border)'}`,
+              border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
             }}
           >
             {min < 60 ? `${min}min` : `${min / 60}h`}

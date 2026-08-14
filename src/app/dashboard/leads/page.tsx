@@ -68,7 +68,7 @@ export default async function LeadsPage() {
 
       {/* Filters */}
       <div className="flex gap-2 mb-5 flex-wrap">
-        <span className="px-4 py-2 rounded-xl text-[13px] font-bold" style={{ background: 'var(--accent-light)', color: '#6366f1' }}>
+        <span className="px-4 py-2 rounded-xl text-[13px] font-bold" style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>
           {L('Todos', 'All', 'Todos')} ({allLeads.length})
         </span>
         <span className="px-4 py-2 rounded-xl text-[13px] font-semibold" style={{ color: 'var(--fg-secondary)' }}>

@@ -20,7 +20,7 @@ export function SuspendedAccount({ name }: { name: string }) {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--bg)' }}>
-      <div className="w-full max-w-md rounded-2xl p-8 text-center" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', boxShadow: '0 8px 30px rgba(0,0,0,0.06)' }}>
+      <div className="w-full max-w-md rounded-2xl p-8 text-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: '0 8px 30px rgba(0,0,0,0.06)' }}>
         <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ background: 'var(--err-soft)' }}>
           <span className="text-[34px]">🔒</span>
         </div>

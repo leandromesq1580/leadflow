@@ -395,7 +395,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
           readOnly={masked}
           onChange={masked ? undefined : (e => setLead({ ...lead, [field]: type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value }))}
           className="w-full px-3.5 py-2.5 rounded-xl text-[13px] font-medium transition-all focus:outline-none focus:ring-2 focus:ring-indigo-200"
-          style={{ background: masked ? 'var(--bg-soft)' : 'var(--bg)', border: '1px solid #e8ecf4', color: masked ? '#94a3b8' : '#1a1a2e' }}
+          style={{ background: masked ? 'var(--bg-soft)' : 'var(--bg)', border: '1px solid var(--border)', color: masked ? '#94a3b8' : '#1a1a2e' }}
         />
       </div>
     )
@@ -428,7 +428,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               <button onClick={() => callLead(lead.phone, lead.name, leadId)}
                 title={L('Ligar pelo navegador com número local (DDD do lead)', "Call from the browser with a local number (lead's area code)", 'Llamar desde el navegador con número local (código de área del lead)')}
                 className="px-4 py-2.5 rounded-xl text-[12px] font-bold text-white flex items-center gap-1.5 flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
+                style={{ background: 'linear-gradient(135deg, var(--accent), #6d28d9)', boxShadow: '0 4px 14px rgba(124,58,237,0.3)' }}>
                 📞 {L('Ligar', 'Call', 'Llamar')}
               </button>
             )}
@@ -465,10 +465,10 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                 className="flex-1 whitespace-nowrap py-2.5 px-2 rounded-lg text-[11px] font-bold transition-all"
                 style={{
                   background: tab === t.key ? 'var(--bg-card)' : 'transparent',
-                  color: tab === t.key ? '#6366f1' : 'var(--fg-muted)',
+                  color: tab === t.key ? 'var(--accent)' : 'var(--fg-muted)',
                   boxShadow: tab === t.key ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
                 }}>
-                {t.icon} {t.label}{(t as any).count > 0 ? <sup className="ml-0.5 text-[9px] font-extrabold" style={{ color: tab === t.key ? '#6366f1' : '#cbd5e1' }}>{(t as any).count}</sup> : null}
+                {t.icon} {t.label}{(t as any).count > 0 ? <sup className="ml-0.5 text-[9px] font-extrabold" style={{ color: tab === t.key ? 'var(--accent)' : '#cbd5e1' }}>{(t as any).count}</sup> : null}
               </button>
             ))}
           </div>
@@ -558,7 +558,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                   <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--fg-muted)' }}>
                     📋 {L('Estágio no Pipeline', 'Stage in Pipeline', 'Etapa en el Pipeline')}
                   </label>
-                  <div className="rounded-xl p-3" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }}>
+                  <div className="rounded-xl p-3" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-[10px] font-bold uppercase" style={{ color: 'var(--fg-muted)' }}>{L('Pipeline atual:', 'Current pipeline:', 'Pipeline actual:')}</span>
                       <span className="text-[12px] font-bold" style={{ color: 'var(--fg)' }}>
@@ -569,11 +569,11 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                       <span className="text-[10px] font-bold uppercase" style={{ color: 'var(--fg-muted)' }}>{L('Estágio atual:', 'Current stage:', 'Etapa actual:')}</span>
                       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold"
                         style={{
-                          background: (pipelineLead.stage?.color || '#6366f1') + '22',
-                          color: pipelineLead.stage?.color || '#6366f1',
-                          border: `1px solid ${(pipelineLead.stage?.color || '#6366f1')}44`,
+                          background: (pipelineLead.stage?.color || 'var(--accent)') + '22',
+                          color: pipelineLead.stage?.color || 'var(--accent)',
+                          border: `1px solid ${(pipelineLead.stage?.color || 'var(--accent)')}44`,
                         }}>
-                        <span className="w-2 h-2 rounded-full" style={{ background: pipelineLead.stage?.color || '#6366f1' }} />
+                        <span className="w-2 h-2 rounded-full" style={{ background: pipelineLead.stage?.color || 'var(--accent)' }} />
                         {pipelineLead.stage?.name || L('Sem estágio', 'No stage', 'Sin etapa')}
                       </span>
                     </div>
@@ -598,7 +598,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                           className="w-full px-3 py-2 rounded-lg text-[13px] font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-200 cursor-pointer"
                           style={{
                             background: 'var(--bg-card)',
-                            border: `1px solid ${pendingPipelineId && pendingPipelineId !== pipelineLead.pipeline?.id ? '#6366f1' : 'var(--border)'}`,
+                            border: `1px solid ${pendingPipelineId && pendingPipelineId !== pipelineLead.pipeline?.id ? 'var(--accent)' : 'var(--border)'}`,
                             color: 'var(--fg)',
                           }}>
                           {pipelines.map((p: any) => (
@@ -618,7 +618,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                         className="w-full px-3 py-2 rounded-lg text-[13px] font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-200 cursor-pointer"
                         style={{
                           background: 'var(--bg-card)',
-                          border: `1px solid ${(pendingStageId && pendingStageId !== pipelineLead.stage_id) || (pendingPipelineId && pendingPipelineId !== pipelineLead.pipeline?.id) ? '#6366f1' : 'var(--border)'}`,
+                          border: `1px solid ${(pendingStageId && pendingStageId !== pipelineLead.stage_id) || (pendingPipelineId && pendingPipelineId !== pipelineLead.pipeline?.id) ? 'var(--accent)' : 'var(--border)'}`,
                           color: 'var(--fg)',
                         }}>
                         {(pipelines.find(p => p.id === (pendingPipelineId || pipelineLead.pipeline?.id))?.stages || [])
@@ -630,7 +630,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                           ))}
                       </select>
                       {((pendingStageId && pendingStageId !== pipelineLead.stage_id) || (pendingPipelineId && pendingPipelineId !== pipelineLead.pipeline?.id)) && (
-                        <p className="text-[10px] mt-1 font-semibold" style={{ color: '#6366f1' }}>
+                        <p className="text-[10px] mt-1 font-semibold" style={{ color: 'var(--accent)' }}>
                           ⚠️ {L('Mudança pendente — será salva ao clicar', 'Pending change — saved when you click', 'Cambio pendiente — se guardará al hacer clic en')} &ldquo;{L('Salvar Alterações', 'Save Changes', 'Guardar Cambios')}&rdquo;
                         </p>
                       )}
@@ -647,7 +647,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                 <textarea value={lead.observation || ''} onChange={e => setLead({ ...lead, observation: e.target.value })}
                   rows={3} placeholder={L('Notas sobre este lead. URLs viram clicáveis automaticamente.', 'Notes about this lead. URLs become clickable automatically.', 'Notas sobre este lead. Las URLs se vuelven clicables automáticamente.')}
                   className="w-full px-3.5 py-2.5 rounded-xl text-[13px] font-medium resize-none transition-all focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                  style={{ background: 'var(--bg)', border: '1px solid #e8ecf4', color: 'var(--fg)' }} />
+                  style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--fg)' }} />
                 {(() => {
                   const text = lead.observation || ''
                   const urls = Array.from(text.matchAll(/https?:\/\/[^\s)]+/g)).map(m => m[0])
@@ -659,7 +659,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                         return (
                           <a key={i} href={u} target="_blank" rel="noopener noreferrer"
                             className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-indigo-50 transition-colors text-[12px] font-semibold truncate"
-                            style={{ background: '#f0f4ff', color: '#6366f1', border: '1px solid #e0e7ff', textDecoration: 'none' }}>
+                            style={{ background: '#f0f4ff', color: 'var(--accent)', border: '1px solid #e0e7ff', textDecoration: 'none' }}>
                             <span>🔗</span>
                             <span className="truncate">{display}</span>
                             <span className="ml-auto text-[10px]" style={{ color: 'var(--fg-muted)' }}>↗</span>
@@ -675,13 +675,13 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               <ExchangeBox leadId={leadId} />
 
               {/* Actions */}
-              <div className="flex justify-end gap-3 pt-3" style={{ borderTop: '1px solid #f1f5f9' }}>
+              <div className="flex justify-end gap-3 pt-3" style={{ borderTop: '1px solid var(--bg-soft)' }}>
                 <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-[13px] font-semibold transition-colors hover:bg-gray-50" style={{ color: 'var(--fg-secondary)' }}>
                   {L('Cancelar', 'Cancel', 'Cancelar')}
                 </button>
                 <button onClick={saveLead} disabled={saving}
                   className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50 transition-all"
-                  style={{ background: '#6366f1', boxShadow: '0 4px 14px rgba(99,102,241,0.25)' }}>
+                  style={{ background: 'var(--accent)', boxShadow: '0 4px 14px rgba(124,58,237,0.25)' }}>
                   {saving ? L('Salvando...', 'Saving...', 'Guardando...') : L('Salvar Alteracoes', 'Save Changes', 'Guardar Cambios')}
                 </button>
               </div>
@@ -697,7 +697,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               {/* New follow-up button */}
               <button onClick={() => setShowNewFU(true)}
                 className="w-full py-3 rounded-xl text-[13px] font-bold mb-5 transition-all hover:shadow-sm"
-                style={{ background: '#f0f4ff', color: '#6366f1', border: '1px dashed #c7d2fe' }}>
+                style={{ background: '#f0f4ff', color: 'var(--accent)', border: '1px dashed rgba(139,92,246,0.35)' }}>
                 + {L('Novo Follow-up', 'New Follow-up', 'Nuevo Seguimiento')}
               </button>
 
@@ -705,7 +705,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               {showNewFU && (
                 <div className="rounded-xl p-5 mb-5" style={{ background: '#fafbff', border: '1px solid #e0e7ff' }}>
                   <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--fg-muted)' }}>
-                    {L('Tipo', 'Type', 'Tipo')} · <span style={{ color: '#6366f1' }}>
+                    {L('Tipo', 'Type', 'Tipo')} · <span style={{ color: 'var(--accent)' }}>
                       {(() => {
                         const cur = FOLLOW_UP_TYPES.find(ft => ft.key === fuType)
                         return cur ? `${cur.icon} ${cur.label} ${L('selecionado', 'selected', 'seleccionado')}` : L('selecione', 'select one', 'selecciona')
@@ -717,10 +717,10 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                       <button key={t.key} onClick={() => setFuType(t.key)}
                         className="px-3 py-2 rounded-lg text-[11px] font-bold transition-all"
                         style={{
-                          background: fuType === t.key ? '#6366f1' : 'var(--bg-card)',
+                          background: fuType === t.key ? 'var(--accent)' : 'var(--bg-card)',
                           color: fuType === t.key ? '#fff' : 'var(--fg-secondary)',
-                          border: `1px solid ${fuType === t.key ? '#6366f1' : 'var(--border)'}`,
-                          boxShadow: fuType === t.key ? '0 2px 8px rgba(99,102,241,0.25)' : 'none',
+                          border: `1px solid ${fuType === t.key ? 'var(--accent)' : 'var(--border)'}`,
+                          boxShadow: fuType === t.key ? '0 2px 8px rgba(124,58,237,0.25)' : 'none',
                         }}>
                         {t.icon} {t.label}
                       </button>
@@ -728,12 +728,12 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                   </div>
                   <textarea value={fuDesc} onChange={e => setFuDesc(e.target.value)} placeholder={L('O que aconteceu ou precisa ser feito...', 'What happened or needs to be done...', 'Qué pasó o qué hay que hacer...')}
                     rows={2} className="w-full px-3.5 py-2.5 rounded-xl text-[13px] resize-none mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                    style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }} />
+                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }} />
 
                   {/* Agendar data/hora — obrigatório pra Reunião, opcional p/ resto */}
                   <div className="mb-3 p-3 rounded-lg" style={{
                     background: fuType === 'meeting' ? 'var(--warn-line)' : 'var(--bg)',
-                    border: fuType === 'meeting' ? '1px solid #fde68a' : '1px solid #e8ecf4',
+                    border: fuType === 'meeting' ? '1px solid #fde68a' : '1px solid var(--border)',
                   }}>
                     <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: fuType === 'meeting' ? '#92400e' : 'var(--fg-muted)' }}>
                       {fuType === 'meeting'
@@ -747,7 +747,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                         className="flex-1 px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
                         style={{
                           background: 'var(--bg-card)',
-                          border: fuType === 'meeting' && !fuDate ? '1px solid #f59e0b' : '1px solid #e8ecf4',
+                          border: fuType === 'meeting' && !fuDate ? '1px solid #f59e0b' : '1px solid var(--border)',
                         }} />
                       <TimePicker value={fuTime} onChange={setFuTime} disabled={!fuDate}
                         className="px-2 py-2 rounded-lg text-[12px] bg-white disabled:opacity-50" />
@@ -796,7 +796,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                     <button onClick={addFollowUp}
                       disabled={fuType === 'meeting' ? (!fuDate || !fuTime) : !fuDesc.trim()}
                       className="px-5 py-2 rounded-lg text-[12px] font-bold text-white disabled:opacity-40"
-                      style={{ background: '#6366f1' }}>{L('Salvar', 'Save', 'Guardar')}</button>
+                      style={{ background: 'var(--accent)' }}>{L('Salvar', 'Save', 'Guardar')}</button>
                   </div>
                 </div>
               )}
@@ -830,12 +830,12 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                                 onChange={e => setEditingFU({ ...editingFU, text: e.target.value })}
                                 rows={2} autoFocus
                                 className="w-full px-2 py-1.5 rounded-lg text-[13px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                                style={{ background: 'var(--bg-card)', border: '1px solid #c7d2fe' }} />
+                                style={{ background: 'var(--bg-card)', border: '1px solid rgba(139,92,246,0.35)' }} />
                               <div className="flex gap-2 mt-1.5">
                                 <button onClick={() => updateFollowUp(fu.id, editingFU.text)}
                                   disabled={!editingFU.text.trim()}
                                   className="px-3 py-1 rounded text-[10px] font-bold text-white disabled:opacity-50"
-                                  style={{ background: '#6366f1' }}>
+                                  style={{ background: 'var(--accent)' }}>
                                   {L('Salvar', 'Save', 'Guardar')}
                                 </button>
                                 <button onClick={() => setEditingFU(null)}
@@ -872,7 +872,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                             <button onClick={() => setEditingFU({ id: fu.id, text: fu.description })}
                               title={L('Editar', 'Edit', 'Editar')}
                               className="text-[10px] font-bold px-2 py-1 rounded-lg hover:bg-indigo-50"
-                              style={{ color: '#6366f1' }}>
+                              style={{ color: 'var(--accent)' }}>
                               ✎
                             </button>
                             <button onClick={() => deleteFollowUp(fu.id)}
@@ -895,7 +895,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
             <div>
               {/* Upload */}
               <label className="w-full py-4 rounded-xl text-[13px] font-bold mb-5 transition-all hover:shadow-sm cursor-pointer flex items-center justify-center gap-2"
-                style={{ background: '#f0f4ff', color: '#6366f1', border: '1px dashed #c7d2fe' }}>
+                style={{ background: '#f0f4ff', color: 'var(--accent)', border: '1px dashed rgba(139,92,246,0.35)' }}>
                 <input type="file" className="hidden" onChange={uploadFile} disabled={uploading}
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.xls,.xlsx,.csv,.txt" />
                 {uploading ? L('Enviando...', 'Uploading...', 'Subiendo...') : '📎 ' + L('Clique para anexar arquivo', 'Click to attach a file', 'Haz clic para adjuntar un archivo')}
@@ -917,7 +917,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                     const icon = isImage ? '🖼️' : isPdf ? '📄' : '📎'
                     return (
                       <div key={att.id} className="rounded-xl p-3.5 flex items-center gap-3"
-                        style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+                        style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
                         <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
                           style={{ background: '#f0f4ff' }}>
                           <span className="text-[16px]">{icon}</span>
@@ -934,7 +934,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                             if (d.url) window.open(d.url, '_blank')
                           }}
                           className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg"
-                          style={{ background: 'var(--accent-light)', color: '#6366f1' }}>
+                          style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>
                           {L('Baixar', 'Download', 'Descargar')}
                         </button>
                         <button onClick={() => deleteAttachment(att.id)}

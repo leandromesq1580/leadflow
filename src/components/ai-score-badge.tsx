@@ -57,7 +57,7 @@ export function AiScoreBadge({ leadId, score, reason, onScored, compact }: Props
         {emoji} {label} · Score {score}
       </span>
       {reason && <span className="text-[11px]" style={{ color: 'var(--fg-secondary)' }}>{reason}</span>}
-      <button onClick={rescore} disabled={loading} className="text-[10px] font-bold" style={{ color: '#6366f1' }}>
+      <button onClick={rescore} disabled={loading} className="text-[10px] font-bold" style={{ color: 'var(--accent)' }}>
         {loading ? '...' : '↻'}
       </button>
     </div>

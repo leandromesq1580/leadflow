@@ -127,10 +127,10 @@ export default function WhatsAppPage() {
         </p>
       </div>
 
-      <div className="rounded-2xl overflow-hidden flex" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', height: 'calc(100vh - 200px)', minHeight: 500 }}>
+      <div className="rounded-2xl overflow-hidden flex" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', height: 'calc(100vh - 200px)', minHeight: 500 }}>
         {/* Lista de conversas */}
-        <div className="w-[320px] flex flex-col" style={{ borderRight: '1px solid #e8ecf4' }}>
-          <div className="px-4 py-3" style={{ borderBottom: '1px solid #e8ecf4' }}>
+        <div className="w-[320px] flex flex-col" style={{ borderRight: '1px solid var(--border)' }}>
+          <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
             <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--fg-muted)' }}>{t.whatsapp.conversations}</p>
             <input
               type="text"
@@ -138,7 +138,7 @@ export default function WhatsAppPage() {
               onChange={e => setSearch(e.target.value)}
               placeholder={t.whatsapp.search}
               className="w-full px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
-              style={{ background: 'var(--bg-soft)', border: '1px solid #e8ecf4' }}
+              style={{ background: 'var(--bg-soft)', border: '1px solid var(--border)' }}
             />
           </div>
 
@@ -164,8 +164,8 @@ export default function WhatsAppPage() {
                     className="w-full text-left px-4 py-3 flex items-start gap-3 transition-colors"
                     style={{
                       background: isActive ? 'var(--accent-light)' : 'transparent',
-                      borderBottom: '1px solid #f1f5f9',
-                      borderLeft: isActive ? '3px solid #6366f1' : '3px solid transparent',
+                      borderBottom: '1px solid var(--bg-soft)',
+                      borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
                     }}
                   >
                     <div className="w-10 h-10 rounded-full flex items-center justify-center text-[11px] font-extrabold text-white flex-shrink-0"
@@ -186,7 +186,7 @@ export default function WhatsAppPage() {
                         </p>
                         {c.unread > 0 && (
                           <span className="text-[10px] font-extrabold text-white rounded-full flex items-center justify-center flex-shrink-0"
-                            style={{ background: '#6366f1', minWidth: 18, height: 18, padding: '0 5px' }}>
+                            style={{ background: 'var(--accent)', minWidth: 18, height: 18, padding: '0 5px' }}>
                             {c.unread > 99 ? '99+' : c.unread}
                           </span>
                         )}
@@ -203,7 +203,7 @@ export default function WhatsAppPage() {
         <div className="flex-1 flex flex-col">
           {selected ? (
             <>
-              <div className="px-5 py-3 flex items-center gap-3" style={{ borderBottom: '1px solid #e8ecf4' }}>
+              <div className="px-5 py-3 flex items-center gap-3" style={{ borderBottom: '1px solid var(--border)' }}>
                 <div className="w-10 h-10 rounded-full flex items-center justify-center text-[12px] font-extrabold text-white"
                   style={{ background: `hsl(${hueFromName(selected.lead_name)}, 55%, 50%)` }}>
                   {initials(selected.lead_name)}

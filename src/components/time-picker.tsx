@@ -40,7 +40,7 @@ export function TimePicker({ value, onChange, disabled, className }: Props) {
   const hours = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'))
   const minutes = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55']
 
-  const baseCls = className || 'px-2 py-2 rounded-lg text-[13px] bg-[#f8f9fc] border border-[#e8ecf4] disabled:opacity-50'
+  const baseCls = className || 'px-2 py-2 rounded-lg text-[13px] bg-[#f8f9fc] border border-[var(--border)] disabled:opacity-50'
 
   return (
     <div className="flex items-center gap-1">

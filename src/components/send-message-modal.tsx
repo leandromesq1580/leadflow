@@ -81,7 +81,7 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
         style={{ background: 'var(--bg-card)', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
 
         {/* Header */}
-        <div className="px-6 py-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+        <div className="px-6 py-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)' }}>
           <div>
             <h2 className="text-[16px] font-extrabold text-white">{L('Enviar mensagem pra', 'Send a message to', 'Enviar mensaje a')} {lead.name}</h2>
             <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.7)' }}>{lead.phone} · {lead.email}</p>
@@ -98,7 +98,7 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
                 {templates.map(t => (
                   <button key={t.id} onClick={() => setSelectedId(t.id)}
                     className="w-full text-left p-3 rounded-xl flex items-center gap-3 transition-colors hover:bg-indigo-50/50"
-                    style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }}>
+                    style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
                     <span className="text-[18px]">{t.type === 'whatsapp' ? '💬' : '📧'}</span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -112,7 +112,7 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
               </div>
               <button onClick={() => { setEditing(true); setCustomBody(''); setSelectedId(null) }}
                 className="w-full py-3 rounded-xl text-[13px] font-bold"
-                style={{ background: 'var(--accent-light)', color: '#6366f1', border: '1px dashed #c7d2fe' }}>
+                style={{ background: 'var(--accent-light)', color: 'var(--accent)', border: '1px dashed rgba(139,92,246,0.35)' }}>
                 + {L('Mensagem customizada', 'Custom message', 'Mensaje personalizado')}
               </button>
             </div>
@@ -128,7 +128,7 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
                   </p>
                   {!editing && (
                     <button onClick={() => { setEditing(true); setCustomBody(selected?.body || '') }}
-                      className="text-[11px] font-bold" style={{ color: '#6366f1' }}>
+                      className="text-[11px] font-bold" style={{ color: 'var(--accent)' }}>
                       ✎ {L('Editar antes de enviar', 'Edit before sending', 'Editar antes de enviar')}
                     </button>
                   )}
@@ -143,12 +143,12 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
                   <div className="flex gap-2">
                     <button onClick={() => setCustomType('whatsapp')}
                       className="flex-1 py-2 rounded-lg text-[12px] font-bold"
-                      style={{ background: customType === 'whatsapp' ? '#10b981' : 'var(--bg)', color: customType === 'whatsapp' ? 'var(--bg-card)' : '#64748b', border: '1px solid #e8ecf4' }}>
+                      style={{ background: customType === 'whatsapp' ? '#10b981' : 'var(--bg)', color: customType === 'whatsapp' ? 'var(--bg-card)' : '#64748b', border: '1px solid var(--border)' }}>
                       💬 WhatsApp
                     </button>
                     <button onClick={() => setCustomType('email')}
                       className="flex-1 py-2 rounded-lg text-[12px] font-bold"
-                      style={{ background: customType === 'email' ? '#6366f1' : 'var(--bg)', color: customType === 'email' ? 'var(--bg-card)' : '#64748b', border: '1px solid #e8ecf4' }}>
+                      style={{ background: customType === 'email' ? 'var(--accent)' : 'var(--bg)', color: customType === 'email' ? 'var(--bg-card)' : '#64748b', border: '1px solid var(--border)' }}>
                       📧 Email
                     </button>
                   </div>
@@ -159,16 +159,16 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
                 <textarea value={customBody} onChange={e => setCustomBody(e.target.value)}
                   rows={8} placeholder={L('Digite sua mensagem. Use {primeiro_nome}, {nome}, etc.', 'Type your message. Use {primeiro_nome}, {nome}, etc.', 'Escribe tu mensaje. Usa {primeiro_nome}, {nome}, etc.')}
                   className="w-full px-4 py-3 rounded-xl text-[13px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                  style={{ background: 'var(--bg)', border: '1px solid #e8ecf4', color: 'var(--fg)' }} />
+                  style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--fg)' }} />
               ) : (
-                <div className="rounded-xl p-4 mb-2" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }}>
+                <div className="rounded-xl p-4 mb-2" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
                   <p className="text-[13px] whitespace-pre-wrap" style={{ color: 'var(--fg)' }}>{preview}</p>
                 </div>
               )}
 
               {editing && preview && (
                 <div className="mt-3 rounded-xl p-4" style={{ background: '#f0f4ff', border: '1px solid #e0e7ff' }}>
-                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#6366f1' }}>{L('Preview (variaveis substituidas)', 'Preview (variables filled in)', 'Vista previa (variables sustituidas)')}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--accent)' }}>{L('Preview (variaveis substituidas)', 'Preview (variables filled in)', 'Vista previa (variables sustituidas)')}</p>
                   <p className="text-[13px] whitespace-pre-wrap" style={{ color: 'var(--fg)' }}>{preview}</p>
                 </div>
               )}
@@ -186,11 +186,11 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
 
         {/* Footer */}
         {(selected || editing) && (
-          <div className="px-6 py-4 flex justify-end gap-3" style={{ borderTop: '1px solid #f1f5f9' }}>
+          <div className="px-6 py-4 flex justify-end gap-3" style={{ borderTop: '1px solid var(--bg-soft)' }}>
             <button onClick={onClose} className="px-4 py-2 text-[13px] font-semibold" style={{ color: 'var(--fg-secondary)' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
             <button onClick={send} disabled={sending || !canSend || !preview.trim()}
               className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50"
-              style={{ background: activeType === 'whatsapp' ? '#10b981' : '#6366f1', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
+              style={{ background: activeType === 'whatsapp' ? '#10b981' : 'var(--accent)', boxShadow: '0 4px 14px rgba(124,58,237,0.3)' }}>
               {sending
                 ? L('Enviando...', 'Sending...', 'Enviando...')
                 : `${L('Enviar', 'Send', 'Enviar')} ${activeType === 'whatsapp' ? 'WhatsApp' : 'Email'} →`}

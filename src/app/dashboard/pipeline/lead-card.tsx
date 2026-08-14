@@ -98,7 +98,7 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
   // Sem isso, lead com follow-up de hoje mas movido há 6 dias mostrava "6d parado".
   const stale = getStaleness(movedAt, lastFollowUp?.scheduled_at, lastFollowUp?.created_at)
   const showStale = stale.level !== 'fresh' && !lead.contract_closed
-  const borderColor = stale.level === 'critical' ? '#dc2626' : stale.level === 'alert' ? '#ea580c' : (stageColor || '#6366f1')
+  const borderColor = stale.level === 'critical' ? '#dc2626' : stale.level === 'alert' ? '#ea580c' : (stageColor || 'var(--accent)')
 
   const cardStyle: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -111,7 +111,7 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
     cursor: 'grab',
     borderLeft: `3px solid ${borderColor}`,
     boxShadow: isDragging
-      ? '0 12px 28px rgba(99,102,241,0.18), 0 4px 10px rgba(0,0,0,0.06)'
+      ? '0 12px 28px rgba(124,58,237,0.18), 0 4px 10px rgba(0,0,0,0.06)'
       : stale.level === 'critical'
       ? '0 0 0 1px rgba(220,38,38,0.2), 0 1px 3px rgba(0,0,0,0.04)'
       : '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)',
@@ -194,7 +194,7 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
         <div className="flex items-center gap-1.5">
           {lead.state && (
             <span className="text-[9px] font-bold px-2 py-[3px] rounded-md"
-              style={{ background: '#f0f4ff', color: '#4f46e5', letterSpacing: '0.5px' }}>{lead.state}</span>
+              style={{ background: '#f0f4ff', color: '#6d28d9', letterSpacing: '0.5px' }}>{lead.state}</span>
           )}
           {lead.type === 'hot' && (
             <span className="text-[9px] font-bold px-2 py-[3px] rounded-md"

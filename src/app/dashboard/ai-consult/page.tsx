@@ -86,7 +86,7 @@ export default function AiConsultPage() {
             <h1 className="text-[22px] font-extrabold" style={{ color: 'var(--fg)' }}>
               {L('Especialista em Life Insurance', 'Life Insurance Specialist', 'Especialista en Life Insurance')}
             </h1>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold" style={{ background: 'var(--accent-light)', color: '#6366f1' }}>AI</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold" style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>AI</span>
           </div>
           <p className="text-[13px] mt-1" style={{ color: 'var(--fg-muted)' }}>
             {L('Tire dúvidas sobre produtos, underwriting, abordagem de cliente, objeções e mais.', 'Get answers about products, underwriting, client approach, objections and more.', 'Resuelve dudas sobre productos, underwriting, cómo abordar al cliente, objeciones y más.')}
@@ -101,7 +101,7 @@ export default function AiConsultPage() {
         )}
       </div>
 
-      <div className="rounded-2xl overflow-hidden flex flex-col" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', height: 'calc(100vh - 220px)', minHeight: 500 }}>
+      <div className="rounded-2xl overflow-hidden flex flex-col" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', height: 'calc(100vh - 220px)', minHeight: 500 }}>
         {/* Thread */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {loading ? (
@@ -119,7 +119,7 @@ export default function AiConsultPage() {
                 {suggestions(L).map((s, i) => (
                   <button key={i} onClick={() => send(s)}
                     className="text-left px-4 py-3 rounded-xl text-[13px] transition-all hover:-translate-y-0.5"
-                    style={{ background: 'var(--bg)', border: '1px solid #e8ecf4', color: 'var(--fg-secondary)' }}>
+                    style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--fg-secondary)' }}>
                     💬 {s}
                   </button>
                 ))}
@@ -131,13 +131,13 @@ export default function AiConsultPage() {
                 <div className={`max-w-[75%] rounded-2xl px-4 py-3 ${m.role === 'user' ? 'rounded-tr-sm' : 'rounded-tl-sm'}`}
                   style={{
                     background: m.role === 'user'
-                      ? 'linear-gradient(135deg, #6366f1, #8b5cf6)'
+                      ? 'linear-gradient(135deg, var(--accent), #8b5cf6)'
                       : 'var(--bg-soft)',
                     color: m.role === 'user' ? '#fff' : 'var(--fg)',
-                    border: m.role === 'assistant' ? '1px solid #e8ecf4' : 'none',
+                    border: m.role === 'assistant' ? '1px solid var(--border)' : 'none',
                   }}>
                   {m.role === 'assistant' && (
-                    <p className="text-[10px] font-extrabold uppercase tracking-wider mb-1.5" style={{ color: '#6366f1' }}>
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider mb-1.5" style={{ color: 'var(--accent)' }}>
                       🤖 {L('Especialista', 'Specialist', 'Especialista')}
                     </p>
                   )}
@@ -148,10 +148,10 @@ export default function AiConsultPage() {
           )}
           {sending && (
             <div className="flex justify-start">
-              <div className="rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2" style={{ background: 'var(--bg-soft)', border: '1px solid #e8ecf4' }}>
-                <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ background: '#6366f1' }} />
-                <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ background: '#6366f1', animationDelay: '150ms' }} />
-                <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ background: '#6366f1', animationDelay: '300ms' }} />
+              <div className="rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2" style={{ background: 'var(--bg-soft)', border: '1px solid var(--border)' }}>
+                <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ background: 'var(--accent)' }} />
+                <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ background: 'var(--accent)', animationDelay: '150ms' }} />
+                <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ background: 'var(--accent)', animationDelay: '300ms' }} />
                 <span className="text-[12px] ml-1" style={{ color: 'var(--fg-muted)' }}>{L('Pensando...', 'Thinking...', 'Pensando...')}</span>
               </div>
             </div>
@@ -169,7 +169,7 @@ export default function AiConsultPage() {
         )}
 
         {/* Composer */}
-        <div className="p-3" style={{ borderTop: '1px solid #e8ecf4', background: 'var(--bg-card)' }}>
+        <div className="p-3" style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-card)' }}>
           <form onSubmit={e => { e.preventDefault(); send(input) }} className="flex items-end gap-2">
             <textarea
               value={input}
@@ -181,11 +181,11 @@ export default function AiConsultPage() {
               rows={1}
               disabled={sending}
               className="flex-1 px-4 py-3 rounded-xl text-[13.5px] resize-none max-h-32 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-              style={{ background: 'var(--bg-soft)', border: '1px solid #e8ecf4', color: 'var(--fg)' }}
+              style={{ background: 'var(--bg-soft)', border: '1px solid var(--border)', color: 'var(--fg)' }}
             />
             <button type="submit" disabled={!input.trim() || sending}
               className="px-5 py-3 rounded-xl text-[13px] font-bold text-white disabled:opacity-50 flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
+              style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)', boxShadow: '0 4px 14px rgba(124,58,237,0.3)' }}>
               {sending ? '...' : L('Enviar', 'Send', 'Enviar')}
             </button>
           </form>

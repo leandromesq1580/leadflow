@@ -135,13 +135,13 @@ export default function AutomationsPage() {
         </div>
         <button onClick={() => { setShowNew(true); setEditing(null) }}
           className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-white"
-          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+          style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)' }}>
           + {L('Nova automação', 'New automation', 'Nueva automatización')}
         </button>
       </div>
 
       {automations.length === 0 && !showNew && (
-        <div className="rounded-2xl p-8 text-center" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+        <div className="rounded-2xl p-8 text-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <p className="text-[40px] mb-3">⚡</p>
           <p className="text-[16px] font-bold mb-2" style={{ color: 'var(--fg)' }}>{L('Ainda sem automações', 'No automations yet', 'Aún sin automatizaciones')}</p>
           <p className="text-[13px] mb-4" style={{ color: 'var(--fg-secondary)' }}>
@@ -155,7 +155,7 @@ export default function AutomationsPage() {
           const d = describe(a)
           return (
             <div key={a.id} className="rounded-xl p-4 flex items-center gap-4"
-              style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', opacity: a.enabled ? 1 : 0.5 }}>
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', opacity: a.enabled ? 1 : 0.5 }}>
               <button onClick={() => toggle(a)}
                 className="w-11 h-6 rounded-full relative transition-colors"
                 style={{ background: a.enabled ? '#10b981' : '#cbd5e1' }}>
@@ -169,7 +169,7 @@ export default function AutomationsPage() {
                 </p>
               </div>
               <button onClick={() => { setEditing(a); setShowNew(true) }}
-                className="text-[12px] font-bold" style={{ color: '#6366f1' }}>{L('Editar', 'Edit', 'Editar')}</button>
+                className="text-[12px] font-bold" style={{ color: 'var(--accent)' }}>{L('Editar', 'Edit', 'Editar')}</button>
               <button onClick={() => remove(a.id)}
                 className="text-[12px] font-bold" style={{ color: '#ef4444' }}>{L('Deletar', 'Delete', 'Eliminar')}</button>
             </div>
@@ -246,13 +246,13 @@ function AutomationForm({ buyerId, templates, stages, pipelines, editing, onClos
           <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Nome', 'Name', 'Nombre')}</span>
           <input value={name} onChange={e => setName(e.target.value)} placeholder={L('Ex: Follow-up 24h', 'E.g.: Follow-up 24h', 'Ej: Follow-up 24h')}
             className="w-full mt-1 px-3 py-2 rounded-lg text-[13px]"
-            style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
+            style={{ background: 'var(--bg)', border: '1px solid var(--border)' }} />
         </label>
 
         <div className="p-3 rounded-lg mb-3" style={{ background: 'var(--accent-light)' }}>
-          <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: '#6366f1' }}>{L('Quando (gatilho)', 'When (trigger)', 'Cuándo (disparador)')}</p>
+          <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--accent)' }}>{L('Quando (gatilho)', 'When (trigger)', 'Cuándo (disparador)')}</p>
           <select value={triggerType} onChange={e => setTriggerType(e.target.value as any)}
-            className="w-full mb-2 px-3 py-2 rounded-lg text-[13px]" style={{ background: 'var(--bg-card)', border: '1px solid #c7d2fe' }}>
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13px]" style={{ background: 'var(--bg-card)', border: '1px solid rgba(139,92,246,0.35)' }}>
             <option value="stage_entered">{L('Lead entrou em estágio', 'Lead entered a stage', 'El lead entró a una etapa')}</option>
             <option value="stage_stale">{L('Lead parado em estágio há N horas', 'Lead stuck in a stage for N hours', 'Lead parado en una etapa por N horas')}</option>
             <option value="no_response">{L('Lead sem resposta há N horas', 'Lead with no response for N hours', 'Lead sin respuesta por N horas')}</option>
@@ -263,13 +263,13 @@ function AutomationForm({ buyerId, templates, stages, pipelines, editing, onClos
           {(triggerType === 'stage_entered' || triggerType === 'stage_stale') && (
             <StageSelect pipelines={pipelines} value={triggerStageId} onChange={setTriggerStageId}
               placeholder={L('Escolha o estágio...', 'Choose the stage...', 'Elige la etapa...')}
-              className="w-full mb-2 px-3 py-2 rounded-lg text-[13px]" style={{ background: 'var(--bg-card)', border: '1px solid #c7d2fe' }} />
+              className="w-full mb-2 px-3 py-2 rounded-lg text-[13px]" style={{ background: 'var(--bg-card)', border: '1px solid rgba(139,92,246,0.35)' }} />
           )}
 
           {(triggerType === 'stage_stale' || triggerType === 'no_response' || triggerType === 'meeting_before' || triggerType === 'event_before') && (
             <input type="number" value={triggerHours} onChange={e => setTriggerHours(Number(e.target.value))}
               placeholder={triggerType === 'meeting_before' ? L('Horas antes da reunião (ex: 1)', 'Hours before the meeting (e.g. 1)', 'Horas antes de la reunión (ej: 1)') : triggerType === 'event_before' ? L('Horas antes do evento (ex: 1)', 'Hours before the event (e.g. 1)', 'Horas antes del evento (ej: 1)') : L('Horas', 'Hours', 'Horas')} min={1}
-              className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ background: 'var(--bg-card)', border: '1px solid #c7d2fe' }} />
+              className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ background: 'var(--bg-card)', border: '1px solid rgba(139,92,246,0.35)' }} />
           )}
         </div>
 
@@ -308,7 +308,7 @@ function AutomationForm({ buyerId, templates, stages, pipelines, editing, onClos
           <button onClick={onClose} className="px-4 py-2 text-[13px] font-semibold" style={{ color: 'var(--fg-secondary)' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
           <button onClick={save} disabled={saving || !name.trim()}
             className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+            style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)' }}>
             {saving ? L('Salvando...', 'Saving...', 'Guardando...') : editing ? L('Atualizar', 'Update', 'Actualizar') : L('Criar', 'Create', 'Crear')}
           </button>
         </div>

@@ -334,7 +334,7 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
   if (loading) return <div className="text-[12px] p-4" style={{ color: 'var(--fg-muted)' }}>{L('Carregando conversa...', 'Loading conversation...', 'Cargando conversación...')}</div>
 
   return (
-    <div className="flex flex-col rounded-xl overflow-hidden" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4', height: 460 }}>
+    <div className="flex flex-col rounded-xl overflow-hidden" style={{ background: 'var(--bg)', border: '1px solid var(--border)', height: 460 }}>
       {/* Thread */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {messages.length === 0 && (
@@ -349,13 +349,13 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
             <div className={`${m.media_type === 'audio' ? 'max-w-[320px] min-w-[280px]' : 'max-w-[80%]'} px-3 py-2 rounded-2xl`}
               style={{
                 background: m.direction === 'out' ? '#dcf8c6' : 'var(--bg-card)',
-                border: m.direction === 'in' ? '1px solid #e8ecf4' : 'none',
+                border: m.direction === 'in' ? '1px solid var(--border)' : 'none',
                 borderBottomRightRadius: m.direction === 'out' ? 4 : 16,
                 borderBottomLeftRadius: m.direction === 'in' ? 4 : 16,
               }}>
               {m.channel === 'sms' && (
                 <span className="inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mb-1"
-                  style={{ background: m.direction === 'out' ? 'rgba(15,118,110,0.12)' : 'var(--accent-light)', color: m.direction === 'out' ? '#0f766e' : '#6366f1', letterSpacing: 0.5 }}>
+                  style={{ background: m.direction === 'out' ? 'rgba(15,118,110,0.12)' : 'var(--accent-light)', color: m.direction === 'out' ? '#0f766e' : 'var(--accent)', letterSpacing: 0.5 }}>
                   SMS
                 </span>
               )}
@@ -375,7 +375,7 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
       {/* Emoji picker */}
       {showEmoji && (
         <div className="absolute bottom-[100px] right-4 z-10 p-3 rounded-xl shadow-xl"
-          style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', width: 320, maxHeight: 280, overflowY: 'auto' }}>
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', width: 320, maxHeight: 280, overflowY: 'auto' }}>
           <div className="grid grid-cols-10 gap-1">
             {QUICK_EMOJIS.map(e => (
               <button key={e} onClick={() => { insertEmoji(e); setShowEmoji(false) }}
@@ -398,7 +398,7 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
       )}
 
       {/* Composer */}
-      <div className="p-3 relative" style={{ background: 'var(--bg-card)', borderTop: '1px solid #e8ecf4' }}>
+      <div className="p-3 relative" style={{ background: 'var(--bg-card)', borderTop: '1px solid var(--border)' }}>
         {recording ? (
           <div className="flex items-center gap-3 px-3 py-2 rounded-xl" style={{ background: 'var(--err-soft)', border: '1px solid #fecaca' }}>
             <span className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ background: '#ef4444' }} />
@@ -450,7 +450,7 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
               placeholder={L('Digite uma mensagem... (Enter envia)', 'Type a message... (Enter to send)', 'Escribe un mensaje... (Enter envía)')}
               rows={1}
               className="flex-1 px-3 py-2 rounded-xl text-[13px] resize-none focus:outline-none"
-              style={{ background: 'var(--bg)', border: '1px solid #e8ecf4', color: 'var(--fg)', maxHeight: 100 }}
+              style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--fg)', maxHeight: 100 }}
             />
             <button onClick={sendText} disabled={!text.trim() || sending}
               className="px-4 h-9 rounded-xl text-[12px] font-bold text-white disabled:opacity-50"

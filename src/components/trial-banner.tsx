@@ -23,16 +23,16 @@ export function TrialBanner({ daysLeft }: { daysLeft: number }) {
         background: urgent
           ? 'linear-gradient(135deg, #fef3c7, #fde68a)'
           : 'linear-gradient(135deg, #eef2ff, #e0e7ff)',
-        border: urgent ? '1px solid #fbbf24' : '1px solid #c7d2fe',
+        border: urgent ? '1px solid #fbbf24' : '1px solid rgba(139,92,246,0.35)',
       }}
     >
       <div className="flex items-center gap-3">
         <span className="text-[24px]">{urgent ? '⏰' : '🎁'}</span>
         <div>
-          <p className="text-[14px] font-bold" style={{ color: urgent ? '#92400e' : '#3730a3' }}>
+          <p className="text-[14px] font-bold" style={{ color: urgent ? '#92400e' : '#5b21b6' }}>
             {urgent ? t.trialBanner.urgentTitle : t.trialBanner.activeTitle}
           </p>
-          <p className="text-[12px]" style={{ color: urgent ? '#b45309' : '#4f46e5' }}>
+          <p className="text-[12px]" style={{ color: urgent ? '#b45309' : '#6d28d9' }}>
             {daysLeft === 1 ? t.trialBanner.lastDay : t.trialBanner.daysLeftMany(daysLeft)}
           </p>
         </div>
@@ -41,7 +41,7 @@ export function TrialBanner({ daysLeft }: { daysLeft: number }) {
         <Link
           href="/dashboard/credits"
           className="px-4 py-2 rounded-lg text-[12px] font-bold"
-          style={{ background: 'var(--bg-card)', color: urgent ? '#92400e' : '#3730a3', border: '1px solid rgba(0,0,0,0.1)' }}
+          style={{ background: 'var(--bg-card)', color: urgent ? '#92400e' : '#5b21b6', border: '1px solid rgba(0,0,0,0.1)' }}
         >
           {t.trialBanner.seePlans}
         </Link>
@@ -49,7 +49,7 @@ export function TrialBanner({ daysLeft }: { daysLeft: number }) {
           onClick={verPlanos}
           disabled={loading}
           className="px-4 py-2 rounded-lg text-[12px] font-bold text-white disabled:opacity-50"
-          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+          style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)' }}
         >
           {loading ? '...' : t.trialBanner.subscribe}
         </button>

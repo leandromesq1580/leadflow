@@ -27,7 +27,7 @@ export function BackfillCrmButton() {
     <div className="flex items-center gap-3 flex-wrap">
       <button onClick={run} disabled={loading}
         className="px-3.5 py-1.5 rounded-lg text-[12px] font-bold disabled:opacity-50"
-        style={{ background: 'var(--accent-light)', color: '#6366f1', border: '1px solid #c7d2fe' }}>
+        style={{ background: 'var(--accent-light)', color: 'var(--accent)', border: '1px solid rgba(139,92,246,0.35)' }}>
         {loading ? 'Importando…' : '↻ Importar receita CRM do Stripe'}
       </button>
       {done && <span className="text-[12px] font-semibold" style={{ color: done.startsWith('✓') ? '#15803d' : '#dc2626' }}>{done}</span>}

@@ -60,7 +60,7 @@ export function ApolicesOnboard({ addonAtivo: addonInicial }: { addonAtivo: bool
     } catch { setErro(L('Erro de conexão.', 'Connection error.', 'Error de conexión.')); setCarregando(false) }
   }
 
-  const inStyle = { width: '100%', padding: '10px 13px', borderRadius: 10, border: '1px solid #e8ecf4', fontSize: 14, color: 'var(--fg)', background: 'var(--bg-card)', outline: 'none' } as const
+  const inStyle = { width: '100%', padding: '10px 13px', borderRadius: 10, border: '1px solid var(--border)', fontSize: 14, color: 'var(--fg)', background: 'var(--bg-card)', outline: 'none' } as const
   const lbl = { fontSize: 12, fontWeight: 700, color: 'var(--fg-secondary)', display: 'block', margin: '14px 0 5px' } as const
 
   return (
@@ -73,7 +73,7 @@ export function ApolicesOnboard({ addonAtivo: addonInicial }: { addonAtivo: bool
       </p>
 
       {!addonAtivo ? (
-        <div className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+        <div className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <p className="text-[16px] font-bold" style={{ color: 'var(--fg)' }}>
             {L('Seu book inteiro, vigiado todos os dias — direto do portal da National Life',
                'Your entire book, watched every day — straight from the National Life portal',
@@ -88,7 +88,7 @@ export function ApolicesOnboard({ addonAtivo: addonInicial }: { addonAtivo: bool
           <div className="flex items-center gap-4 mt-6 flex-wrap">
             <button onClick={assinar} disabled={carregando}
               className="px-6 py-3 rounded-xl text-[15px] font-bold text-white disabled:opacity-60"
-              style={{ background: 'linear-gradient(135deg,#6366f1,#4f46e5)', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
+              style={{ background: 'linear-gradient(135deg,var(--accent),#6d28d9)', boxShadow: '0 4px 14px rgba(124,58,237,0.3)' }}>
               {carregando ? L('Abrindo…', 'Opening…', 'Abriendo…') : L('Assinar — $39/mês', 'Subscribe — $39/mo', 'Suscribir — $39/mes')}
             </button>
             <span className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>
@@ -97,7 +97,7 @@ export function ApolicesOnboard({ addonAtivo: addonInicial }: { addonAtivo: bool
           </div>
         </div>
       ) : (
-        <div className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+        <div className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <p className="text-[15px] font-bold" style={{ color: '#059669' }}>
             ✅ {L('Add-on ativo! Agora conecte seu portal da National Life:', 'Add-on active! Now connect your National Life portal:', '¡Add-on activo! Ahora conecta tu portal de National Life:')}
           </p>

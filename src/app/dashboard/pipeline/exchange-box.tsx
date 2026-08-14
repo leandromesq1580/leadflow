@@ -55,9 +55,9 @@ export function ExchangeBox({ leadId }: { leadId: string }) {
 
   if (e.eligible) {
     return (
-      <div className="rounded-xl p-4 mt-3" style={{ background: 'var(--accent-light)', border: '1px solid #c7d2fe' }}>
-        <p className="text-[13px] font-bold" style={{ color: '#3730a3' }}>{L('🔁 Este lead é elegível pra troca', '🔁 This lead is eligible for exchange', '🔁 Este lead es elegible para cambio')}</p>
-        <p className="text-[12px] mt-1" style={{ color: '#4f46e5' }}>
+      <div className="rounded-xl p-4 mt-3" style={{ background: 'var(--accent-light)', border: '1px solid rgba(139,92,246,0.35)' }}>
+        <p className="text-[13px] font-bold" style={{ color: '#5b21b6' }}>{L('🔁 Este lead é elegível pra troca', '🔁 This lead is eligible for exchange', '🔁 Este lead es elegible para cambio')}</p>
+        <p className="text-[12px] mt-1" style={{ color: '#6d28d9' }}>
           {L(
             `${d.attemptDays} dias com tentativa · ${d.calls} ligações · ${d.smsSent} SMS · nenhuma resposta em 14 dias.`,
             `${d.attemptDays} days with attempts · ${d.calls} calls · ${d.smsSent} SMS · no response in 14 days.`,
@@ -66,7 +66,7 @@ export function ExchangeBox({ leadId }: { leadId: string }) {
         </p>
         <button onClick={solicitar} disabled={busy}
           className="mt-3 px-4 py-2 rounded-lg text-[12px] font-bold text-white disabled:opacity-50"
-          style={{ background: '#6366f1' }}>
+          style={{ background: 'var(--accent)' }}>
           {busy ? L('Enviando…', 'Sending…', 'Enviando…') : L('Solicitar troca (+1 crédito se aprovada)', 'Request exchange (+1 credit if approved)', 'Solicitar cambio (+1 crédito si se aprueba)')}
         </button>
         {msg && <p className="text-[12px] mt-2" style={{ color: '#dc2626' }}>{msg}</p>}

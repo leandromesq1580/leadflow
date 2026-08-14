@@ -57,8 +57,8 @@ export default function TreinamentoPage() {
 
   const card = (v: TrainingVideo, idx: number) => (
     <button key={v.id} onClick={() => { setPlaying(v); markDone(v.id) }} className="text-left rounded-2xl overflow-hidden transition-all hover:shadow-lg"
-      style={{ background: 'var(--bg-card)', border: done[v.id] ? '1.5px solid #10b981' : '1px solid #e8ecf4', cursor: 'pointer', padding: 0 }}>
-      <div style={{ position: 'relative', aspectRatio: '16/9', background: 'linear-gradient(135deg, #1e1b4b, #312e81)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      style={{ background: 'var(--bg-card)', border: done[v.id] ? '1.5px solid #10b981' : '1px solid var(--border)', cursor: 'pointer', padding: 0 }}>
+      <div style={{ position: 'relative', aspectRatio: '16/9', background: 'linear-gradient(135deg, #190f3a, #3b1d7a)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {!broken[v.id] ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={v.media === 'storage' ? (v.poster ? `/api/training/media?path=${encodeURIComponent(v.poster)}` : '') : `https://drive.google.com/thumbnail?id=${v.id}&sz=w640`} alt="" loading="lazy"
@@ -117,7 +117,7 @@ export default function TreinamentoPage() {
           {autoVideos.map((v, i) => card(v, i))}
         </div>
       ) : (
-        <div className="rounded-2xl p-8 text-center" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+        <div className="rounded-2xl p-8 text-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <p className="text-[15px] font-bold mb-1" style={{ color: 'var(--fg)' }}>📹 {L('Aulas em preparação', 'Lessons in the works', 'Clases en preparación')}</p>
           <p className="text-[13px]" style={{ color: 'var(--fg-secondary)' }}>{L('Os vídeos de treinamento estão sendo organizados por tema — volta em breve!', 'The training videos are being organized by topic — check back soon!', 'Los videos de entrenamiento se están organizando por tema — ¡vuelve pronto!')}</p>
           {isAdmin && <p className="text-[12px] mt-3" style={{ color: 'var(--fg-muted)' }}>{L('(admin: os módulos são preenchidos em src/lib/training-content.ts a partir da pasta do Drive)', '(admin: modules are filled in src/lib/training-content.ts from the Drive folder)', '(admin: los módulos se llenan en src/lib/training-content.ts desde la carpeta de Drive)')}</p>}

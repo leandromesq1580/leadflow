@@ -85,7 +85,7 @@ export function LeadsList({ leads, isAgency, teamMembers }: Props) {
           onChange={(e) => setQuery(e.target.value)}
           placeholder={L('Buscar por nome, telefone ou email...', 'Search by name, phone, or email...', 'Buscar por nombre, teléfono o email...')}
           className="w-full pl-11 pr-10 py-3 rounded-xl text-[13px] font-medium"
-          style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', color: 'var(--fg)' }}
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--fg)' }}
         />
         {query && (
           <button type="button" onClick={() => setQuery('')} aria-label={L('Limpar busca', 'Clear search', 'Limpiar búsqueda')}
@@ -101,7 +101,7 @@ export function LeadsList({ leads, isAgency, teamMembers }: Props) {
         )}
       </div>
 
-      <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+      <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         {filtered.length > 0 ? (
           <div>
             {filtered.map((lead, i) => {
@@ -110,7 +110,7 @@ export function LeadsList({ leads, isAgency, teamMembers }: Props) {
                 <div
                   key={lead.id}
                   className="flex items-center gap-4 px-6 py-4"
-                  style={{ borderBottom: i < filtered.length - 1 ? '1px solid #f1f5f9' : 'none' }}
+                  style={{ borderBottom: i < filtered.length - 1 ? '1px solid var(--bg-soft)' : 'none' }}
                 >
                   <Link href={`/dashboard/leads/${lead.id}`} className="flex items-center gap-4 flex-1 min-w-0 group">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[12px] font-bold text-white flex-shrink-0"
@@ -122,7 +122,7 @@ export function LeadsList({ leads, isAgency, teamMembers }: Props) {
                       <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{lead.city}{lead.state ? `, ${lead.state}` : ''} · {lead.interest}</p>
                     </div>
                     <div className="hidden sm:block">
-                      <span className="text-[13px] font-semibold" style={{ color: '#6366f1' }}>{privacy.mask(lead.phone, 'phone')}</span>
+                      <span className="text-[13px] font-semibold" style={{ color: 'var(--accent)' }}>{privacy.mask(lead.phone, 'phone')}</span>
                     </div>
                   </Link>
 

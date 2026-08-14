@@ -65,10 +65,10 @@ export function DeliveryQueueCard() {
     : ''
 
   return (
-    <div className="rounded-2xl overflow-hidden mb-6" style={{ background: 'var(--bg-card)', border: flash ? '2px solid #6366f1' : '1px solid #e8ecf4', transition: 'border-color .4s' }}>
-      <div className="px-6 py-4 flex items-start justify-between" style={{ borderBottom: '1px solid #e8ecf4' }}>
+    <div className="rounded-2xl overflow-hidden mb-6" style={{ background: 'var(--bg-card)', border: flash ? '2px solid var(--accent)' : '1px solid var(--border)', transition: 'border-color .4s' }}>
+      <div className="px-6 py-4 flex items-start justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
         <div>
-          <h2 className="text-[15px] font-bold flex items-center gap-2" style={{ color: 'var(--fg)' }}>📦 Fila de Entregas {flash && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: 'var(--accent-light)', color: '#6366f1' }}>↑ atualizada</span>}</h2>
+          <h2 className="text-[15px] font-bold flex items-center gap-2" style={{ color: 'var(--fg)' }}>📦 Fila de Entregas {flash && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>↑ atualizada</span>}</h2>
           <p className="text-[12px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>Ordem real: o admin intercepta pela regra; o resto, por <b>{(QUEUE_LABELS[data?.queueOrder || 'credito'] || 'Crédito').toLowerCase()}</b>.</p>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -78,11 +78,11 @@ export function DeliveryQueueCard() {
         </div>
       </div>
 
-      <div className="px-6 py-2.5 flex items-center gap-2 flex-wrap" style={{ borderBottom: '1px solid #f1f5f9', background: '#fcfcff' }}>
+      <div className="px-6 py-2.5 flex items-center gap-2 flex-wrap" style={{ borderBottom: '1px solid var(--bg-soft)', background: '#fcfcff' }}>
         <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>Regra da fila:</span>
         {(['credito', 'antiguidade', 'hibrido', 'rodizio'] as const).map(o => {
           const active = (data?.queueOrder || 'credito') === o
-          return <button key={o} onClick={() => changeOrder(o)} disabled={savingOrder} className="text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all disabled:opacity-50" style={active ? { background: '#6366f1', color: 'var(--bg-card)' } : { background: 'var(--accent-light)', color: '#6366f1' }}>{QUEUE_LABELS[o]}</button>
+          return <button key={o} onClick={() => changeOrder(o)} disabled={savingOrder} className="text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all disabled:opacity-50" style={active ? { background: 'var(--accent)', color: 'var(--bg-card)' } : { background: 'var(--accent-light)', color: 'var(--accent)' }}>{QUEUE_LABELS[o]}</button>
         })}
         {savingOrder && <span className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>salvando…</span>}
       </div>
@@ -90,13 +90,13 @@ export function DeliveryQueueCard() {
       {loading ? <div className="px-6 py-8 text-center text-[13px]" style={{ color: 'var(--fg-muted)' }}>Carregando…</div> : !data ? <div className="px-6 py-8 text-center text-[13px]" style={{ color: 'var(--fg-muted)' }}>Erro ao carregar.</div> : (
         <div>
           <div className="px-6 py-3" style={{ background: '#f8f9ff', borderBottom: '1px solid #eef2ff' }}>
-            <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#6366f1' }}>🎯 Próximo lead vai para</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>🎯 Próximo lead vai para</p>
             <p className="text-[13px] font-semibold mt-0.5" style={{ color: 'var(--fg)' }}>{proximoTxt}</p>
           </div>
 
           {data.admins.map(a => (
             <div key={a.id} className="flex items-center gap-4 px-6 py-3" style={{ borderBottom: '1px solid #f8fafc', background: ar?.herTurnNow && a.regraAdmin ? '#f5f3ff' : 'var(--bg-card)' }}>
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center text-[15px] flex-shrink-0" style={{ background: '#312e81' }}>👑</div>
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center text-[15px] flex-shrink-0" style={{ background: '#3b1d7a' }}>👑</div>
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-semibold flex items-center gap-2 flex-wrap" style={{ color: 'var(--fg)' }}>
                   <span className="truncate">{a.nome}</span>
@@ -121,9 +121,9 @@ export function DeliveryQueueCard() {
 
           {data.fila.length === 0 ? <div className="px-6 py-4 text-center text-[12px]" style={{ color: 'var(--fg-muted)' }}>Ninguém com crédito.</div> : data.fila.map((q, i) => (
             <div key={q.id} className="flex items-center gap-4 px-6 py-3" style={{ borderBottom: i < data.fila.length - 1 ? '1px solid #f8fafc' : 'none' }}>
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center text-[14px] font-extrabold flex-shrink-0" style={{ background: q.pos === 1 ? '#6366f1' : 'var(--accent-light)', color: q.pos === 1 ? 'var(--bg-card)' : '#6366f1' }}>{q.pos}º</div>
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center text-[14px] font-extrabold flex-shrink-0" style={{ background: q.pos === 1 ? 'var(--accent)' : 'var(--accent-light)', color: q.pos === 1 ? 'var(--bg-card)' : 'var(--accent)' }}>{q.pos}º</div>
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-semibold flex items-center gap-2" style={{ color: 'var(--fg)' }}><span className="truncate">{q.nome}</span>{q.pos === 1 && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase flex-shrink-0" style={{ background: 'var(--accent-light)', color: '#6366f1' }}>1º da fila</span>}{q.recebeuHoje ? <span className="text-[9px] font-bold px-1.5 py-0.5 rounded flex-shrink-0" style={{ background: 'var(--bg-soft)', color: 'var(--fg-muted)' }}>✓ recebeu hoje</span> : <span className="text-[9px] font-bold px-1.5 py-0.5 rounded flex-shrink-0" style={{ background: 'var(--ok-line)', color: '#15803d' }}>🟢 aguarda 1º do dia</span>}</p>
+                <p className="text-[13px] font-semibold flex items-center gap-2" style={{ color: 'var(--fg)' }}><span className="truncate">{q.nome}</span>{q.pos === 1 && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase flex-shrink-0" style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>1º da fila</span>}{q.recebeuHoje ? <span className="text-[9px] font-bold px-1.5 py-0.5 rounded flex-shrink-0" style={{ background: 'var(--bg-soft)', color: 'var(--fg-muted)' }}>✓ recebeu hoje</span> : <span className="text-[9px] font-bold px-1.5 py-0.5 rounded flex-shrink-0" style={{ background: 'var(--ok-line)', color: '#15803d' }}>🟢 aguarda 1º do dia</span>}</p>
                 <div className="flex gap-1 flex-wrap mt-1"><StateChips estados={q.estados} /></div>
               </div>
               <div className="text-right flex-shrink-0"><p className="text-[18px] font-extrabold" style={{ color: '#15803d' }}>{q.creditos}</p><p className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>a receber</p></div>

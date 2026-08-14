@@ -86,7 +86,7 @@ export function CardAssignMenu({ leadId, members, currentMemberId, onAssigned, o
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(!open) }}
         aria-label={L('Atribuir ao time', 'Assign to team', 'Asignar al equipo')}
         className="flex items-center justify-center rounded-md transition-colors hover:bg-slate-100"
-        style={{ width: 24, height: 24, color: currentMemberId ? '#6366f1' : 'var(--fg-muted)' }}>
+        style={{ width: 24, height: 24, color: currentMemberId ? 'var(--accent)' : 'var(--fg-muted)' }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
           <circle cx="12" cy="5" r="1.8" />
           <circle cx="12" cy="12" r="1.8" />
@@ -98,7 +98,7 @@ export function CardAssignMenu({ leadId, members, currentMemberId, onAssigned, o
         <>
           <div className="fixed inset-0 z-40" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(false) }} />
           <div className={`absolute right-0 ${positionClass} z-50 rounded-xl p-2 min-w-[190px]`}
-            style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', boxShadow: shadowDir }}>
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: shadowDir }}>
             <p className="text-[10px] font-bold px-2 py-1 mb-1" style={{ color: 'var(--fg-muted)' }}>
               {currentMemberId ? L('Transferir pra:', 'Transfer to:', 'Transferir a:') : L('Atribuir pra:', 'Assign to:', 'Asignar a:')}
             </p>
@@ -107,7 +107,7 @@ export function CardAssignMenu({ leadId, members, currentMemberId, onAssigned, o
               <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); assign(null) }}
                 disabled={assigning}
                 className="w-full text-left px-3 py-2 rounded-lg text-[12px] font-semibold hover:bg-amber-50 disabled:opacity-50 mb-1"
-                style={{ color: '#b45309', borderBottom: '1px solid #f1f5f9' }}>
+                style={{ color: '#b45309', borderBottom: '1px solid var(--bg-soft)' }}>
                 {L('← Voltar pra mim', '← Back to me', '← Devolver a mí')}
               </button>
             )}
@@ -120,13 +120,13 @@ export function CardAssignMenu({ leadId, members, currentMemberId, onAssigned, o
               <button key={m.id} onClick={(e) => { e.preventDefault(); e.stopPropagation(); assign(m.id) }}
                 disabled={assigning}
                 className="w-full text-left px-3 py-2 rounded-lg text-[12px] font-semibold hover:bg-indigo-50 disabled:opacity-50"
-                style={{ color: m.id === currentMemberId ? '#6366f1' : 'var(--fg)' }}>
+                style={{ color: m.id === currentMemberId ? 'var(--accent)' : 'var(--fg)' }}>
                 {m.name} {m.id === currentMemberId && '✓'}
               </button>
             ))}
 
             {/* Separator + Archive action */}
-            <div className="my-1" style={{ borderTop: '1px solid #f1f5f9' }} />
+            <div className="my-1" style={{ borderTop: '1px solid var(--bg-soft)' }} />
             <button
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); archive() }}
               disabled={archiving}

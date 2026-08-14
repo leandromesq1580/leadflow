@@ -20,7 +20,7 @@ export function ImpersonationBanner({ name }: { name: string }) {
   return (
     <div
       className="flex items-center justify-center gap-3 px-4 py-2.5 mb-4 rounded-xl"
-      style={{ background: 'linear-gradient(135deg, #1a1a2e, #312e81)', color: '#fff' }}
+      style={{ background: 'linear-gradient(135deg, #1a1a2e, #3b1d7a)', color: '#fff' }}
     >
       <span className="text-[13px] font-semibold">
         👁 {L('Você está vendo o sistema como', 'You are viewing the system as', 'Estás viendo el sistema como')} <strong>{name}</strong>
@@ -29,7 +29,7 @@ export function ImpersonationBanner({ name }: { name: string }) {
         onClick={stop}
         disabled={busy}
         className="text-[12px] font-bold px-3 py-1.5 rounded-lg disabled:opacity-50"
-        style={{ background: 'var(--bg-card)', color: '#312e81' }}
+        style={{ background: 'var(--bg-card)', color: '#3b1d7a' }}
       >
         {busy ? L('Voltando…', 'Returning…', 'Volviendo…') : L('← Voltar para admin', '← Back to admin', '← Volver al admin')}
       </button>

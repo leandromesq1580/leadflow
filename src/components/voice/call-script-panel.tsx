@@ -87,7 +87,7 @@ export function CallScriptPanel({ ativa, leadName, callSid }: { ativa: boolean; 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 15 }}>📜</span>
           <p style={{ margin: 0, flex: 1, fontSize: 13, fontWeight: 800 }}>
-            {cfg.script.nome} · <span style={{ color: '#a5b4fc' }}>{L('etapa', 'step', 'etapa')} {etapa + 1} {L('de', 'of', 'de')} {etapas.length}</span>
+            {cfg.script.nome} · <span style={{ color: '#c4b5fd' }}>{L('etapa', 'step', 'etapa')} {etapa + 1} {L('de', 'of', 'de')} {etapas.length}</span>
             {ouvindo && <span title={L('IA ouvindo a ligação', 'AI listening to the call', 'IA escuchando la llamada')} style={{ marginLeft: 6, fontSize: 10, color: '#34d399', fontWeight: 700 }}>● {L('ouvindo', 'listening', 'escuchando')}</span>}
           </p>
           <button onClick={() => setMini(true)} title={L('Minimizar', 'Minimize', 'Minimizar')}
@@ -99,7 +99,7 @@ export function CallScriptPanel({ ativa, leadName, callSid }: { ativa: boolean; 
             <button key={x.id} onClick={() => irManual(i)} title={`${i + 1}. ${x.titulo}`}
               style={{
                 flex: 1, height: 5, borderRadius: 99, border: 'none', cursor: 'pointer', padding: 0,
-                background: i < etapa ? '#34d399' : i === etapa ? '#818cf8' : 'rgba(255,255,255,0.14)',
+                background: i < etapa ? '#34d399' : i === etapa ? '#a78bfa' : 'rgba(255,255,255,0.14)',
               }} />
           ))}
         </div>
@@ -116,13 +116,13 @@ export function CallScriptPanel({ ativa, leadName, callSid }: { ativa: boolean; 
         )}
         <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#e2e8f0' }}>{etapa + 1}. {e.titulo}</p>
         {e.objetivo && (
-          <p style={{ margin: '3px 0 10px', fontSize: 11.5, color: '#818cf8', fontWeight: 700 }}>🎯 {e.objetivo}</p>
+          <p style={{ margin: '3px 0 10px', fontSize: 11.5, color: '#a78bfa', fontWeight: 700 }}>🎯 {e.objetivo}</p>
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
           {e.falas.map((f, i) => (
             <p key={i} style={{
               margin: 0, fontSize: 13, lineHeight: 1.45, color: 'var(--bg-soft)',
-              background: 'rgba(255,255,255,0.05)', borderLeft: '3px solid #6366f1',
+              background: 'rgba(255,255,255,0.05)', borderLeft: '3px solid var(--accent)',
               borderRadius: '0 8px 8px 0', padding: '7px 10px',
             }}>{aplicarNome(f, nome)}</p>
           ))}
@@ -147,7 +147,7 @@ export function CallScriptPanel({ ativa, leadName, callSid }: { ativa: boolean; 
             ← {L('Voltar', 'Back', 'Volver')}
           </button>
           <button onClick={() => irManual(Math.min(etapas.length - 1, etapa + 1))} disabled={etapa >= etapas.length - 1}
-            style={{ flex: 1, padding: '9px 12px', borderRadius: 10, border: 'none', background: etapa >= etapas.length - 1 ? 'rgba(52,211,153,0.25)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: 'var(--bg-card)', fontSize: 12.5, fontWeight: 800, cursor: etapa >= etapas.length - 1 ? 'default' : 'pointer' }}>
+            style={{ flex: 1, padding: '9px 12px', borderRadius: 10, border: 'none', background: etapa >= etapas.length - 1 ? 'rgba(52,211,153,0.25)' : 'linear-gradient(135deg,var(--accent),#8b5cf6)', color: 'var(--bg-card)', fontSize: 12.5, fontWeight: 800, cursor: etapa >= etapas.length - 1 ? 'default' : 'pointer' }}>
             {etapa >= etapas.length - 1 ? L('🏁 Última etapa — feche a venda', '🏁 Last step — close the sale', '🏁 Última etapa — cierra la venta') : L('Próxima etapa →', 'Next step →', 'Siguiente etapa →')}
           </button>
         </div>

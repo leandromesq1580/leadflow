@@ -64,8 +64,8 @@ export function QueuePositionCard({ dark = false }: { dark?: boolean }) {
   const ink = dark ? 'var(--m-text, #fff)' : '#1a1a2e'
   const mut = dark ? 'var(--m-muted, #94a3b8)' : '#64748b'
   const card: React.CSSProperties = dark
-    ? { background: 'rgba(99,102,241,0.10)', border: '1px solid rgba(99,102,241,0.30)', borderRadius: 16, padding: 16, marginBottom: 14 }
-    : { background: 'var(--bg-card)', border: '1px solid #e8ecf4', borderRadius: 16, padding: 18, marginBottom: 20 }
+    ? { background: 'rgba(124,58,237,0.10)', border: '1px solid rgba(124,58,237,0.30)', borderRadius: 16, padding: 16, marginBottom: 14 }
+    : { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 18, marginBottom: 20 }
 
   const best = d.best
   const semFila = d.states.length === 0
@@ -81,7 +81,7 @@ export function QueuePositionCard({ dark = false }: { dark?: boolean }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
         <span style={{ fontSize: 17 }}>🎟️</span>
         <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: ink }}>{L('Sua vez na fila', 'Your place in line', 'Tu turno en la fila')}</p>
-        <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: '#6366f1' }}>
+        <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: 'var(--accent)' }}>
           {d.credits} {d.credits === 1 ? L('crédito', 'credit', 'crédito') : L('créditos', 'credits', 'créditos')}
         </span>
       </div>
@@ -112,7 +112,7 @@ export function QueuePositionCard({ dark = false }: { dark?: boolean }) {
               {L('SUA VEZ = próximo lead do estado é seu', "YOUR TURN = the state's next lead is yours", 'TU TURNO = el próximo lead del estado es tuyo')}
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ width: 8, height: 8, borderRadius: 2, background: '#c7d2fe', display: 'inline-block' }} />
+              <span style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(139,92,246,0.35)', display: 'inline-block' }} />
               {L('Nº na fila = há gente na sua frente', 'No. in line = others are ahead of you', 'Nº en la fila = hay gente delante de ti')}
             </span>
           </div>
@@ -124,14 +124,14 @@ export function QueuePositionCard({ dark = false }: { dark?: boolean }) {
                   display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5,
                   padding: '7px 10px', borderRadius: 10,
                   background: dark ? 'rgba(255,255,255,0.04)' : 'var(--bg-soft)',
-                  borderLeft: `3px solid ${primeiro ? '#10b981' : '#c7d2fe'}`,
+                  borderLeft: `3px solid ${primeiro ? '#10b981' : 'rgba(139,92,246,0.35)'}`,
                 }}>
                   <span style={{
                     fontWeight: 800, fontSize: 11, padding: '2px 7px', borderRadius: 6,
-                    background: dark ? 'rgba(255,255,255,0.08)' : 'var(--accent-light)', color: dark ? 'var(--m-text)' : '#4f46e5',
+                    background: dark ? 'rgba(255,255,255,0.08)' : 'var(--accent-light)', color: dark ? 'var(--m-text)' : '#6d28d9',
                   }}>{s.state}</span>
                   {/* Texto explícito — não depender da cor pra entender a posição */}
-                  <span style={{ fontWeight: 800, fontSize: 11, color: primeiro ? '#059669' : '#6366f1' }}>
+                  <span style={{ fontWeight: 800, fontSize: 11, color: primeiro ? '#059669' : 'var(--accent)' }}>
                     {primeiro
                       ? L('SUA VEZ', 'YOUR TURN', 'TU TURNO')
                       : L(`${ord(s.position, t._locale)} na fila`, `${ord(s.position, t._locale)} in line`, `${ord(s.position, t._locale)} en la fila`)}

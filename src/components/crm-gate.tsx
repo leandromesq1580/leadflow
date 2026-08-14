@@ -33,7 +33,7 @@ export function CrmGate({ children, hasAccess }: Props) {
         <p className="text-[14px] leading-relaxed max-w-lg mx-auto" style={{ color: 'var(--fg-muted)' }}>
           {t.crmGate.subtitle}
         </p>
-        <p className="text-[12.5px] font-semibold mt-3" style={{ color: '#6366f1' }}>
+        <p className="text-[12.5px] font-semibold mt-3" style={{ color: 'var(--accent)' }}>
           {t._locale === 'en' ? 'Choose your plan: the longer the commitment, the lower the monthly price.' : t._locale === 'es' ? 'Elige tu plan: a mayor compromiso, menor precio por mes.' : 'Escolha o plano: quanto maior o compromisso, menor o valor por mês.'}
         </p>
       </div>
