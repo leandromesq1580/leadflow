@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { autoEnrollByStage } from '@/lib/sequence-engine'
+import { atorDaSessao, podeOperarQuadro, leadPertenceAoQuadro, registraMovimento } from '@/lib/pipeline-guard'
 
 /** GET /api/pipelines/[id]/leads — all leads grouped by stage + latest follow-up */
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: pipelineId } = await params
   const db = createAdminClient()
+
+  const ator = await atorDaSessao(db)
+  if (!ator) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { data: pipeDono } = await db.from('pipelines').select('buyer_id').eq('id', pipelineId).maybeSingle()
+  if (!pipeDono) return NextResponse.json({ error: 'Pipeline não encontrado' }, { status: 404 })
+  if (!(await podeOperarQuadro(db, ator, pipeDono.buyer_id))) {
+    return NextResponse.json({ error: 'Sem permissão nesse pipeline' }, { status: 403 })
+  }
 
   const { data, error } = await db
     .from('pipeline_leads')
@@ -60,12 +69,30 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { lead_id, stage_id } = await request.json()
   const db = createAdminClient()
 
+  // 🔒 Trava do incidente 2026-08-14: sessão obrigatória + só o dono do quadro
+  // (ou admin/agência) adiciona, e o lead precisa PERTENCER àquele dono.
+  const ator = await atorDaSessao(db)
+  if (!ator) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { data: pipeDono } = await db.from('pipelines').select('buyer_id').eq('id', pipelineId).maybeSingle()
+  if (!pipeDono) return NextResponse.json({ error: 'Pipeline não encontrado' }, { status: 404 })
+  if (!(await podeOperarQuadro(db, ator, pipeDono.buyer_id))) {
+    return NextResponse.json({ error: 'Sem permissão nesse pipeline' }, { status: 403 })
+  }
+  if (!ator.isAdmin && !(await leadPertenceAoQuadro(db, lead_id, pipeDono.buyer_id))) {
+    return NextResponse.json({ error: 'Esse lead pertence a outra conta — não dá pra colocar nesse quadro.' }, { status: 403 })
+  }
+
   const { data, error } = await db
     .from('pipeline_leads')
     .upsert({ lead_id, pipeline_id: pipelineId, stage_id, position: 0, moved_at: new Date().toISOString() }, { onConflict: 'lead_id,pipeline_id' })
     .select('*, pipelines(buyer_id)').single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  registraMovimento(db, {
+    lead_id, pipeline_id: pipelineId, stage_id: stage_id || null,
+    action: 'add', via: 'POST /api/pipelines/[id]/leads', ator,
+  }).catch(() => {})
 
   // Auto-enroll em sequences com trigger_stage_id = stage_id
   const buyerId = (data as any).buyer_id || (data as any).pipelines?.buyer_id

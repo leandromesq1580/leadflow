@@ -256,13 +256,20 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
       const pipeChanged = pendingPipelineId && pendingPipelineId !== pipelineLead.pipeline?.id
       const stageChanged = pendingStageId !== pipelineLead.stage_id
       if (pipeChanged) {
-        // Muda de pipeline: deleta entry antiga + cria nova
-        await fetch(`/api/pipeline-leads/${pipelineLead.id}`, { method: 'DELETE' })
-        await fetch(`/api/pipelines/${pendingPipelineId}/leads`, {
+        // Muda de pipeline: cria a entry nova PRIMEIRO e só deleta a antiga se o
+        // servidor aceitou (a trava de dono pode recusar — lead não pode ficar
+        // órfão fora de quadro; incidente 2026-08-14).
+        const criada = await fetch(`/api/pipelines/${pendingPipelineId}/leads`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ lead_id: leadId, stage_id: pendingStageId }),
         })
+        if (criada.ok) {
+          await fetch(`/api/pipeline-leads/${pipelineLead.id}`, { method: 'DELETE' })
+        } else {
+          const err = await criada.json().catch(() => null)
+          alert(err?.error || 'Não consegui mover pra esse pipeline.')
+        }
       } else if (stageChanged) {
         await fetch(`/api/pipeline-leads/${pipelineLead.id}`, {
           method: 'PATCH',

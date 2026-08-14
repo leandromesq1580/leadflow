@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { runAutomations } from '@/lib/automation-engine'
 import { autoEnrollByStage, cancelEnrollmentsForStage, processSequencesForLead } from '@/lib/sequence-engine'
+import { atorDaSessao, podeOperarQuadro, registraMovimento } from '@/lib/pipeline-guard'
 
 /** PATCH /api/pipeline-leads/[id] — move lead to different stage */
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -9,17 +10,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const { stage_id, position } = await request.json()
   const db = createAdminClient()
 
-  // Pega o stage ANTIGO antes de atualizar — usado pra cancelar sequences
-  // cujo trigger era esse stage (lead saiu dele → sequence nao faz mais sentido)
-  let prevStageId: string | null = null
-  if (stage_id !== undefined) {
-    const { data: prev } = await db
-      .from('pipeline_leads')
-      .select('stage_id')
-      .eq('id', id)
-      .maybeSingle()
-    prevStageId = prev?.stage_id || null
+  // 🔒 Trava do incidente 2026-08-14: sessão + dono do quadro (ou admin/agência).
+  const ator = await atorDaSessao(db)
+  if (!ator) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { data: alvo } = await db.from('pipeline_leads')
+    .select('stage_id, pipeline_id, lead_id, pipelines(buyer_id)').eq('id', id).maybeSingle()
+  if (!alvo) return NextResponse.json({ error: 'Card não encontrado' }, { status: 404 })
+  const donoDoQuadro = (alvo as any).pipelines?.buyer_id as string | undefined
+  if (!donoDoQuadro || !(await podeOperarQuadro(db, ator, donoDoQuadro))) {
+    return NextResponse.json({ error: 'Sem permissão nesse pipeline' }, { status: 403 })
   }
+
+  // Stage ANTIGO — cancela sequences cujo trigger era ele (lead saiu → não faz mais sentido)
+  const prevStageId: string | null = alvo.stage_id || null
 
   const update: Record<string, unknown> = { moved_at: new Date().toISOString() }
   if (stage_id !== undefined) update.stage_id = stage_id
@@ -27,6 +30,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   const { data, error } = await db.from('pipeline_leads').update(update).eq('id', id).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  if (stage_id && stage_id !== prevStageId) {
+    registraMovimento(db, {
+      lead_id: data?.lead_id || alvo.lead_id, pipeline_id: data?.pipeline_id || alvo.pipeline_id,
+      stage_id, from_pipeline_id: alvo.pipeline_id, from_stage_id: prevStageId,
+      action: 'move', via: 'PATCH /api/pipeline-leads/[id]', ator,
+    }).catch(() => {})
+  }
 
   // pipeline_leads NAO tem buyer_id — precisa buscar via pipelines.buyer_id.
   // Antes o codigo usava data.buyer_id (undefined) → automations e sequences
@@ -88,7 +99,26 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const db = createAdminClient()
+
+  // 🔒 Trava do incidente 2026-08-14: sessão + dono do quadro (ou admin/agência).
+  const ator = await atorDaSessao(db)
+  if (!ator) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { data: alvo } = await db.from('pipeline_leads')
+    .select('stage_id, pipeline_id, lead_id, pipelines(buyer_id)').eq('id', id).maybeSingle()
+  if (!alvo) return NextResponse.json({ success: true }) // já não existe
+  const donoDoQuadro = (alvo as any).pipelines?.buyer_id as string | undefined
+  if (!donoDoQuadro || !(await podeOperarQuadro(db, ator, donoDoQuadro))) {
+    return NextResponse.json({ error: 'Sem permissão nesse pipeline' }, { status: 403 })
+  }
+
   const { error } = await db.from('pipeline_leads').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  registraMovimento(db, {
+    lead_id: alvo.lead_id, pipeline_id: null, stage_id: null,
+    from_pipeline_id: alvo.pipeline_id, from_stage_id: alvo.stage_id,
+    action: 'remove', via: 'DELETE /api/pipeline-leads/[id]', ator,
+  }).catch(() => {})
+
   return NextResponse.json({ success: true })
 }

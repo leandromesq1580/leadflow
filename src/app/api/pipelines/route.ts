@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { atorDaSessao, podeOperarQuadro } from '@/lib/pipeline-guard'
 
 const DEFAULT_STAGES = [
   { name: 'Novo Lead', color: '#3b82f6', position: 0 },
@@ -42,6 +43,14 @@ export async function POST(request: NextRequest) {
   if (!buyer_id || !name) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
 
   const db = createAdminClient()
+
+  // 🔒 Trava do incidente 2026-08-14: criar pipeline (e popular com os leads da
+  // conta) só o próprio dono, admin ou agência com o dono na equipe.
+  const ator = await atorDaSessao(db)
+  if (!ator) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await podeOperarQuadro(db, ator, buyer_id))) {
+    return NextResponse.json({ error: 'Sem permissão nessa conta' }, { status: 403 })
+  }
 
   // Check if first pipeline (make it default)
   const { count } = await db.from('pipelines').select('id', { count: 'exact', head: true }).eq('buyer_id', buyer_id)
