@@ -94,6 +94,26 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     action: 'add', via: 'POST /api/pipelines/[id]/leads', ator,
   }).catch(() => {})
 
+  // 🔒 LEAD ÚNICO (regra do dono, 14/08): entrar num quadro REMOVE o lead de
+  // quadros de outras contas — mudança, nunca cópia. Um lead jamais aparece
+  // em dois usuários ao mesmo tempo. (Migration 039 aplica o mesmo no banco.)
+  try {
+    const { data: outras } = await db.from('pipeline_leads')
+      .select('id, pipeline_id, stage_id, pipelines(buyer_id)')
+      .eq('lead_id', lead_id).neq('pipeline_id', pipelineId)
+    for (const o of outras || []) {
+      const donoOutro = (o as any).pipelines?.buyer_id
+      if (donoOutro && donoOutro !== pipeDono.buyer_id) {
+        await db.from('pipeline_leads').delete().eq('id', o.id)
+        registraMovimento(db, {
+          lead_id, pipeline_id: null, stage_id: null,
+          from_pipeline_id: o.pipeline_id, from_stage_id: o.stage_id,
+          action: 'remove', via: 'lead-unico (saiu de outra conta ao entrar aqui)', ator,
+        }).catch(() => {})
+      }
+    }
+  } catch { /* melhor-esforço: o trigger 039 é a garantia final */ }
+
   // Auto-enroll em sequences com trigger_stage_id = stage_id
   const buyerId = (data as any).buyer_id || (data as any).pipelines?.buyer_id
   if (stage_id && buyerId && lead_id) {
