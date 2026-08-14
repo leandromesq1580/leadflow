@@ -121,37 +121,37 @@ export default function WhatsAppPage() {
   return (
     <div>
       <div className="mb-4">
-        <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>{t.whatsapp.title}</h1>
-        <p className="text-[13px]" style={{ color: '#94a3b8' }}>
+        <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{t.whatsapp.title}</h1>
+        <p className="text-[13px]" style={{ color: 'var(--fg-muted)' }}>
           {t.whatsapp.conversationsCount(activeCount, totalUnread)}
         </p>
       </div>
 
-      <div className="rounded-2xl overflow-hidden flex" style={{ background: '#fff', border: '1px solid #e8ecf4', height: 'calc(100vh - 200px)', minHeight: 500 }}>
+      <div className="rounded-2xl overflow-hidden flex" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', height: 'calc(100vh - 200px)', minHeight: 500 }}>
         {/* Lista de conversas */}
         <div className="w-[320px] flex flex-col" style={{ borderRight: '1px solid #e8ecf4' }}>
           <div className="px-4 py-3" style={{ borderBottom: '1px solid #e8ecf4' }}>
-            <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: '#94a3b8' }}>{t.whatsapp.conversations}</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--fg-muted)' }}>{t.whatsapp.conversations}</p>
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder={t.whatsapp.search}
               className="w-full px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
-              style={{ background: '#f8fafc', border: '1px solid #e8ecf4' }}
+              style={{ background: 'var(--bg-soft)', border: '1px solid #e8ecf4' }}
             />
           </div>
 
           <div className="flex-1 overflow-y-auto">
             {loading ? (
-              <p className="text-[12px] text-center py-8" style={{ color: '#94a3b8' }}>{t.common.loading}</p>
+              <p className="text-[12px] text-center py-8" style={{ color: 'var(--fg-muted)' }}>{t.common.loading}</p>
             ) : filtered.length === 0 ? (
               <div className="text-center py-12 px-4">
                 <p className="text-[32px] mb-2">💬</p>
-                <p className="text-[13px] font-semibold" style={{ color: '#64748b' }}>
+                <p className="text-[13px] font-semibold" style={{ color: 'var(--fg-secondary)' }}>
                   {search ? t.whatsapp.searchEmpty : t.whatsapp.empty}
                 </p>
-                <p className="text-[11px] mt-1" style={{ color: '#94a3b8' }}>{t.whatsapp.emptyHelp}</p>
+                <p className="text-[11px] mt-1" style={{ color: 'var(--fg-muted)' }}>{t.whatsapp.emptyHelp}</p>
               </div>
             ) : (
               filtered.map(c => {
@@ -163,7 +163,7 @@ export default function WhatsAppPage() {
                     onClick={() => setSelectedId(c.lead_id)}
                     className="w-full text-left px-4 py-3 flex items-start gap-3 transition-colors"
                     style={{
-                      background: isActive ? '#eef2ff' : 'transparent',
+                      background: isActive ? 'var(--accent-light)' : 'transparent',
                       borderBottom: '1px solid #f1f5f9',
                       borderLeft: isActive ? '3px solid #6366f1' : '3px solid transparent',
                     }}
@@ -174,13 +174,13 @@ export default function WhatsAppPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-[13px] font-bold truncate" style={{ color: '#1a1a2e' }}>{c.lead_name}</p>
-                        <span className="text-[10px] font-medium flex-shrink-0" style={{ color: '#94a3b8' }}>
+                        <p className="text-[13px] font-bold truncate" style={{ color: 'var(--fg)' }}>{c.lead_name}</p>
+                        <span className="text-[10px] font-medium flex-shrink-0" style={{ color: 'var(--fg-muted)' }}>
                           {timeAgoShort(c.last_sent_at)}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <p className="text-[11px] truncate flex-1" style={{ color: c.unread > 0 ? '#1a1a2e' : '#94a3b8', fontWeight: c.unread > 0 ? 600 : 400 }}>
+                        <p className="text-[11px] truncate flex-1" style={{ color: c.unread > 0 ? 'var(--fg)' : 'var(--fg-muted)', fontWeight: c.unread > 0 ? 600 : 400 }}>
                           {c.last_direction === 'out' && '✓ '}
                           {c.last_body}
                         </p>
@@ -209,8 +209,8 @@ export default function WhatsAppPage() {
                   {initials(selected.lead_name)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>{selected.lead_name}</p>
-                  <div className="flex items-center gap-2 text-[11px]" style={{ color: '#64748b' }}>
+                  <p className="text-[14px] font-bold" style={{ color: 'var(--fg)' }}>{selected.lead_name}</p>
+                  <div className="flex items-center gap-2 text-[11px]" style={{ color: 'var(--fg-secondary)' }}>
                     <span>{selected.lead_phone}</span>
                     {selected.lead_state && <><span>·</span><span>{selected.lead_state}</span></>}
                     {selected.lead_ai_score != null && selected.lead_ai_score > 0 && (
@@ -221,7 +221,7 @@ export default function WhatsAppPage() {
                 <a
                   href={`/dashboard/pipeline?lead=${selected.lead_id}`}
                   className="px-3 py-1.5 rounded-lg text-[11px] font-bold"
-                  style={{ background: '#f1f5f9', color: '#475569' }}
+                  style={{ background: 'var(--bg-soft)', color: 'var(--fg-secondary)' }}
                 >
                   {t.whatsapp.openInPipeline}
                 </a>
@@ -233,8 +233,8 @@ export default function WhatsAppPage() {
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
               <p className="text-[42px] mb-3">💬</p>
-              <p className="text-[15px] font-bold" style={{ color: '#1a1a2e' }}>{t.whatsapp.selectChat}</p>
-              <p className="text-[12px] mt-1 max-w-xs" style={{ color: '#94a3b8' }}>{t.whatsapp.selectChatHelp}</p>
+              <p className="text-[15px] font-bold" style={{ color: 'var(--fg)' }}>{t.whatsapp.selectChat}</p>
+              <p className="text-[12px] mt-1 max-w-xs" style={{ color: 'var(--fg-muted)' }}>{t.whatsapp.selectChatHelp}</p>
             </div>
           )}
         </div>

@@ -13,7 +13,7 @@ interface Props {
   buyerId: string
 }
 
-const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#ef4444', '#64748b']
+const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#ef4444', 'var(--fg-secondary)']
 
 export function TagPicker({ leadId, buyerId }: Props) {
   const [allTags, setAllTags] = useState<Tag[]>([])
@@ -78,13 +78,13 @@ export function TagPicker({ leadId, buyerId }: Props) {
         ))}
         <button onClick={() => setPicking(!picking)}
           className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-          style={{ background: '#f1f5f9', color: '#64748b', border: '1px dashed #cbd5e1' }}>
+          style={{ background: 'var(--bg-soft)', color: 'var(--fg-secondary)', border: '1px dashed #cbd5e1' }}>
           + Tag
         </button>
       </div>
 
       {picking && (
-        <div className="mt-2 p-3 rounded-lg" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
+        <div className="mt-2 p-3 rounded-lg" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }}>
           {availableTags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-2">
               {availableTags.map(t => (
@@ -105,7 +105,7 @@ export function TagPicker({ leadId, buyerId }: Props) {
               <input value={newName} onChange={e => setNewName(e.target.value)}
                 placeholder="Nome da tag" autoFocus
                 className="flex-1 px-2 py-1 rounded text-[11px]"
-                style={{ background: '#fff', border: '1px solid #e8ecf4' }} />
+                style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }} />
               <div className="flex gap-0.5">
                 {COLORS.map(c => (
                   <button key={c} onClick={() => setNewColor(c)}

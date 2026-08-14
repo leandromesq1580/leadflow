@@ -68,10 +68,10 @@ const FU_META_BY_LOCALE = {
 
 const FU_COLOR: Record<string, { icon: string; bg: string; color: string }> = {
   call:     { icon: '📞', bg: '#eff6ff', color: '#1d4ed8' },
-  meeting:  { icon: '🤝', bg: '#fef3c7', color: '#92400e' },
-  whatsapp: { icon: '💬', bg: '#dcfce7', color: '#15803d' },
+  meeting:  { icon: '🤝', bg: 'var(--warn-line)', color: '#92400e' },
+  whatsapp: { icon: '💬', bg: 'var(--ok-line)', color: '#15803d' },
   email:    { icon: '✉️', bg: '#f3e8ff', color: '#6b21a8' },
-  note:     { icon: '📝', bg: '#f1f5f9', color: '#475569' },
+  note:     { icon: '📝', bg: 'var(--bg-soft)', color: 'var(--fg-secondary)' },
 }
 
 // Horario Eastern (EUA) em AM/PM — o lead mora nos EUA, nao no Brasil
@@ -104,7 +104,7 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    background: '#fff',
+    background: 'var(--bg-card)',
     borderRadius: 14,
     padding: '14px 16px',
     marginBottom: 8,
@@ -147,9 +147,9 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
           {lead.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-bold truncate" style={{ color: '#1a1a2e' }}>{lead.name}</p>
+          <p className="text-[13px] font-bold truncate" style={{ color: 'var(--fg)' }}>{lead.name}</p>
           {lead.interest && (
-            <p className="text-[10px] truncate" style={{ color: '#94a3b8' }}>{lead.interest}</p>
+            <p className="text-[10px] truncate" style={{ color: 'var(--fg-muted)' }}>{lead.interest}</p>
           )}
         </div>
         <CardAssignMenu
@@ -165,7 +165,7 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
       {lead.phone && (
         <div className="flex items-center gap-1.5 mb-2.5 ml-[42px]">
           <span className="text-[10px]">📞</span>
-          <span className="text-[12px] font-semibold" style={{ color: '#475569' }}>{privacy.mask(lead.phone, 'phone')}</span>
+          <span className="text-[12px] font-semibold" style={{ color: 'var(--fg-secondary)' }}>{privacy.mask(lead.phone, 'phone')}</span>
         </div>
       )}
 
@@ -198,11 +198,11 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
           )}
           {lead.type === 'hot' && (
             <span className="text-[9px] font-bold px-2 py-[3px] rounded-md"
-              style={{ background: '#fef3c7', color: '#b45309' }}>{t.card.hot}</span>
+              style={{ background: 'var(--warn-line)', color: '#b45309' }}>{t.card.hot}</span>
           )}
           {lead.contract_closed && (
             <span className="text-[9px] font-bold px-2 py-[3px] rounded-md"
-              style={{ background: '#dcfce7', color: '#15803d' }}>{t.card.closed}</span>
+              style={{ background: 'var(--ok-line)', color: '#15803d' }}>{t.card.closed}</span>
           )}
           {showStale && (
             <span className="text-[9px] font-bold px-2 py-[3px] rounded-md flex items-center gap-1"

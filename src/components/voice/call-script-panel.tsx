@@ -91,7 +91,7 @@ export function CallScriptPanel({ ativa, leadName, callSid }: { ativa: boolean; 
             {ouvindo && <span title={L('IA ouvindo a ligação', 'AI listening to the call', 'IA escuchando la llamada')} style={{ marginLeft: 6, fontSize: 10, color: '#34d399', fontWeight: 700 }}>● {L('ouvindo', 'listening', 'escuchando')}</span>}
           </p>
           <button onClick={() => setMini(true)} title={L('Minimizar', 'Minimize', 'Minimizar')}
-            style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 14, padding: 2 }}>—</button>
+            style={{ background: 'none', border: 'none', color: 'var(--fg-secondary)', cursor: 'pointer', fontSize: 14, padding: 2 }}>—</button>
         </div>
         {/* trilha de etapas clicável */}
         <div style={{ display: 'flex', gap: 4, marginTop: 10 }}>
@@ -121,7 +121,7 @@ export function CallScriptPanel({ ativa, leadName, callSid }: { ativa: boolean; 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
           {e.falas.map((f, i) => (
             <p key={i} style={{
-              margin: 0, fontSize: 13, lineHeight: 1.45, color: '#f1f5f9',
+              margin: 0, fontSize: 13, lineHeight: 1.45, color: 'var(--bg-soft)',
               background: 'rgba(255,255,255,0.05)', borderLeft: '3px solid #6366f1',
               borderRadius: '0 8px 8px 0', padding: '7px 10px',
             }}>{aplicarNome(f, nome)}</p>
@@ -139,15 +139,15 @@ export function CallScriptPanel({ ativa, leadName, callSid }: { ativa: boolean; 
       {/* avanço */}
       <div style={{ padding: '10px 14px 12px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         {e.gatilho && (
-          <p style={{ margin: '0 0 8px', fontSize: 11, color: '#94a3b8' }}>✅ {L('Avance quando:', 'Move on when:', 'Avanza cuando:')} <b style={{ color: '#cbd5e1' }}>{e.gatilho}</b></p>
+          <p style={{ margin: '0 0 8px', fontSize: 11, color: 'var(--fg-muted)' }}>✅ {L('Avance quando:', 'Move on when:', 'Avanza cuando:')} <b style={{ color: '#cbd5e1' }}>{e.gatilho}</b></p>
         )}
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => irManual(Math.max(0, etapa - 1))} disabled={etapa === 0}
-            style={{ padding: '9px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: etapa === 0 ? 'default' : 'pointer', opacity: etapa === 0 ? 0.4 : 1 }}>
+            style={{ padding: '9px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: 'var(--bg-card)', fontSize: 12, fontWeight: 700, cursor: etapa === 0 ? 'default' : 'pointer', opacity: etapa === 0 ? 0.4 : 1 }}>
             ← {L('Voltar', 'Back', 'Volver')}
           </button>
           <button onClick={() => irManual(Math.min(etapas.length - 1, etapa + 1))} disabled={etapa >= etapas.length - 1}
-            style={{ flex: 1, padding: '9px 12px', borderRadius: 10, border: 'none', background: etapa >= etapas.length - 1 ? 'rgba(52,211,153,0.25)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', fontSize: 12.5, fontWeight: 800, cursor: etapa >= etapas.length - 1 ? 'default' : 'pointer' }}>
+            style={{ flex: 1, padding: '9px 12px', borderRadius: 10, border: 'none', background: etapa >= etapas.length - 1 ? 'rgba(52,211,153,0.25)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: 'var(--bg-card)', fontSize: 12.5, fontWeight: 800, cursor: etapa >= etapas.length - 1 ? 'default' : 'pointer' }}>
             {etapa >= etapas.length - 1 ? L('🏁 Última etapa — feche a venda', '🏁 Last step — close the sale', '🏁 Última etapa — cierra la venta') : L('Próxima etapa →', 'Next step →', 'Siguiente etapa →')}
           </button>
         </div>

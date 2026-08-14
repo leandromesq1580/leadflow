@@ -27,7 +27,7 @@ export function MobileNav(props: { userName?: string; isAgency?: boolean; buyerI
           <div onClick={() => setOpen(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.55)' }} />
           <div
             onClick={e => { const t = e.target as HTMLElement; if (t.closest('a')) setOpen(false) }}
-            style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 272, overflowY: 'auto', background: '#fff', boxShadow: '8px 0 30px rgba(15,23,42,0.25)' }}>
+            style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 272, overflowY: 'auto', background: 'var(--bg-card)', boxShadow: '8px 0 30px rgba(15,23,42,0.25)' }}>
             <Sidebar type="buyer" userName={props.userName} isAgency={props.isAgency} buyerId={props.buyerId} crmPlan={props.crmPlan} isAdmin={props.isAdmin} podeVerApolices={props.podeVerApolices} />
           </div>
           <button onClick={() => setOpen(false)} aria-label={L('Fechar menu', 'Close menu', 'Cerrar menú')}

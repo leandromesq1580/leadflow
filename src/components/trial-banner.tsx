@@ -41,7 +41,7 @@ export function TrialBanner({ daysLeft }: { daysLeft: number }) {
         <Link
           href="/dashboard/credits"
           className="px-4 py-2 rounded-lg text-[12px] font-bold"
-          style={{ background: '#fff', color: urgent ? '#92400e' : '#3730a3', border: '1px solid rgba(0,0,0,0.1)' }}
+          style={{ background: 'var(--bg-card)', color: urgent ? '#92400e' : '#3730a3', border: '1px solid rgba(0,0,0,0.1)' }}
         >
           {t.trialBanner.seePlans}
         </Link>

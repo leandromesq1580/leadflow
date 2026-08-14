@@ -144,7 +144,7 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
   return (
     <div className="space-y-6">
       {error && (
-        <div className="px-5 py-3 rounded-xl text-[13px] font-semibold" style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
+        <div className="px-5 py-3 rounded-xl text-[13px] font-semibold" style={{ background: 'var(--err-soft)', color: '#dc2626', border: '1px solid #fecaca' }}>
           ⚠️ {error}
         </div>
       )}
@@ -162,7 +162,7 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
         <div className="flex items-center justify-between">
           <div>
             <PermissionBadge state={pushPerm} subscribed={pushSubscribed} />
-            <p className="text-[11px] mt-1.5" style={{ color: '#94a3b8' }}>
+            <p className="text-[11px] mt-1.5" style={{ color: 'var(--fg-muted)' }}>
               {pushPerm === 'granted' && pushSubscribed && L('Tudo certo. Notificações chegarão neste dispositivo.', 'All set. Notifications will arrive on this device.', 'Todo listo. Las notificaciones llegarán a este dispositivo.')}
               {pushPerm === 'granted' && !pushSubscribed && L('Permissão concedida mas não inscrito. Clique em "Ativar".', 'Permission granted but not subscribed. Click "Enable".', 'Permiso concedido pero sin suscripción. Haz clic en "Activar".')}
               {pushPerm === 'default' && L('Clique em "Ativar" e aceite no popup do navegador.', 'Click "Enable" and accept in the browser popup.', 'Haz clic en "Activar" y acepta en el popup del navegador.')}
@@ -202,8 +202,8 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
             onChange={v => setPrefs(p => ({ ...p, push_enabled: v }))}
           />
           <div>
-            <p className="text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>
-              {L('Avisar quanto tempo antes?', 'How long before should we alert you?', '¿Con cuánta anticipación avisarte?')} <span className="font-normal" style={{ color: '#94a3b8' }}>{L('(escolha 1 ou mais)', '(choose 1 or more)', '(elige 1 o más)')}</span>
+            <p className="text-[12px] font-bold mb-2" style={{ color: 'var(--fg)' }}>
+              {L('Avisar quanto tempo antes?', 'How long before should we alert you?', '¿Con cuánta anticipación avisarte?')} <span className="font-normal" style={{ color: 'var(--fg-muted)' }}>{L('(escolha 1 ou mais)', '(choose 1 or more)', '(elige 1 o más)')}</span>
             </p>
             <IntervalChips
               selected={prefs.reminder_intervals}
@@ -229,7 +229,7 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
           {prefs.sound_enabled && (
             <>
               <div>
-                <p className="text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>{L('Tipo de som', 'Sound type', 'Tipo de sonido')}</p>
+                <p className="text-[12px] font-bold mb-2" style={{ color: 'var(--fg)' }}>{L('Tipo de som', 'Sound type', 'Tipo de sonido')}</p>
                 <div className="grid sm:grid-cols-3 gap-2">
                   {soundOptions(L).map(opt => {
                     const active = prefs.sound_file === opt.id
@@ -239,16 +239,16 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
                         onClick={() => setPrefs(p => ({ ...p, sound_file: opt.id }))}
                         className="text-left rounded-xl p-3 transition-all"
                         style={{
-                          background: active ? '#eef2ff' : '#f8f9fc',
-                          border: `1px solid ${active ? '#6366f1' : '#e8ecf4'}`,
-                          color: '#1a1a2e',
+                          background: active ? 'var(--accent-light)' : 'var(--bg)',
+                          border: `1px solid ${active ? '#6366f1' : 'var(--border)'}`,
+                          color: 'var(--fg)',
                         }}
                       >
                         <p className="text-[13px] font-extrabold flex items-center gap-1.5">
                           {active && <span style={{ color: '#6366f1' }}>●</span>}
                           {opt.label}
                         </p>
-                        <p className="text-[11px] mt-0.5" style={{ color: '#64748b' }}>{opt.description}</p>
+                        <p className="text-[11px] mt-0.5" style={{ color: 'var(--fg-secondary)' }}>{opt.description}</p>
                       </button>
                     )
                   })}
@@ -257,8 +257,8 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <p className="text-[12px] font-bold" style={{ color: '#1a1a2e' }}>Volume</p>
-                  <span className="text-[11px] tabular-nums" style={{ color: '#64748b' }}>{prefs.sound_volume}%</span>
+                  <p className="text-[12px] font-bold" style={{ color: 'var(--fg)' }}>Volume</p>
+                  <span className="text-[11px] tabular-nums" style={{ color: 'var(--fg-secondary)' }}>{prefs.sound_volume}%</span>
                 </div>
                 <input
                   type="range" min={0} max={100} step={1}
@@ -272,7 +272,7 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
                 type="button"
                 onClick={() => playReminderSound(prefs.sound_file, prefs.sound_volume)}
                 className="px-4 py-2 rounded-xl text-[12px] font-bold"
-                style={{ background: '#f1f5f9', color: '#1a1a2e', border: '1px solid #e8ecf4' }}
+                style={{ background: 'var(--bg-soft)', color: 'var(--fg)', border: '1px solid #e8ecf4' }}
               >
                 ▶ {L('Testar som', 'Test sound', 'Probar sonido')}
               </button>
@@ -300,7 +300,7 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
           />
           {prefs.whatsapp_enabled && (
             <div>
-              <p className="text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>{L('Avisar quanto tempo antes?', 'How long before should we alert you?', '¿Con cuánta anticipación avisarte?')}</p>
+              <p className="text-[12px] font-bold mb-2" style={{ color: 'var(--fg)' }}>{L('Avisar quanto tempo antes?', 'How long before should we alert you?', '¿Con cuánta anticipación avisarte?')}</p>
               <IntervalChips
                 selected={prefs.whatsapp_intervals}
                 onToggle={m => toggleInterval('whatsapp_intervals', m)}
@@ -325,7 +325,7 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
           />
           {prefs.email_enabled && (
             <div>
-              <p className="text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>{L('Avisar quanto tempo antes?', 'How long before should we alert you?', '¿Con cuánta anticipación avisarte?')}</p>
+              <p className="text-[12px] font-bold mb-2" style={{ color: 'var(--fg)' }}>{L('Avisar quanto tempo antes?', 'How long before should we alert you?', '¿Con cuánta anticipación avisarte?')}</p>
               <IntervalChips
                 selected={prefs.email_intervals}
                 onToggle={m => toggleInterval('email_intervals', m)}
@@ -348,7 +348,7 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
         <a
           href="/dashboard/settings"
           className="text-[13px] font-semibold"
-          style={{ color: '#64748b' }}
+          style={{ color: 'var(--fg-secondary)' }}
         >
           ← {L('Voltar pra configurações', 'Back to settings', 'Volver a configuración')}
         </a>
@@ -359,9 +359,9 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
 
 function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl p-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-      <h2 className="text-[15px] font-bold" style={{ color: '#1a1a2e' }}>{title}</h2>
-      {subtitle && <p className="text-[12px] mt-0.5 mb-4" style={{ color: '#94a3b8' }}>{subtitle}</p>}
+    <div className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+      <h2 className="text-[15px] font-bold" style={{ color: 'var(--fg)' }}>{title}</h2>
+      {subtitle && <p className="text-[12px] mt-0.5 mb-4" style={{ color: 'var(--fg-muted)' }}>{subtitle}</p>}
       {children}
     </div>
   )
@@ -373,8 +373,8 @@ function Toggle({
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="flex-1">
-        <p className="text-[13px] font-semibold" style={{ color: disabled ? '#94a3b8' : '#1a1a2e' }}>{label}</p>
-        {description && <p className="text-[11px] mt-0.5" style={{ color: '#94a3b8' }}>{description}</p>}
+        <p className="text-[13px] font-semibold" style={{ color: disabled ? 'var(--fg-muted)' : 'var(--fg)' }}>{label}</p>
+        {description && <p className="text-[11px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>{description}</p>}
       </div>
       <button
         onClick={() => !disabled && onChange(!checked)}
@@ -401,9 +401,9 @@ function IntervalChips({ selected, onToggle }: { selected: number[]; onToggle: (
             onClick={() => onToggle(min)}
             className="px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all"
             style={{
-              background: active ? '#6366f1' : '#f8f9fc',
-              color: active ? '#fff' : '#64748b',
-              border: `1px solid ${active ? '#6366f1' : '#e8ecf4'}`,
+              background: active ? '#6366f1' : 'var(--bg)',
+              color: active ? '#fff' : 'var(--fg-secondary)',
+              border: `1px solid ${active ? '#6366f1' : 'var(--border)'}`,
             }}
           >
             {min < 60 ? `${min}min` : `${min / 60}h`}
@@ -426,8 +426,8 @@ function PermissionBadge({ state, subscribed }: { state: 'default' | 'granted' |
     : state === 'denied' ? '#dc2626'
     : '#64748b'
   const bg = state === 'granted' && subscribed ? '#ecfdf5'
-    : state === 'denied' ? '#fef2f2'
-    : '#f1f5f9'
+    : state === 'denied' ? 'var(--err-soft)'
+    : 'var(--bg-soft)'
   return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold"
       style={{ background: bg, color }}>

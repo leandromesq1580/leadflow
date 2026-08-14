@@ -49,13 +49,13 @@ export function ExchangeBox({ leadId }: { leadId: string }) {
     <div className="rounded-xl p-3 mt-3 text-[12px] font-semibold" style={{ background: bg, color }}>{txt}</div>
   )
 
-  if (st === 'pending') return chip(L('🔁 Troca solicitada — aguardando análise do admin.', '🔁 Exchange requested — awaiting admin review.', '🔁 Cambio solicitado — esperando revisión del admin.'), '#92400e', '#fef3c7')
+  if (st === 'pending') return chip(L('🔁 Troca solicitada — aguardando análise do admin.', '🔁 Exchange requested — awaiting admin review.', '🔁 Cambio solicitado — esperando revisión del admin.'), '#92400e', 'var(--warn-line)')
   if (st === 'approved') return chip(L('✅ Troca aprovada — crédito devolvido.', '✅ Exchange approved — credit refunded.', '✅ Cambio aprobado — crédito devuelto.'), '#065f46', '#d1fae5')
   if (st === 'denied') return chip(L('❌ Pedido de troca negado pelo admin.', '❌ Exchange request denied by the admin.', '❌ Solicitud de cambio negada por el admin.'), '#991b1b', '#fee2e2')
 
   if (e.eligible) {
     return (
-      <div className="rounded-xl p-4 mt-3" style={{ background: '#eef2ff', border: '1px solid #c7d2fe' }}>
+      <div className="rounded-xl p-4 mt-3" style={{ background: 'var(--accent-light)', border: '1px solid #c7d2fe' }}>
         <p className="text-[13px] font-bold" style={{ color: '#3730a3' }}>{L('🔁 Este lead é elegível pra troca', '🔁 This lead is eligible for exchange', '🔁 Este lead es elegible para cambio')}</p>
         <p className="text-[12px] mt-1" style={{ color: '#4f46e5' }}>
           {L(

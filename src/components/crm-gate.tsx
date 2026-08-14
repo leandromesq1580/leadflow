@@ -29,8 +29,8 @@ export function CrmGate({ children, hasAccess }: Props) {
           style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)' }}>
           <span className="text-[30px]">🔒</span>
         </div>
-        <h2 className="text-[24px] font-extrabold mb-2" style={{ color: '#1a1a2e' }}>{t.crmGate.title}</h2>
-        <p className="text-[14px] leading-relaxed max-w-lg mx-auto" style={{ color: '#94a3b8' }}>
+        <h2 className="text-[24px] font-extrabold mb-2" style={{ color: 'var(--fg)' }}>{t.crmGate.title}</h2>
+        <p className="text-[14px] leading-relaxed max-w-lg mx-auto" style={{ color: 'var(--fg-muted)' }}>
           {t.crmGate.subtitle}
         </p>
         <p className="text-[12.5px] font-semibold mt-3" style={{ color: '#6366f1' }}>

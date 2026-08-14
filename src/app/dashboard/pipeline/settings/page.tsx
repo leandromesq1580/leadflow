@@ -177,14 +177,14 @@ export default function PipelineSettingsPage() {
   return (
     <div className="max-w-3xl mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>{L('Gerenciar Pipelines', 'Manage Pipelines', 'Administrar Pipelines')}</h1>
+        <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{L('Gerenciar Pipelines', 'Manage Pipelines', 'Administrar Pipelines')}</h1>
         <Link href="/dashboard/pipeline" className="text-[13px] font-bold" style={{ color: '#6366f1' }}>
           {L('← Voltar ao Kanban', '← Back to Kanban', '← Volver al Kanban')}
         </Link>
       </div>
 
       {/* Create new pipeline */}
-      <div className="rounded-xl p-4 mb-6 flex gap-3" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
+      <div className="rounded-xl p-4 mb-6 flex gap-3" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }}>
         <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder={L('Nome do pipeline...', 'Pipeline name...', 'Nombre del pipeline...')}
           className="flex-1 px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }}
           onKeyDown={e => e.key === 'Enter' && createPipeline()} />
@@ -200,7 +200,7 @@ export default function PipelineSettingsPage() {
           const ico = isSel ? '#c7d2fe' : '#94a3b8'
           return (
             <div key={p.id} className="flex items-center rounded-xl pl-0.5 pr-1 py-0.5"
-              style={{ background: isSel ? '#6366f1' : '#fff', border: `1px solid ${isSel ? '#6366f1' : '#e8ecf4'}` }}>
+              style={{ background: isSel ? '#6366f1' : 'var(--bg-card)', border: `1px solid ${isSel ? '#6366f1' : 'var(--border)'}` }}>
               <button onClick={() => movePipeline(idx, -1)} disabled={idx === 0} title={L('Mover pra esquerda', 'Move left', 'Mover a la izquierda')}
                 className="w-5 h-7 rounded flex items-center justify-center text-[15px] leading-none disabled:opacity-20"
                 style={{ color: ico }}>‹</button>
@@ -211,12 +211,12 @@ export default function PipelineSettingsPage() {
                   onBlur={saveRenamePipeline}
                   onKeyDown={e => { if (e.key === 'Enter') saveRenamePipeline(); if (e.key === 'Escape') setEditingPipelineId(null) }}
                   className="px-2 py-1 rounded-lg text-[13px] font-bold w-36"
-                  style={{ border: '1px solid #c7d2fe', color: '#1a1a2e' }} />
+                  style={{ border: '1px solid #c7d2fe', color: 'var(--fg)' }} />
               ) : (
                 <button onClick={() => setSelected(p)} onDoubleClick={() => startRenamePipeline(p)}
                   title={L('Clicar pra abrir · 2 cliques pra renomear', 'Click to open · double-click to rename', 'Clic para abrir · doble clic para renombrar')}
                   className="px-2 py-1 text-[13px] font-bold whitespace-nowrap"
-                  style={{ color: isSel ? '#fff' : '#64748b' }}>
+                  style={{ color: isSel ? '#fff' : 'var(--fg-secondary)' }}>
                   {p.name} {p.is_default && '★'}
                 </button>
               )}
@@ -230,7 +230,7 @@ export default function PipelineSettingsPage() {
           )
         })}
       </div>
-      <p className="text-[11px] mb-6" style={{ color: '#94a3b8' }}>
+      <p className="text-[11px] mb-6" style={{ color: 'var(--fg-muted)' }}>
         {L(
           'Clique pra abrir · ✏️ (ou 2 cliques no nome) pra renomear · ‹ › pra mudar a ordem',
           'Click to open · ✏️ (or double-click the name) to rename · ‹ › to change the order',
@@ -240,32 +240,32 @@ export default function PipelineSettingsPage() {
 
       {/* Selected pipeline stages */}
       {selected && (
-        <div className="rounded-2xl p-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+        <div className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-[16px] font-bold" style={{ color: '#1a1a2e' }}>{L('Estagios:', 'Stages:', 'Etapas:')} {selected.name}</h2>
-            <button onClick={() => deletePipeline(selected.id)} className="text-[11px] font-bold px-3 py-1 rounded-lg" style={{ color: '#ef4444', background: '#fef2f2' }}>
+            <h2 className="text-[16px] font-bold" style={{ color: 'var(--fg)' }}>{L('Estagios:', 'Stages:', 'Etapas:')} {selected.name}</h2>
+            <button onClick={() => deletePipeline(selected.id)} className="text-[11px] font-bold px-3 py-1 rounded-lg" style={{ color: '#ef4444', background: 'var(--err-soft)' }}>
               {L('Deletar Pipeline', 'Delete Pipeline', 'Eliminar Pipeline')}
             </button>
           </div>
 
           <div className="space-y-2 mb-4">
             {selected.stages.map((stage, idx) => (
-              <div key={stage.id} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: '#f8f9fc' }}>
+              <div key={stage.id} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'var(--bg)' }}>
                 <input type="color" value={stage.color} onChange={e => updateStage(idx, 'color', e.target.value)}
                   className="w-8 h-8 rounded cursor-pointer border-0" />
                 <input type="text" value={stage.name} onChange={e => updateStage(idx, 'name', e.target.value)}
                   className="flex-1 px-3 py-1.5 rounded-lg text-[13px] font-semibold" style={{ border: '1px solid #e8ecf4' }} />
                 <div className="flex gap-1">
                   <button onClick={() => moveStage(idx, -1)} disabled={idx === 0}
-                    className="w-7 h-7 rounded flex items-center justify-center text-[12px] disabled:opacity-20" style={{ background: '#e8ecf4' }}>↑</button>
+                    className="w-7 h-7 rounded flex items-center justify-center text-[12px] disabled:opacity-20" style={{ background: 'var(--border)' }}>↑</button>
                   <button onClick={() => moveStage(idx, 1)} disabled={idx === selected.stages.length - 1}
-                    className="w-7 h-7 rounded flex items-center justify-center text-[12px] disabled:opacity-20" style={{ background: '#e8ecf4' }}>↓</button>
+                    className="w-7 h-7 rounded flex items-center justify-center text-[12px] disabled:opacity-20" style={{ background: 'var(--border)' }}>↓</button>
                 </div>
-                <span className="text-[11px] font-mono" style={{ color: '#94a3b8' }}>#{idx + 1}</span>
+                <span className="text-[11px] font-mono" style={{ color: 'var(--fg-muted)' }}>#{idx + 1}</span>
                 <button onClick={() => deleteStage(stage.id)}
                   title={L('Deletar estágio', 'Delete stage', 'Eliminar etapa')}
                   className="w-7 h-7 rounded flex items-center justify-center text-[12px] transition-all hover:bg-red-50"
-                  style={{ background: '#fef2f2', color: '#ef4444' }}>
+                  style={{ background: 'var(--err-soft)', color: '#ef4444' }}>
                   🗑
                 </button>
               </div>
@@ -277,7 +277,7 @@ export default function PipelineSettingsPage() {
             <input type="text" value={newStageName} onChange={e => setNewStageName(e.target.value)} placeholder={L('Novo estagio...', 'New stage...', 'Nueva etapa...')}
               className="flex-1 px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }}
               onKeyDown={e => e.key === 'Enter' && addStage()} />
-            <button onClick={addStage} className="px-4 py-2 rounded-lg text-[12px] font-bold" style={{ background: '#eef2ff', color: '#6366f1' }}>
+            <button onClick={addStage} className="px-4 py-2 rounded-lg text-[12px] font-bold" style={{ background: 'var(--accent-light)', color: '#6366f1' }}>
               {L('+ Adicionar', '+ Add', '+ Agregar')}
             </button>
           </div>

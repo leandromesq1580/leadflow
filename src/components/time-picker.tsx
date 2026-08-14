@@ -52,7 +52,7 @@ export function TimePicker({ value, onChange, disabled, className }: Props) {
         style={{ width: 60 }}>
         {hours.map(h => <option key={h} value={h}>{h}</option>)}
       </select>
-      <span className="text-[13px] font-bold" style={{ color: '#94a3b8' }}>:</span>
+      <span className="text-[13px] font-bold" style={{ color: 'var(--fg-muted)' }}>:</span>
       <select
         value={minute}
         disabled={disabled}

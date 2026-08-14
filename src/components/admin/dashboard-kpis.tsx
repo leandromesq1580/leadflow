@@ -66,14 +66,14 @@ export function DashboardKpis() {
         {PERIODS.map(p => (
           <button key={p.key} onClick={() => setPeriod(p.key)}
             className="px-4 py-1.5 rounded-full text-[12px] font-bold transition-all"
-            style={{ background: period === p.key ? '#6366f1' : '#f1f5f9', color: period === p.key ? '#fff' : '#64748b' }}>
+            style={{ background: period === p.key ? '#6366f1' : 'var(--bg-soft)', color: period === p.key ? 'var(--bg-card)' : '#64748b' }}>
             {p.label}
           </button>
         ))}
       </div>
 
       {!m ? (
-        <div className="text-[13px]" style={{ color: '#94a3b8' }}>{loading ? 'Carregando…' : 'Sem dados'}</div>
+        <div className="text-[13px]" style={{ color: 'var(--fg-muted)' }}>{loading ? 'Carregando…' : 'Sem dados'}</div>
       ) : (
         <div className="grid grid-cols-4 gap-4" style={{ opacity: loading ? 0.5 : 1, transition: 'opacity .2s' }}>
           <StatCard label="Receita" value={usd(m.revenue)} icon="💰" />
@@ -91,7 +91,7 @@ export function DashboardKpis() {
           de propósito (já está na Receita geral acima). Responde "vender lead dá lucro?" */}
       {m && (
         <>
-          <h3 className="text-[13px] font-bold uppercase tracking-wider mt-6 mb-3" style={{ color: '#64748b' }}>
+          <h3 className="text-[13px] font-bold uppercase tracking-wider mt-6 mb-3" style={{ color: 'var(--fg-secondary)' }}>
             🎯 Operação de Leads — venda × custo de geração
           </h3>
           <div className="grid grid-cols-4 gap-4" style={{ opacity: loading ? 0.5 : 1, transition: 'opacity .2s' }}>

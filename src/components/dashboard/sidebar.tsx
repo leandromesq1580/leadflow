@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n-client'
 import { appointmentCanAccess, leadCanAccess } from '@/lib/crm-access'
 import { LocaleSwitcher } from '@/components/locale-switcher'
+import { ThemeToggle } from '@/components/dashboard/theme-toggle'
 import { useRealtime } from '@/lib/use-realtime'
 import { PrivacyToggle } from '@/components/dashboard/privacy-toggle'
 
@@ -219,16 +220,16 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, podeVerApo
   const initials = userName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U'
 
   return (
-    <aside className="w-[260px] min-h-screen flex flex-col" style={{ background: '#fff', borderRight: '1px solid #e8ecf4' }}>
+    <aside className="w-[260px] min-h-screen flex flex-col" style={{ background: 'var(--bg-card)', borderRight: '1px solid #e8ecf4' }}>
       {/* Logo */}
       <div className="px-6 h-[72px] flex items-center" style={{ borderBottom: '1px solid #e8ecf4' }}>
         <Link href="/" className="flex items-center gap-2.5">
           <BrandMark size={32} />
-          <span className="text-[17px] font-extrabold" style={{ color: '#0f172a', letterSpacing: '-0.02em' }}>
+          <span className="text-[17px] font-extrabold" style={{ color: 'var(--fg)', letterSpacing: '-0.02em' }}>
             Lead4Pro
           </span>
           {type === 'admin' && (
-            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: '#fef2f2', color: '#ef4444' }}>Admin</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: 'var(--err-soft)', color: '#ef4444' }}>Admin</span>
           )}
         </Link>
       </div>
@@ -237,7 +238,7 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, podeVerApo
       <nav className="flex-1 px-3 py-4 overflow-y-auto">
         {grupos.map((grupo, gi) => (
         <div key={grupo.titulo} className={gi > 0 ? 'mt-5' : ''}>
-        <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest" style={{ color: '#94a3b8' }}>{grupo.titulo}</p>
+        <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--fg-muted)' }}>{grupo.titulo}</p>
         <div className="space-y-0.5">
           {grupo.itens.map((link) => {
             const isActive = pathname === link.href ||
@@ -253,8 +254,8 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, podeVerApo
                 href={link.href}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-opacity"
                 style={{
-                  color: isActive ? '#6366f1' : '#64748b',
-                  background: isActive ? '#eef2ff' : 'transparent',
+                  color: isActive ? '#6366f1' : 'var(--fg-secondary)',
+                  background: isActive ? 'var(--accent-light)' : 'transparent',
                   opacity: locked ? 0.5 : 1,
                 }}
                 title={locked ? (t._locale === 'en' ? 'Available on the full plan' : t._locale === 'es' ? 'Disponible en el plan completo' : 'Disponível no plano completo') : undefined}
@@ -295,15 +296,16 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, podeVerApo
             {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold truncate" style={{ color: '#1a1a2e' }}>{userName}</p>
-            <p className="text-[11px]" style={{ color: '#94a3b8' }}>{type === 'admin' ? t.sidebar.admin : t.sidebar.buyer}</p>
+            <p className="text-[13px] font-semibold truncate" style={{ color: 'var(--fg)' }}>{userName}</p>
+            <p className="text-[11px]" style={{ color: 'var(--fg-muted)' }}>{type === 'admin' ? t.sidebar.admin : t.sidebar.buyer}</p>
           </div>
           <LocaleSwitcher current={t._locale} />
+          <ThemeToggle />
         </div>
         <div className="mt-3">
           <PrivacyToggle />
         </div>
-        <button onClick={handleLogout} className="mt-3 text-[11px] font-medium hover:text-red-500" style={{ color: '#94a3b8' }}>
+        <button onClick={handleLogout} className="mt-3 text-[11px] font-medium hover:text-red-500" style={{ color: 'var(--fg-muted)' }}>
           {t.sidebar.logout}
         </button>
       </div>

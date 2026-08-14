@@ -216,10 +216,10 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
   }
 
   const K = ({ label, valor, cor, sub }: { label: string; valor: string | number; cor?: string; sub?: string }) => (
-    <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-      <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{label}</p>
-      <p className="text-[32px] font-extrabold mt-1" style={{ color: cor || '#1a1a2e' }}>{valor}</p>
-      {sub && <p className="text-[11px] mt-1" style={{ color: '#94a3b8' }}>{sub}</p>}
+    <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+      <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{label}</p>
+      <p className="text-[32px] font-extrabold mt-1" style={{ color: cor || 'var(--fg)' }}>{valor}</p>
+      {sub && <p className="text-[11px] mt-1" style={{ color: 'var(--fg-muted)' }}>{sub}</p>}
     </div>
   )
 
@@ -227,8 +227,8 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
     <div className="max-w-[1040px]">
       <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>{L('Gestão de Apólices', 'Policy Management', 'Gestión de Pólizas')}</h1>
-          <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>
+          <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{L('Gestão de Apólices', 'Policy Management', 'Gestión de Pólizas')}</h1>
+          <p className="text-[14px] mt-1" style={{ color: 'var(--fg-secondary)' }}>
             {L('Pós-venda: o que precisa da sua ação hoje para não perder cliente nem comissão',
                'Post-sale: what needs your action today so you do not lose the client or the commission',
                'Posventa: lo que necesita tu acción hoy para no perder al cliente ni la comisión')}
@@ -241,7 +241,7 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
           {conector?.conectado && (
             <button onClick={sincronizar} disabled={sincronizando}
               className="px-4 py-2 rounded-xl text-[13px] font-bold"
-              style={{ background: '#fff', border: '1px solid #e8ecf4', color: sincronizando ? '#94a3b8' : '#0f766e' }}
+              style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', color: sincronizando ? '#94a3b8' : '#0f766e' }}
               title={L(`Ler o portal da ${conector.seguradora} agora`, `Read the ${conector.seguradora} portal now`, `Leer el portal de ${conector.seguradora} ahora`)}>
               {sincronizando
                 ? L('⏳ Lendo o portal…', '⏳ Reading the portal…', '⏳ Leyendo el portal…')
@@ -258,7 +258,7 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
 
       {avisoSync && (
         <div className="rounded-xl p-3 mb-4 text-[13px] font-semibold flex items-center justify-between gap-3 flex-wrap"
-          style={{ background: mfaPedido ? '#fffbeb' : '#f0fdfa', border: `1px solid ${mfaPedido ? '#fde68a' : '#99f6e4'}`, color: mfaPedido ? '#92400e' : '#0f766e' }}>
+          style={{ background: mfaPedido ? 'var(--warn-soft)' : 'var(--teal-soft)', border: `1px solid ${mfaPedido ? 'var(--warn-line)' : 'var(--teal-line)'}`, color: mfaPedido ? '#92400e' : '#0f766e' }}>
           <span>🔄 {avisoSync}</span>
           {mfaPedido && (
             <span className="flex items-center gap-2">
@@ -267,7 +267,7 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
                 placeholder={L('código do e-mail', 'code from email', 'código del correo')}
                 inputMode="numeric" autoFocus
                 className="px-3 py-1.5 rounded-lg text-[14px] font-bold tracking-widest"
-                style={{ border: '1px solid #fbbf24', width: 140, background: '#fff', color: '#1a1a2e' }} />
+                style={{ border: '1px solid #fbbf24', width: 140, background: 'var(--bg-card)', color: 'var(--fg)' }} />
               <button onClick={enviarMfa} disabled={sincronizando || mfaCodigo.replace(/\D/g, '').length < 4}
                 className="px-4 py-1.5 rounded-lg text-[13px] font-bold text-white disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}>
@@ -285,7 +285,7 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
         const horasAtras = varrido ? (Date.now() - new Date(varrido).getTime()) / 3_600_000 : null
         const velho = horasAtras != null && horasAtras > 24
         return (
-          <p className="text-[12px] mb-4" style={{ color: velho ? '#dc2626' : '#94a3b8' }}>
+          <p className="text-[12px] mb-4" style={{ color: velho ? '#dc2626' : 'var(--fg-muted)' }}>
             {L(`Conectado ao portal da ${conector.seguradora}`, `Connected to the ${conector.seguradora} portal`, `Conectado al portal de ${conector.seguradora}`)}
             {varrido && <> · {L('portal varrido em', 'portal swept on', 'portal barrido el')} {fmt(varrido)}</>}
             {' · '}{L('importado em', 'imported on', 'importado el')} {fmt(conector.ultimaSync)}
@@ -297,7 +297,7 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
       })()}
 
       {migracao && (
-        <div className="rounded-xl p-4 mb-5 text-[13px] font-semibold" style={{ background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e' }}>
+        <div className="rounded-xl p-4 mb-5 text-[13px] font-semibold" style={{ background: 'var(--warn-soft)', border: '1px solid #fde68a', color: '#92400e' }}>
           {L('⚠️ Recurso em ativação — rode a migration ', '⚠️ Feature being activated — run the ', '⚠️ Función en activación — ejecuta la migración ')}
           <b>036_policies.sql</b>
           {L(' no Supabase para começar a usar.', ' migration in Supabase to start using it.', ' en Supabase para empezar a usarla.')}
@@ -322,7 +322,7 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
       <div className="flex gap-2 flex-wrap mb-5">
         <button onClick={() => setFiltro('todas')}
           className="px-3.5 py-1.5 rounded-full text-[12px] font-bold"
-          style={{ background: filtro === 'todas' ? '#6366f1' : '#f1f5f9', color: filtro === 'todas' ? '#fff' : '#64748b' }}>
+          style={{ background: filtro === 'todas' ? '#6366f1' : 'var(--bg-soft)', color: filtro === 'todas' ? 'var(--bg-card)' : '#64748b' }}>
           {L('Todas', 'All', 'Todas')} ({lista.length})
         </button>
         {buckets.map(b => {
@@ -332,7 +332,7 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
           return (
             <button key={b.key} onClick={() => setFiltro(b.key)}
               className="px-3.5 py-1.5 rounded-full text-[12px] font-bold"
-              style={{ background: on ? b.color : b.bg, color: on ? '#fff' : b.color, border: `1px solid ${on ? b.color : 'transparent'}` }}>
+              style={{ background: on ? b.color : b.bg, color: on ? 'var(--bg-card)' : b.color, border: `1px solid ${on ? b.color : 'transparent'}` }}>
               {b.icon} {b.label} ({n})
             </button>
           )
@@ -340,11 +340,11 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
       </div>
 
       {carregando ? (
-        <p className="text-[13px]" style={{ color: '#94a3b8' }}>{L('Carregando…', 'Loading…', 'Cargando…')}</p>
+        <p className="text-[13px]" style={{ color: 'var(--fg-muted)' }}>{L('Carregando…', 'Loading…', 'Cargando…')}</p>
       ) : lista.length === 0 ? (
-        <div className="rounded-2xl p-8 text-center" style={{ background: '#fff', border: '1px dashed #cbd5e1' }}>
-          <p className="text-[15px] font-bold mb-1" style={{ color: '#1a1a2e' }}>{L('Nenhuma apólice cadastrada', 'No policies yet', 'Ninguna póliza registrada')}</p>
-          <p className="text-[13px] mb-4" style={{ color: '#64748b' }}>
+        <div className="rounded-2xl p-8 text-center" style={{ background: 'var(--bg-card)', border: '1px dashed #cbd5e1' }}>
+          <p className="text-[15px] font-bold mb-1" style={{ color: 'var(--fg)' }}>{L('Nenhuma apólice cadastrada', 'No policies yet', 'Ninguna póliza registrada')}</p>
+          <p className="text-[13px] mb-4" style={{ color: 'var(--fg-secondary)' }}>
             {L('Registre as apólices vendidas para acompanhar assinaturas pendentes, pagamentos em risco e o que a seguradora ainda não processou.',
                'Log the policies you sold to track pending signatures, at-risk payments and what the carrier has not processed yet.',
                'Registra las pólizas vendidas para dar seguimiento a firmas pendientes, pagos en riesgo y lo que la aseguradora aún no procesó.')}
@@ -362,9 +362,9 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
             <div key={b.key} className="mb-7">
               <div className="flex items-baseline gap-2 mb-1">
                 <h2 className="text-[16px] font-extrabold" style={{ color: b.color }}>{b.icon} {b.label}</h2>
-                <span className="text-[12px] font-bold" style={{ color: '#94a3b8' }}>{itens.length}</span>
+                <span className="text-[12px] font-bold" style={{ color: 'var(--fg-muted)' }}>{itens.length}</span>
               </div>
-              <p className="text-[12.5px] mb-3" style={{ color: '#94a3b8' }}>{b.hint}</p>
+              <p className="text-[12.5px] mb-3" style={{ color: 'var(--fg-muted)' }}>{b.hint}</p>
               <div className="space-y-3">
                 {itens.map(p => {
                   const venceEm = diasAte(p.due_date)
@@ -372,23 +372,23 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
                   const open = aberto === p.id
                   return (
                     <div key={p.id} className="rounded-2xl p-5" style={{
-                      background: '#fff', border: '1px solid #e8ecf4', borderLeft: `4px solid ${b.color}`,
+                      background: 'var(--bg-card)', border: '1px solid #e8ecf4', borderLeft: `4px solid ${b.color}`,
                       opacity: p.done_at ? 0.55 : 1,
                     }}>
                       <div className="flex items-start gap-3">
                         <button onClick={() => marcarFeito(p)} title={p.done_at ? L('Reabrir', 'Reopen', 'Reabrir') : L('Marcar como feito', 'Mark as done', 'Marcar como hecho')}
                           className="mt-0.5 w-5 h-5 rounded flex items-center justify-center text-[12px] font-bold flex-shrink-0"
-                          style={{ border: `2px solid ${p.done_at ? '#10b981' : '#cbd5e1'}`, background: p.done_at ? '#10b981' : '#fff', color: '#fff' }}>
+                          style={{ border: `2px solid ${p.done_at ? '#10b981' : '#cbd5e1'}`, background: p.done_at ? '#10b981' : 'var(--bg-card)', color: 'var(--bg-card)' }}>
                           {p.done_at ? '✓' : ''}
                         </button>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-[15px] font-extrabold" style={{ color: '#1a1a2e' }}>{p.client_name}</p>
-                            <span className="text-[11px] font-bold px-2 py-0.5 rounded-md" style={{ background: '#eef2ff', color: '#4f46e5' }}>
+                            <p className="text-[15px] font-extrabold" style={{ color: 'var(--fg)' }}>{p.client_name}</p>
+                            <span className="text-[11px] font-bold px-2 py-0.5 rounded-md" style={{ background: 'var(--accent-light)', color: '#4f46e5' }}>
                               {statusLabels[p.status]}
                             </span>
                           </div>
-                          <p className="text-[12px] mt-0.5" style={{ color: '#94a3b8' }}>
+                          <p className="text-[12px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>
                             {[p.policy_number, p.carrier, p.product,
                               p.premium_cents ? `${money(p.premium_cents)}/${p.premium_mode === 'annual' ? L('ano', 'yr', 'año') : L('mês', 'mo', 'mes')}` : null,
                               p.coverage_cents ? L(`${money(p.coverage_cents)} de cobertura`, `${money(p.coverage_cents)} coverage`, `${money(p.coverage_cents)} de cobertura`) : null,
@@ -400,7 +400,7 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
                           {(p.requirements || []).length > 0 && (
                             <div className="flex gap-1.5 flex-wrap mt-2">
                               {(p.requirements || []).map(r => (
-                                <span key={r} className="text-[11px] font-semibold px-2 py-0.5 rounded-md" style={{ background: '#fffbeb', color: '#b45309' }}>
+                                <span key={r} className="text-[11px] font-semibold px-2 py-0.5 rounded-md" style={{ background: 'var(--warn-soft)', color: '#b45309' }}>
                                   ⏳ {r}
                                 </span>
                               ))}
@@ -416,17 +416,17 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
                             )}
                             {p.client_email && (
                               <a href={`mailto:${p.client_email}`}
-                                className="px-3 py-1.5 rounded-lg text-[12px] font-bold" style={{ background: '#eef2ff', color: '#4f46e5' }}>
+                                className="px-3 py-1.5 rounded-lg text-[12px] font-bold" style={{ background: 'var(--accent-light)', color: '#4f46e5' }}>
                                 ✉️ {p.client_email}
                               </a>
                             )}
                             <button onClick={() => setAberto(open ? null : p.id)}
-                              className="px-3 py-1.5 rounded-lg text-[12px] font-bold" style={{ background: '#f8fafc', color: '#64748b' }}>
+                              className="px-3 py-1.5 rounded-lg text-[12px] font-bold" style={{ background: 'var(--bg-soft)', color: 'var(--fg-secondary)' }}>
                               {open
                                 ? L('▾ Ocultar detalhes', '▾ Hide details', '▾ Ocultar detalles')
                                 : L('▸ Detalhes para decidir', '▸ Details to decide', '▸ Detalles para decidir')}
                             </button>
-                            <button onClick={() => setEdit(p)} className="px-3 py-1.5 rounded-lg text-[12px] font-bold" style={{ background: '#f8fafc', color: '#64748b' }}>
+                            <button onClick={() => setEdit(p)} className="px-3 py-1.5 rounded-lg text-[12px] font-bold" style={{ background: 'var(--bg-soft)', color: 'var(--fg-secondary)' }}>
                               {L('✏️ Editar', '✏️ Edit', '✏️ Editar')}
                             </button>
                           </div>
@@ -446,13 +446,13 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
                                 [L('Parada há', 'Stalled for', 'Detenida hace'), paradoHa !== null ? dias(paradoHa) : null],
                               ].filter(([, v]) => v).map(([k, v]) => (
                                 <div key={String(k)}>
-                                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{k}</p>
-                                  <p className="text-[13px] font-semibold" style={{ color: '#1a1a2e' }}>{v}</p>
+                                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{k}</p>
+                                  <p className="text-[13px] font-semibold" style={{ color: 'var(--fg)' }}>{v}</p>
                                 </div>
                               ))}
                               {p.notes && (
                                 <div className="col-span-2 mt-1">
-                                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Histórico / leitura do caso', 'History / case notes', 'Historial / lectura del caso')}</p>
+                                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Histórico / leitura do caso', 'History / case notes', 'Historial / lectura del caso')}</p>
                                   <p className="text-[13px] whitespace-pre-wrap" style={{ color: '#334155' }}>{p.notes}</p>
                                 </div>
                               )}
@@ -477,8 +477,8 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
         <div onClick={() => !salvando && setEdit(null)}
           style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.5)', zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, overflowY: 'auto' }}>
           <div onClick={e => e.stopPropagation()} className="rounded-2xl p-6"
-            style={{ background: '#fff', width: 620, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,0.25)' }}>
-            <p className="text-[18px] font-extrabold mb-4" style={{ color: '#1a1a2e' }}>
+            style={{ background: 'var(--bg-card)', width: 620, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,0.25)' }}>
+            <p className="text-[18px] font-extrabold mb-4" style={{ color: 'var(--fg)' }}>
               {edit.id ? L('Editar apólice', 'Edit policy', 'Editar póliza') : L('Nova apólice', 'New policy', 'Nueva póliza')}
             </p>
 
@@ -489,34 +489,34 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
                 ['carrier', L('Seguradora', 'Carrier', 'Aseguradora'), 'text'], ['product', L('Produto', 'Product', 'Producto'), 'text'],
               ] as const).map(([campo, label, tipo]) => (
                 <div key={campo}>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{label}</label>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--fg-muted)' }}>{label}</label>
                   <input type={tipo} value={(edit as any)[campo] || ''} onChange={e => setEdit({ ...edit, [campo]: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }} />
                 </div>
               ))}
 
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Prêmio ($)', 'Premium ($)', 'Prima ($)')}</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--fg-muted)' }}>{L('Prêmio ($)', 'Premium ($)', 'Prima ($)')}</label>
                 <input type="number" step="0.01" value={edit.premium_cents ? edit.premium_cents / 100 : ''}
                   onChange={e => setEdit({ ...edit, premium_cents: e.target.value ? Math.round(parseFloat(e.target.value) * 100) : null })}
                   className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }} />
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Cobertura ($)', 'Coverage ($)', 'Cobertura ($)')}</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--fg-muted)' }}>{L('Cobertura ($)', 'Coverage ($)', 'Cobertura ($)')}</label>
                 <input type="number" value={edit.coverage_cents ? edit.coverage_cents / 100 : ''}
                   onChange={e => setEdit({ ...edit, coverage_cents: e.target.value ? Math.round(parseFloat(e.target.value) * 100) : null })}
                   className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }} />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Situação', 'Status', 'Estado')}</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--fg-muted)' }}>{L('Situação', 'Status', 'Estado')}</label>
                 <select value={edit.status || 'submitted'} onChange={e => setEdit({ ...edit, status: e.target.value as any })}
                   className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }}>
                   {Object.entries(statusLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Periodicidade', 'Frequency', 'Periodicidad')}</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--fg-muted)' }}>{L('Periodicidade', 'Frequency', 'Periodicidad')}</label>
                 <select value={edit.premium_mode || 'monthly'} onChange={e => setEdit({ ...edit, premium_mode: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }}>
                   <option value="monthly">{L('Mensal', 'Monthly', 'Mensual')}</option><option value="annual">{L('Anual', 'Annual', 'Anual')}</option>
@@ -528,27 +528,27 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
                 ['effective_date', L('Vigente desde', 'Effective since', 'Vigente desde')], ['paid_through', L('Pago até', 'Paid through', 'Pagado hasta')],
               ] as const).map(([campo, label]) => (
                 <div key={campo}>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{label}</label>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--fg-muted)' }}>{label}</label>
                   <input type="date" value={(edit as any)[campo] || ''} onChange={e => setEdit({ ...edit, [campo]: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }} />
                 </div>
               ))}
 
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Dívida ($)', 'Amount due ($)', 'Deuda ($)')}</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--fg-muted)' }}>{L('Dívida ($)', 'Amount due ($)', 'Deuda ($)')}</label>
                 <input type="number" step="0.01" value={edit.amount_due_cents ? edit.amount_due_cents / 100 : ''}
                   onChange={e => setEdit({ ...edit, amount_due_cents: e.target.value ? Math.round(parseFloat(e.target.value) * 100) : null })}
                   className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }} />
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Prazo do aviso', 'Notice deadline', 'Plazo del aviso')}</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--fg-muted)' }}>{L('Prazo do aviso', 'Notice deadline', 'Plazo del aviso')}</label>
                 <input type="date" value={edit.due_date || ''} onChange={e => setEdit({ ...edit, due_date: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }} />
               </div>
             </div>
 
             <div className="mt-3">
-              <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: '#94a3b8' }}>{L('Pendências', 'Pending items', 'Pendientes')}</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--fg-muted)' }}>{L('Pendências', 'Pending items', 'Pendientes')}</label>
               <div className="flex gap-1.5 flex-wrap">
                 {REQUISITOS_COMUNS(loc).map(r => {
                   const on = (edit.requirements || []).includes(r)
@@ -556,7 +556,7 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
                     <button key={r} type="button"
                       onClick={() => setEdit({ ...edit, requirements: on ? (edit.requirements || []).filter(x => x !== r) : [...(edit.requirements || []), r] })}
                       className="px-2.5 py-1 rounded-lg text-[11.5px] font-bold"
-                      style={{ background: on ? '#fffbeb' : '#f8fafc', color: on ? '#b45309' : '#94a3b8', border: `1px solid ${on ? '#fde68a' : '#e8ecf4'}` }}>
+                      style={{ background: on ? 'var(--warn-soft)' : 'var(--bg-soft)', color: on ? '#b45309' : '#94a3b8', border: `1px solid ${on ? 'var(--warn-line)' : 'var(--border)'}` }}>
                       {on ? '⏳ ' : '+ '}{r}
                     </button>
                   )
@@ -565,20 +565,20 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
             </div>
 
             <div className="mt-3">
-              <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Ação recomendada (opcional)', 'Recommended action (optional)', 'Acción recomendada (opcional)')}</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--fg-muted)' }}>{L('Ação recomendada (opcional)', 'Recommended action (optional)', 'Acción recomendada (opcional)')}</label>
               <input value={edit.next_action || ''} onChange={e => setEdit({ ...edit, next_action: e.target.value })}
                 placeholder={L('Deixe vazio para o sistema sugerir automaticamente', 'Leave empty and the system suggests one automatically', 'Déjalo vacío para que el sistema sugiera automáticamente')}
                 className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }} />
             </div>
             <div className="mt-3">
-              <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Histórico / observações', 'History / notes', 'Historial / notas')}</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--fg-muted)' }}>{L('Histórico / observações', 'History / notes', 'Historial / notas')}</label>
               <textarea value={edit.notes || ''} onChange={e => setEdit({ ...edit, notes: e.target.value })} rows={3}
                 className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid #e8ecf4' }} />
             </div>
 
             <div className="flex gap-2 mt-5">
               <button onClick={() => setEdit(null)} disabled={salvando}
-                className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold" style={{ background: '#f1f5f9', color: '#475569' }}>
+                className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold" style={{ background: 'var(--bg-soft)', color: 'var(--fg-secondary)' }}>
                 {L('Cancelar', 'Cancel', 'Cancelar')}
               </button>
               <button onClick={salvar} disabled={salvando}

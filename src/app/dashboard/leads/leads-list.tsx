@@ -76,7 +76,7 @@ export function LeadsList({ leads, isAgency, teamMembers }: Props) {
     <>
       <div className="mb-4 relative">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-          className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: '#94a3b8' }}>
+          className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--fg-muted)' }}>
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
         <input
@@ -85,23 +85,23 @@ export function LeadsList({ leads, isAgency, teamMembers }: Props) {
           onChange={(e) => setQuery(e.target.value)}
           placeholder={L('Buscar por nome, telefone ou email...', 'Search by name, phone, or email...', 'Buscar por nombre, teléfono o email...')}
           className="w-full pl-11 pr-10 py-3 rounded-xl text-[13px] font-medium"
-          style={{ background: '#fff', border: '1px solid #e8ecf4', color: '#1a1a2e' }}
+          style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', color: 'var(--fg)' }}
         />
         {query && (
           <button type="button" onClick={() => setQuery('')} aria-label={L('Limpar busca', 'Clear search', 'Limpiar búsqueda')}
             className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-slate-100"
-            style={{ color: '#64748b' }}>
+            style={{ color: 'var(--fg-secondary)' }}>
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         )}
         {query && (
-          <p className="mt-2 text-[12px]" style={{ color: '#64748b' }}>
+          <p className="mt-2 text-[12px]" style={{ color: 'var(--fg-secondary)' }}>
             {filtered.length} {filtered.length === 1 ? L('resultado para', 'result for', 'resultado para') : L('resultados para', 'results for', 'resultados para')} "{query}"
           </p>
         )}
       </div>
 
-      <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e8ecf4', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+      <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         {filtered.length > 0 ? (
           <div>
             {filtered.map((lead, i) => {
@@ -118,8 +118,8 @@ export function LeadsList({ leads, isAgency, teamMembers }: Props) {
                       {getInitials(lead.name)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-semibold group-hover:text-indigo-600" style={{ color: '#1a1a2e' }}>{lead.name}</p>
-                      <p className="text-[12px]" style={{ color: '#94a3b8' }}>{lead.city}{lead.state ? `, ${lead.state}` : ''} · {lead.interest}</p>
+                      <p className="text-[14px] font-semibold group-hover:text-indigo-600" style={{ color: 'var(--fg)' }}>{lead.name}</p>
+                      <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{lead.city}{lead.state ? `, ${lead.state}` : ''} · {lead.interest}</p>
                     </div>
                     <div className="hidden sm:block">
                       <span className="text-[13px] font-semibold" style={{ color: '#6366f1' }}>{privacy.mask(lead.phone, 'phone')}</span>
@@ -133,20 +133,20 @@ export function LeadsList({ leads, isAgency, teamMembers }: Props) {
                   )}
 
                   <Badge status={lead.status} />
-                  <span className="text-[12px] whitespace-nowrap hidden md:block" style={{ color: '#94a3b8' }}>{timeAgoLocalized(lead.created_at, L, dateLocale)}</span>
+                  <span className="text-[12px] whitespace-nowrap hidden md:block" style={{ color: 'var(--fg-muted)' }}>{timeAgoLocalized(lead.created_at, L, dateLocale)}</span>
                 </div>
               )
             })}
           </div>
         ) : (
           <div className="text-center py-16">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ background: '#f1f5f9' }}>
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ background: 'var(--bg-soft)' }}>
               <span className="text-3xl">🔍</span>
             </div>
-            <p className="text-[15px] font-semibold" style={{ color: '#1a1a2e' }}>
+            <p className="text-[15px] font-semibold" style={{ color: 'var(--fg)' }}>
               {query ? L('Nenhum lead encontrado', 'No leads found', 'Ningún lead encontrado') : L('Nenhum lead ainda', 'No leads yet', 'Aún no hay leads')}
             </p>
-            <p className="text-[13px] mt-1" style={{ color: '#94a3b8' }}>
+            <p className="text-[13px] mt-1" style={{ color: 'var(--fg-muted)' }}>
               {query ? L('Tente outro termo — nome, telefone ou email', 'Try another term — name, phone, or email', 'Prueba con otro término: nombre, teléfono o email') : L('Leads aparecem aqui quando sao distribuidos pra voce', 'Leads show up here when they are assigned to you', 'Los leads aparecen aquí cuando se te asignan')}
             </p>
           </div>

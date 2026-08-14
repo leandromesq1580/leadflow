@@ -50,7 +50,7 @@ export function TutorChat({ offsetBottom = 24 }: { offsetBottom?: number }) {
   }
 
   return (
-    <div style={{ position: 'fixed', right: 20, bottom: offsetBottom, zIndex: 70, width: 'min(400px, calc(100vw - 32px))', height: `min(560px, calc(100vh - ${offsetBottom + 76}px))`, background: '#fff', border: '1px solid #e8ecf4', borderRadius: 18, boxShadow: '0 20px 60px rgba(15,23,42,0.25)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div style={{ position: 'fixed', right: 20, bottom: offsetBottom, zIndex: 70, width: 'min(400px, calc(100vw - 32px))', height: `min(560px, calc(100vh - ${offsetBottom + 76}px))`, background: 'var(--bg-card)', border: '1px solid #e8ecf4', borderRadius: 18, boxShadow: '0 20px 60px rgba(15,23,42,0.25)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: 'linear-gradient(135deg,#1e1b4b,#312e81)' }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/zoe.jpg" alt="Zoe" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.35)', display: 'block' }} />
@@ -63,7 +63,7 @@ export function TutorChat({ offsetBottom = 24 }: { offsetBottom?: number }) {
       <div style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {msgs.length === 0 && (
           <div>
-            <p className="text-[13px] mb-3" style={{ color: '#64748b' }}>{L('Oi! 👋 Eu sou a', "Hi! 👋 I'm", '¡Hola! 👋 Soy')} <b>Zoe</b>{L(', sua tutora aqui no Lead4Pro. Pergunta como usar a plataforma, peça dicas de atendimento e fechamento, ou tire dúvidas de life insurance:', ', your tutor here at Lead4Pro. Ask how to use the platform, get tips on client care and closing, or ask your life insurance questions:', ', tu tutora aquí en Lead4Pro. Pregunta cómo usar la plataforma, pide consejos de atención y cierre, o resuelve tus dudas de life insurance:')}</p>
+            <p className="text-[13px] mb-3" style={{ color: 'var(--fg-secondary)' }}>{L('Oi! 👋 Eu sou a', "Hi! 👋 I'm", '¡Hola! 👋 Soy')} <b>Zoe</b>{L(', sua tutora aqui no Lead4Pro. Pergunta como usar a plataforma, peça dicas de atendimento e fechamento, ou tire dúvidas de life insurance:', ', your tutor here at Lead4Pro. Ask how to use the platform, get tips on client care and closing, or ask your life insurance questions:', ', tu tutora aquí en Lead4Pro. Pregunta cómo usar la plataforma, pide consejos de atención y cierre, o resuelve tus dudas de life insurance:')}</p>
             {[
               L('Como fazer um bom primeiro atendimento?', 'How do I nail the first contact?', '¿Cómo hacer un buen primer contacto?'),
               L('Dicas pra fechar mais vendas 🔥', 'Tips to close more sales 🔥', 'Consejos para cerrar más ventas 🔥'),
@@ -72,7 +72,7 @@ export function TutorChat({ offsetBottom = 24 }: { offsetBottom?: number }) {
             ].map(s => (
               <button key={s} onClick={() => ask(s)}
                 className="block w-full text-left px-3 py-2 mb-2 rounded-xl text-[13px] font-semibold transition-all hover:shadow-sm"
-                style={{ background: '#eef2ff', color: '#4f46e5', border: '1px solid #e0e7ff', cursor: 'pointer' }}>
+                style={{ background: 'var(--accent-light)', color: '#4f46e5', border: '1px solid #e0e7ff', cursor: 'pointer' }}>
                 {s}
               </button>
             ))}
@@ -86,7 +86,7 @@ export function TutorChat({ offsetBottom = 24 }: { offsetBottom?: number }) {
           return (
             <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '88%' }}>
               <div className="px-3.5 py-2.5 rounded-2xl text-[13.5px]" style={{
-                background: m.role === 'user' ? '#6366f1' : '#f1f5f9',
+                background: m.role === 'user' ? '#6366f1' : 'var(--bg-soft)',
                 color: m.role === 'user' ? '#fff' : '#1e293b',
                 whiteSpace: 'pre-wrap', lineHeight: 1.55,
                 borderBottomRightRadius: m.role === 'user' ? 6 : 16,
@@ -97,7 +97,7 @@ export function TutorChat({ offsetBottom = 24 }: { offsetBottom?: number }) {
                   {sugs.map((s, k) => (
                     <button key={k} onClick={() => ask(s)}
                       className="text-left px-3 py-2 rounded-xl text-[12.5px] font-semibold transition-all hover:shadow-sm"
-                      style={{ background: '#eef2ff', color: '#4f46e5', border: '1px solid #e0e7ff', cursor: 'pointer' }}>
+                      style={{ background: 'var(--accent-light)', color: '#4f46e5', border: '1px solid #e0e7ff', cursor: 'pointer' }}>
                       👉 {s}
                     </button>
                   ))}
@@ -106,14 +106,14 @@ export function TutorChat({ offsetBottom = 24 }: { offsetBottom?: number }) {
             </div>
           )
         })}
-        {busy && <div className="px-3.5 py-2.5 rounded-2xl text-[13px]" style={{ background: '#f1f5f9', color: '#94a3b8', alignSelf: 'flex-start' }}>{L('Zoe está digitando…', 'Zoe is typing…', 'Zoe está escribiendo…')}</div>}
+        {busy && <div className="px-3.5 py-2.5 rounded-2xl text-[13px]" style={{ background: 'var(--bg-soft)', color: 'var(--fg-muted)', alignSelf: 'flex-start' }}>{L('Zoe está digitando…', 'Zoe is typing…', 'Zoe está escribiendo…')}</div>}
       </div>
       <div className="flex gap-2 p-3" style={{ borderTop: '1px solid #e8ecf4' }}>
         <input value={draft} onChange={e => setDraft(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') ask() }}
           placeholder={L('Como faço pra…?', 'How do I…?', '¿Cómo hago para…?')}
           className="flex-1 px-3.5 py-2.5 rounded-xl text-[13.5px] outline-none"
-          style={{ border: '1px solid #e8ecf4', background: '#f8fafc', color: '#1e293b' }} />
+          style={{ border: '1px solid #e8ecf4', background: 'var(--bg-soft)', color: '#1e293b' }} />
         <button onClick={() => ask()} disabled={busy || !draft.trim()}
           className="px-4 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50"
           style={{ background: '#6366f1', border: 'none', cursor: 'pointer' }}>➤</button>

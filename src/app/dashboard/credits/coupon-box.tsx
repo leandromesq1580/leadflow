@@ -81,15 +81,15 @@ export function CouponBox() {
   }
 
   return (
-    <div className="rounded-xl p-4 mb-4" style={{ background: '#f8fafc', border: '1px dashed #cbd5e1' }}>
-      <p className="text-[12px] font-semibold mb-2" style={{ color: '#64748b' }}>{L('Tem um cupom?', 'Have a coupon?', '¿Tienes un cupón?')}</p>
+    <div className="rounded-xl p-4 mb-4" style={{ background: 'var(--bg-soft)', border: '1px dashed #cbd5e1' }}>
+      <p className="text-[12px] font-semibold mb-2" style={{ color: 'var(--fg-secondary)' }}>{L('Tem um cupom?', 'Have a coupon?', '¿Tienes un cupón?')}</p>
       <div className="flex gap-2">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value.toUpperCase())}
           placeholder={L('CÓDIGO', 'CODE', 'CÓDIGO')}
           className="flex-1 px-3 py-2 rounded-lg text-[13px] font-semibold tracking-wide"
-          style={{ border: '1px solid #e2e8f0', color: '#1a1a2e' }}
+          style={{ border: '1px solid #e2e8f0', color: 'var(--fg)' }}
         />
         <button
           onClick={() => validate(input)}

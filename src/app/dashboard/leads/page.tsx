@@ -42,8 +42,8 @@ export default async function LeadsPage() {
     <div className="max-w-[1040px]">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>{L('Meus Leads', 'My Leads', 'Mis Leads')}</h1>
-          <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>{allLeads.length} {L('leads no total', 'leads in total', 'leads en total')}</p>
+          <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{L('Meus Leads', 'My Leads', 'Mis Leads')}</h1>
+          <p className="text-[14px] mt-1" style={{ color: 'var(--fg-secondary)' }}>{allLeads.length} {L('leads no total', 'leads in total', 'leads en total')}</p>
         </div>
         <div className="flex items-center gap-2">
           <BulkDeleteManual />
@@ -53,7 +53,7 @@ export default async function LeadsPage() {
 
       {/* Agency manual mode alert */}
       {isManual && unassignedCount > 0 && (
-        <div className="rounded-xl p-4 mb-5 flex items-center gap-3" style={{ background: '#fef3c7', border: '1px solid #fde68a' }}>
+        <div className="rounded-xl p-4 mb-5 flex items-center gap-3" style={{ background: 'var(--warn-line)', border: '1px solid #fde68a' }}>
           <span className="text-[20px]">⚡</span>
           <div>
             <p className="text-[13px] font-bold" style={{ color: '#92400e' }}>
@@ -68,13 +68,13 @@ export default async function LeadsPage() {
 
       {/* Filters */}
       <div className="flex gap-2 mb-5 flex-wrap">
-        <span className="px-4 py-2 rounded-xl text-[13px] font-bold" style={{ background: '#eef2ff', color: '#6366f1' }}>
+        <span className="px-4 py-2 rounded-xl text-[13px] font-bold" style={{ background: 'var(--accent-light)', color: '#6366f1' }}>
           {L('Todos', 'All', 'Todos')} ({allLeads.length})
         </span>
-        <span className="px-4 py-2 rounded-xl text-[13px] font-semibold" style={{ color: '#64748b' }}>
+        <span className="px-4 py-2 rounded-xl text-[13px] font-semibold" style={{ color: 'var(--fg-secondary)' }}>
           {L('Novos', 'New', 'Nuevos')} ({newCount})
         </span>
-        <span className="px-4 py-2 rounded-xl text-[13px] font-semibold" style={{ color: '#64748b' }}>
+        <span className="px-4 py-2 rounded-xl text-[13px] font-semibold" style={{ color: 'var(--fg-secondary)' }}>
           {L('Qualificados', 'Qualified', 'Calificados')} ({qualifiedCount})
         </span>
         {buyer.is_agency && (

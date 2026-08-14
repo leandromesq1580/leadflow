@@ -51,24 +51,24 @@ export function CrmPlansGrid({ landing = false }: { landing?: boolean }) {
         ]
         return (
           <div key={plan.key} className="relative rounded-2xl p-6 flex flex-col"
-            style={{ background: '#fff', border: `${hot ? 2 : 1}px solid ${hot ? '#6366f1' : '#e8ecf4'}`, boxShadow: hot ? '0 12px 32px rgba(99,102,241,0.18)' : 'none' }}>
+            style={{ background: 'var(--bg-card)', border: `${hot ? 2 : 1}px solid ${hot ? '#6366f1' : 'var(--border)'}`, boxShadow: hot ? '0 12px 32px rgba(99,102,241,0.18)' : 'none' }}>
             {hot && (
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-extrabold uppercase tracking-wide px-3 py-1 rounded-full text-white"
                 style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>{L('Mais popular', 'Most popular', 'Más popular')}</span>
             )}
-            <div className="text-[13px] font-bold uppercase tracking-wide" style={{ color: hot ? '#6366f1' : '#64748b' }}>{planLabel(plan)}</div>
+            <div className="text-[13px] font-bold uppercase tracking-wide" style={{ color: hot ? '#6366f1' : 'var(--fg-secondary)' }}>{planLabel(plan)}</div>
             <div className="mt-2 flex items-baseline gap-1">
-              <span className="text-[34px] font-extrabold leading-none" style={{ color: '#1a1a2e' }}>{fmtMonth(plan.perMonth)}</span>
-              <span className="text-[13px]" style={{ color: '#94a3b8' }}>{L('/mês', '/mo', '/mes')}</span>
+              <span className="text-[34px] font-extrabold leading-none" style={{ color: 'var(--fg)' }}>{fmtMonth(plan.perMonth)}</span>
+              <span className="text-[13px]" style={{ color: 'var(--fg-muted)' }}>{L('/mês', '/mo', '/mes')}</span>
             </div>
-            <div className="mt-1.5 text-[12px]" style={{ color: '#64748b' }}>
+            <div className="mt-1.5 text-[12px]" style={{ color: 'var(--fg-secondary)' }}>
               {plan.months === 1
                 ? L('cobrado mensalmente', 'billed monthly', 'se cobra mensualmente')
                 : t._locale === 'en'
-                  ? <>billed <b style={{ color: '#475569' }}>{fmtTotal(plan.amountCents)}</b> upfront every {plan.months} months</>
+                  ? <>billed <b style={{ color: 'var(--fg-secondary)' }}>{fmtTotal(plan.amountCents)}</b> upfront every {plan.months} months</>
                   : t._locale === 'es'
-                    ? <>se cobra <b style={{ color: '#475569' }}>{fmtTotal(plan.amountCents)}</b> por adelantado cada {plan.months} meses</>
-                    : <>cobrado <b style={{ color: '#475569' }}>{fmtTotal(plan.amountCents)}</b> à vista a cada {plan.months} meses</>}
+                    ? <>se cobra <b style={{ color: 'var(--fg-secondary)' }}>{fmtTotal(plan.amountCents)}</b> por adelantado cada {plan.months} meses</>
+                    : <>cobrado <b style={{ color: 'var(--fg-secondary)' }}>{fmtTotal(plan.amountCents)}</b> à vista a cada {plan.months} meses</>}
             </div>
             {plan.savingsPct > 0 && (
               <div className="mt-3 self-start text-[11px] font-bold px-2 py-1 rounded-lg" style={{ background: '#ecfdf5', color: '#059669' }}>
@@ -86,11 +86,11 @@ export function CrmPlansGrid({ landing = false }: { landing?: boolean }) {
             <button onClick={() => subscribe(plan)} disabled={!!loading}
               className="mt-5 w-full py-3 rounded-xl text-[13px] font-bold disabled:opacity-50 transition-all"
               style={hot
-                ? { background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }
-                : { background: '#eef2ff', color: '#6366f1' }}>
+                ? { background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: 'var(--bg-card)', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }
+                : { background: 'var(--accent-light)', color: '#6366f1' }}>
               {loading === plan.key ? L('Redirecionando...', 'Redirecting...', 'Redirigiendo...') : L('Assinar', 'Subscribe', 'Suscribirme')}
             </button>
-            <div className="mt-2 text-center text-[10px]" style={{ color: '#94a3b8' }}>{L('Renova automático · cancele quando quiser', 'Auto-renews · cancel anytime', 'Renovación automática · cancela cuando quieras')}</div>
+            <div className="mt-2 text-center text-[10px]" style={{ color: 'var(--fg-muted)' }}>{L('Renova automático · cancele quando quiser', 'Auto-renews · cancel anytime', 'Renovación automática · cancela cuando quieras')}</div>
           </div>
         )
       })}

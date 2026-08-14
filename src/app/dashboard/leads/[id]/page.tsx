@@ -32,7 +32,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
     return (
       <div className="max-w-3xl">
         <Link href="/dashboard/leads" className="text-[13px] font-medium" style={{ color: '#6366f1' }}>{L('← Voltar', '← Back', '← Volver')}</Link>
-        <p className="text-center py-20" style={{ color: '#94a3b8' }}>{L('Lead nao encontrado', 'Lead not found', 'Lead no encontrado')}</p>
+        <p className="text-center py-20" style={{ color: 'var(--fg-muted)' }}>{L('Lead nao encontrado', 'Lead not found', 'Lead no encontrado')}</p>
       </div>
     )
   }
@@ -57,64 +57,64 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             {getInitials(lead.name)}
           </div>
           <div>
-            <h1 className="text-[22px] font-extrabold" style={{ color: '#1a1a2e' }}>{lead.name}</h1>
-            <p className="text-[14px]" style={{ color: '#64748b' }}>{lead.city}{lead.state ? `, ${lead.state}` : ''} — {lead.interest}</p>
+            <h1 className="text-[22px] font-extrabold" style={{ color: 'var(--fg)' }}>{lead.name}</h1>
+            <p className="text-[14px]" style={{ color: 'var(--fg-secondary)' }}>{lead.city}{lead.state ? `, ${lead.state}` : ''} — {lead.interest}</p>
           </div>
         </div>
         <Badge status={lead.status} />
       </div>
 
       {/* Contact Info */}
-      <div className="rounded-2xl p-6 mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-        <h2 className="text-[15px] font-bold mb-4" style={{ color: '#1a1a2e' }}>{L('Informacoes do Lead', 'Lead Information', 'Información del Lead')}</h2>
+      <div className="rounded-2xl p-6 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+        <h2 className="text-[15px] font-bold mb-4" style={{ color: 'var(--fg)' }}>{L('Informacoes do Lead', 'Lead Information', 'Información del Lead')}</h2>
         <div className="grid grid-cols-2 gap-4">
-          <div className="rounded-xl p-4" style={{ background: '#f8f9fc' }}>
-            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Telefone', 'Phone', 'Teléfono')}</p>
+          <div className="rounded-xl p-4" style={{ background: 'var(--bg)' }}>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Telefone', 'Phone', 'Teléfono')}</p>
             <a href={`tel:${lead.phone}`} className="text-[15px] font-bold block mt-1" style={{ color: '#6366f1' }}>
               {lead.phone || '—'}
             </a>
           </div>
-          <div className="rounded-xl p-4" style={{ background: '#f8f9fc' }}>
-            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Email</p>
-            <p className="text-[14px] font-semibold mt-1" style={{ color: '#1a1a2e' }}>{lead.email || '—'}</p>
+          <div className="rounded-xl p-4" style={{ background: 'var(--bg)' }}>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>Email</p>
+            <p className="text-[14px] font-semibold mt-1" style={{ color: 'var(--fg)' }}>{lead.email || '—'}</p>
           </div>
-          <div className="rounded-xl p-4" style={{ background: '#f8f9fc' }}>
-            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Interesse', 'Interest', 'Interés')}</p>
-            <p className="text-[14px] font-semibold mt-1" style={{ color: '#1a1a2e' }}>{lead.interest}</p>
+          <div className="rounded-xl p-4" style={{ background: 'var(--bg)' }}>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Interesse', 'Interest', 'Interés')}</p>
+            <p className="text-[14px] font-semibold mt-1" style={{ color: 'var(--fg)' }}>{lead.interest}</p>
           </div>
-          <div className="rounded-xl p-4" style={{ background: '#f8f9fc' }}>
-            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Campanha', 'Campaign', 'Campaña')}</p>
-            <p className="text-[14px] font-semibold mt-1" style={{ color: '#1a1a2e' }}>{lead.campaign_name || '—'}</p>
+          <div className="rounded-xl p-4" style={{ background: 'var(--bg)' }}>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Campanha', 'Campaign', 'Campaña')}</p>
+            <p className="text-[14px] font-semibold mt-1" style={{ color: 'var(--fg)' }}>{lead.campaign_name || '—'}</p>
           </div>
-          <div className="rounded-xl p-4" style={{ background: '#f8f9fc' }}>
-            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Tipo', 'Type', 'Tipo')}</p>
+          <div className="rounded-xl p-4" style={{ background: 'var(--bg)' }}>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Tipo', 'Type', 'Tipo')}</p>
             <Badge status={lead.type} />
           </div>
-          <div className="rounded-xl p-4" style={{ background: '#f8f9fc' }}>
-            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Recebido em', 'Received on', 'Recibido el')}</p>
-            <p className="text-[14px] font-semibold mt-1" style={{ color: '#1a1a2e' }}>{formatDate(lead.created_at)}</p>
+          <div className="rounded-xl p-4" style={{ background: 'var(--bg)' }}>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Recebido em', 'Received on', 'Recibido el')}</p>
+            <p className="text-[14px] font-semibold mt-1" style={{ color: 'var(--fg)' }}>{formatDate(lead.created_at)}</p>
           </div>
         </div>
       </div>
 
       {/* Activity History */}
-      <div className="rounded-2xl p-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-        <h2 className="text-[15px] font-bold mb-4" style={{ color: '#1a1a2e' }}>{L('Historico', 'History', 'Historial')}</h2>
+      <div className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+        <h2 className="text-[15px] font-bold mb-4" style={{ color: 'var(--fg)' }}>{L('Historico', 'History', 'Historial')}</h2>
         {activities && activities.length > 0 ? (
           <div className="space-y-4">
             {activities.map((act: any) => (
               <div key={act.id} className="flex gap-3 items-start">
                 <div className="w-2 h-2 rounded-full mt-2 flex-shrink-0" style={{ background: '#6366f1' }} />
                 <div>
-                  <p className="text-[13px] font-semibold" style={{ color: '#1a1a2e' }}>{act.action}</p>
-                  {act.notes && <p className="text-[13px] mt-0.5" style={{ color: '#64748b' }}>{act.notes}</p>}
-                  <p className="text-[11px] mt-1" style={{ color: '#94a3b8' }}>{formatDate(act.created_at)}</p>
+                  <p className="text-[13px] font-semibold" style={{ color: 'var(--fg)' }}>{act.action}</p>
+                  {act.notes && <p className="text-[13px] mt-0.5" style={{ color: 'var(--fg-secondary)' }}>{act.notes}</p>}
+                  <p className="text-[11px] mt-1" style={{ color: 'var(--fg-muted)' }}>{formatDate(act.created_at)}</p>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-[13px]" style={{ color: '#94a3b8' }}>{L('Nenhuma atividade registrada', 'No activity recorded', 'Ninguna actividad registrada')}</p>
+          <p className="text-[13px]" style={{ color: 'var(--fg-muted)' }}>{L('Nenhuma atividade registrada', 'No activity recorded', 'Ninguna actividad registrada')}</p>
         )}
       </div>
     </div>

@@ -128,7 +128,7 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
       )}
 
       {error && (
-        <div className="mb-6 px-5 py-3 rounded-xl text-[13px] font-semibold" style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
+        <div className="mb-6 px-5 py-3 rounded-xl text-[13px] font-semibold" style={{ background: 'var(--err-soft)', color: '#dc2626', border: '1px solid #fecaca' }}>
           ⚠️ {error}
         </div>
       )}
@@ -137,47 +137,47 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
       <WaConnectCard />
 
       {/* Profile */}
-      <div className="rounded-2xl p-6 mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-        <h2 className="text-[15px] font-bold mb-4" style={{ color: '#1a1a2e' }}>{t.settings.profile}</h2>
+      <div className="rounded-2xl p-6 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+        <h2 className="text-[15px] font-bold mb-4" style={{ color: 'var(--fg)' }}>{t.settings.profile}</h2>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-[12px] font-bold mb-1" style={{ color: '#64748b' }}>{t.settings.name}</label>
+            <label className="block text-[12px] font-bold mb-1" style={{ color: 'var(--fg-secondary)' }}>{t.settings.name}</label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl text-[14px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
+              className="w-full px-4 py-3 rounded-xl text-[14px] font-medium" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4', color: 'var(--fg)' }} />
           </div>
           <div>
-            <label className="block text-[12px] font-bold mb-1" style={{ color: '#64748b' }}>{t.settings.phone}</label>
+            <label className="block text-[12px] font-bold mb-1" style={{ color: 'var(--fg-secondary)' }}>{t.settings.phone}</label>
             <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl text-[14px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
+              className="w-full px-4 py-3 rounded-xl text-[14px] font-medium" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4', color: 'var(--fg)' }} />
           </div>
           <div>
-            <label className="block text-[12px] font-bold mb-1" style={{ color: '#64748b' }}>{t.settings.whatsapp}</label>
+            <label className="block text-[12px] font-bold mb-1" style={{ color: 'var(--fg-secondary)' }}>{t.settings.whatsapp}</label>
             <input type="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl text-[14px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
+              className="w-full px-4 py-3 rounded-xl text-[14px] font-medium" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4', color: 'var(--fg)' }} />
           </div>
           <div>
-            <label className="block text-[12px] font-bold mb-1" style={{ color: '#64748b' }}>
-              {L('2º número para notificações', '2nd number for notifications', '2º número para notificaciones')} <span style={{ fontWeight: 500, color: '#94a3b8' }}>{L('(opcional)', '(optional)', '(opcional)')}</span>
+            <label className="block text-[12px] font-bold mb-1" style={{ color: 'var(--fg-secondary)' }}>
+              {L('2º número para notificações', '2nd number for notifications', '2º número para notificaciones')} <span style={{ fontWeight: 500, color: 'var(--fg-muted)' }}>{L('(opcional)', '(optional)', '(opcional)')}</span>
             </label>
             <input type="tel" value={notifPhone2} onChange={(e) => setNotifPhone2(e.target.value)}
               placeholder="+1 407 555 0100"
-              className="w-full px-4 py-3 rounded-xl text-[14px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
-            <p className="text-[11px] mt-1" style={{ color: '#94a3b8' }}>
+              className="w-full px-4 py-3 rounded-xl text-[14px] font-medium" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4', color: 'var(--fg)' }} />
+            <p className="text-[11px] mt-1" style={{ color: 'var(--fg-muted)' }}>
               {L('Recebe o mesmo alerta de ', 'Gets the same ', 'Recibe la misma alerta de ')}<b>{L('Novo Lead', 'New Lead', 'Nuevo Lead')}</b>{L(' que o seu telefone principal. ', ' alert as your main phone. ', ' que tu teléfono principal. ')}<b>{L('Não precisa conectar WhatsApp', 'No need to connect WhatsApp', 'No hace falta conectar WhatsApp')}</b>{L(' — só precisa ser um número que tenha WhatsApp.', ' — it just needs to be a number with WhatsApp on it.', ' — solo necesita ser un número que tenga WhatsApp.')}
             </p>
           </div>
           <div>
-            <label className="block text-[12px] font-bold mb-1" style={{ color: '#64748b' }}>{L('Cal.com Link', 'Cal.com Link', 'Enlace de Cal.com')}</label>
+            <label className="block text-[12px] font-bold mb-1" style={{ color: 'var(--fg-secondary)' }}>{L('Cal.com Link', 'Cal.com Link', 'Enlace de Cal.com')}</label>
             <input type="url" value={calLink} onChange={(e) => setCalLink(e.target.value)} placeholder={L('https://cal.com/seu-nome', 'https://cal.com/your-name', 'https://cal.com/tu-nombre')}
-              className="w-full px-4 py-3 rounded-xl text-[14px] font-medium" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
+              className="w-full px-4 py-3 rounded-xl text-[14px] font-medium" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4', color: 'var(--fg)' }} />
           </div>
         </div>
       </div>
 
       {/* States / Licenses */}
-      <div className="rounded-2xl p-6 mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-        <h2 className="text-[15px] font-bold mb-2" style={{ color: '#1a1a2e' }}>{t.settings.statesTitle}</h2>
-        <p className="text-[13px] mb-4" style={{ color: '#94a3b8' }}>{t.settings.statesHelp}</p>
+      <div className="rounded-2xl p-6 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+        <h2 className="text-[15px] font-bold mb-2" style={{ color: 'var(--fg)' }}>{t.settings.statesTitle}</h2>
+        <p className="text-[13px] mb-4" style={{ color: 'var(--fg-muted)' }}>{t.settings.statesHelp}</p>
         <div className="flex flex-wrap gap-2">
           {allStates.map(code => (
             <button
@@ -185,9 +185,9 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
               onClick={() => toggleState(code)}
               className="px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all"
               style={{
-                background: states.includes(code) ? '#6366f1' : '#f8f9fc',
-                color: states.includes(code) ? '#fff' : '#64748b',
-                border: `1px solid ${states.includes(code) ? '#6366f1' : '#e8ecf4'}`,
+                background: states.includes(code) ? '#6366f1' : 'var(--bg)',
+                color: states.includes(code) ? '#fff' : 'var(--fg-secondary)',
+                border: `1px solid ${states.includes(code) ? '#6366f1' : 'var(--border)'}`,
               }}
             >
               {code}
@@ -202,9 +202,9 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
       </div>
 
       {/* Availability (for appointments) */}
-      <div className="rounded-2xl p-6 mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-        <h2 className="text-[15px] font-bold mb-2" style={{ color: '#1a1a2e' }}>{t.settings.availTitle}</h2>
-        <p className="text-[13px] mb-4" style={{ color: '#94a3b8' }}>{t.settings.availHelp}</p>
+      <div className="rounded-2xl p-6 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+        <h2 className="text-[15px] font-bold mb-2" style={{ color: 'var(--fg)' }}>{t.settings.availTitle}</h2>
+        <p className="text-[13px] mb-4" style={{ color: 'var(--fg-muted)' }}>{t.settings.availHelp}</p>
         <div className="space-y-3">
           {DAY_KEYS.map(dayKey => {
             const dayLabel =
@@ -214,7 +214,7 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
               : t.settings.holidays
             return (
               <div key={dayKey}>
-                <p className="text-[13px] font-bold mb-2" style={{ color: '#1a1a2e' }}>{dayLabel}</p>
+                <p className="text-[13px] font-bold mb-2" style={{ color: 'var(--fg)' }}>{dayLabel}</p>
                 <div className="flex gap-2">
                   {PERIOD_KEYS.map(periodKey => {
                     const periodLabel =
@@ -228,9 +228,9 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
                         onClick={() => toggleAvail(key)}
                         className="px-4 py-2 rounded-xl text-[12px] font-semibold transition-all"
                         style={{
-                          background: avail.includes(key) ? '#6366f1' : '#f8f9fc',
-                          color: avail.includes(key) ? '#fff' : '#64748b',
-                          border: `1px solid ${avail.includes(key) ? '#6366f1' : '#e8ecf4'}`,
+                          background: avail.includes(key) ? '#6366f1' : 'var(--bg)',
+                          color: avail.includes(key) ? '#fff' : 'var(--fg-secondary)',
+                          border: `1px solid ${avail.includes(key) ? '#6366f1' : 'var(--border)'}`,
                         }}
                       >
                         {periodLabel}
@@ -247,7 +247,7 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
                   const pLabel = pk === 'morning' ? t.settings.morning : pk === 'afternoon' ? t.settings.afternoon : t.settings.evening
                   return (
                     <div key={key} className="mt-2 ml-1 pl-3" style={{ borderLeft: '2px solid #eef2ff' }}>
-                      <p className="text-[11px] mb-1.5" style={{ color: '#94a3b8' }}>
+                      <p className="text-[11px] mb-1.5" style={{ color: 'var(--fg-muted)' }}>
                         {pLabel} · {hrs.length === 0
                           ? <span style={{ color: '#6366f1', fontWeight: 600 }}>{L('período todo', 'entire period', 'todo el período')}</span>
                           : <span style={{ color: '#4338ca', fontWeight: 600 }}>{hrs.length}h {L(hrs.length > 1 ? 'escolhidas' : 'escolhida', 'selected', hrs.length > 1 ? 'elegidas' : 'elegida')}</span>}
@@ -260,8 +260,8 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
                               className="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all"
                               style={{
                                 background: on ? '#4338ca' : '#fff',
-                                color: on ? '#fff' : '#64748b',
-                                border: `1px solid ${on ? '#4338ca' : '#e8ecf4'}`,
+                                color: on ? '#fff' : 'var(--fg-secondary)',
+                                border: `1px solid ${on ? '#4338ca' : 'var(--border)'}`,
                               }}>
                               {h}h
                             </button>
@@ -284,13 +284,13 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
       </div>
 
       {/* Notifications */}
-      <div className="rounded-2xl p-6 mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-        <h2 className="text-[15px] font-bold mb-4" style={{ color: '#1a1a2e' }}>{t.settings.notifTitle}</h2>
+      <div className="rounded-2xl p-6 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+        <h2 className="text-[15px] font-bold mb-4" style={{ color: 'var(--fg)' }}>{t.settings.notifTitle}</h2>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[13px] font-semibold" style={{ color: '#1a1a2e' }}>{t.settings.email}</p>
-              <p className="text-[11px]" style={{ color: '#94a3b8' }}>{t.settings.emailHelp}</p>
+              <p className="text-[13px] font-semibold" style={{ color: 'var(--fg)' }}>{t.settings.email}</p>
+              <p className="text-[11px]" style={{ color: 'var(--fg-muted)' }}>{t.settings.emailHelp}</p>
             </div>
             <button onClick={() => setNotifEmail(!notifEmail)}
               className="w-11 h-6 rounded-full relative" style={{ background: notifEmail ? '#10b981' : '#d1d5db' }}>
@@ -299,8 +299,8 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
           </div>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[13px] font-semibold" style={{ color: '#1a1a2e' }}>{t.settings.sms}</p>
-              <p className="text-[11px]" style={{ color: '#94a3b8' }}>{t.settings.smsHelp}</p>
+              <p className="text-[13px] font-semibold" style={{ color: 'var(--fg)' }}>{t.settings.sms}</p>
+              <p className="text-[11px]" style={{ color: 'var(--fg-muted)' }}>{t.settings.smsHelp}</p>
             </div>
             <button onClick={() => setNotifSms(!notifSms)}
               className="w-11 h-6 rounded-full relative" style={{ background: notifSms ? '#10b981' : '#d1d5db' }}>

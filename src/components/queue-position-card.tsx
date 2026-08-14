@@ -65,7 +65,7 @@ export function QueuePositionCard({ dark = false }: { dark?: boolean }) {
   const mut = dark ? 'var(--m-muted, #94a3b8)' : '#64748b'
   const card: React.CSSProperties = dark
     ? { background: 'rgba(99,102,241,0.10)', border: '1px solid rgba(99,102,241,0.30)', borderRadius: 16, padding: 16, marginBottom: 14 }
-    : { background: '#fff', border: '1px solid #e8ecf4', borderRadius: 16, padding: 18, marginBottom: 20 }
+    : { background: 'var(--bg-card)', border: '1px solid #e8ecf4', borderRadius: 16, padding: 18, marginBottom: 20 }
 
   const best = d.best
   const semFila = d.states.length === 0
@@ -123,12 +123,12 @@ export function QueuePositionCard({ dark = false }: { dark?: boolean }) {
                 <div key={s.state} style={{
                   display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5,
                   padding: '7px 10px', borderRadius: 10,
-                  background: dark ? 'rgba(255,255,255,0.04)' : '#f8fafc',
+                  background: dark ? 'rgba(255,255,255,0.04)' : 'var(--bg-soft)',
                   borderLeft: `3px solid ${primeiro ? '#10b981' : '#c7d2fe'}`,
                 }}>
                   <span style={{
                     fontWeight: 800, fontSize: 11, padding: '2px 7px', borderRadius: 6,
-                    background: dark ? 'rgba(255,255,255,0.08)' : '#eef2ff', color: dark ? 'var(--m-text)' : '#4f46e5',
+                    background: dark ? 'rgba(255,255,255,0.08)' : 'var(--accent-light)', color: dark ? 'var(--m-text)' : '#4f46e5',
                   }}>{s.state}</span>
                   {/* Texto explícito — não depender da cor pra entender a posição */}
                   <span style={{ fontWeight: 800, fontSize: 11, color: primeiro ? '#059669' : '#6366f1' }}>

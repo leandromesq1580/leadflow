@@ -285,7 +285,7 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
         : L('Arquivo', 'File', 'Archivo')
       return (
         <div className="flex items-start gap-2 rounded-lg px-2.5 py-2 mb-1"
-          style={{ background: '#fffbeb', border: '1px dashed #fde68a' }}>
+          style={{ background: 'var(--warn-soft)', border: '1px dashed #fde68a' }}>
           <span className="text-[15px]">📎</span>
           <div>
             <p className="text-[11.5px] font-bold" style={{ color: '#92400e' }}>
@@ -307,7 +307,7 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
         <div className="rounded-lg p-2 mb-1" style={{ background: 'rgba(0,0,0,0.04)', minWidth: 240 }}>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[14px]">🎤</span>
-            <span className="text-[11px] font-bold" style={{ color: '#64748b' }}>{L('Mensagem de voz', 'Voice message', 'Mensaje de voz')}</span>
+            <span className="text-[11px] font-bold" style={{ color: 'var(--fg-secondary)' }}>{L('Mensagem de voz', 'Voice message', 'Mensaje de voz')}</span>
           </div>
           <audio controls src={m.media_url} className="w-full" preload="metadata" style={{ minHeight: 32 }} />
         </div>
@@ -324,23 +324,23 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
         style={{ background: 'rgba(0,0,0,0.04)', textDecoration: 'none' }}>
         <span className="text-[20px]">📎</span>
         <div className="min-w-0 flex-1">
-          <p className="text-[12px] font-bold truncate" style={{ color: '#1a1a2e' }}>{filename.slice(0, 40)}</p>
-          <p className="text-[10px]" style={{ color: '#64748b' }}>{L('Baixar documento', 'Download document', 'Descargar documento')}</p>
+          <p className="text-[12px] font-bold truncate" style={{ color: 'var(--fg)' }}>{filename.slice(0, 40)}</p>
+          <p className="text-[10px]" style={{ color: 'var(--fg-secondary)' }}>{L('Baixar documento', 'Download document', 'Descargar documento')}</p>
         </div>
       </a>
     )
   }
 
-  if (loading) return <div className="text-[12px] p-4" style={{ color: '#94a3b8' }}>{L('Carregando conversa...', 'Loading conversation...', 'Cargando conversación...')}</div>
+  if (loading) return <div className="text-[12px] p-4" style={{ color: 'var(--fg-muted)' }}>{L('Carregando conversa...', 'Loading conversation...', 'Cargando conversación...')}</div>
 
   return (
-    <div className="flex flex-col rounded-xl overflow-hidden" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', height: 460 }}>
+    <div className="flex flex-col rounded-xl overflow-hidden" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4', height: 460 }}>
       {/* Thread */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {messages.length === 0 && (
           <div className="text-center py-10">
             <p className="text-[40px] mb-2">💬</p>
-            <p className="text-[13px]" style={{ color: '#94a3b8' }}>{L('Nenhuma mensagem ainda', 'No messages yet', 'Aún no hay mensajes')}</p>
+            <p className="text-[13px]" style={{ color: 'var(--fg-muted)' }}>{L('Nenhuma mensagem ainda', 'No messages yet', 'Aún no hay mensajes')}</p>
             <p className="text-[11px] mt-1" style={{ color: '#cbd5e1' }}>{L('Envie a primeira mensagem abaixo', 'Send the first message below', 'Envía el primer mensaje abajo')}</p>
           </div>
         )}
@@ -348,22 +348,22 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
           <div key={m.id} className={`flex ${m.direction === 'out' ? 'justify-end' : 'justify-start'}`}>
             <div className={`${m.media_type === 'audio' ? 'max-w-[320px] min-w-[280px]' : 'max-w-[80%]'} px-3 py-2 rounded-2xl`}
               style={{
-                background: m.direction === 'out' ? '#dcf8c6' : '#fff',
+                background: m.direction === 'out' ? '#dcf8c6' : 'var(--bg-card)',
                 border: m.direction === 'in' ? '1px solid #e8ecf4' : 'none',
                 borderBottomRightRadius: m.direction === 'out' ? 4 : 16,
                 borderBottomLeftRadius: m.direction === 'in' ? 4 : 16,
               }}>
               {m.channel === 'sms' && (
                 <span className="inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mb-1"
-                  style={{ background: m.direction === 'out' ? 'rgba(15,118,110,0.12)' : '#eef2ff', color: m.direction === 'out' ? '#0f766e' : '#6366f1', letterSpacing: 0.5 }}>
+                  style={{ background: m.direction === 'out' ? 'rgba(15,118,110,0.12)' : 'var(--accent-light)', color: m.direction === 'out' ? '#0f766e' : '#6366f1', letterSpacing: 0.5 }}>
                   SMS
                 </span>
               )}
               {renderMedia(m)}
               {m.body && (
-                <p className="text-[13px] whitespace-pre-wrap break-words" style={{ color: '#1a1a2e' }}>{m.body}</p>
+                <p className="text-[13px] whitespace-pre-wrap break-words" style={{ color: 'var(--fg)' }}>{m.body}</p>
               )}
-              <p className="text-[9px] mt-0.5 text-right" style={{ color: '#94a3b8' }}>
+              <p className="text-[9px] mt-0.5 text-right" style={{ color: 'var(--fg-muted)' }}>
                 {fmtTime(m.sent_at)} {m.direction === 'out' && m.channel !== 'sms' && (m.status === 'read' ? '✓✓' : m.status === 'delivered' ? '✓✓' : '✓')}
               </p>
             </div>
@@ -375,7 +375,7 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
       {/* Emoji picker */}
       {showEmoji && (
         <div className="absolute bottom-[100px] right-4 z-10 p-3 rounded-xl shadow-xl"
-          style={{ background: '#fff', border: '1px solid #e8ecf4', width: 320, maxHeight: 280, overflowY: 'auto' }}>
+          style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', width: 320, maxHeight: 280, overflowY: 'auto' }}>
           <div className="grid grid-cols-10 gap-1">
             {QUICK_EMOJIS.map(e => (
               <button key={e} onClick={() => { insertEmoji(e); setShowEmoji(false) }}
@@ -390,7 +390,7 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
       {/* Mic error banner */}
       {micError && (
         <div className="mx-3 mb-2 px-3 py-2 rounded-lg flex items-start gap-2"
-          style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
+          style={{ background: 'var(--err-soft)', border: '1px solid #fecaca' }}>
           <span className="text-[14px]">🎤</span>
           <p className="flex-1 text-[12px] font-semibold" style={{ color: '#991b1b' }}>{micError}</p>
           <button onClick={() => setMicError(null)} className="text-[14px] leading-none" style={{ color: '#991b1b' }}>×</button>
@@ -398,16 +398,16 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
       )}
 
       {/* Composer */}
-      <div className="p-3 relative" style={{ background: '#fff', borderTop: '1px solid #e8ecf4' }}>
+      <div className="p-3 relative" style={{ background: 'var(--bg-card)', borderTop: '1px solid #e8ecf4' }}>
         {recording ? (
-          <div className="flex items-center gap-3 px-3 py-2 rounded-xl" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
+          <div className="flex items-center gap-3 px-3 py-2 rounded-xl" style={{ background: 'var(--err-soft)', border: '1px solid #fecaca' }}>
             <span className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ background: '#ef4444' }} />
             <span className="text-[13px] font-bold" style={{ color: '#dc2626' }}>
               {L('Gravando áudio', 'Recording audio', 'Grabando audio')} — {Math.floor(recordSecs / 60)}:{String(recordSecs % 60).padStart(2, '0')}
             </span>
             <div className="flex-1" />
             <button onClick={() => stopRecording(true)}
-              className="px-3 py-1.5 rounded-lg text-[12px] font-bold" style={{ color: '#64748b' }}>
+              className="px-3 py-1.5 rounded-lg text-[12px] font-bold" style={{ color: 'var(--fg-secondary)' }}>
               {L('Cancelar', 'Cancel', 'Cancelar')}
             </button>
             <button onClick={() => stopRecording(false)}
@@ -450,7 +450,7 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
               placeholder={L('Digite uma mensagem... (Enter envia)', 'Type a message... (Enter to send)', 'Escribe un mensaje... (Enter envía)')}
               rows={1}
               className="flex-1 px-3 py-2 rounded-xl text-[13px] resize-none focus:outline-none"
-              style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e', maxHeight: 100 }}
+              style={{ background: 'var(--bg)', border: '1px solid #e8ecf4', color: 'var(--fg)', maxHeight: 100 }}
             />
             <button onClick={sendText} disabled={!text.trim() || sending}
               className="px-4 h-9 rounded-xl text-[12px] font-bold text-white disabled:opacity-50"

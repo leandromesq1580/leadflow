@@ -82,8 +82,8 @@ export default async function CreditsPage({
 
   return (
     <div className="max-w-[1040px]">
-      <h1 className="text-[24px] font-extrabold mb-1" style={{ color: '#1a1a2e' }}>{L('Creditos & Planos', 'Credits & Plans', 'Créditos y Planes')}</h1>
-      <p className="text-[14px] mb-6" style={{ color: '#64748b' }}>{L('Compre leads ou assine o CRM Pro', 'Buy leads or subscribe to CRM Pro', 'Compra leads o suscríbete al CRM Pro')}</p>
+      <h1 className="text-[24px] font-extrabold mb-1" style={{ color: 'var(--fg)' }}>{L('Creditos & Planos', 'Credits & Plans', 'Créditos y Planes')}</h1>
+      <p className="text-[14px] mb-6" style={{ color: 'var(--fg-secondary)' }}>{L('Compre leads ou assine o CRM Pro', 'Buy leads or subscribe to CRM Pro', 'Compra leads o suscríbete al CRM Pro')}</p>
 
       {/* CRM Pro — assinante ATIVO vê status + troca de plano; trial/free/expirado vê a grade dos 4 planos */}
       {isActiveSub ? (
@@ -107,8 +107,8 @@ export default async function CreditsPage({
           </div>
           {buyer.crm_subscription_id ? (
             <>
-              <h2 className="text-[16px] font-bold mb-1" style={{ color: '#1a1a2e' }}>{L('Trocar de plano', 'Change plan', 'Cambiar de plan')}</h2>
-              <p className="text-[13px] mb-4" style={{ color: '#64748b' }}>{L(
+              <h2 className="text-[16px] font-bold mb-1" style={{ color: 'var(--fg)' }}>{L('Trocar de plano', 'Change plan', 'Cambiar de plan')}</h2>
+              <p className="text-[13px] mb-4" style={{ color: 'var(--fg-secondary)' }}>{L(
                 'Ao subir de plano, você paga só a diferença num checkout seguro e o novo ciclo começa na hora. Ao descer, a mudança vale já.',
                 'When you upgrade, you only pay the difference in a secure checkout and the new cycle starts right away. When you downgrade, the change applies immediately.',
                 'Al subir de plan, pagas solo la diferencia en un checkout seguro y el nuevo ciclo empieza al instante. Al bajar de plan, el cambio aplica de inmediato.'
@@ -116,7 +116,7 @@ export default async function CreditsPage({
               <CrmChangePlan currentPlan={currentPlanKey} />
             </>
           ) : (
-            <p className="text-[13px]" style={{ color: '#64748b' }}>{L(
+            <p className="text-[13px]" style={{ color: 'var(--fg-secondary)' }}>{L(
               'Seu CRM Pro é cortesia / gerenciado manualmente — sem cobrança nem troca de plano por aqui.',
               'Your CRM Pro is complimentary / manually managed — no billing or plan changes here.',
               'Tu CRM Pro es cortesía / administrado manualmente — sin cobros ni cambios de plan por aquí.'
@@ -125,8 +125,8 @@ export default async function CreditsPage({
         </div>
       ) : (
         <div className="mb-8">
-          <h2 className="text-[16px] font-bold mb-1" style={{ color: '#1a1a2e' }}>{L('⚡ Assine o CRM Pro', '⚡ Subscribe to CRM Pro', '⚡ Suscríbete al CRM Pro')}</h2>
-          <p className="text-[13px] mb-4" style={{ color: '#64748b' }}>
+          <h2 className="text-[16px] font-bold mb-1" style={{ color: 'var(--fg)' }}>{L('⚡ Assine o CRM Pro', '⚡ Subscribe to CRM Pro', '⚡ Suscríbete al CRM Pro')}</h2>
+          <p className="text-[13px] mb-4" style={{ color: 'var(--fg-secondary)' }}>
             {L(
               'Pipeline, Time, Follow-ups e Anexos. Quanto maior o compromisso, menor o $/mês.',
               'Pipeline, Team, Follow-ups and Attachments. The longer the commitment, the lower the $/mo.',
@@ -145,30 +145,30 @@ export default async function CreditsPage({
 
       {/* Balance — o card de appointment só aparece pra quem AINDA tem saldo pago (fulfillment) */}
       <div className={`grid ${totalAppts > 0 ? 'grid-cols-2' : 'grid-cols-1'} gap-4 mb-8`}>
-        <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-          <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Leads Disponiveis', 'Available Leads', 'Leads Disponibles')}</p>
+        <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+          <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Leads Disponiveis', 'Available Leads', 'Leads Disponibles')}</p>
           <p className="text-[32px] font-extrabold mt-1" style={{ color: '#6366f1' }}>{totalLeads}</p>
         </div>
         {totalAppts > 0 && (
-          <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-            <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Appointments Disponiveis', 'Available Appointments', 'Appointments Disponibles')}</p>
+          <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+            <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Appointments Disponiveis', 'Available Appointments', 'Appointments Disponibles')}</p>
             <p className="text-[32px] font-extrabold mt-1" style={{ color: '#f59e0b' }}>{totalAppts}</p>
-            <p className="text-[11px] mt-1" style={{ color: '#94a3b8' }}>{L('Saldo já pago — será entregue normalmente.', 'Already paid — will be delivered as usual.', 'Saldo ya pagado — se entregará normalmente.')}</p>
+            <p className="text-[11px] mt-1" style={{ color: 'var(--fg-muted)' }}>{L('Saldo já pago — será entregue normalmente.', 'Already paid — will be delivered as usual.', 'Saldo ya pagado — se entregará normalmente.')}</p>
           </div>
         )}
       </div>
 
       {/* Lead Packages */}
-      <h2 className="text-[16px] font-bold mb-4" style={{ color: '#1a1a2e' }}>{L('📋 Pacotes de Leads Exclusivos', '📋 Exclusive Lead Packages', '📋 Paquetes de Leads Exclusivos')}</h2>
+      <h2 className="text-[16px] font-bold mb-4" style={{ color: 'var(--fg)' }}>{L('📋 Pacotes de Leads Exclusivos', '📋 Exclusive Lead Packages', '📋 Paquetes de Leads Exclusivos')}</h2>
       <PolicyCheck context="checkout_lead" />
       <CouponBox />
       <div className="grid grid-cols-3 gap-4 mb-8">
         {leadPackages.map((pkg) => {
           return (
-            <div key={pkg.id} className="rounded-2xl p-6 relative" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-              <p className="text-[13px] font-medium" style={{ color: '#64748b' }}>{pkg.quantity} Leads</p>
-              <p className="text-[32px] font-extrabold mt-1" style={{ color: '#1a1a2e' }}>${pkg.totalDisplay}</p>
-              <p className="text-[12px]" style={{ color: '#94a3b8' }}>${pkg.pricePerUnit}/lead</p>
+            <div key={pkg.id} className="rounded-2xl p-6 relative" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+              <p className="text-[13px] font-medium" style={{ color: 'var(--fg-secondary)' }}>{pkg.quantity} Leads</p>
+              <p className="text-[32px] font-extrabold mt-1" style={{ color: 'var(--fg)' }}>${pkg.totalDisplay}</p>
+              <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>${pkg.pricePerUnit}/lead</p>
               <BuyButton packageId={pkg.id} color="#6366f1" />
             </div>
           )
@@ -176,32 +176,32 @@ export default async function CreditsPage({
       </div>
 
       {/* Cold Lead Packages */}
-      <h2 className="text-[16px] font-bold mb-4" style={{ color: '#1a1a2e' }}>{L('❄️ Leads Frios (7+ dias)', '❄️ Cold Leads (7+ days)', '❄️ Leads Fríos (7+ días)')}</h2>
-      <p className="text-[13px] mb-4" style={{ color: '#94a3b8' }}>{L('Leads que nao foram distribuidos a tempo. Preco reduzido, entrega imediata.', 'Leads that were not distributed in time. Reduced price, instant delivery.', 'Leads que no se distribuyeron a tiempo. Precio reducido, entrega inmediata.')}</p>
+      <h2 className="text-[16px] font-bold mb-4" style={{ color: 'var(--fg)' }}>{L('❄️ Leads Frios (7+ dias)', '❄️ Cold Leads (7+ days)', '❄️ Leads Fríos (7+ días)')}</h2>
+      <p className="text-[13px] mb-4" style={{ color: 'var(--fg-muted)' }}>{L('Leads que nao foram distribuidos a tempo. Preco reduzido, entrega imediata.', 'Leads that were not distributed in time. Reduced price, instant delivery.', 'Leads que no se distribuyeron a tiempo. Precio reducido, entrega inmediata.')}</p>
       <div className="grid grid-cols-3 gap-4 mb-8">
         {PRODUCTS.cold_lead.packages.map((pkg) => (
-          <div key={pkg.id} className="rounded-2xl p-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-            <p className="text-[13px] font-medium" style={{ color: '#64748b' }}>{pkg.quantity} {L('Leads Frios', 'Cold Leads', 'Leads Fríos')}</p>
-            <p className="text-[32px] font-extrabold mt-1" style={{ color: '#1a1a2e' }}>${pkg.totalDisplay}</p>
-            <p className="text-[12px]" style={{ color: '#94a3b8' }}>${pkg.pricePerUnit}/lead</p>
+          <div key={pkg.id} className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+            <p className="text-[13px] font-medium" style={{ color: 'var(--fg-secondary)' }}>{pkg.quantity} {L('Leads Frios', 'Cold Leads', 'Leads Fríos')}</p>
+            <p className="text-[32px] font-extrabold mt-1" style={{ color: 'var(--fg)' }}>${pkg.totalDisplay}</p>
+            <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>${pkg.pricePerUnit}/lead</p>
             <BuyButton packageId={pkg.id} color="#64748b" />
           </div>
         ))}
       </div>
 
       {/* Purchase History */}
-      <h2 className="text-[16px] font-bold mb-4" style={{ color: '#1a1a2e' }}>{L('Historico de Compras', 'Purchase History', 'Historial de Compras')}</h2>
-      <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+      <h2 className="text-[16px] font-bold mb-4" style={{ color: 'var(--fg)' }}>{L('Historico de Compras', 'Purchase History', 'Historial de Compras')}</h2>
+      <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
         {allCredits.length > 0 ? (
           <div>
             {allCredits.map((c, i) => (
               <div key={c.id} className="flex items-center gap-4 px-6 py-4" style={{ borderBottom: i < allCredits.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
                 <span className="text-[20px]">{c.type === 'lead' ? '📋' : '📅'}</span>
                 <div className="flex-1">
-                  <p className="text-[14px] font-semibold" style={{ color: '#1a1a2e' }}>
+                  <p className="text-[14px] font-semibold" style={{ color: 'var(--fg)' }}>
                     {c.total_purchased} {c.type === 'lead' ? 'Leads' : 'Appointments'}
                   </p>
-                  <p className="text-[12px]" style={{ color: '#94a3b8' }}>
+                  <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>
                     ${Number(c.price_per_unit).toFixed(0)}/{c.type === 'lead' ? 'lead' : 'appt'}
                   </p>
                 </div>
@@ -209,18 +209,18 @@ export default async function CreditsPage({
                   <p className="text-[13px] font-bold" style={{ color: '#10b981' }}>
                     {c.total_purchased - c.total_used} {locale === 'en' ? 'left' : (c.total_purchased - c.total_used !== 1 ? 'restantes' : 'restante')}
                   </p>
-                  <p className="text-[11px]" style={{ color: '#94a3b8' }}>
+                  <p className="text-[11px]" style={{ color: 'var(--fg-muted)' }}>
                     {c.total_used} {locale === 'en' ? 'used' : (c.total_used !== 1 ? 'usados' : 'usado')}
                   </p>
                 </div>
-                <span className="text-[11px]" style={{ color: '#94a3b8' }}>
+                <span className="text-[11px]" style={{ color: 'var(--fg-muted)' }}>
                   {new Date(c.purchased_at).toLocaleDateString(dateLocale)}
                 </span>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-12 text-[13px]" style={{ color: '#94a3b8' }}>{L('Nenhuma compra ainda', 'No purchases yet', 'Aún no hay compras')}</div>
+          <div className="text-center py-12 text-[13px]" style={{ color: 'var(--fg-muted)' }}>{L('Nenhuma compra ainda', 'No purchases yet', 'Aún no hay compras')}</div>
         )}
       </div>
     </div>

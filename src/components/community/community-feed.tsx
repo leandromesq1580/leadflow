@@ -90,7 +90,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
   const dark = theme === 'dark'
   const T = dark
     ? { card: '#16161f', border: '#262633', text: '#f5f5f7', muted: '#9aa0ac', accent: '#a78bfa', accentBg: '#241f3d', input: '#0f0f17', win: '#34d399', winBg: '#10261d', winText: '#6ee7b7', tag: '#20202c', chip: '#16161f' }
-    : { card: '#ffffff', border: '#e8ecf4', text: '#1a1a2e', muted: '#64748b', accent: '#6366f1', accentBg: '#eef2ff', input: '#ffffff', win: '#059669', winBg: '#ecfdf5', winText: '#047857', tag: '#f1f5f9', chip: '#ffffff' }
+    : { card: '#ffffff', border: 'var(--border)', text: '#1a1a2e', muted: '#64748b', accent: '#6366f1', accentBg: 'var(--accent-light)', input: '#ffffff', win: '#059669', winBg: '#ecfdf5', winText: '#047857', tag: 'var(--bg-soft)', chip: '#ffffff' }
   const bodyColor = dark ? '#d6d8de' : '#334155'
 
   const [me, setMe] = useState<Me | null>(null)
@@ -526,11 +526,11 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
         </button>
         <button onClick={() => { setDmActive(null); setDmOpen(true); loadDmList() }} aria-label={L('mensagens', 'messages', 'mensajes')} style={{ position: 'relative', border: `1px solid ${T.border}`, background: T.card, borderRadius: 999, width: 38, height: 38, cursor: 'pointer', fontSize: 16 }}>
           ✉️
-          {dmUnread > 0 && <span style={{ position: 'absolute', top: -4, right: -4, background: '#ef4444', color: '#fff', borderRadius: 999, minWidth: 18, height: 18, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{dmUnread > 9 ? '9+' : dmUnread}</span>}
+          {dmUnread > 0 && <span style={{ position: 'absolute', top: -4, right: -4, background: '#ef4444', color: 'var(--bg-card)', borderRadius: 999, minWidth: 18, height: 18, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{dmUnread > 9 ? '9+' : dmUnread}</span>}
         </button>
         <button onClick={openNotifs} aria-label={L('notificações', 'notifications', 'notificaciones')} style={{ position: 'relative', border: `1px solid ${T.border}`, background: T.card, borderRadius: 999, width: 38, height: 38, cursor: 'pointer', fontSize: 17 }}>
           🔔
-          {unread > 0 && <span style={{ position: 'absolute', top: -4, right: -4, background: '#ef4444', color: '#fff', borderRadius: 999, minWidth: 18, height: 18, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{unread > 9 ? '9+' : unread}</span>}
+          {unread > 0 && <span style={{ position: 'absolute', top: -4, right: -4, background: '#ef4444', color: 'var(--bg-card)', borderRadius: 999, minWidth: 18, height: 18, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{unread > 9 ? '9+' : unread}</span>}
         </button>
         {notifOpen && (
           <div style={{ position: 'absolute', top: 44, right: 0, width: 300, maxHeight: 360, overflowY: 'auto', background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, zIndex: 20, boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}>
@@ -567,7 +567,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
           <p style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 700, color: T.text }}>{L('🏆 Top fechadores do mês', '🏆 Top closers of the month', '🏆 Top cerradores del mes')}</p>
           {ranking.slice(0, 5).map((r, i) => (
             <div key={r.buyer_id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '5px 0' }}>
-              <span style={{ width: 20, fontSize: 13, fontWeight: 700, color: i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : i === 2 ? '#b45309' : T.muted }}>{L(`${i + 1}º`, `#${i + 1}`, `${i + 1}º`)}</span>
+              <span style={{ width: 20, fontSize: 13, fontWeight: 700, color: i === 0 ? '#f59e0b' : i === 1 ? 'var(--fg-muted)' : i === 2 ? '#b45309' : T.muted }}>{L(`${i + 1}º`, `#${i + 1}`, `${i + 1}º`)}</span>
               <div style={{ width: 28, height: 28, borderRadius: '50%', background: T.accentBg, color: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{initials(r.name)}</div>
               <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
               <span style={{ fontSize: 12, color: T.muted, whiteSpace: 'nowrap' }}>{r.count} {r.count === 1 ? L('venda', 'sale', 'venta') : L('vendas', 'sales', 'ventas')}{r.total > 0 ? ` · ${money(r.total)}` : ''}</span>
@@ -577,7 +577,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
       )}
 
       {err && (
-        <div style={{ ...card, marginBottom: 12, padding: '10px 14px', background: dark ? '#2a1416' : '#fef2f2', border: `1px solid ${dark ? '#5b2326' : '#fecaca'}`, color: '#ef4444', fontSize: 13, display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+        <div style={{ ...card, marginBottom: 12, padding: '10px 14px', background: dark ? '#2a1416' : 'var(--err-soft)', border: `1px solid ${dark ? '#5b2326' : 'var(--err-line)'}`, color: '#ef4444', fontSize: 13, display: 'flex', justifyContent: 'space-between', gap: 10 }}>
           <span>{err}</span>
           <span style={{ cursor: 'pointer', opacity: 0.7 }} onClick={() => setErr('')}>✕</span>
         </div>
@@ -687,7 +687,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
       ) : posts.map(p => {
         const pollTotal = Object.values(p.poll_counts || {}).reduce((a, b) => a + b, 0)
         return (
-          <div key={p.id} style={p.kind === 'aviso' ? { ...card, border: '1.5px solid #f59e0b', background: dark ? '#241a06' : '#fffbeb' } : card}>
+          <div key={p.id} style={p.kind === 'aviso' ? { ...card, border: '1.5px solid #f59e0b', background: dark ? '#241a06' : 'var(--warn-soft)' } : card}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
               <Av name={p.author_name} path={p.author_avatar} size={36} bg={p.kind === 'win' ? T.winBg : T.accentBg} fg={p.kind === 'win' ? T.winText : T.accent} onClick={p.buyer_id ? () => setProfileId(p.buyer_id) : undefined} />
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -697,7 +697,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
               {p.kind === 'win' && <span style={{ background: T.winBg, color: T.winText, fontSize: 12, fontWeight: 600, padding: '3px 9px', borderRadius: 999 }}>{L('🏆 vitória', '🏆 win', '🏆 victoria')}</span>}
               {p.kind === 'sacada' && <span style={{ background: T.accentBg, color: T.accent, fontSize: 12, fontWeight: 600, padding: '3px 9px', borderRadius: 999 }}>{L('💡 sacada', '💡 insight', '💡 tip')}</span>}
               {p.kind === 'poll' && <span style={{ background: T.accentBg, color: T.accent, fontSize: 12, fontWeight: 600, padding: '3px 9px', borderRadius: 999 }}>{L('📊 enquete', '📊 poll', '📊 encuesta')}</span>}
-              {p.kind === 'aviso' && <span style={{ background: '#fef3c7', color: '#b45309', fontSize: 12, fontWeight: 700, padding: '3px 9px', borderRadius: 999 }}>{L('📢 aviso', '📢 announcement', '📢 aviso')}</span>}
+              {p.kind === 'aviso' && <span style={{ background: 'var(--warn-line)', color: '#b45309', fontSize: 12, fontWeight: 700, padding: '3px 9px', borderRadius: 999 }}>{L('📢 aviso', '📢 announcement', '📢 aviso')}</span>}
               {p.kind === 'post' && <span style={{ background: T.tag, color: T.muted, fontSize: 12, padding: '3px 9px', borderRadius: 999 }}>{CHANNEL_LABEL[p.channel]}</span>}
             </div>
 
@@ -799,7 +799,7 @@ export function CommunityFeed({ theme = 'light' }: { theme?: 'light' | 'dark' })
                 {profile?.stats && <p style={{ margin: 0, fontSize: 12, color: T.muted }}>{profile.stats.posts} {profile.stats.posts === 1 ? 'post' : 'posts'} · {profile.stats.wins} {profile.stats.wins === 1 ? L('vitória', 'win', 'victoria') : L('vitórias', 'wins', 'victorias')}{profile.stats.salesTotal > 0 ? ` · ${money(profile.stats.salesTotal)} ${L('vendidos', 'sold', 'vendidos')}` : ''}</p>}
               </div>
               {profileId && me && profileId !== me.id && <button onClick={() => openConversation(profileId, profile?.name || L('Membro', 'Member', 'Miembro'))} style={{ ...btn, padding: '6px 12px' }}>{L('Mensagem', 'Message', 'Mensaje')}</button>}
-              {me?.isAdmin && profileId !== me.id && <button onClick={() => toggleBan(profileId!, !!profile?.banned)} style={{ ...ghostBtn, padding: '6px 11px', color: profile?.banned ? T.accent : '#ef4444', borderColor: profile?.banned ? T.border : '#fecaca' }}>{profile?.banned ? L('↺ Desbloquear', '↺ Unblock', '↺ Desbloquear') : L('🚫 Bloquear', '🚫 Block', '🚫 Bloquear')}</button>}
+              {me?.isAdmin && profileId !== me.id && <button onClick={() => toggleBan(profileId!, !!profile?.banned)} style={{ ...ghostBtn, padding: '6px 11px', color: profile?.banned ? T.accent : '#ef4444', borderColor: profile?.banned ? T.border : 'var(--err-line)' }}>{profile?.banned ? L('↺ Desbloquear', '↺ Unblock', '↺ Desbloquear') : L('🚫 Bloquear', '🚫 Block', '🚫 Bloquear')}</button>}
               <button onClick={() => setProfileId(null)} style={{ ...ghostBtn, padding: '6px 11px' }}>{L('Fechar', 'Close', 'Cerrar')}</button>
             </div>
             {profile?.bio && <p style={{ margin: '0 0 12px', fontSize: 13.5, color: bodyColor, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{profile.bio}</p>}

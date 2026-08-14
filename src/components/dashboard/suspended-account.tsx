@@ -19,16 +19,16 @@ export function SuspendedAccount({ name }: { name: string }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#f8f9fc' }}>
-      <div className="w-full max-w-md rounded-2xl p-8 text-center" style={{ background: '#fff', border: '1px solid #e8ecf4', boxShadow: '0 8px 30px rgba(0,0,0,0.06)' }}>
-        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ background: '#fef2f2' }}>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--bg)' }}>
+      <div className="w-full max-w-md rounded-2xl p-8 text-center" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', boxShadow: '0 8px 30px rgba(0,0,0,0.06)' }}>
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ background: 'var(--err-soft)' }}>
           <span className="text-[34px]">🔒</span>
         </div>
-        <h1 className="text-[20px] font-extrabold mb-2" style={{ color: '#1a1a2e' }}>{L('Conta suspensa', 'Account suspended', 'Cuenta suspendida')}</h1>
-        <p className="text-[14px] leading-relaxed mb-1" style={{ color: '#64748b' }}>
+        <h1 className="text-[20px] font-extrabold mb-2" style={{ color: 'var(--fg)' }}>{L('Conta suspensa', 'Account suspended', 'Cuenta suspendida')}</h1>
+        <p className="text-[14px] leading-relaxed mb-1" style={{ color: 'var(--fg-secondary)' }}>
           {L('Olá', 'Hello', 'Hola')}{name ? `, ${name.split(' ')[0]}` : ''}. {L('Seu acesso ao Lead4Producers está temporariamente desativado.', 'Your access to Lead4Producers is temporarily disabled.', 'Tu acceso a Lead4Producers está temporalmente desactivado.')}
         </p>
-        <p className="text-[13px] leading-relaxed mb-6" style={{ color: '#94a3b8' }}>
+        <p className="text-[13px] leading-relaxed mb-6" style={{ color: 'var(--fg-muted)' }}>
           {L('Para reativar sua conta e voltar a receber leads, fale com a nossa equipe.', 'To reactivate your account and start receiving leads again, talk to our team.', 'Para reactivar tu cuenta y volver a recibir leads, habla con nuestro equipo.')}
         </p>
         <a
@@ -40,7 +40,7 @@ export function SuspendedAccount({ name }: { name: string }) {
         >
           💬 {L('Falar com o suporte', 'Talk to support', 'Hablar con soporte')}
         </a>
-        <button onClick={logout} className="text-[13px] font-semibold" style={{ color: '#94a3b8' }}>
+        <button onClick={logout} className="text-[13px] font-semibold" style={{ color: 'var(--fg-muted)' }}>
           {L('Sair', 'Sign out', 'Salir')}
         </button>
       </div>

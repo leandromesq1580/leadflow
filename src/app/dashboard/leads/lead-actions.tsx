@@ -20,7 +20,7 @@ export function LeadActions() {
         </button>
         <button onClick={() => setMode('import')}
           className="px-4 py-2 rounded-xl text-[12px] font-bold transition-all hover:opacity-90"
-          style={{ background: '#eef2ff', color: '#6366f1', border: '1px solid #c7d2fe' }}>
+          style={{ background: 'var(--accent-light)', color: '#6366f1', border: '1px solid #c7d2fe' }}>
           {L('📂 Importar CSV', '📂 Import CSV', '📂 Importar CSV')}
         </button>
       </div>
@@ -62,64 +62,64 @@ function ManualLeadModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm overflow-y-auto p-6" onClick={onClose}>
-      <div className="mx-auto max-w-[520px] rounded-2xl p-6" style={{ background: '#fff' }} onClick={e => e.stopPropagation()}>
+      <div className="mx-auto max-w-[520px] rounded-2xl p-6" style={{ background: 'var(--bg-card)' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-[18px] font-extrabold" style={{ color: '#1a1a2e' }}>{L('Adicionar Lead', 'Add Lead', 'Agregar Lead')}</h2>
-            <p className="text-[12px]" style={{ color: '#94a3b8' }}>{L('Lead será atribuído a você automaticamente', 'The lead will be automatically assigned to you', 'El lead se te asignará automáticamente')}</p>
+            <h2 className="text-[18px] font-extrabold" style={{ color: 'var(--fg)' }}>{L('Adicionar Lead', 'Add Lead', 'Agregar Lead')}</h2>
+            <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{L('Lead será atribuído a você automaticamente', 'The lead will be automatically assigned to you', 'El lead se te asignará automáticamente')}</p>
           </div>
-          <button onClick={onClose} className="text-[20px]" style={{ color: '#94a3b8' }}>×</button>
+          <button onClick={onClose} className="text-[20px]" style={{ color: 'var(--fg-muted)' }}>×</button>
         </div>
 
         <div className="space-y-3">
           <div>
-            <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Nome *', 'Name *', 'Nombre *')}</label>
+            <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Nome *', 'Name *', 'Nombre *')}</label>
             <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} autoFocus placeholder={L('João Silva', 'John Smith', 'Juan Pérez')}
-              className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+              className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Telefone', 'Phone', 'Teléfono')}</label>
+              <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Telefone', 'Phone', 'Teléfono')}</label>
               <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+1 407 555-0101"
-                className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+                className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
             </div>
             <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Email</label>
+              <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>Email</label>
               <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder={L('joao@email.com', 'john@email.com', 'juan@email.com')} type="email"
-                className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+                className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Estado', 'State', 'Estado')}</label>
+              <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Estado', 'State', 'Estado')}</label>
               <select value={form.state} onChange={e => setForm({ ...form, state: e.target.value })}
-                className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
+                className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }}>
                 <option value="">—</option>
                 {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Cidade', 'City', 'Ciudad')}</label>
+              <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Cidade', 'City', 'Ciudad')}</label>
               <input value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} placeholder="Orlando"
-                className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+                className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
             </div>
           </div>
           <div>
-            <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Interesse', 'Interest', 'Interés')}</label>
+            <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Interesse', 'Interest', 'Interés')}</label>
             <input value={form.interest} onChange={e => setForm({ ...form, interest: e.target.value })}
-              className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+              className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
           </div>
           <div>
-            <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Notas', 'Notes', 'Notas')}</label>
+            <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Notas', 'Notes', 'Notas')}</label>
             <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} placeholder={L('Como chegou, observações...', 'How they came in, notes...', 'Cómo llegó, observaciones...')}
-              className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px] resize-none" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+              className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px] resize-none" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
           </div>
         </div>
 
-        {error && <p className="text-[12px] mt-3 px-3 py-2 rounded-lg" style={{ background: '#fef2f2', color: '#dc2626' }}>⚠️ {error}</p>}
+        {error && <p className="text-[12px] mt-3 px-3 py-2 rounded-lg" style={{ background: 'var(--err-soft)', color: '#dc2626' }}>⚠️ {error}</p>}
 
         <div className="flex justify-end gap-3 mt-5">
-          <button onClick={onClose} className="px-4 py-2 text-[13px] font-semibold" style={{ color: '#64748b' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
+          <button onClick={onClose} className="px-4 py-2 text-[13px] font-semibold" style={{ color: 'var(--fg-secondary)' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
           <button onClick={save} disabled={saving || !form.name.trim()}
             className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
@@ -201,13 +201,13 @@ function ImportCsvModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm overflow-y-auto p-6" onClick={onClose}>
-      <div className="mx-auto max-w-[680px] rounded-2xl p-6" style={{ background: '#fff' }} onClick={e => e.stopPropagation()}>
+      <div className="mx-auto max-w-[680px] rounded-2xl p-6" style={{ background: 'var(--bg-card)' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-[18px] font-extrabold" style={{ color: '#1a1a2e' }}>{L('Importar CSV', 'Import CSV', 'Importar CSV')}</h2>
-            <p className="text-[12px]" style={{ color: '#94a3b8' }}>{L('Todos os leads serão atribuídos a você', 'All leads will be assigned to you', 'Todos los leads se te asignarán')}</p>
+            <h2 className="text-[18px] font-extrabold" style={{ color: 'var(--fg)' }}>{L('Importar CSV', 'Import CSV', 'Importar CSV')}</h2>
+            <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{L('Todos os leads serão atribuídos a você', 'All leads will be assigned to you', 'Todos los leads se te asignarán')}</p>
           </div>
-          <button onClick={onClose} className="text-[20px]" style={{ color: '#94a3b8' }}>×</button>
+          <button onClick={onClose} className="text-[20px]" style={{ color: 'var(--fg-muted)' }}>×</button>
         </div>
 
         {!result && (
@@ -229,7 +229,7 @@ function ImportCsvModal({ onClose }: { onClose: () => void }) {
             <div className="mb-4">
               <button onClick={() => fileRef.current?.click()}
                 className="w-full py-8 rounded-xl text-[13px] font-bold transition-all hover:border-indigo-400"
-                style={{ background: '#f8f9fc', color: '#6366f1', border: '2px dashed #c7d2fe' }}>
+                style={{ background: 'var(--bg)', color: '#6366f1', border: '2px dashed #c7d2fe' }}>
                 {L('📂 Clique para selecionar arquivo CSV', '📂 Click to select a CSV file', '📂 Haz clic para seleccionar el archivo CSV')}
               </button>
               <input ref={fileRef} type="file" accept=".csv,.txt" onChange={handleFile} className="hidden" />
@@ -237,13 +237,13 @@ function ImportCsvModal({ onClose }: { onClose: () => void }) {
 
             {parsed.length > 0 && (
               <div className="mb-4">
-                <p className="text-[12px] font-bold mb-2" style={{ color: '#1a1a2e' }}>
+                <p className="text-[12px] font-bold mb-2" style={{ color: 'var(--fg)' }}>
                   ✅ {parsed.length} {L('leads detectados — preview (primeiros 5):', 'leads detected — preview (first 5):', 'leads detectados — vista previa (primeros 5):')}
                 </p>
                 <div className="rounded-lg overflow-hidden" style={{ border: '1px solid #e8ecf4' }}>
                   <table className="w-full text-[11px]">
                     <thead>
-                      <tr style={{ background: '#f8f9fc' }}>
+                      <tr style={{ background: 'var(--bg)' }}>
                         <th className="px-2 py-2 text-left font-bold">{L('Nome', 'Name', 'Nombre')}</th>
                         <th className="px-2 py-2 text-left font-bold">{L('Telefone', 'Phone', 'Teléfono')}</th>
                         <th className="px-2 py-2 text-left font-bold">Email</th>
@@ -253,10 +253,10 @@ function ImportCsvModal({ onClose }: { onClose: () => void }) {
                     <tbody>
                       {parsed.slice(0, 5).map((row, i) => (
                         <tr key={i} style={{ borderTop: '1px solid #f1f5f9' }}>
-                          <td className="px-2 py-1.5" style={{ color: '#1a1a2e' }}>{row.name}</td>
-                          <td className="px-2 py-1.5" style={{ color: '#64748b' }}>{row.phone}</td>
-                          <td className="px-2 py-1.5" style={{ color: '#64748b' }}>{row.email}</td>
-                          <td className="px-2 py-1.5" style={{ color: '#64748b' }}>{row.state}</td>
+                          <td className="px-2 py-1.5" style={{ color: 'var(--fg)' }}>{row.name}</td>
+                          <td className="px-2 py-1.5" style={{ color: 'var(--fg-secondary)' }}>{row.phone}</td>
+                          <td className="px-2 py-1.5" style={{ color: 'var(--fg-secondary)' }}>{row.email}</td>
+                          <td className="px-2 py-1.5" style={{ color: 'var(--fg-secondary)' }}>{row.state}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -265,10 +265,10 @@ function ImportCsvModal({ onClose }: { onClose: () => void }) {
               </div>
             )}
 
-            {error && <p className="text-[12px] mb-3 px-3 py-2 rounded-lg" style={{ background: '#fef2f2', color: '#dc2626' }}>⚠️ {error}</p>}
+            {error && <p className="text-[12px] mb-3 px-3 py-2 rounded-lg" style={{ background: 'var(--err-soft)', color: '#dc2626' }}>⚠️ {error}</p>}
 
             <div className="flex justify-end gap-3">
-              <button onClick={onClose} className="px-4 py-2 text-[13px] font-semibold" style={{ color: '#64748b' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
+              <button onClick={onClose} className="px-4 py-2 text-[13px] font-semibold" style={{ color: 'var(--fg-secondary)' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
               <button onClick={submit} disabled={importing || parsed.length === 0}
                 className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
@@ -292,7 +292,7 @@ function ImportCsvModal({ onClose }: { onClose: () => void }) {
               )}
             </div>
             {result.invalid && result.invalid.length > 0 && (
-              <div className="rounded-lg p-3 mb-4 text-[11px]" style={{ background: '#fef3c7', color: '#92400e' }}>
+              <div className="rounded-lg p-3 mb-4 text-[11px]" style={{ background: 'var(--warn-line)', color: '#92400e' }}>
                 <b>{L('Linhas ignoradas:', 'Skipped rows:', 'Filas ignoradas:')}</b>
                 {result.invalid.map((v: any, i: number) => <div key={i}>{L('Linha', 'Row', 'Fila')} {v.row}: {v.reason}</div>)}
               </div>

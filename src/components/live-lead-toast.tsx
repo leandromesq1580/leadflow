@@ -73,20 +73,20 @@ export function LiveLeadToast({ badge, interest, now, minsAgo }: Props) {
         role="status"
         aria-live="polite"
       >
-        <div className="rounded-2xl px-4 py-3 flex items-start gap-3" style={{ background: '#fff', border: '1px solid #e8ecf4', boxShadow: '0 14px 44px rgba(15,23,42,0.2)' }}>
+        <div className="rounded-2xl px-4 py-3 flex items-start gap-3" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', boxShadow: '0 14px 44px rgba(15,23,42,0.2)' }}>
           <div className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-extrabold text-white flex-shrink-0 relative" style={{ background: `hsl(${toast.hue}, 58%, 52%)` }}>
             {initials(toast.name)}
             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full" style={{ background: '#10b981', border: '2px solid #fff' }} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-bold leading-tight flex items-center gap-1.5 flex-wrap" style={{ color: '#1a1a2e' }}>
+            <p className="text-[13px] font-bold leading-tight flex items-center gap-1.5 flex-wrap" style={{ color: 'var(--fg)' }}>
               {toast.name}
-              <span className="text-[9px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: '#dcfce7', color: '#15803d' }}>🔥 {badge}</span>
+              <span className="text-[9px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: 'var(--ok-line)', color: '#15803d' }}>🔥 {badge}</span>
             </p>
-            <p className="text-[11.5px] mt-0.5 leading-snug" style={{ color: '#64748b' }}>
+            <p className="text-[11.5px] mt-0.5 leading-snug" style={{ color: 'var(--fg-secondary)' }}>
               🇺🇸 {toast.city}, {toast.st} · {interest}
             </p>
-            <p className="text-[10px] mt-1 flex items-center gap-1" style={{ color: '#94a3b8' }}>
+            <p className="text-[10px] mt-1 flex items-center gap-1" style={{ color: 'var(--fg-muted)' }}>
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#10b981' }} /> {toast.ago}
             </p>
           </div>

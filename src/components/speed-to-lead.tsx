@@ -67,7 +67,7 @@ export function SpeedToLead() {
                 style={{ background: '#0f0a1e', border: `1px solid ${estourou ? '#dc2626' : '#059669'}` }}>
                 <div>
                   <p className="text-[13px] font-bold text-white">{l.name}</p>
-                  <p className="text-[10.5px]" style={{ color: '#94a3b8' }}>{[l.interest, l.state].filter(Boolean).join(' · ')}</p>
+                  <p className="text-[10.5px]" style={{ color: 'var(--fg-muted)' }}>{[l.interest, l.state].filter(Boolean).join(' · ')}</p>
                 </div>
                 <span className="text-[13px] font-extrabold px-2 py-1 rounded-lg" style={{ background: estourou ? '#dc262622' : '#05966922', color: estourou ? '#f87171' : '#34d399', fontVariantNumeric: 'tabular-nums' }}>
                   {fmt(s)}

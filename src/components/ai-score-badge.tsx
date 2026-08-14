@@ -30,7 +30,7 @@ export function AiScoreBadge({ leadId, score, reason, onScored, compact }: Props
     return (
       <button onClick={rescore} disabled={loading}
         className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold disabled:opacity-50"
-        style={{ background: '#f1f5f9', color: '#64748b', border: '1px dashed #cbd5e1' }}>
+        style={{ background: 'var(--bg-soft)', color: 'var(--fg-secondary)', border: '1px dashed #cbd5e1' }}>
         {loading ? '⏳ Analisando...' : '✨ Calcular Score'}
       </button>
     )
@@ -56,7 +56,7 @@ export function AiScoreBadge({ leadId, score, reason, onScored, compact }: Props
         style={{ background: color + '22', color, border: `1px solid ${color}44` }}>
         {emoji} {label} · Score {score}
       </span>
-      {reason && <span className="text-[11px]" style={{ color: '#64748b' }}>{reason}</span>}
+      {reason && <span className="text-[11px]" style={{ color: 'var(--fg-secondary)' }}>{reason}</span>}
       <button onClick={rescore} disabled={loading} className="text-[10px] font-bold" style={{ color: '#6366f1' }}>
         {loading ? '...' : '↻'}
       </button>

@@ -17,26 +17,26 @@ export function BuyerDebtCard() {
   }, [])
 
   return (
-    <div className="rounded-2xl overflow-hidden mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+    <div className="rounded-2xl overflow-hidden mb-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
       <div className="px-6 py-4 flex justify-between items-center" style={{ borderBottom: '1px solid #e8ecf4' }}>
         <div>
-          <h2 className="text-[15px] font-bold" style={{ color: '#1a1a2e' }}>💳 Saldo Devedor — Compradores Pagos</h2>
-          <p className="text-[12px] mt-0.5" style={{ color: '#94a3b8' }}>Leads que cada comprador pagou e ainda NÃO recebeu</p>
+          <h2 className="text-[15px] font-bold" style={{ color: 'var(--fg)' }}>💳 Saldo Devedor — Compradores Pagos</h2>
+          <p className="text-[12px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>Leads que cada comprador pagou e ainda NÃO recebeu</p>
         </div>
         {data && (
           <div className="text-right">
             <p className="text-[24px] font-extrabold leading-none" style={{ color: data.total_devido > 0 ? '#dc2626' : '#15803d' }}>{data.total_devido}</p>
-            <p className="text-[11px] mt-1" style={{ color: '#94a3b8' }}>leads devidos · {data.n_devendo} compradores</p>
+            <p className="text-[11px] mt-1" style={{ color: 'var(--fg-muted)' }}>leads devidos · {data.n_devendo} compradores</p>
           </div>
         )}
       </div>
       {loading ? (
-        <div className="px-6 py-8 text-center text-[13px]" style={{ color: '#94a3b8' }}>Carregando…</div>
+        <div className="px-6 py-8 text-center text-[13px]" style={{ color: 'var(--fg-muted)' }}>Carregando…</div>
       ) : !data || data.compradores.length === 0 ? (
-        <div className="px-6 py-8 text-center text-[13px]" style={{ color: '#94a3b8' }}>Nenhum comprador pagante.</div>
+        <div className="px-6 py-8 text-center text-[13px]" style={{ color: 'var(--fg-muted)' }}>Nenhum comprador pagante.</div>
       ) : (
         <div>
-          <div className="grid gap-2 px-6 py-2 text-[11px] font-bold uppercase tracking-wider" style={{ gridTemplateColumns: '1fr 70px 70px 70px', color: '#94a3b8', borderBottom: '1px solid #f1f5f9' }}>
+          <div className="grid gap-2 px-6 py-2 text-[11px] font-bold uppercase tracking-wider" style={{ gridTemplateColumns: '1fr 70px 70px 70px', color: 'var(--fg-muted)', borderBottom: '1px solid #f1f5f9' }}>
             <span>Comprador</span>
             <span className="text-right">Comprou</span>
             <span className="text-right">Recebeu</span>
@@ -46,11 +46,11 @@ export function BuyerDebtCard() {
             <div key={c.id} className="grid gap-2 px-6 py-2.5 items-center"
               style={{ gridTemplateColumns: '1fr 70px 70px 70px', borderBottom: i < data.compradores.length - 1 ? '1px solid #f8fafc' : 'none' }}>
               <div className="min-w-0">
-                <p className="text-[13px] font-semibold truncate" style={{ color: '#1a1a2e' }}>{c.nome}</p>
+                <p className="text-[13px] font-semibold truncate" style={{ color: 'var(--fg)' }}>{c.nome}</p>
                 <p className="text-[11px] truncate" style={{ color: '#cbd5e1' }}>{c.email}</p>
               </div>
-              <span className="text-right text-[13px]" style={{ color: '#64748b' }}>{c.comprou}</span>
-              <span className="text-right text-[13px]" style={{ color: '#64748b' }}>{c.recebeu}</span>
+              <span className="text-right text-[13px]" style={{ color: 'var(--fg-secondary)' }}>{c.comprou}</span>
+              <span className="text-right text-[13px]" style={{ color: 'var(--fg-secondary)' }}>{c.recebeu}</span>
               <span className="text-right text-[15px] font-extrabold" style={{ color: c.falta > 0 ? '#dc2626' : '#15803d' }}>{c.falta > 0 ? c.falta : '✓'}</span>
             </div>
           ))}

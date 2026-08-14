@@ -13,8 +13,8 @@ export default async function NotasPage() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-[24px] font-extrabold" style={{ color: '#0f172a' }}>🗒️ {L('Notas & Checklists', 'Notes & Checklists', 'Notas & Checklists')}</h1>
-        <p className="text-[13px] mt-1 max-w-2xl" style={{ color: '#64748b' }}>
+        <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>🗒️ {L('Notas & Checklists', 'Notes & Checklists', 'Notas & Checklists')}</h1>
+        <p className="text-[13px] mt-1 max-w-2xl" style={{ color: 'var(--fg-secondary)' }}>
           {L(
             'Acompanhe o progresso de licença de cada pessoa — crie um bloco por pessoa, marque as etapas, adicione/remova itens e anote o que precisar. Salva sozinho.',
             'Track each person\'s license progress — create one block per person, check off the steps, add/remove items and jot down whatever you need. Saves automatically.',

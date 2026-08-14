@@ -114,7 +114,7 @@ export default function ArchivedLeadsPage() {
           <Link
             href="/dashboard/pipeline"
             className="flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] font-semibold transition-all hover:shadow-sm"
-            style={{ background: '#fff', color: '#64748b', border: '1px solid #e8ecf4' }}
+            style={{ background: 'var(--bg-card)', color: 'var(--fg-secondary)', border: '1px solid #e8ecf4' }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 12H5" />
@@ -122,12 +122,12 @@ export default function ArchivedLeadsPage() {
             </svg>
             {L('Voltar ao pipeline', 'Back to pipeline', 'Volver al pipeline')}
           </Link>
-          <h1 className="text-[22px] font-extrabold tracking-tight" style={{ color: '#1a1a2e' }}>
+          <h1 className="text-[22px] font-extrabold tracking-tight" style={{ color: 'var(--fg)' }}>
             {L('Leads arquivados', 'Archived leads', 'Leads archivados')}
           </h1>
           <span
             className="text-[11px] font-bold px-2 py-1 rounded-md"
-            style={{ background: '#f1f5f9', color: '#64748b' }}
+            style={{ background: 'var(--bg-soft)', color: 'var(--fg-secondary)' }}
           >
             {leads.length}
           </span>
@@ -142,23 +142,23 @@ export default function ArchivedLeadsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full px-4 py-2.5 rounded-xl text-[13px] outline-none transition-all focus:shadow-sm"
-          style={{ background: '#fff', border: '1px solid #e8ecf4', color: '#1a1a2e' }}
+          style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', color: 'var(--fg)' }}
         />
       </div>
 
       {/* List */}
       {loading ? (
-        <div className="text-center py-16 text-[13px]" style={{ color: '#94a3b8' }}>
+        <div className="text-center py-16 text-[13px]" style={{ color: 'var(--fg-muted)' }}>
           {L('Carregando...', 'Loading...', 'Cargando...')}
         </div>
       ) : filtered.length === 0 ? (
         <div
           className="text-center py-20 rounded-2xl"
-          style={{ background: '#fff', border: '1px dashed #e8ecf4' }}
+          style={{ background: 'var(--bg-card)', border: '1px dashed #e8ecf4' }}
         >
           <div
             className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-            style={{ background: '#f1f5f9' }}
+            style={{ background: 'var(--bg-soft)' }}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="4" width="20" height="5" rx="1" />
@@ -166,10 +166,10 @@ export default function ArchivedLeadsPage() {
               <path d="M10 13h4" />
             </svg>
           </div>
-          <p className="text-[14px] font-bold mb-1" style={{ color: '#475569' }}>
+          <p className="text-[14px] font-bold mb-1" style={{ color: 'var(--fg-secondary)' }}>
             {search ? L('Nenhum lead arquivado encontrado', 'No archived leads found', 'Ningún lead archivado encontrado') : L('Nenhum lead arquivado', 'No archived leads', 'Ningún lead archivado')}
           </p>
-          <p className="text-[12px]" style={{ color: '#94a3b8' }}>
+          <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>
             {search ? L('Tente outra busca.', 'Try another search.', 'Intenta otra búsqueda.') : L('Quando você arquivar leads, eles aparecem aqui.', 'When you archive leads, they show up here.', 'Cuando archives leads, aparecerán aquí.')}
           </p>
         </div>
@@ -179,7 +179,7 @@ export default function ArchivedLeadsPage() {
             <div
               key={l.id}
               className="p-4 rounded-2xl flex items-center gap-4 transition-all hover:shadow-sm"
-              style={{ background: '#fff', border: '1px solid #e8ecf4' }}
+              style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}
             >
               {/* Avatar */}
               <div
@@ -192,24 +192,24 @@ export default function ArchivedLeadsPage() {
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <p className="text-[14px] font-bold truncate" style={{ color: '#1a1a2e' }}>
+                  <p className="text-[14px] font-bold truncate" style={{ color: 'var(--fg)' }}>
                     {l.name || L('Sem nome', 'No name', 'Sin nombre')}
                   </p>
                   {l.contract_closed && (
                     <span
                       className="text-[10px] font-extrabold px-1.5 py-0.5 rounded"
-                      style={{ background: '#dcfce7', color: '#15803d' }}
+                      style={{ background: 'var(--ok-line)', color: '#15803d' }}
                     >
                       {L('FECHADO', 'CLOSED', 'CERRADO')}
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-3 text-[11px]" style={{ color: '#64748b' }}>
+                <div className="flex items-center gap-3 text-[11px]" style={{ color: 'var(--fg-secondary)' }}>
                   {l.phone && <span>📱 {l.phone}</span>}
                   {l.city && <span>📍 {l.city}{l.state ? `/${l.state}` : ''}</span>}
                   {l.interest && <span className="truncate">💡 {l.interest}</span>}
                 </div>
-                <p className="text-[10px] mt-1" style={{ color: '#94a3b8' }}>
+                <p className="text-[10px] mt-1" style={{ color: 'var(--fg-muted)' }}>
                   {L('Arquivado', 'Archived', 'Archivado')} {timeSinceArchived(l.archived_at, t._locale)}
                 </p>
               </div>
@@ -238,7 +238,7 @@ export default function ArchivedLeadsPage() {
                 disabled={deleting === l.id || reactivating === l.id}
                 title={L('Excluir definitivamente — não dá pra desfazer', 'Delete permanently — cannot be undone', 'Eliminar definitivamente — no se puede deshacer')}
                 className="px-4 py-2 rounded-xl text-[12px] font-bold transition-all hover:shadow-sm disabled:opacity-50 flex items-center gap-1.5 flex-shrink-0"
-                style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}
+                style={{ background: 'var(--err-soft)', color: '#dc2626', border: '1px solid #fecaca' }}
               >
                 {deleting === l.id ? (
                   L('Excluindo...', 'Deleting...', 'Eliminando...')

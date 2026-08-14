@@ -144,8 +144,8 @@ export default function AppointmentsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <div>
-          <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>📅 {L('Agenda', 'Calendar', 'Agenda')}</h1>
-          <p className="text-[13px]" style={{ color: '#64748b' }}>{L('Eventos, tarefas, reuniões e appointments unificados', 'Events, tasks, meetings and appointments in one place', 'Eventos, tareas, reuniones y appointments en un solo lugar')}</p>
+          <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>📅 {L('Agenda', 'Calendar', 'Agenda')}</h1>
+          <p className="text-[13px]" style={{ color: 'var(--fg-secondary)' }}>{L('Eventos, tarefas, reuniões e appointments unificados', 'Events, tasks, meetings and appointments in one place', 'Eventos, tareas, reuniones y appointments en un solo lugar')}</p>
         </div>
         <div className="flex items-center gap-2">
           {/* Create menu */}
@@ -159,16 +159,16 @@ export default function AppointmentsPage() {
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowCreateMenu(false)} />
                 <div className="absolute right-0 top-full mt-1 z-50 rounded-xl p-1 min-w-[180px]"
-                  style={{ background: '#fff', border: '1px solid #e8ecf4', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
+                  style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
                   <button onClick={() => { setCreating('event'); setShowCreateMenu(false) }}
                     className="w-full text-left px-3 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-emerald-50 flex items-center gap-2"
-                    style={{ color: '#1a1a2e' }}>
+                    style={{ color: 'var(--fg)' }}>
                     <span className="w-2 h-2 rounded-full" style={{ background: '#10b981' }} />
                     📆 {L('Evento', 'Event', 'Evento')}
                   </button>
                   <button onClick={() => { setCreating('task'); setShowCreateMenu(false) }}
                     className="w-full text-left px-3 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-sky-50 flex items-center gap-2"
-                    style={{ color: '#1a1a2e' }}>
+                    style={{ color: 'var(--fg)' }}>
                     <span className="w-2 h-2 rounded-full" style={{ background: '#0ea5e9' }} />
                     ☐ {L('Tarefa', 'Task', 'Tarea')}
                   </button>
@@ -178,14 +178,14 @@ export default function AppointmentsPage() {
           </div>
           <button onClick={() => setAnchor(new Date())}
             className="px-3 py-2 rounded-lg text-[12px] font-bold"
-            style={{ background: '#eef2ff', color: '#6366f1' }}>
+            style={{ background: 'var(--accent-light)', color: '#6366f1' }}>
             {L('Hoje', 'Today', 'Hoy')}
           </button>
-          <div className="flex rounded-lg p-1" style={{ background: '#f1f5f9' }}>
+          <div className="flex rounded-lg p-1" style={{ background: 'var(--bg-soft)' }}>
             {(['day', 'week', 'month'] as View[]).map(v => (
               <button key={v} onClick={() => setView(v)}
                 className="px-3 py-1 rounded-md text-[11px] font-bold transition-all capitalize"
-                style={{ background: view === v ? '#fff' : 'transparent', color: view === v ? '#6366f1' : '#64748b' }}>
+                style={{ background: view === v ? 'var(--bg-card)' : 'transparent', color: view === v ? '#6366f1' : '#64748b' }}>
                 {v === 'day' ? L('Dia', 'Day', 'Día') : v === 'week' ? L('Semana', 'Week', 'Semana') : L('Mês', 'Month', 'Mes')}
               </button>
             ))}
@@ -195,19 +195,19 @@ export default function AppointmentsPage() {
 
       {/* Date nav */}
       <div className="flex items-center justify-between mb-3">
-        <button onClick={goPrev} className="w-8 h-8 rounded-lg text-[14px] font-bold" style={{ background: '#f8f9fc', color: '#64748b' }}>‹</button>
-        <p className="text-[15px] font-bold capitalize" style={{ color: '#1a1a2e' }}>{headerTxt}</p>
-        <button onClick={goNext} className="w-8 h-8 rounded-lg text-[14px] font-bold" style={{ background: '#f8f9fc', color: '#64748b' }}>›</button>
+        <button onClick={goPrev} className="w-8 h-8 rounded-lg text-[14px] font-bold" style={{ background: 'var(--bg)', color: 'var(--fg-secondary)' }}>‹</button>
+        <p className="text-[15px] font-bold capitalize" style={{ color: 'var(--fg)' }}>{headerTxt}</p>
+        <button onClick={goNext} className="w-8 h-8 rounded-lg text-[14px] font-bold" style={{ background: 'var(--bg)', color: 'var(--fg-secondary)' }}>›</button>
       </div>
 
-      {loading && <div className="text-center py-10 text-[12px]" style={{ color: '#94a3b8' }}>{L('Carregando...', 'Loading...', 'Cargando...')}</div>}
+      {loading && <div className="text-center py-10 text-[12px]" style={{ color: 'var(--fg-muted)' }}>{L('Carregando...', 'Loading...', 'Cargando...')}</div>}
 
       {!loading && view === 'month' && <MonthView onDia={(d) => { setAnchor(d); setView('day') }} anchor={anchor} events={events} onClick={setSelectedEvent} />}
       {!loading && view === 'week' && <WeekView anchor={anchor} events={events} onClick={setSelectedEvent} />}
       {!loading && view === 'day' && <DayView anchor={anchor} events={events} onClick={setSelectedEvent} />}
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-4 mt-5 text-[11px]" style={{ color: '#64748b' }}>
+      <div className="flex flex-wrap items-center gap-4 mt-5 text-[11px]" style={{ color: 'var(--fg-secondary)' }}>
         <LegendItem color="#6366f1" kind="appointment" label="Appointment" />
         <LegendItem color="#10b981" kind="event" label={L('Evento', 'Event', 'Evento')} />
         <LegendItem color="#0ea5e9" kind="task" label={L('Tarefa', 'Task', 'Tarea')} />
@@ -261,8 +261,8 @@ function EventPill({ event, onClick, compact }: { event: CalendarEvent; onClick:
       <button onClick={onClick}
         className={`w-full text-left ${compact ? 'px-1.5 py-0.5' : 'px-2 py-1.5'} rounded text-[10px] font-semibold hover:opacity-80 flex items-center gap-1 truncate`}
         style={{
-          background: event.completed ? '#f1f5f9' : event.color + '18',
-          color: event.completed ? '#94a3b8' : event.color,
+          background: event.completed ? 'var(--bg-soft)' : event.color + '18',
+          color: event.completed ? 'var(--fg-muted)' : event.color,
           border: `1px dashed ${event.completed ? '#cbd5e1' : event.color}`,
           textDecoration: event.completed ? 'line-through' : 'none',
         }}
@@ -337,11 +337,11 @@ function MonthView({ anchor, events, onClick, onDia }: { anchor: Date; events: C
   const today = new Date()
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+    <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
       <div className="grid grid-cols-7">
         {WEEKDAYS(t._locale).map(w => (
           <div key={w} className="px-3 py-2 text-center text-[10px] font-bold uppercase tracking-wider"
-            style={{ background: '#f8f9fc', color: '#94a3b8' }}>
+            style={{ background: 'var(--bg)', color: 'var(--fg-muted)' }}>
             {w}
           </div>
         ))}
@@ -354,13 +354,13 @@ function MonthView({ anchor, events, onClick, onDia }: { anchor: Date; events: C
           return (
             <div key={i} className="min-h-[110px] p-1.5"
               style={{
-                background: inMonth ? '#fff' : '#fafbfc',
+                background: inMonth ? 'var(--bg-card)' : '#fafbfc',
                 borderRight: i % 7 < 6 ? '1px solid #f1f5f9' : 'none',
                 borderBottom: i < 35 ? '1px solid #f1f5f9' : 'none',
               }}>
               <div className="flex justify-between items-center mb-1">
                 <span className={`text-[11px] font-bold ${isToday ? 'text-white px-1.5 py-0.5 rounded-full' : ''}`}
-                  style={{ background: isToday ? '#6366f1' : 'transparent', color: isToday ? '#fff' : inMonth ? '#1a1a2e' : '#c0c8d4' }}>
+                  style={{ background: isToday ? '#6366f1' : 'transparent', color: isToday ? 'var(--bg-card)' : inMonth ? '#1a1a2e' : '#c0c8d4' }}>
                   {d.getDate()}
                 </span>
                 {dayEvents.length > VISIVEIS_NO_MES && (
@@ -368,7 +368,7 @@ function MonthView({ anchor, events, onClick, onDia }: { anchor: Date; events: C
                   // do sistema têm mais de 3 compromissos). Agora abre o dia inteiro.
                   <button onClick={ev => { ev.stopPropagation(); onDia(d) }}
                     className="text-[9px] font-bold px-1 rounded"
-                    style={{ color: '#6366f1', background: '#eef2ff', cursor: 'pointer', border: 'none' }}
+                    style={{ color: '#6366f1', background: 'var(--accent-light)', cursor: 'pointer', border: 'none' }}
                     title={L('Ver todos deste dia', 'See all for this day', 'Ver todos de este día')}>
                     +{dayEvents.length - VISIVEIS_NO_MES}
                   </button>
@@ -399,16 +399,16 @@ function WeekView({ anchor, events, onClick }: { anchor: Date; events: CalendarE
   const today = new Date()
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+    <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
       <div className="grid" style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}>
-        <div className="p-2" style={{ background: '#f8f9fc' }} />
+        <div className="p-2" style={{ background: 'var(--bg)' }} />
         {days.map((d, i) => {
           const isToday = d.toDateString() === today.toDateString()
           return (
             <div key={i} className="p-2 text-center"
-              style={{ background: isToday ? '#eef2ff' : '#f8f9fc', borderLeft: '1px solid #f1f5f9' }}>
-              <p className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>{WEEKDAYS(t._locale)[i]}</p>
-              <p className="text-[18px] font-extrabold" style={{ color: isToday ? '#6366f1' : '#1a1a2e' }}>{d.getDate()}</p>
+              style={{ background: isToday ? 'var(--accent-light)' : 'var(--bg)', borderLeft: '1px solid #f1f5f9' }}>
+              <p className="text-[10px] font-bold uppercase" style={{ color: 'var(--fg-muted)' }}>{WEEKDAYS(t._locale)[i]}</p>
+              <p className="text-[18px] font-extrabold" style={{ color: isToday ? '#6366f1' : 'var(--fg)' }}>{d.getDate()}</p>
             </div>
           )
         })}
@@ -416,7 +416,7 @@ function WeekView({ anchor, events, onClick }: { anchor: Date; events: CalendarE
       <div className="overflow-y-auto max-h-[600px]">
         {hours.map(h => (
           <div key={h} className="grid" style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))', borderTop: '1px solid #f1f5f9' }}>
-            <div className="px-2 py-3 text-[10px]" style={{ color: '#94a3b8' }}>
+            <div className="px-2 py-3 text-[10px]" style={{ color: 'var(--fg-muted)' }}>
               {hourLabel(h)}
             </div>
             {days.map((d, di) => {
@@ -446,7 +446,7 @@ function DayView({ anchor, events, onClick }: { anchor: Date; events: CalendarEv
   const doDia = events.filter(e => new Date(e.start).toDateString() === anchor.toDateString())
   const hours = faixaDeHoras(doDia.map(e => e.start), 6, 22)
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+    <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
       <div className="overflow-y-auto max-h-[700px]">
         {hours.map(h => {
           const cell = new Date(anchor); cell.setHours(h, 0, 0, 0)
@@ -457,7 +457,7 @@ function DayView({ anchor, events, onClick }: { anchor: Date; events: CalendarEv
           })
           return (
             <div key={h} className="grid" style={{ gridTemplateColumns: '80px minmax(0, 1fr)', borderTop: '1px solid #f1f5f9', minHeight: 70 }}>
-              <div className="px-3 py-3 text-[11px]" style={{ color: '#94a3b8' }}>
+              <div className="px-3 py-3 text-[11px]" style={{ color: 'var(--fg-muted)' }}>
                 {hourLabel(h)}
               </div>
               <div className="p-2 space-y-1" style={{ borderLeft: '1px solid #f1f5f9' }}>
@@ -571,24 +571,24 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
   return (
     <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] max-h-[90vh] overflow-y-auto rounded-2xl p-6"
-        style={{ background: '#fff' }} onClick={e => e.stopPropagation()}>
+        style={{ background: 'var(--bg-card)' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-start justify-between mb-4">
           <div>
             <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full"
               style={{ background: event.color + '22', color: event.color }}>
               {kindLabel[event.kind]}
             </span>
-            <h2 className="text-[18px] font-extrabold mt-2" style={{ color: '#1a1a2e', textDecoration: event.completed ? 'line-through' : 'none' }}>
+            <h2 className="text-[18px] font-extrabold mt-2" style={{ color: 'var(--fg)', textDecoration: event.completed ? 'line-through' : 'none' }}>
               {event.lead_name || event.title}
             </h2>
-            {event.lead_phone && <p className="text-[13px]" style={{ color: '#64748b' }}>{event.lead_phone}</p>}
+            {event.lead_phone && <p className="text-[13px]" style={{ color: 'var(--fg-secondary)' }}>{event.lead_phone}</p>}
           </div>
-          <button onClick={onClose} className="text-[20px]" style={{ color: '#94a3b8' }}>×</button>
+          <button onClick={onClose} className="text-[20px]" style={{ color: 'var(--fg-muted)' }}>×</button>
         </div>
 
-        <div className="rounded-xl p-4 mb-3" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
+        <div className="rounded-xl p-4 mb-3" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }}>
           <div className="flex items-center justify-between">
-            <p className="text-[11px] font-bold uppercase" style={{ color: '#94a3b8' }}>{L('Quando', 'When', 'Cuándo')}</p>
+            <p className="text-[11px] font-bold uppercase" style={{ color: 'var(--fg-muted)' }}>{L('Quando', 'When', 'Cuándo')}</p>
             {!editing && (
               <button onClick={() => setEditing(true)} className="text-[11px] font-bold" style={{ color: '#6366f1' }}>
                 ✎ {L('Reagendar', 'Reschedule', 'Reprogramar')}
@@ -596,12 +596,12 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
             )}
           </div>
           {!editing ? (
-            <p className="text-[14px] font-bold mt-1" style={{ color: '#1a1a2e' }}>
+            <p className="text-[14px] font-bold mt-1" style={{ color: 'var(--fg)' }}>
               {startDate.toLocaleDateString(dateLocale, { weekday: 'long', day: '2-digit', month: 'long' })}
               {L(' às ', ' at ', ' a las ')}
               {startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
               {event.end && (
-                <span className="text-[12px] font-medium ml-1" style={{ color: '#64748b' }}>
+                <span className="text-[12px] font-medium ml-1" style={{ color: 'var(--fg-secondary)' }}>
                   {L('até', 'until', 'hasta')} {new Date(event.end).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                 </span>
               )}
@@ -609,37 +609,37 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
           ) : (
             <div className="flex gap-2 mt-2">
               <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg text-[12px]" style={{ background: '#fff', border: '1px solid #c7d2fe' }} />
+                className="flex-1 px-3 py-2 rounded-lg text-[12px]" style={{ background: 'var(--bg-card)', border: '1px solid #c7d2fe' }} />
               <TimePicker value={newTime} onChange={setNewTime}
                 className="px-2 py-2 rounded-lg text-[12px] bg-white border border-[#c7d2fe]" />
               <button onClick={reschedule} disabled={busy}
                 className="px-3 py-2 rounded-lg text-[11px] font-bold text-white disabled:opacity-50" style={{ background: '#6366f1' }}>
                 {L('Salvar', 'Save', 'Guardar')}
               </button>
-              <button onClick={() => setEditing(false)} className="text-[11px] font-bold" style={{ color: '#94a3b8' }}>×</button>
+              <button onClick={() => setEditing(false)} className="text-[11px] font-bold" style={{ color: 'var(--fg-muted)' }}>×</button>
             </div>
           )}
         </div>
 
         {(event.description || event.title) && (
-          <div className="rounded-xl p-4 mb-3" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
-            <p className="text-[11px] font-bold uppercase mb-1" style={{ color: '#94a3b8' }}>{L('Descrição', 'Description', 'Descripción')}</p>
-            <p className="text-[13px] whitespace-pre-wrap" style={{ color: '#1a1a2e' }}>
+          <div className="rounded-xl p-4 mb-3" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }}>
+            <p className="text-[11px] font-bold uppercase mb-1" style={{ color: 'var(--fg-muted)' }}>{L('Descrição', 'Description', 'Descripción')}</p>
+            <p className="text-[13px] whitespace-pre-wrap" style={{ color: 'var(--fg)' }}>
               {event.description || event.title}
             </p>
           </div>
         )}
 
         {event.location && (
-          <div className="rounded-xl p-4 mb-3" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
-            <p className="text-[11px] font-bold uppercase mb-1" style={{ color: '#94a3b8' }}>📍 {L('Local', 'Location', 'Lugar')}</p>
-            <p className="text-[13px]" style={{ color: '#1a1a2e' }}>{event.location}</p>
+          <div className="rounded-xl p-4 mb-3" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }}>
+            <p className="text-[11px] font-bold uppercase mb-1" style={{ color: 'var(--fg-muted)' }}>📍 {L('Local', 'Location', 'Lugar')}</p>
+            <p className="text-[13px]" style={{ color: 'var(--fg)' }}>{event.location}</p>
           </div>
         )}
 
         {(event.kind === 'task' || event.kind === 'event') && (
-          <div className="rounded-xl p-4 mb-3" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
-            <p className="text-[11px] font-bold uppercase mb-2" style={{ color: '#94a3b8' }}>{L('Cor', 'Color', 'Color')}</p>
+          <div className="rounded-xl p-4 mb-3" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }}>
+            <p className="text-[11px] font-bold uppercase mb-2" style={{ color: 'var(--fg-muted)' }}>{L('Cor', 'Color', 'Color')}</p>
             <div className="flex gap-2.5">
               {ITEM_COLORS.map(c => (
                 <button key={c} type="button" disabled={busy} onClick={() => changeColor(c)} aria-label={`${L('Cor', 'Color', 'Color')} ${c}`}
@@ -654,8 +654,8 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
           <button onClick={toggleComplete} disabled={busy}
             className="block w-full text-center py-2.5 rounded-xl text-[12px] font-bold"
             style={{
-              background: event.completed ? '#f1f5f9' : '#ecfdf5',
-              color: event.completed ? '#64748b' : '#065f46',
+              background: event.completed ? 'var(--bg-soft)' : '#ecfdf5',
+              color: event.completed ? 'var(--fg-secondary)' : '#065f46',
               border: `1px solid ${event.completed ? '#cbd5e1' : '#a7f3d0'}`,
             }}>
             {event.completed ? L('↺ Marcar pendente', '↺ Mark as pending', '↺ Marcar pendiente') : L('✓ Marcar concluído', '✓ Mark as done', '✓ Marcar completado')}
@@ -665,7 +665,7 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
             <button onClick={toggleNoShow} disabled={busy}
               className="block w-full text-center py-2.5 rounded-xl text-[12px] font-bold"
               style={{
-                background: '#fef2f2',
+                background: 'var(--err-soft)',
                 color: '#dc2626',
                 border: '1px solid #fecaca',
               }}>
@@ -683,7 +683,7 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
 
           <button onClick={del} disabled={busy}
             className="block w-full text-center py-2.5 rounded-xl text-[12px] font-bold disabled:opacity-50"
-            style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
+            style={{ background: 'var(--err-soft)', color: '#dc2626', border: '1px solid #fecaca' }}>
             🗑 {L('Deletar', 'Delete', 'Eliminar')}
           </button>
         </div>
@@ -755,10 +755,10 @@ function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm overflow-y-auto p-6" onClick={onClose}>
-      <div className="mx-auto max-w-[520px] rounded-2xl p-6" style={{ background: '#fff' }} onClick={e => e.stopPropagation()}>
+      <div className="mx-auto max-w-[520px] rounded-2xl p-6" style={{ background: 'var(--bg-card)' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-2 mb-4">
           <span className="text-[22px]">{icon}</span>
-          <h2 className="text-[20px] font-extrabold" style={{ color: '#1a1a2e' }}>{isEvent ? L('Novo Evento', 'New Event', 'Nuevo evento') : L('Nova Tarefa', 'New Task', 'Nueva tarea')}</h2>
+          <h2 className="text-[20px] font-extrabold" style={{ color: 'var(--fg)' }}>{isEvent ? L('Novo Evento', 'New Event', 'Nuevo evento') : L('Nova Tarefa', 'New Task', 'Nueva tarea')}</h2>
         </div>
 
         <div className="space-y-3">
@@ -766,24 +766,24 @@ function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
             placeholder={isEvent ? L('Título do evento', 'Event title', 'Título del evento') : L('O que precisa ser feito?', 'What needs to be done?', '¿Qué hay que hacer?')}
             autoFocus
             className="w-full px-3 py-3 rounded-xl text-[14px] font-bold focus:outline-none focus:ring-2 focus:ring-indigo-200"
-            style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+            style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
 
           {isEvent && (
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={allDay} onChange={e => setAllDay(e.target.checked)} />
-              <span className="text-[12px]" style={{ color: '#64748b' }}>{L('Dia inteiro', 'All day', 'Todo el día')}</span>
+              <span className="text-[12px]" style={{ color: 'var(--fg-secondary)' }}>{L('Dia inteiro', 'All day', 'Todo el día')}</span>
             </label>
           )}
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>{L('Data', 'Date', 'Fecha')}</label>
+              <label className="text-[10px] font-bold uppercase" style={{ color: 'var(--fg-muted)' }}>{L('Data', 'Date', 'Fecha')}</label>
               <input type="date" value={date} onChange={e => setDate(e.target.value)}
-                className="w-full mt-1 px-3 py-2 rounded-lg text-[13px]" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+                className="w-full mt-1 px-3 py-2 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
             </div>
             {!allDay && (
               <div>
-                <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>
+                <label className="text-[10px] font-bold uppercase" style={{ color: 'var(--fg-muted)' }}>
                   {isEvent ? L('Início', 'Start', 'Inicio') : L('Hora', 'Time', 'Hora')}
                 </label>
                 <div className="mt-1">
@@ -795,7 +795,7 @@ function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
 
           {isEvent && !allDay && (
             <div>
-              <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>{L('Fim (opcional)', 'End (optional)', 'Fin (opcional)')}</label>
+              <label className="text-[10px] font-bold uppercase" style={{ color: 'var(--fg-muted)' }}>{L('Fim (opcional)', 'End (optional)', 'Fin (opcional)')}</label>
               <div className="mt-1">
                 <TimePicker value={endTime} onChange={setEndTime} />
               </div>
@@ -804,22 +804,22 @@ function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
 
           {isEvent && (
             <div>
-              <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>📍 {L('Local (opcional)', 'Location (optional)', 'Lugar (opcional)')}</label>
+              <label className="text-[10px] font-bold uppercase" style={{ color: 'var(--fg-muted)' }}>📍 {L('Local (opcional)', 'Location (optional)', 'Lugar (opcional)')}</label>
               <input value={location} onChange={e => setLocation(e.target.value)}
                 placeholder={L('Endereço ou link da reunião', 'Address or meeting link', 'Dirección o enlace de la reunión')}
-                className="w-full mt-1 px-3 py-2 rounded-lg text-[13px]" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+                className="w-full mt-1 px-3 py-2 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
             </div>
           )}
 
           <div>
-            <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>{L('Descrição (opcional)', 'Description (optional)', 'Descripción (opcional)')}</label>
+            <label className="text-[10px] font-bold uppercase" style={{ color: 'var(--fg-muted)' }}>{L('Descrição (opcional)', 'Description (optional)', 'Descripción (opcional)')}</label>
             <textarea value={description} onChange={e => setDescription(e.target.value)}
               rows={3}
-              className="w-full mt-1 px-3 py-2 rounded-lg text-[13px] resize-none" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+              className="w-full mt-1 px-3 py-2 rounded-lg text-[13px] resize-none" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
           </div>
 
           <div>
-            <label className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>{L('Cor', 'Color', 'Color')}</label>
+            <label className="text-[10px] font-bold uppercase" style={{ color: 'var(--fg-muted)' }}>{L('Cor', 'Color', 'Color')}</label>
             <div className="flex gap-2.5 mt-2">
               {ITEM_COLORS.map(c => (
                 <button key={c} type="button" onClick={() => setColor(c)} aria-label={`${L('Cor', 'Color', 'Color')} ${c}`}
@@ -830,10 +830,10 @@ function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
           </div>
         </div>
 
-        {error && <p className="text-[12px] mt-3 px-3 py-2 rounded-lg" style={{ background: '#fef2f2', color: '#dc2626' }}>⚠️ {error}</p>}
+        {error && <p className="text-[12px] mt-3 px-3 py-2 rounded-lg" style={{ background: 'var(--err-soft)', color: '#dc2626' }}>⚠️ {error}</p>}
 
         <div className="flex justify-end gap-3 mt-5">
-          <button onClick={onClose} className="px-4 py-2 text-[13px] font-semibold" style={{ color: '#64748b' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
+          <button onClick={onClose} className="px-4 py-2 text-[13px] font-semibold" style={{ color: 'var(--fg-secondary)' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
           <button onClick={save} disabled={saving || !title.trim()}
             className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50"
             style={{ background: color }}>

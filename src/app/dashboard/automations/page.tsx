@@ -124,14 +124,14 @@ export default function AutomationsPage() {
     return { trigger, action }
   }
 
-  if (loading) return <div className="p-8 text-[13px]" style={{ color: '#64748b' }}>{L('Carregando...', 'Loading...', 'Cargando...')}</div>
+  if (loading) return <div className="p-8 text-[13px]" style={{ color: 'var(--fg-secondary)' }}>{L('Carregando...', 'Loading...', 'Cargando...')}</div>
 
   return (
     <div className="max-w-[1040px]">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>{L('Automações', 'Automations', 'Automatizaciones')}</h1>
-          <p className="text-[14px]" style={{ color: '#64748b' }}>{L('Dispare ações automáticas quando regras forem atendidas', 'Trigger automatic actions when rules are met', 'Dispara acciones automáticas cuando se cumplan las reglas')}</p>
+          <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{L('Automações', 'Automations', 'Automatizaciones')}</h1>
+          <p className="text-[14px]" style={{ color: 'var(--fg-secondary)' }}>{L('Dispare ações automáticas quando regras forem atendidas', 'Trigger automatic actions when rules are met', 'Dispara acciones automáticas cuando se cumplan las reglas')}</p>
         </div>
         <button onClick={() => { setShowNew(true); setEditing(null) }}
           className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-white"
@@ -141,10 +141,10 @@ export default function AutomationsPage() {
       </div>
 
       {automations.length === 0 && !showNew && (
-        <div className="rounded-2xl p-8 text-center" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+        <div className="rounded-2xl p-8 text-center" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
           <p className="text-[40px] mb-3">⚡</p>
-          <p className="text-[16px] font-bold mb-2" style={{ color: '#1a1a2e' }}>{L('Ainda sem automações', 'No automations yet', 'Aún sin automatizaciones')}</p>
-          <p className="text-[13px] mb-4" style={{ color: '#64748b' }}>
+          <p className="text-[16px] font-bold mb-2" style={{ color: 'var(--fg)' }}>{L('Ainda sem automações', 'No automations yet', 'Aún sin automatizaciones')}</p>
+          <p className="text-[13px] mb-4" style={{ color: 'var(--fg-secondary)' }}>
             {L('Exemplos: enviar follow-up 24h após lead entrar, alertar quando parado 48h, mover para "perdido" após 7 dias sem resposta.', 'Examples: send a follow-up 24h after a lead enters, alert when stuck for 48h, move to "lost" after 7 days without a response.', 'Ejemplos: enviar un follow-up 24h después de que entre el lead, alertar cuando lleve 48h parado, mover a "perdido" tras 7 días sin respuesta.')}
           </p>
         </div>
@@ -155,7 +155,7 @@ export default function AutomationsPage() {
           const d = describe(a)
           return (
             <div key={a.id} className="rounded-xl p-4 flex items-center gap-4"
-              style={{ background: '#fff', border: '1px solid #e8ecf4', opacity: a.enabled ? 1 : 0.5 }}>
+              style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', opacity: a.enabled ? 1 : 0.5 }}>
               <button onClick={() => toggle(a)}
                 className="w-11 h-6 rounded-full relative transition-colors"
                 style={{ background: a.enabled ? '#10b981' : '#cbd5e1' }}>
@@ -163,8 +163,8 @@ export default function AutomationsPage() {
                   style={{ left: a.enabled ? '22px' : '2px' }} />
               </button>
               <div className="flex-1">
-                <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>{a.name}</p>
-                <p className="text-[12px]" style={{ color: '#64748b' }}>
+                <p className="text-[14px] font-bold" style={{ color: 'var(--fg)' }}>{a.name}</p>
+                <p className="text-[12px]" style={{ color: 'var(--fg-secondary)' }}>
                   <span className="font-semibold">{L('Quando:', 'When:', 'Cuándo:')}</span> {d.trigger} · <span className="font-semibold">{L('Ação:', 'Action:', 'Acción:')}</span> {d.action}
                 </p>
               </div>
@@ -239,20 +239,20 @@ function AutomationForm({ buyerId, templates, stages, pipelines, editing, onClos
   return (
     <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[560px] max-h-[90vh] overflow-y-auto rounded-2xl p-6"
-        style={{ background: '#fff' }} onClick={e => e.stopPropagation()}>
-        <h2 className="text-[18px] font-extrabold mb-4" style={{ color: '#1a1a2e' }}>{editing ? L('Editar automação', 'Edit automation', 'Editar automatización') : L('Nova automação', 'New automation', 'Nueva automatización')}</h2>
+        style={{ background: 'var(--bg-card)' }} onClick={e => e.stopPropagation()}>
+        <h2 className="text-[18px] font-extrabold mb-4" style={{ color: 'var(--fg)' }}>{editing ? L('Editar automação', 'Edit automation', 'Editar automatización') : L('Nova automação', 'New automation', 'Nueva automatización')}</h2>
 
         <label className="block mb-3">
-          <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Nome', 'Name', 'Nombre')}</span>
+          <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Nome', 'Name', 'Nombre')}</span>
           <input value={name} onChange={e => setName(e.target.value)} placeholder={L('Ex: Follow-up 24h', 'E.g.: Follow-up 24h', 'Ej: Follow-up 24h')}
             className="w-full mt-1 px-3 py-2 rounded-lg text-[13px]"
-            style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+            style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
         </label>
 
-        <div className="p-3 rounded-lg mb-3" style={{ background: '#eef2ff' }}>
+        <div className="p-3 rounded-lg mb-3" style={{ background: 'var(--accent-light)' }}>
           <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: '#6366f1' }}>{L('Quando (gatilho)', 'When (trigger)', 'Cuándo (disparador)')}</p>
           <select value={triggerType} onChange={e => setTriggerType(e.target.value as any)}
-            className="w-full mb-2 px-3 py-2 rounded-lg text-[13px]" style={{ background: '#fff', border: '1px solid #c7d2fe' }}>
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13px]" style={{ background: 'var(--bg-card)', border: '1px solid #c7d2fe' }}>
             <option value="stage_entered">{L('Lead entrou em estágio', 'Lead entered a stage', 'El lead entró a una etapa')}</option>
             <option value="stage_stale">{L('Lead parado em estágio há N horas', 'Lead stuck in a stage for N hours', 'Lead parado en una etapa por N horas')}</option>
             <option value="no_response">{L('Lead sem resposta há N horas', 'Lead with no response for N hours', 'Lead sin respuesta por N horas')}</option>
@@ -263,18 +263,18 @@ function AutomationForm({ buyerId, templates, stages, pipelines, editing, onClos
           {(triggerType === 'stage_entered' || triggerType === 'stage_stale') && (
             <StageSelect pipelines={pipelines} value={triggerStageId} onChange={setTriggerStageId}
               placeholder={L('Escolha o estágio...', 'Choose the stage...', 'Elige la etapa...')}
-              className="w-full mb-2 px-3 py-2 rounded-lg text-[13px]" style={{ background: '#fff', border: '1px solid #c7d2fe' }} />
+              className="w-full mb-2 px-3 py-2 rounded-lg text-[13px]" style={{ background: 'var(--bg-card)', border: '1px solid #c7d2fe' }} />
           )}
 
           {(triggerType === 'stage_stale' || triggerType === 'no_response' || triggerType === 'meeting_before' || triggerType === 'event_before') && (
             <input type="number" value={triggerHours} onChange={e => setTriggerHours(Number(e.target.value))}
               placeholder={triggerType === 'meeting_before' ? L('Horas antes da reunião (ex: 1)', 'Hours before the meeting (e.g. 1)', 'Horas antes de la reunión (ej: 1)') : triggerType === 'event_before' ? L('Horas antes do evento (ex: 1)', 'Hours before the event (e.g. 1)', 'Horas antes del evento (ej: 1)') : L('Horas', 'Hours', 'Horas')} min={1}
-              className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ background: '#fff', border: '1px solid #c7d2fe' }} />
+              className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ background: 'var(--bg-card)', border: '1px solid #c7d2fe' }} />
           )}
         </div>
 
         {triggerType === 'event_before' && actionType !== 'notify_agent' && (
-          <div className="p-3 rounded-lg mb-3 text-[12px]" style={{ background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e' }}>
+          <div className="p-3 rounded-lg mb-3 text-[12px]" style={{ background: 'var(--warn-soft)', border: '1px solid #fde68a', color: '#92400e' }}>
             ⚠️ {L('Evento da agenda normalmente não tem cliente vinculado. Sem cliente, só a ação', 'Calendar events usually have no client linked. Without a client, only the', 'Un evento de la agenda normalmente no tiene cliente vinculado. Sin cliente, solo la acción')}
             <b> {L('"Notificar agente"', '"Notify agent" action', '"Notificar al agente"')}</b> {L('funciona — as outras precisam de alguém pra receber.', 'works — the others need someone to receive them.', 'funciona — las demás necesitan a alguien que las reciba.')}
           </div>
@@ -283,7 +283,7 @@ function AutomationForm({ buyerId, templates, stages, pipelines, editing, onClos
         <div className="p-3 rounded-lg mb-4" style={{ background: '#ecfdf5' }}>
           <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: '#10b981' }}>{L('Então (ação)', 'Then (action)', 'Entonces (acción)')}</p>
           <select value={actionType} onChange={e => setActionType(e.target.value as any)}
-            className="w-full mb-2 px-3 py-2 rounded-lg text-[13px]" style={{ background: '#fff', border: '1px solid #a7f3d0' }}>
+            className="w-full mb-2 px-3 py-2 rounded-lg text-[13px]" style={{ background: 'var(--bg-card)', border: '1px solid #a7f3d0' }}>
             <option value="send_template">{L('Enviar template (WhatsApp/Email)', 'Send template (WhatsApp/Email)', 'Enviar template (WhatsApp/Email)')}</option>
             <option value="move_stage">{L('Mover para outro estágio', 'Move to another stage', 'Mover a otra etapa')}</option>
             <option value="notify_agent">{L('Notificar agente por email', 'Notify agent by email', 'Notificar al agente por email')}</option>
@@ -291,7 +291,7 @@ function AutomationForm({ buyerId, templates, stages, pipelines, editing, onClos
 
           {actionType === 'send_template' && (
             <select value={actionTemplateId} onChange={e => setActionTemplateId(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ background: '#fff', border: '1px solid #a7f3d0' }}>
+              className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ background: 'var(--bg-card)', border: '1px solid #a7f3d0' }}>
               <option value="">{L('Escolha o template...', 'Choose the template...', 'Elige el template...')}</option>
               {templates.map(t => <option key={t.id} value={t.id}>{t.type === 'whatsapp' ? '💬' : '📧'} {t.name}</option>)}
             </select>
@@ -300,12 +300,12 @@ function AutomationForm({ buyerId, templates, stages, pipelines, editing, onClos
           {actionType === 'move_stage' && (
             <StageSelect pipelines={pipelines} value={actionStageId} onChange={setActionStageId}
               placeholder={L('Escolha o estágio destino...', 'Choose the target stage...', 'Elige la etapa de destino...')}
-              className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ background: '#fff', border: '1px solid #a7f3d0' }} />
+              className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ background: 'var(--bg-card)', border: '1px solid #a7f3d0' }} />
           )}
         </div>
 
         <div className="flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 text-[13px] font-semibold" style={{ color: '#64748b' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
+          <button onClick={onClose} className="px-4 py-2 text-[13px] font-semibold" style={{ color: 'var(--fg-secondary)' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
           <button onClick={save} disabled={saving || !name.trim()}
             className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>

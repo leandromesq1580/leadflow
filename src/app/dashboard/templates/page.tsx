@@ -80,8 +80,8 @@ export default function TemplatesPage() {
     <div className="max-w-[900px]">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>Templates</h1>
-          <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>{L('Mensagens prontas pra WhatsApp e Email', 'Ready-made messages for WhatsApp and Email', 'Mensajes listos para WhatsApp y Email')}</p>
+          <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>Templates</h1>
+          <p className="text-[14px] mt-1" style={{ color: 'var(--fg-secondary)' }}>{L('Mensagens prontas pra WhatsApp e Email', 'Ready-made messages for WhatsApp and Email', 'Mensajes listos para WhatsApp y Email')}</p>
         </div>
         <button onClick={() => { setEditing(null); setShowNew(true) }}
           className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-white"
@@ -102,32 +102,32 @@ export default function TemplatesPage() {
       <div className="space-y-3">
         {templates.map(t => (
           <div key={t.id} className="rounded-xl p-4 flex items-start gap-4"
-            style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+            style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: t.type === 'whatsapp' ? '#dcfce7' : '#eef2ff' }}>
+              style={{ background: t.type === 'whatsapp' ? 'var(--ok-line)' : 'var(--accent-light)' }}>
               <span className="text-[16px]">{t.type === 'whatsapp' ? '💬' : '📧'}</span>
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>{t.name}</p>
-                {t.is_system && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: '#fef3c7', color: '#92400e' }}>{L('Sistema', 'System', 'Sistema')}</span>}
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: t.type === 'whatsapp' ? '#dcfce7' : '#eef2ff', color: t.type === 'whatsapp' ? '#15803d' : '#4f46e5' }}>
+                <p className="text-[14px] font-bold" style={{ color: 'var(--fg)' }}>{t.name}</p>
+                {t.is_system && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: 'var(--warn-line)', color: '#92400e' }}>{L('Sistema', 'System', 'Sistema')}</span>}
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: t.type === 'whatsapp' ? 'var(--ok-line)' : 'var(--accent-light)', color: t.type === 'whatsapp' ? '#15803d' : '#4f46e5' }}>
                   {t.type}
                 </span>
               </div>
-              <p className="text-[12px] line-clamp-2" style={{ color: '#64748b' }}>{t.body}</p>
+              <p className="text-[12px] line-clamp-2" style={{ color: 'var(--fg-secondary)' }}>{t.body}</p>
             </div>
             <div className="flex gap-2 flex-shrink-0">
               {!t.is_system && (
                 <>
                   <button onClick={() => { setEditing(t); setShowNew(false) }}
                     className="text-[11px] font-bold px-3 py-1.5 rounded-lg"
-                    style={{ background: '#eef2ff', color: '#6366f1' }}>
+                    style={{ background: 'var(--accent-light)', color: '#6366f1' }}>
                     {L('Editar', 'Edit', 'Editar')}
                   </button>
                   <button onClick={() => remove(t.id)}
                     className="text-[11px] font-bold px-3 py-1.5 rounded-lg"
-                    style={{ background: '#fef2f2', color: '#ef4444' }}>
+                    style={{ background: 'var(--err-soft)', color: '#ef4444' }}>
                     ✕
                   </button>
                 </>
@@ -135,7 +135,7 @@ export default function TemplatesPage() {
               {t.is_system && (
                 <button onClick={() => { setEditing({ ...t, is_system: false, id: '', buyer_id: buyerId }); setShowNew(true) }}
                   className="text-[11px] font-bold px-3 py-1.5 rounded-lg"
-                  style={{ background: '#eef2ff', color: '#6366f1' }}>
+                  style={{ background: 'var(--accent-light)', color: '#6366f1' }}>
                   {L('Duplicar', 'Duplicate', 'Duplicar')}
                 </button>
               )}
@@ -166,21 +166,21 @@ function TemplateForm({ template, onCancel, onSave, saving }: {
   }
 
   return (
-    <div className="rounded-2xl p-6 mb-6" style={{ background: '#fff', border: '2px solid #6366f1' }}>
-      <h3 className="text-[16px] font-bold mb-4" style={{ color: '#1a1a2e' }}>{template ? L('Editar Template', 'Edit Template', 'Editar Template') : L('Novo Template', 'New Template', 'Nuevo Template')}</h3>
+    <div className="rounded-2xl p-6 mb-6" style={{ background: 'var(--bg-card)', border: '2px solid #6366f1' }}>
+      <h3 className="text-[16px] font-bold mb-4" style={{ color: 'var(--fg)' }}>{template ? L('Editar Template', 'Edit Template', 'Editar Template') : L('Novo Template', 'New Template', 'Nuevo Template')}</h3>
 
       <div className="grid grid-cols-2 gap-3 mb-3">
         <div>
-          <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Nome', 'Name', 'Nombre')}</label>
+          <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--fg-muted)' }}>{L('Nome', 'Name', 'Nombre')}</label>
           <input value={name} onChange={e => setName(e.target.value)} placeholder={L('Ex: Primeiro contato', 'E.g.: First contact', 'Ej: Primer contacto')}
             className="w-full px-3 py-2 rounded-lg text-[13px]"
-            style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+            style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
         </div>
         <div>
-          <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Tipo', 'Type', 'Tipo')}</label>
+          <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--fg-muted)' }}>{L('Tipo', 'Type', 'Tipo')}</label>
           <select value={type} onChange={e => setType(e.target.value as any)}
             className="w-full px-3 py-2 rounded-lg text-[13px] cursor-pointer"
-            style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
+            style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }}>
             <option value="whatsapp">WhatsApp</option>
             <option value="email">Email</option>
           </select>
@@ -189,16 +189,16 @@ function TemplateForm({ template, onCancel, onSave, saving }: {
 
       {type === 'email' && (
         <div className="mb-3">
-          <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>{L('Assunto', 'Subject', 'Asunto')}</label>
+          <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--fg-muted)' }}>{L('Assunto', 'Subject', 'Asunto')}</label>
           <input value={subject} onChange={e => setSubject(e.target.value)} placeholder={L('Ex: Boas-vindas', 'E.g.: Welcome', 'Ej: Bienvenida')}
             className="w-full px-3 py-2 rounded-lg text-[13px]"
-            style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+            style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
         </div>
       )}
 
       <div className="mb-3">
         <div className="flex items-center justify-between mb-1">
-          <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{L('Mensagem', 'Message', 'Mensaje')}</label>
+          <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Mensagem', 'Message', 'Mensaje')}</label>
           <button type="button" onClick={() => setShowVars(!showVars)}
             className="text-[11px] font-bold" style={{ color: '#6366f1' }}>
             {showVars ? '▼' : '▶'} {L('Variáveis disponíveis', 'Available variables', 'Variables disponibles')}
@@ -211,7 +211,7 @@ function TemplateForm({ template, onCancel, onSave, saving }: {
                 <button key={v.key} type="button" onClick={() => insertVar(v.key)}
                   title={v.desc}
                   className="text-[11px] font-mono px-2 py-1 rounded hover:bg-white transition-colors"
-                  style={{ background: '#fff', color: '#6366f1', border: '1px solid #c7d2fe' }}>
+                  style={{ background: 'var(--bg-card)', color: '#6366f1', border: '1px solid #c7d2fe' }}>
                   {v.key}
                 </button>
               ))}
@@ -221,11 +221,11 @@ function TemplateForm({ template, onCancel, onSave, saving }: {
         <textarea value={body} onChange={e => setBody(e.target.value)}
           rows={6} placeholder={L('Oi {primeiro_nome}! Aqui eh {agente}...', 'Hi {primeiro_nome}! This is {agente}...', '¡Hola {primeiro_nome}! Soy {agente}...')}
           className="w-full px-3 py-2 rounded-lg text-[13px] resize-none font-mono"
-          style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+          style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
       </div>
 
       <div className="flex gap-2 justify-end">
-        <button onClick={onCancel} className="px-4 py-2 text-[13px] font-semibold" style={{ color: '#94a3b8' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
+        <button onClick={onCancel} className="px-4 py-2 text-[13px] font-semibold" style={{ color: 'var(--fg-muted)' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
         <button onClick={() => onSave({ name, type, subject: subject || null, body })} disabled={saving || !name || !body}
           className="px-5 py-2 rounded-lg text-[13px] font-bold text-white disabled:opacity-50"
           style={{ background: '#6366f1' }}>

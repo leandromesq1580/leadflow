@@ -35,7 +35,7 @@ export function LocaleSwitcher({ current }: { current: Locale }) {
       <button
         onClick={() => setOpen(v => !v)}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors hover:bg-slate-100"
-        style={{ color: '#64748b' }}
+        style={{ color: 'var(--fg-secondary)' }}
         aria-label="Change language"
       >
         <span>{meta.flag}</span>
@@ -45,7 +45,7 @@ export function LocaleSwitcher({ current }: { current: Locale }) {
 
       {open && (
         <div className="absolute right-0 mt-1 rounded-xl overflow-hidden z-50 min-w-[140px]"
-          style={{ background: '#fff', border: '1px solid #e8ecf4', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
+          style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
           {LOCALES.map(l => {
             const m = LOCALE_META[l]
             const isActive = l === current
@@ -55,8 +55,8 @@ export function LocaleSwitcher({ current }: { current: Locale }) {
                 onClick={() => choose(l)}
                 className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-[12px] font-semibold transition-colors"
                 style={{
-                  background: isActive ? '#eef2ff' : 'transparent',
-                  color: isActive ? '#6366f1' : '#1a1a2e',
+                  background: isActive ? 'var(--accent-light)' : 'transparent',
+                  color: isActive ? '#6366f1' : 'var(--fg)',
                 }}
               >
                 <span className="text-[16px]">{m.flag}</span>

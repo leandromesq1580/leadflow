@@ -91,18 +91,18 @@ export function RoteiroClient() {
     setScript({ ...script, etapas: [...script.etapas, nova] }); setAberta(script.etapas.length)
   }
 
-  if (carregando) return <div style={{ textAlign: 'center', padding: 60, color: '#94a3b8', fontSize: 13 }}>{L('Carregando…', 'Loading…', 'Cargando…')}</div>
+  if (carregando) return <div style={{ textAlign: 'center', padding: 60, color: 'var(--fg-muted)', fontSize: 13 }}>{L('Carregando…', 'Loading…', 'Cargando…')}</div>
   if (!script) return null
 
-  const inStyle = { width: '100%', padding: '8px 11px', borderRadius: 10, border: '1px solid #e8ecf4', fontSize: 13, color: '#1a1a2e', background: '#fff', outline: 'none' } as const
-  const lbl = { fontSize: 11, fontWeight: 700, color: '#64748b', display: 'block', margin: '10px 0 4px' } as const
+  const inStyle = { width: '100%', padding: '8px 11px', borderRadius: 10, border: '1px solid #e8ecf4', fontSize: 13, color: 'var(--fg)', background: 'var(--bg-card)', outline: 'none' } as const
+  const lbl = { fontSize: 11, fontWeight: 700, color: 'var(--fg-secondary)', display: 'block', margin: '10px 0 4px' } as const
 
   return (
     <div className="max-w-[860px]">
       <div className="mb-5 flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>{L('📜 Roteiro de Ligação', '📜 Call Script', '📜 Guion de Llamada')}</h1>
-          <p className="text-[14px] mt-1" style={{ color: '#64748b' }}>
+          <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{L('📜 Roteiro de Ligação', '📜 Call Script', '📜 Guion de Llamada')}</h1>
+          <p className="text-[14px] mt-1" style={{ color: 'var(--fg-secondary)' }}>
             {L('Seu script de venda, etapa por etapa, ao lado do telefone durante a ligação',
                'Your sales script, step by step, next to the phone during the call',
                'Tu guion de venta, etapa por etapa, junto al teléfono durante la llamada')}
@@ -111,10 +111,10 @@ export function RoteiroClient() {
       </div>
 
       {/* opt-in */}
-      <div className="rounded-2xl p-5 mb-5 flex items-center gap-4" style={{ background: enabled ? '#f0fdf4' : '#fff', border: `1px solid ${enabled ? '#bbf7d0' : '#e8ecf4'}` }}>
+      <div className="rounded-2xl p-5 mb-5 flex items-center gap-4" style={{ background: enabled ? 'var(--ok-soft)' : 'var(--bg-card)', border: `1px solid ${enabled ? 'var(--ok-line)' : 'var(--border)'}` }}>
         <div className="flex-1">
-          <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>{L('Apoio durante a ligação', 'Support during the call', 'Apoyo durante la llamada')}</p>
-          <p className="text-[12px] mt-0.5" style={{ color: '#64748b' }}>
+          <p className="text-[14px] font-bold" style={{ color: 'var(--fg)' }}>{L('Apoio durante a ligação', 'Support during the call', 'Apoyo durante la llamada')}</p>
+          <p className="text-[12px] mt-0.5" style={{ color: 'var(--fg-secondary)' }}>
             {enabled
               ? L('Ligado — o roteiro abre sozinho ao lado do telefone quando você liga pra um lead.',
                   'On — the script opens on its own next to the phone when you call a lead.',
@@ -135,7 +135,7 @@ export function RoteiroClient() {
 
       {/* add-on IA na Ligação ($49/mês): a transcrição+sugestão ao vivo é paga; o roteiro estático segue grátis */}
       {ia?.ativa ? (
-        <div className="rounded-2xl p-5 mb-5" style={{ background: '#eef2ff', border: '1px solid #c7d2fe' }}>
+        <div className="rounded-2xl p-5 mb-5" style={{ background: 'var(--accent-light)', border: '1px solid #c7d2fe' }}>
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
               <p className="text-[14px] font-bold" style={{ color: '#3730a3' }}>🤖 {L('IA na Ligação — ativa', 'AI on the Call — active', 'IA en la Llamada — activa')}</p>
@@ -154,10 +154,10 @@ export function RoteiroClient() {
           </div>
         </div>
       ) : (
-        <div className="rounded-2xl p-5 mb-5 flex items-center gap-4 flex-wrap" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+        <div className="rounded-2xl p-5 mb-5 flex items-center gap-4 flex-wrap" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
           <div className="flex-1 min-w-[260px]">
-            <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>🤖 {L('IA na Ligação', 'AI on the Call', 'IA en la Llamada')} <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#eef2ff', color: '#6366f1' }}>{L('ADD-ON', 'ADD-ON', 'ADD-ON')}</span></p>
-            <p className="text-[12px] mt-0.5" style={{ color: '#64748b' }}>
+            <p className="text-[14px] font-bold" style={{ color: 'var(--fg)' }}>🤖 {L('IA na Ligação', 'AI on the Call', 'IA en la Llamada')} <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'var(--accent-light)', color: '#6366f1' }}>{L('ADD-ON', 'ADD-ON', 'ADD-ON')}</span></p>
+            <p className="text-[12px] mt-0.5" style={{ color: 'var(--fg-secondary)' }}>
               {L('A IA escuta sua ligação AO VIVO e sugere a resposta do seu script na hora — inclusive o contorno da objeção que o cliente acabou de levantar. Inclui 600 min de escuta/mês.',
                  'The AI listens to your call LIVE and suggests your script’s answer on the spot — including the rebuttal to the objection the client just raised. Includes 600 min of listening/mo.',
                  'La IA escucha tu llamada EN VIVO y sugiere la respuesta de tu guion al instante — incluido el manejo de la objeción que el cliente acaba de plantear. Incluye 600 min de escucha/mes.')}
@@ -172,18 +172,18 @@ export function RoteiroClient() {
       )}
 
       {aviso && (
-        <div className="rounded-xl p-3 mb-4 text-[13px] font-semibold" style={{ background: '#f0fdfa', border: '1px solid #99f6e4', color: '#0f766e' }}>
+        <div className="rounded-xl p-3 mb-4 text-[13px] font-semibold" style={{ background: 'var(--teal-soft)', border: '1px solid #99f6e4', color: '#0f766e' }}>
           {aviso}
         </div>
       )}
 
       {/* editor */}
-      <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+      <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
         <div className="flex items-center gap-3 mb-4 flex-wrap">
           <input value={script.nome} onChange={e => setScript({ ...script, nome: e.target.value })}
-            className="flex-1 min-w-[220px] px-3 py-2 rounded-lg text-[14px] font-bold" style={{ border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
+            className="flex-1 min-w-[220px] px-3 py-2 rounded-lg text-[14px] font-bold" style={{ border: '1px solid #e8ecf4', color: 'var(--fg)' }} />
           <button onClick={() => { if (confirm(L('Substituir seu roteiro pelo padrão IUL? Suas edições serão perdidas.', 'Replace your script with the IUL default? Your edits will be lost.', '¿Reemplazar tu guion por el estándar IUL? Tus ediciones se perderán.'))) setScript(SCRIPT_IUL_PADRAO) }}
-            className="px-3 py-2 rounded-lg text-[12px] font-bold" style={{ background: '#f1f5f9', color: '#64748b' }}>
+            className="px-3 py-2 rounded-lg text-[12px] font-bold" style={{ background: 'var(--bg-soft)', color: 'var(--fg-secondary)' }}>
             {L('↺ Restaurar padrão IUL', '↺ Restore IUL default', '↺ Restaurar estándar IUL')}
           </button>
           <button onClick={() => salvar({ script }, L('Roteiro salvo.', 'Script saved.', 'Guion guardado.'))} disabled={salvando}
@@ -193,7 +193,7 @@ export function RoteiroClient() {
           </button>
         </div>
 
-        <p className="text-[12px] mb-4" style={{ color: '#94a3b8' }}>
+        <p className="text-[12px] mb-4" style={{ color: 'var(--fg-muted)' }}>
           {L('Use ', 'Use ', 'Usa ')}<b>{'{{nome}}'}</b>{L(' nas falas — vira o primeiro nome do lead na hora da ligação. Uma fala por linha.',
             ' in the lines — it becomes the lead’s first name during the call. One line per sentence.',
             ' en las frases — se convierte en el primer nombre del lead durante la llamada. Una frase por línea.')}
@@ -204,12 +204,12 @@ export function RoteiroClient() {
             const aberto = aberta === i
             return (
               <div key={e.id} className="rounded-xl overflow-hidden" style={{ border: '1px solid #e8ecf4' }}>
-                <div className="flex items-center gap-2 px-3 py-2.5" style={{ background: aberto ? '#eef2ff' : '#fafbfc' }}>
-                  <button onClick={() => setAberta(aberto ? null : i)} className="flex-1 text-left text-[13px] font-bold" style={{ color: '#1a1a2e', background: 'none', border: 'none', cursor: 'pointer' }}>
-                    {i + 1}. {e.titulo} <span style={{ color: '#94a3b8', fontWeight: 500 }}>· {L(`${e.falas.filter(Boolean).length} fala(s)`, `${e.falas.filter(Boolean).length} line(s)`, `${e.falas.filter(Boolean).length} frase(s)`)}</span>
+                <div className="flex items-center gap-2 px-3 py-2.5" style={{ background: aberto ? 'var(--accent-light)' : '#fafbfc' }}>
+                  <button onClick={() => setAberta(aberto ? null : i)} className="flex-1 text-left text-[13px] font-bold" style={{ color: 'var(--fg)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                    {i + 1}. {e.titulo} <span style={{ color: 'var(--fg-muted)', fontWeight: 500 }}>· {L(`${e.falas.filter(Boolean).length} fala(s)`, `${e.falas.filter(Boolean).length} line(s)`, `${e.falas.filter(Boolean).length} frase(s)`)}</span>
                   </button>
-                  <button onClick={() => mover(i, -1)} disabled={i === 0} title={L('Subir', 'Move up', 'Subir')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', opacity: i === 0 ? 0.3 : 1 }}>↑</button>
-                  <button onClick={() => mover(i, 1)} disabled={i === script.etapas.length - 1} title={L('Descer', 'Move down', 'Bajar')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', opacity: i === script.etapas.length - 1 ? 0.3 : 1 }}>↓</button>
+                  <button onClick={() => mover(i, -1)} disabled={i === 0} title={L('Subir', 'Move up', 'Subir')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-muted)', opacity: i === 0 ? 0.3 : 1 }}>↑</button>
+                  <button onClick={() => mover(i, 1)} disabled={i === script.etapas.length - 1} title={L('Descer', 'Move down', 'Bajar')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-muted)', opacity: i === script.etapas.length - 1 ? 0.3 : 1 }}>↓</button>
                   <button onClick={() => remover(i)} title={L('Remover', 'Remove', 'Eliminar')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171' }}>✕</button>
                 </div>
                 {aberto && (
@@ -242,7 +242,7 @@ export function RoteiroClient() {
         </button>
       </div>
 
-      <p className="text-[12px] mt-4" style={{ color: '#94a3b8' }}>
+      <p className="text-[12px] mt-4" style={{ color: 'var(--fg-muted)' }}>
         {L('💡 Ao salvar, o roteiro novo vale já na próxima ligação. As falas não são lidas em voz alta pra ninguém — só você vê.',
            '💡 Once saved, the new script applies to your very next call. The lines are never read out loud to anyone — only you see them.',
            '💡 Al guardar, el guion nuevo aplica desde la próxima llamada. Las frases no se leen en voz alta a nadie — solo tú las ves.')}

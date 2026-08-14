@@ -55,7 +55,7 @@ export function AssignButton({ leadId, members, currentMember }: Props) {
       <button ref={buttonRef} onClick={(e) => { e.preventDefault(); setOpen(!open) }}
         className="px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all hover:shadow-sm"
         style={{
-          background: currentMember ? '#eef2ff' : '#fef3c7',
+          background: currentMember ? 'var(--accent-light)' : 'var(--warn-line)',
           color: currentMember ? '#6366f1' : '#92400e',
         }}>
         {currentMember || 'Atribuir'}
@@ -65,8 +65,8 @@ export function AssignButton({ leadId, members, currentMember }: Props) {
         <>
           <div className="fixed inset-0 z-40" onClick={(e) => { e.preventDefault(); setOpen(false) }} />
           <div className={`absolute right-0 ${positionClass} z-50 rounded-xl p-2 min-w-[180px]`}
-            style={{ background: '#fff', border: '1px solid #e8ecf4', boxShadow: shadowDir }}>
-            <p className="text-[10px] font-bold px-2 py-1 mb-1" style={{ color: '#94a3b8' }}>
+            style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', boxShadow: shadowDir }}>
+            <p className="text-[10px] font-bold px-2 py-1 mb-1" style={{ color: 'var(--fg-muted)' }}>
               {currentMember ? 'Transferir pra:' : 'Enviar pra:'}
             </p>
 
@@ -83,14 +83,14 @@ export function AssignButton({ leadId, members, currentMember }: Props) {
               <button key={m.id} onClick={(e) => { e.preventDefault(); assign(m.id) }}
                 disabled={assigning}
                 className="w-full text-left px-3 py-2 rounded-lg text-[12px] font-semibold hover:bg-indigo-50 disabled:opacity-50"
-                style={{ color: m.name === currentMember ? '#6366f1' : '#1a1a2e' }}>
+                style={{ color: m.name === currentMember ? '#6366f1' : 'var(--fg)' }}>
                 {m.name} {m.name === currentMember && '✓'}
               </button>
             ))}
 
             <button onClick={(e) => { e.preventDefault(); setOpen(false) }}
               className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] mt-1"
-              style={{ color: '#94a3b8' }}>
+              style={{ color: 'var(--fg-muted)' }}>
               Cancelar
             </button>
           </div>

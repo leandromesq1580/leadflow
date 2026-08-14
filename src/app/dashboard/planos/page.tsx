@@ -14,8 +14,8 @@ export default async function PlanosPage() {
   return (
     <div className="max-w-5xl mx-auto">
       <div className="mb-8 text-center">
-        <h1 className="text-[26px] font-extrabold" style={{ color: '#1a1a2e' }}>{L('Escolha seu plano CRM Pro', 'Choose your CRM Pro plan', 'Elige tu plan CRM Pro')}</h1>
-        <p className="text-[14px] mt-2 max-w-2xl mx-auto" style={{ color: '#64748b' }}>
+        <h1 className="text-[26px] font-extrabold" style={{ color: 'var(--fg)' }}>{L('Escolha seu plano CRM Pro', 'Choose your CRM Pro plan', 'Elige tu plan CRM Pro')}</h1>
+        <p className="text-[14px] mt-2 max-w-2xl mx-auto" style={{ color: 'var(--fg-secondary)' }}>
           {L(
             'Quanto mais longo o compromisso, menor o valor por mês. Todos incluem o CRM Pro completo. Pagamento à vista, renovação automática — cancele quando quiser.',
             'The longer the commitment, the lower your monthly price. All plans include the full CRM Pro. Paid upfront, auto-renews — cancel anytime.',

@@ -55,7 +55,7 @@ export async function StaleLeadsAlert({ buyerId }: Props) {
     <Link href="/dashboard/pipeline" className="block rounded-2xl mb-6 p-5 transition-all hover:shadow-md"
       style={{ background: 'linear-gradient(135deg, #fff7ed, #fef2f2)', border: '1px solid #fed7aa' }}>
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#fff', border: '1px solid #fed7aa' }}>
+        <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'var(--bg-card)', border: '1px solid #fed7aa' }}>
           <span className="text-[24px]">⚠️</span>
         </div>
         <div className="flex-1 min-w-0">

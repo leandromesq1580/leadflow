@@ -74,12 +74,12 @@ export function PwaRegister({ buyerId }: Props) {
 
   return (
     <div className="fixed bottom-4 right-4 z-50 max-w-sm rounded-2xl p-4 shadow-xl"
-      style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+      style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
       <div className="flex items-start gap-3">
         <span className="text-[24px]">🔔</span>
         <div className="flex-1">
-          <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>{L('Receba notificações de leads novos', 'Get notified about new leads', 'Recibe notificaciones de leads nuevos')}</p>
-          <p className="text-[12px] mt-1" style={{ color: '#64748b' }}>{L('Seja o primeiro a responder. Ative notificações no navegador.', 'Be the first to respond. Enable browser notifications.', 'Sé el primero en responder. Activa las notificaciones en el navegador.')}</p>
+          <p className="text-[14px] font-bold" style={{ color: 'var(--fg)' }}>{L('Receba notificações de leads novos', 'Get notified about new leads', 'Recibe notificaciones de leads nuevos')}</p>
+          <p className="text-[12px] mt-1" style={{ color: 'var(--fg-secondary)' }}>{L('Seja o primeiro a responder. Ative notificações no navegador.', 'Be the first to respond. Enable browser notifications.', 'Sé el primero en responder. Activa las notificaciones en el navegador.')}</p>
           <div className="flex gap-2 mt-3">
             <button onClick={enable}
               className="px-4 py-1.5 rounded-lg text-[12px] font-bold text-white"
@@ -88,7 +88,7 @@ export function PwaRegister({ buyerId }: Props) {
             </button>
             <button onClick={() => setShowPrompt(false)}
               className="px-4 py-1.5 rounded-lg text-[12px] font-bold"
-              style={{ color: '#64748b' }}>
+              style={{ color: 'var(--fg-secondary)' }}>
               {L('Depois', 'Later', 'Después')}
             </button>
           </div>

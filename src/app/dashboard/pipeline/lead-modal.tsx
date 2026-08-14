@@ -368,7 +368,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   if (!lead) return (
     <>
       <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[92vw] max-w-[540px] max-h-[90vh] rounded-2xl" style={{ background: '#fff', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[92vw] max-w-[540px] max-h-[90vh] rounded-2xl" style={{ background: 'var(--bg-card)', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
         <div className="flex items-center justify-center h-[200px]">
           <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
         </div>
@@ -386,7 +386,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
       : (lead[field] || '')
     return (
       <div>
-        <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: '#94a3b8' }}>
+        <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--fg-muted)' }}>
           {icon && <span className="mr-1">{icon}</span>}{label}
         </label>
         <input
@@ -395,7 +395,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
           readOnly={masked}
           onChange={masked ? undefined : (e => setLead({ ...lead, [field]: type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value }))}
           className="w-full px-3.5 py-2.5 rounded-xl text-[13px] font-medium transition-all focus:outline-none focus:ring-2 focus:ring-indigo-200"
-          style={{ background: masked ? '#f1f5f9' : '#f8f9fc', border: '1px solid #e8ecf4', color: masked ? '#94a3b8' : '#1a1a2e' }}
+          style={{ background: masked ? 'var(--bg-soft)' : 'var(--bg)', border: '1px solid #e8ecf4', color: masked ? '#94a3b8' : '#1a1a2e' }}
         />
       </div>
     )
@@ -405,12 +405,12 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
     <>
       <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[92vw] max-w-[540px] max-h-[90vh] overflow-y-auto rounded-2xl"
-        style={{ background: '#fff', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
+        style={{ background: 'var(--bg-card)', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
 
         {/* Header with gradient */}
         <div className="relative px-7 pt-7 pb-5" style={{ background: `linear-gradient(135deg, hsl(${hue}, 55%, 96%), #fff)` }}>
           <button onClick={onClose} className="absolute top-5 right-5 w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-black/5"
-            style={{ color: '#94a3b8' }}>
+            style={{ color: 'var(--fg-muted)' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
           <div className="flex items-center gap-3.5">
@@ -419,8 +419,8 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               {lead.name?.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-[20px] font-extrabold truncate" style={{ color: '#1a1a2e' }}>{lead.name}</h2>
-              <p className="text-[12px] font-medium" style={{ color: '#94a3b8' }}>
+              <h2 className="text-[20px] font-extrabold truncate" style={{ color: 'var(--fg)' }}>{lead.name}</h2>
+              <p className="text-[12px] font-medium" style={{ color: 'var(--fg-muted)' }}>
                 {privacy.mask(lead.phone, 'phone')} {lead.state && `· ${lead.state}`}
               </p>
             </div>
@@ -453,7 +453,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 mb-6 p-1 rounded-xl overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" style={{ background: '#f1f5f9' }}>
+          <div className="flex gap-1 mb-6 p-1 rounded-xl overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" style={{ background: 'var(--bg-soft)' }}>
             {[
               { key: 'details', label: L('Detalhes', 'Details', 'Detalles'), icon: '📋' },
               { key: 'inbox', label: L('Conversa', 'Chat', 'Conversación'), icon: '💬' },
@@ -464,8 +464,8 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               <button key={t.key} onClick={() => setTab(t.key as any)}
                 className="flex-1 whitespace-nowrap py-2.5 px-2 rounded-lg text-[11px] font-bold transition-all"
                 style={{
-                  background: tab === t.key ? '#fff' : 'transparent',
-                  color: tab === t.key ? '#6366f1' : '#94a3b8',
+                  background: tab === t.key ? 'var(--bg-card)' : 'transparent',
+                  color: tab === t.key ? '#6366f1' : 'var(--fg-muted)',
                   boxShadow: tab === t.key ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
                 }}>
                 {t.icon} {t.label}{(t as any).count > 0 ? <sup className="ml-0.5 text-[9px] font-extrabold" style={{ color: tab === t.key ? '#6366f1' : '#cbd5e1' }}>{(t as any).count}</sup> : null}
@@ -506,30 +506,30 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                 <p className="text-[11px] font-bold uppercase tracking-widest mb-3" style={{ color: '#c0c8d4' }}>Status</p>
                 <div className="flex gap-3">
                   <label className="flex-1 flex items-center gap-3 p-3.5 rounded-xl cursor-pointer transition-all"
-                    style={{ background: lead.is_organic ? '#f0fdf4' : '#f8f9fc', border: `1px solid ${lead.is_organic ? '#86efac' : '#e8ecf4'}` }}>
+                    style={{ background: lead.is_organic ? 'var(--ok-soft)' : 'var(--bg)', border: `1px solid ${lead.is_organic ? '#86efac' : 'var(--border)'}` }}>
                     <input type="checkbox" checked={lead.is_organic || false}
                       onChange={e => setLead({ ...lead, is_organic: e.target.checked })}
                       className="w-4 h-4 rounded accent-green-500" />
                     <div>
-                      <span className="text-[12px] font-bold block" style={{ color: '#1a1a2e' }}>{L('Lead Organico', 'Organic Lead', 'Lead Orgánico')}</span>
-                      <span className="text-[10px]" style={{ color: '#94a3b8' }}>{L('Nao veio de campanha paga', 'Did not come from a paid campaign', 'No vino de campaña pagada')}</span>
+                      <span className="text-[12px] font-bold block" style={{ color: 'var(--fg)' }}>{L('Lead Organico', 'Organic Lead', 'Lead Orgánico')}</span>
+                      <span className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>{L('Nao veio de campanha paga', 'Did not come from a paid campaign', 'No vino de campaña pagada')}</span>
                     </div>
                   </label>
                   <label className="flex-1 flex items-center gap-3 p-3.5 rounded-xl cursor-pointer transition-all"
-                    style={{ background: lead.contract_closed ? '#f0fdf4' : '#f8f9fc', border: `1px solid ${lead.contract_closed ? '#86efac' : '#e8ecf4'}` }}>
+                    style={{ background: lead.contract_closed ? 'var(--ok-soft)' : 'var(--bg)', border: `1px solid ${lead.contract_closed ? '#86efac' : 'var(--border)'}` }}>
                     <input type="checkbox" checked={lead.contract_closed || false}
                       onChange={e => setLead({ ...lead, contract_closed: e.target.checked })}
                       className="w-4 h-4 rounded accent-green-500" />
                     <div>
-                      <span className="text-[12px] font-bold block" style={{ color: '#1a1a2e' }}>{L('Contrato Fechado', 'Contract Closed', 'Contrato Cerrado')}</span>
-                      <span className="text-[10px]" style={{ color: '#94a3b8' }}>{L('Apolice emitida', 'Policy issued', 'Póliza emitida')}</span>
+                      <span className="text-[12px] font-bold block" style={{ color: 'var(--fg)' }}>{L('Contrato Fechado', 'Contract Closed', 'Contrato Cerrado')}</span>
+                      <span className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>{L('Apolice emitida', 'Policy issued', 'Póliza emitida')}</span>
                     </div>
                   </label>
                 </div>
 
                 {/* Closing details — show when contract_closed */}
                 {lead.contract_closed && (
-                  <div className="grid grid-cols-2 gap-3 mt-3 p-4 rounded-xl" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                  <div className="grid grid-cols-2 gap-3 mt-3 p-4 rounded-xl" style={{ background: 'var(--ok-soft)', border: '1px solid #bbf7d0' }}>
                     <div>
                       <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: '#15803d' }}>
                         📅 {L('Data Fechamento', 'Closing Date', 'Fecha de Cierre')}
@@ -537,7 +537,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                       <input type="date" value={lead.closed_at ? lead.closed_at.split('T')[0] : ''}
                         onChange={e => setLead({ ...lead, closed_at: e.target.value ? new Date(e.target.value).toISOString() : null })}
                         className="w-full px-3.5 py-2.5 rounded-xl text-[13px] font-medium focus:outline-none focus:ring-2 focus:ring-green-200"
-                        style={{ background: '#fff', border: '1px solid #bbf7d0', color: '#1a1a2e' }} />
+                        style={{ background: 'var(--bg-card)', border: '1px solid #bbf7d0', color: 'var(--fg)' }} />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: '#15803d' }}>
@@ -546,7 +546,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                       <input type="number" value={lead.policy_value || ''} placeholder="0.00"
                         onChange={e => setLead({ ...lead, policy_value: parseFloat(e.target.value) || 0 })}
                         className="w-full px-3.5 py-2.5 rounded-xl text-[13px] font-medium focus:outline-none focus:ring-2 focus:ring-green-200"
-                        style={{ background: '#fff', border: '1px solid #bbf7d0', color: '#1a1a2e' }} />
+                        style={{ background: 'var(--bg-card)', border: '1px solid #bbf7d0', color: 'var(--fg)' }} />
                     </div>
                   </div>
                 )}
@@ -555,18 +555,18 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               {/* Pipeline Stage selector */}
               {pipelineLead && (
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: '#94a3b8' }}>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--fg-muted)' }}>
                     📋 {L('Estágio no Pipeline', 'Stage in Pipeline', 'Etapa en el Pipeline')}
                   </label>
-                  <div className="rounded-xl p-3" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
+                  <div className="rounded-xl p-3" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }}>
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>{L('Pipeline atual:', 'Current pipeline:', 'Pipeline actual:')}</span>
-                      <span className="text-[12px] font-bold" style={{ color: '#1a1a2e' }}>
+                      <span className="text-[10px] font-bold uppercase" style={{ color: 'var(--fg-muted)' }}>{L('Pipeline atual:', 'Current pipeline:', 'Pipeline actual:')}</span>
+                      <span className="text-[12px] font-bold" style={{ color: 'var(--fg)' }}>
                         {pipelineLead.pipeline?.name || 'Default'}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="text-[10px] font-bold uppercase" style={{ color: '#94a3b8' }}>{L('Estágio atual:', 'Current stage:', 'Etapa actual:')}</span>
+                      <span className="text-[10px] font-bold uppercase" style={{ color: 'var(--fg-muted)' }}>{L('Estágio atual:', 'Current stage:', 'Etapa actual:')}</span>
                       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold"
                         style={{
                           background: (pipelineLead.stage?.color || '#6366f1') + '22',
@@ -580,7 +580,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
 
                     {pipelines.length > 1 && (
                       <div className="mb-2">
-                        <label className="block text-[10px] font-bold uppercase mb-1" style={{ color: '#94a3b8' }}>{L('Mover para pipeline:', 'Move to pipeline:', 'Mover a pipeline:')}</label>
+                        <label className="block text-[10px] font-bold uppercase mb-1" style={{ color: 'var(--fg-muted)' }}>{L('Mover para pipeline:', 'Move to pipeline:', 'Mover a pipeline:')}</label>
                         <select
                           value={pendingPipelineId || pipelineLead.pipeline?.id || ''}
                           onChange={e => {
@@ -597,9 +597,9 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                           }}
                           className="w-full px-3 py-2 rounded-lg text-[13px] font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-200 cursor-pointer"
                           style={{
-                            background: '#fff',
-                            border: `1px solid ${pendingPipelineId && pendingPipelineId !== pipelineLead.pipeline?.id ? '#6366f1' : '#e8ecf4'}`,
-                            color: '#1a1a2e',
+                            background: 'var(--bg-card)',
+                            border: `1px solid ${pendingPipelineId && pendingPipelineId !== pipelineLead.pipeline?.id ? '#6366f1' : 'var(--border)'}`,
+                            color: 'var(--fg)',
                           }}>
                           {pipelines.map((p: any) => (
                             <option key={p.id} value={p.id}>
@@ -611,15 +611,15 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                     )}
 
                     <div>
-                      <label className="block text-[10px] font-bold uppercase mb-1" style={{ color: '#94a3b8' }}>{L('Mover para estágio:', 'Move to stage:', 'Mover a etapa:')}</label>
+                      <label className="block text-[10px] font-bold uppercase mb-1" style={{ color: 'var(--fg-muted)' }}>{L('Mover para estágio:', 'Move to stage:', 'Mover a etapa:')}</label>
                       <select
                         value={pendingStageId || pipelineLead.stage_id || ''}
                         onChange={e => setPendingStageId(e.target.value)}
                         className="w-full px-3 py-2 rounded-lg text-[13px] font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-200 cursor-pointer"
                         style={{
-                          background: '#fff',
-                          border: `1px solid ${(pendingStageId && pendingStageId !== pipelineLead.stage_id) || (pendingPipelineId && pendingPipelineId !== pipelineLead.pipeline?.id) ? '#6366f1' : '#e8ecf4'}`,
-                          color: '#1a1a2e',
+                          background: 'var(--bg-card)',
+                          border: `1px solid ${(pendingStageId && pendingStageId !== pipelineLead.stage_id) || (pendingPipelineId && pendingPipelineId !== pipelineLead.pipeline?.id) ? '#6366f1' : 'var(--border)'}`,
+                          color: 'var(--fg)',
                         }}>
                         {(pipelines.find(p => p.id === (pendingPipelineId || pipelineLead.pipeline?.id))?.stages || [])
                           .sort((a: any, b: any) => a.position - b.position)
@@ -641,13 +641,13 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
 
               {/* Observation */}
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: '#94a3b8' }}>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--fg-muted)' }}>
                   📝 {L('Observacao', 'Notes', 'Observación')}
                 </label>
                 <textarea value={lead.observation || ''} onChange={e => setLead({ ...lead, observation: e.target.value })}
                   rows={3} placeholder={L('Notas sobre este lead. URLs viram clicáveis automaticamente.', 'Notes about this lead. URLs become clickable automatically.', 'Notas sobre este lead. Las URLs se vuelven clicables automáticamente.')}
                   className="w-full px-3.5 py-2.5 rounded-xl text-[13px] font-medium resize-none transition-all focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                  style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
+                  style={{ background: 'var(--bg)', border: '1px solid #e8ecf4', color: 'var(--fg)' }} />
                 {(() => {
                   const text = lead.observation || ''
                   const urls = Array.from(text.matchAll(/https?:\/\/[^\s)]+/g)).map(m => m[0])
@@ -662,7 +662,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                             style={{ background: '#f0f4ff', color: '#6366f1', border: '1px solid #e0e7ff', textDecoration: 'none' }}>
                             <span>🔗</span>
                             <span className="truncate">{display}</span>
-                            <span className="ml-auto text-[10px]" style={{ color: '#94a3b8' }}>↗</span>
+                            <span className="ml-auto text-[10px]" style={{ color: 'var(--fg-muted)' }}>↗</span>
                           </a>
                         )
                       })}
@@ -676,7 +676,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
 
               {/* Actions */}
               <div className="flex justify-end gap-3 pt-3" style={{ borderTop: '1px solid #f1f5f9' }}>
-                <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-[13px] font-semibold transition-colors hover:bg-gray-50" style={{ color: '#64748b' }}>
+                <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-[13px] font-semibold transition-colors hover:bg-gray-50" style={{ color: 'var(--fg-secondary)' }}>
                   {L('Cancelar', 'Cancel', 'Cancelar')}
                 </button>
                 <button onClick={saveLead} disabled={saving}
@@ -704,7 +704,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               {/* New follow-up form */}
               {showNewFU && (
                 <div className="rounded-xl p-5 mb-5" style={{ background: '#fafbff', border: '1px solid #e0e7ff' }}>
-                  <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: '#94a3b8' }}>
+                  <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--fg-muted)' }}>
                     {L('Tipo', 'Type', 'Tipo')} · <span style={{ color: '#6366f1' }}>
                       {(() => {
                         const cur = FOLLOW_UP_TYPES.find(ft => ft.key === fuType)
@@ -717,9 +717,9 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                       <button key={t.key} onClick={() => setFuType(t.key)}
                         className="px-3 py-2 rounded-lg text-[11px] font-bold transition-all"
                         style={{
-                          background: fuType === t.key ? '#6366f1' : '#fff',
-                          color: fuType === t.key ? '#fff' : '#64748b',
-                          border: `1px solid ${fuType === t.key ? '#6366f1' : '#e8ecf4'}`,
+                          background: fuType === t.key ? '#6366f1' : 'var(--bg-card)',
+                          color: fuType === t.key ? '#fff' : 'var(--fg-secondary)',
+                          border: `1px solid ${fuType === t.key ? '#6366f1' : 'var(--border)'}`,
                           boxShadow: fuType === t.key ? '0 2px 8px rgba(99,102,241,0.25)' : 'none',
                         }}>
                         {t.icon} {t.label}
@@ -728,14 +728,14 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                   </div>
                   <textarea value={fuDesc} onChange={e => setFuDesc(e.target.value)} placeholder={L('O que aconteceu ou precisa ser feito...', 'What happened or needs to be done...', 'Qué pasó o qué hay que hacer...')}
                     rows={2} className="w-full px-3.5 py-2.5 rounded-xl text-[13px] resize-none mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                    style={{ background: '#fff', border: '1px solid #e8ecf4' }} />
+                    style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }} />
 
                   {/* Agendar data/hora — obrigatório pra Reunião, opcional p/ resto */}
                   <div className="mb-3 p-3 rounded-lg" style={{
-                    background: fuType === 'meeting' ? '#fef3c7' : '#f8f9fc',
+                    background: fuType === 'meeting' ? 'var(--warn-line)' : 'var(--bg)',
                     border: fuType === 'meeting' ? '1px solid #fde68a' : '1px solid #e8ecf4',
                   }}>
-                    <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: fuType === 'meeting' ? '#92400e' : '#94a3b8' }}>
+                    <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: fuType === 'meeting' ? '#92400e' : 'var(--fg-muted)' }}>
                       {fuType === 'meeting'
                         ? '📅 ' + L('Data e hora da reunião — OBRIGATÓRIO', 'Meeting date and time — REQUIRED', 'Fecha y hora de la reunión — OBLIGATORIO')
                         : '📅 ' + L('Agendar (opcional — aparece no calendário)', 'Schedule (optional — shows on the calendar)', 'Agendar (opcional — aparece en el calendario)')}
@@ -746,14 +746,14 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                         required={fuType === 'meeting'}
                         className="flex-1 px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
                         style={{
-                          background: '#fff',
+                          background: 'var(--bg-card)',
                           border: fuType === 'meeting' && !fuDate ? '1px solid #f59e0b' : '1px solid #e8ecf4',
                         }} />
                       <TimePicker value={fuTime} onChange={setFuTime} disabled={!fuDate}
                         className="px-2 py-2 rounded-lg text-[12px] bg-white disabled:opacity-50" />
                       {fuDate && fuType !== 'meeting' && (
                         <button onClick={() => { setFuDate(''); setFuTime('') }}
-                          className="px-2 py-2 text-[11px] font-bold" style={{ color: '#94a3b8' }}>
+                          className="px-2 py-2 text-[11px] font-bold" style={{ color: 'var(--fg-muted)' }}>
                           ×
                         </button>
                       )}
@@ -781,7 +781,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                               rows={3}
                               placeholder={(!fuDate || !fuTime) ? L('Escolha a data e a hora — a mensagem é montada sozinha.', 'Pick the date and time — the message is built automatically.', 'Elige la fecha y la hora — el mensaje se arma solo.') : ''}
                               className="w-full mt-2 px-3 py-2 rounded-lg text-[12px] resize-none focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                              style={{ background: '#fff', border: '1px solid #fde68a', color: '#1a1a2e' }} />
+                              style={{ background: 'var(--bg-card)', border: '1px solid #fde68a', color: 'var(--fg)' }} />
                             <p className="text-[10px] mt-1" style={{ color: '#a16207' }}>
                               {L('Vai pelo WhatsApp do seu número conectado e aparece na conversa do lead. Pode editar o texto acima.', "Sent via your connected WhatsApp number and shows up in the lead's conversation. You can edit the text above.", 'Se envía por el WhatsApp de tu número conectado y aparece en la conversación del lead. Puedes editar el texto de arriba.')}
                             </p>
@@ -792,7 +792,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                   </div>
 
                   <div className="flex gap-2 justify-end">
-                    <button onClick={() => setShowNewFU(false)} className="px-4 py-2 text-[12px] font-semibold rounded-lg" style={{ color: '#94a3b8' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
+                    <button onClick={() => setShowNewFU(false)} className="px-4 py-2 text-[12px] font-semibold rounded-lg" style={{ color: 'var(--fg-muted)' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
                     <button onClick={addFollowUp}
                       disabled={fuType === 'meeting' ? (!fuDate || !fuTime) : !fuDesc.trim()}
                       className="px-5 py-2 rounded-lg text-[12px] font-bold text-white disabled:opacity-40"
@@ -805,7 +805,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               {followUps.length === 0 ? (
                 <div className="text-center py-12">
                   <span className="text-[32px] block mb-2">📌</span>
-                  <p className="text-[13px] font-semibold" style={{ color: '#94a3b8' }}>{L('Nenhum follow-up registrado', 'No follow-ups yet', 'Ningún seguimiento registrado')}</p>
+                  <p className="text-[13px] font-semibold" style={{ color: 'var(--fg-muted)' }}>{L('Nenhum follow-up registrado', 'No follow-ups yet', 'Ningún seguimiento registrado')}</p>
                   <p className="text-[11px] mt-1" style={{ color: '#c0c8d4' }}>{L('Registre ligacoes, notas e reunioes', 'Log calls, notes and meetings', 'Registra llamadas, notas y reuniones')}</p>
                 </div>
               ) : (
@@ -816,11 +816,11 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                     return (
                       <div key={fu.id} className="rounded-xl p-4 flex gap-3 transition-all"
                         style={{
-                          background: done ? '#f8fdf9' : '#fff',
-                          border: `1px solid ${done ? '#d1fae5' : '#e8ecf4'}`,
+                          background: done ? '#f8fdf9' : 'var(--bg-card)',
+                          border: `1px solid ${done ? '#d1fae5' : 'var(--border)'}`,
                         }}>
                         <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                          style={{ background: done ? '#dcfce7' : '#f0f4ff' }}>
+                          style={{ background: done ? 'var(--ok-line)' : '#f0f4ff' }}>
                           <span className="text-[14px]">{typeInfo.icon}</span>
                         </div>
                         <div className="flex-1 min-w-0">
@@ -830,7 +830,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                                 onChange={e => setEditingFU({ ...editingFU, text: e.target.value })}
                                 rows={2} autoFocus
                                 className="w-full px-2 py-1.5 rounded-lg text-[13px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                                style={{ background: '#fff', border: '1px solid #c7d2fe' }} />
+                                style={{ background: 'var(--bg-card)', border: '1px solid #c7d2fe' }} />
                               <div className="flex gap-2 mt-1.5">
                                 <button onClick={() => updateFollowUp(fu.id, editingFU.text)}
                                   disabled={!editingFU.text.trim()}
@@ -840,17 +840,17 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                                 </button>
                                 <button onClick={() => setEditingFU(null)}
                                   className="px-3 py-1 rounded text-[10px] font-bold"
-                                  style={{ color: '#94a3b8' }}>
+                                  style={{ color: 'var(--fg-muted)' }}>
                                   {L('Cancelar', 'Cancel', 'Cancelar')}
                                 </button>
                               </div>
                             </div>
                           ) : (
                             <>
-                              <p className="text-[13px] font-semibold" style={{ color: '#1a1a2e', textDecoration: done ? 'line-through' : 'none' }}>
+                              <p className="text-[13px] font-semibold" style={{ color: 'var(--fg)', textDecoration: done ? 'line-through' : 'none' }}>
                                 {fu.description}
                               </p>
-                              <p className="text-[11px] mt-0.5" style={{ color: '#94a3b8' }}>
+                              <p className="text-[11px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>
                                 {new Date(fu.created_at).toLocaleDateString(dateLocale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })} · {typeInfo.label}
                               </p>
                             </>
@@ -862,7 +862,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                               <button onClick={() => completeFollowUp(fu.id)}
                                 title={L('Concluir', 'Complete', 'Completar')}
                                 className="text-[10px] font-bold px-2 py-1 rounded-lg transition-all hover:shadow-sm"
-                                style={{ background: '#dcfce7', color: '#166534' }}>
+                                style={{ background: 'var(--ok-line)', color: '#166534' }}>
                                 ✓
                               </button>
                             )}
@@ -906,7 +906,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               {attachments.length === 0 ? (
                 <div className="text-center py-12">
                   <span className="text-[32px] block mb-2">📁</span>
-                  <p className="text-[13px] font-semibold" style={{ color: '#94a3b8' }}>{L('Nenhum anexo', 'No attachments', 'Ningún adjunto')}</p>
+                  <p className="text-[13px] font-semibold" style={{ color: 'var(--fg-muted)' }}>{L('Nenhum anexo', 'No attachments', 'Ningún adjunto')}</p>
                   <p className="text-[11px] mt-1" style={{ color: '#c0c8d4' }}>{L('Envie propostas, contratos e documentos', 'Upload proposals, contracts and documents', 'Sube propuestas, contratos y documentos')}</p>
                 </div>
               ) : (
@@ -917,14 +917,14 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                     const icon = isImage ? '🖼️' : isPdf ? '📄' : '📎'
                     return (
                       <div key={att.id} className="rounded-xl p-3.5 flex items-center gap-3"
-                        style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+                        style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
                         <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
                           style={{ background: '#f0f4ff' }}>
                           <span className="text-[16px]">{icon}</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[13px] font-semibold truncate" style={{ color: '#1a1a2e' }}>{att.file_name}</p>
-                          <p className="text-[11px]" style={{ color: '#94a3b8' }}>
+                          <p className="text-[13px] font-semibold truncate" style={{ color: 'var(--fg)' }}>{att.file_name}</p>
+                          <p className="text-[11px]" style={{ color: 'var(--fg-muted)' }}>
                             {formatFileSize(att.file_size)} · {new Date(att.created_at).toLocaleDateString(dateLocale)}
                           </p>
                         </div>
@@ -934,12 +934,12 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                             if (d.url) window.open(d.url, '_blank')
                           }}
                           className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg"
-                          style={{ background: '#eef2ff', color: '#6366f1' }}>
+                          style={{ background: 'var(--accent-light)', color: '#6366f1' }}>
                           {L('Baixar', 'Download', 'Descargar')}
                         </button>
                         <button onClick={() => deleteAttachment(att.id)}
                           className="text-[10px] font-bold px-2 py-1.5 rounded-lg"
-                          style={{ background: '#fef2f2', color: '#ef4444' }}>
+                          style={{ background: 'var(--err-soft)', color: '#ef4444' }}>
                           ✕
                         </button>
                       </div>

@@ -52,17 +52,17 @@ export function UpsellGate({ feature, icon, tagline }: Props) {
       </div>
 
       {/* O que vem no plano completo */}
-      <div className="rounded-2xl p-6 mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-        <p className="text-[13px] font-bold uppercase tracking-wider mb-4" style={{ color: '#94a3b8' }}>
+      <div className="rounded-2xl p-6 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+        <p className="text-[13px] font-bold uppercase tracking-wider mb-4" style={{ color: 'var(--fg-muted)' }}>
           {L('Com o plano completo você ganha', 'With the full plan you get', 'Con el plan completo obtienes')}
         </p>
         <div className="grid sm:grid-cols-2 gap-3">
           {perks.map((p) => (
-            <div key={p.title} className="flex items-start gap-3 p-3 rounded-xl" style={{ background: '#f8f9fc' }}>
+            <div key={p.title} className="flex items-start gap-3 p-3 rounded-xl" style={{ background: 'var(--bg)' }}>
               <span className="text-[20px] leading-none mt-0.5">{p.icon}</span>
               <div className="min-w-0">
-                <p className="text-[13px] font-bold" style={{ color: '#1a1a2e' }}>{p.title}</p>
-                <p className="text-[12px]" style={{ color: '#64748b' }}>{p.desc}</p>
+                <p className="text-[13px] font-bold" style={{ color: 'var(--fg)' }}>{p.title}</p>
+                <p className="text-[12px]" style={{ color: 'var(--fg-secondary)' }}>{p.desc}</p>
               </div>
             </div>
           ))}

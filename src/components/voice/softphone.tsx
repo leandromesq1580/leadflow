@@ -156,13 +156,13 @@ export function Softphone() {
         <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,#22c55e,#16a34a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>📞</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ margin: 0, fontSize: 14, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{info.name || info.phone}</p>
-          <p style={{ margin: 0, fontSize: 12, color: status === 'incall' ? '#34d399' : '#94a3b8' }}>{label}</p>
+          <p style={{ margin: 0, fontSize: 12, color: status === 'incall' ? '#34d399' : 'var(--fg-muted)' }}>{label}</p>
         </div>
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={toggleMute} disabled={status !== 'incall'} style={{
           flex: 1, height: 40, borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)',
-          background: muted ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.06)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: status === 'incall' ? 'pointer' : 'default', opacity: status === 'incall' ? 1 : 0.5,
+          background: muted ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.06)', color: 'var(--bg-card)', fontSize: 13, fontWeight: 600, cursor: status === 'incall' ? 'pointer' : 'default', opacity: status === 'incall' ? 1 : 0.5,
         }}>{muted ? L('🔇 Mudo', '🔇 Muted', '🔇 Silenciado') : L('🎙 Mutar', '🎙 Mute', '🎙 Silenciar')}</button>
         <button onClick={hangup} style={{
           flex: 1, height: 40, borderRadius: 10, border: 'none',

@@ -27,8 +27,8 @@ export default async function DashboardClientsPage() {
 
   return (
     <div className="max-w-[1100px]">
-      <h1 className="text-[24px] font-extrabold mb-1" style={{ color: '#1a1a2e' }}>{L('👥 Atendimento a Clientes', '👥 Client Support', '👥 Atención a Clientes')}</h1>
-      <p className="text-[14px] mb-6" style={{ color: '#64748b' }}>
+      <h1 className="text-[24px] font-extrabold mb-1" style={{ color: 'var(--fg)' }}>{L('👥 Atendimento a Clientes', '👥 Client Support', '👥 Atención a Clientes')}</h1>
+      <p className="text-[14px] mb-6" style={{ color: 'var(--fg-secondary)' }}>
         {L(
           'Conversas com os compradores — separadas dos seus leads. Mesmo número, caixa própria.',
           'Conversations with buyers — separate from your leads. Same number, its own inbox.',
@@ -36,7 +36,7 @@ export default async function DashboardClientsPage() {
         )}
       </p>
       {!migrated ? (
-        <div className="rounded-xl px-5 py-4" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
+        <div className="rounded-xl px-5 py-4" style={{ background: 'var(--err-soft)', border: '1px solid #fecaca' }}>
           <p className="text-[13px] font-bold" style={{ color: '#dc2626' }}>{L('Migração pendente — rode 019_client_messages.sql.', 'Migration pending — run 019_client_messages.sql.', 'Migración pendiente — ejecuta 019_client_messages.sql.')}</p>
         </div>
       ) : <ClientsInbox />}

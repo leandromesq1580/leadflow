@@ -66,8 +66,8 @@ export default function PerformancePage() {
     setLoading(false)
   }
 
-  if (loading) return <div className="p-8 text-[13px]" style={{ color: '#64748b' }}>{L('Carregando...', 'Loading...', 'Cargando...')}</div>
-  if (!data) return <div className="p-8 text-[13px]" style={{ color: '#64748b' }}>{L('Sem dados', 'No data', 'Sin datos')}</div>
+  if (loading) return <div className="p-8 text-[13px]" style={{ color: 'var(--fg-secondary)' }}>{L('Carregando...', 'Loading...', 'Cargando...')}</div>
+  if (!data) return <div className="p-8 text-[13px]" style={{ color: 'var(--fg-secondary)' }}>{L('Sem dados', 'No data', 'Sin datos')}</div>
 
   const maxDaily = Math.max(1, ...data.daily.values)
   const funnelMax = Math.max(1, ...data.funnel.map(f => f.count))
@@ -76,14 +76,14 @@ export default function PerformancePage() {
     <div className="max-w-[1040px]">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>Performance</h1>
-          <p className="text-[14px]" style={{ color: '#64748b' }}>{L('KPIs, ROI por fonte e funil de conversão', 'KPIs, ROI by source and conversion funnel', 'KPIs, ROI por fuente y embudo de conversión')}</p>
+          <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>Performance</h1>
+          <p className="text-[14px]" style={{ color: 'var(--fg-secondary)' }}>{L('KPIs, ROI por fonte e funil de conversão', 'KPIs, ROI by source and conversion funnel', 'KPIs, ROI por fuente y embudo de conversión')}</p>
         </div>
-        <div className="flex rounded-lg p-1" style={{ background: '#f1f5f9' }}>
+        <div className="flex rounded-lg p-1" style={{ background: 'var(--bg-soft)' }}>
           {[7, 30, 90].map(d => (
             <button key={d} onClick={() => setDays(d)}
               className="px-3 py-1.5 rounded-md text-[11px] font-bold transition-all"
-              style={{ background: days === d ? '#fff' : 'transparent', color: days === d ? '#6366f1' : '#64748b' }}>
+              style={{ background: days === d ? 'var(--bg-card)' : 'transparent', color: days === d ? '#6366f1' : '#64748b' }}>
               {d}d
             </button>
           ))}
@@ -98,17 +98,17 @@ export default function PerformancePage() {
           { label: L('Convertidos', 'Converted', 'Convertidos'), value: `${data.kpis.conversion_rate}%`, sub: `${data.kpis.total_converted} leads`, color: '#10b981' },
           { label: L('Faturamento', 'Revenue', 'Facturación'), value: `$${(data.kpis.total_revenue ?? 0).toLocaleString('en-US')}`, sub: `${data.kpis.total_converted} ${L('contratos fechados', 'contracts closed', 'contratos cerrados')}`, color: '#ec4899' },
         ].map((k, i) => (
-          <div key={i} className="rounded-xl p-4" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{k.label}</p>
+          <div key={i} className="rounded-xl p-4" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{k.label}</p>
             <p className="text-[22px] font-extrabold mt-1" style={{ color: k.color }}>{k.value}</p>
-            {k.sub && <p className="text-[10px] mt-0.5" style={{ color: '#94a3b8' }}>{k.sub}</p>}
+            {k.sub && <p className="text-[10px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>{k.sub}</p>}
           </div>
         ))}
       </div>
 
       {/* Daily chart */}
-      <div className="rounded-2xl p-5 mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-        <p className="text-[13px] font-bold mb-3" style={{ color: '#1a1a2e' }}>{L('Leads por dia', 'Leads per day', 'Leads por día')}</p>
+      <div className="rounded-2xl p-5 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+        <p className="text-[13px] font-bold mb-3" style={{ color: 'var(--fg)' }}>{L('Leads por dia', 'Leads per day', 'Leads por día')}</p>
         <div className="flex items-end gap-1 h-[120px]">
           {data.daily.values.map((v, i) => (
             <div key={i} className="flex-1 h-full flex flex-col justify-end items-center group relative">
@@ -120,7 +120,7 @@ export default function PerformancePage() {
             </div>
           ))}
         </div>
-        <div className="flex justify-between text-[9px] mt-1" style={{ color: '#94a3b8' }}>
+        <div className="flex justify-between text-[9px] mt-1" style={{ color: 'var(--fg-muted)' }}>
           <span>{data.daily.labels[0]}</span>
           <span>{data.daily.labels[data.daily.labels.length - 1]}</span>
         </div>
@@ -128,36 +128,36 @@ export default function PerformancePage() {
 
       {/* Funnel + By Source */}
       <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-          <p className="text-[13px] font-bold mb-3" style={{ color: '#1a1a2e' }}>{L('Funil (pipeline atual)', 'Funnel (current pipeline)', 'Embudo (pipeline actual)')}</p>
+        <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+          <p className="text-[13px] font-bold mb-3" style={{ color: 'var(--fg)' }}>{L('Funil (pipeline atual)', 'Funnel (current pipeline)', 'Embudo (pipeline actual)')}</p>
           {data.funnel.length === 0 ? (
-            <p className="text-[12px]" style={{ color: '#94a3b8' }}>{L('Nenhum lead no pipeline', 'No leads in the pipeline', 'Ningún lead en el pipeline')}</p>
+            <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{L('Nenhum lead no pipeline', 'No leads in the pipeline', 'Ningún lead en el pipeline')}</p>
           ) : data.funnel.map(f => (
             <div key={f.stage} className="mb-2">
               <div className="flex justify-between text-[11px] mb-1">
-                <span style={{ color: '#1a1a2e' }}>{f.stage}</span>
+                <span style={{ color: 'var(--fg)' }}>{f.stage}</span>
                 <span className="font-bold" style={{ color: '#6366f1' }}>{f.count}</span>
               </div>
-              <div className="h-2 rounded-full overflow-hidden" style={{ background: '#f1f5f9' }}>
+              <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-soft)' }}>
                 <div className="h-full rounded-full" style={{ width: `${(f.count / funnelMax) * 100}%`, background: 'linear-gradient(90deg, #6366f1, #8b5cf6)' }} />
               </div>
             </div>
           ))}
         </div>
 
-        <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-          <p className="text-[13px] font-bold mb-3" style={{ color: '#1a1a2e' }}>{L('ROI por fonte', 'ROI by source', 'ROI por fuente')}</p>
+        <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+          <p className="text-[13px] font-bold mb-3" style={{ color: 'var(--fg)' }}>{L('ROI por fonte', 'ROI by source', 'ROI por fuente')}</p>
           {Object.keys(data.by_source).length === 0 ? (
-            <p className="text-[12px]" style={{ color: '#94a3b8' }}>{L('Sem dados', 'No data', 'Sin datos')}</p>
+            <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{L('Sem dados', 'No data', 'Sin datos')}</p>
           ) : Object.entries(data.by_source).map(([src, s]) => {
             const rate = s.received > 0 ? ((s.converted / s.received) * 100).toFixed(1) : '0'
             return (
               <div key={src} className="flex justify-between text-[11px] py-2" style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ color: '#1a1a2e' }} className="capitalize">{src}</span>
+                <span style={{ color: 'var(--fg)' }} className="capitalize">{src}</span>
                 <div className="text-right">
-                  <span style={{ color: '#64748b' }}>{s.received} → </span>
+                  <span style={{ color: 'var(--fg-secondary)' }}>{s.received} → </span>
                   <span className="font-bold" style={{ color: '#10b981' }}>{s.converted} ({rate}%)</span>
-                  <div style={{ color: '#94a3b8', fontSize: 10 }}>${s.spent.toFixed(0)} {L('faturado', 'in revenue', 'facturado')}</div>
+                  <div style={{ color: 'var(--fg-muted)', fontSize: 10 }}>${s.spent.toFixed(0)} {L('faturado', 'in revenue', 'facturado')}</div>
                 </div>
               </div>
             )
@@ -167,11 +167,11 @@ export default function PerformancePage() {
 
       {/* Leaderboard (agency only) */}
       {isAgency && leaders.length > 0 && (
-        <div className="rounded-2xl p-5 mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-          <p className="text-[13px] font-bold mb-3" style={{ color: '#1a1a2e' }}>🏆 {L('Ranking do Time', 'Team Ranking', 'Ranking del Equipo')} ({days}d)</p>
+        <div className="rounded-2xl p-5 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+          <p className="text-[13px] font-bold mb-3" style={{ color: 'var(--fg)' }}>🏆 {L('Ranking do Time', 'Team Ranking', 'Ranking del Equipo')} ({days}d)</p>
           <table className="w-full text-[12px]">
             <thead>
-              <tr style={{ color: '#94a3b8' }} className="text-[10px] uppercase tracking-wider">
+              <tr style={{ color: 'var(--fg-muted)' }} className="text-[10px] uppercase tracking-wider">
                 <th className="text-left py-2">#</th>
                 <th className="text-left py-2">{L('Agente', 'Agent', 'Agente')}</th>
                 <th className="text-right py-2">{L('Recebidos', 'Received', 'Recibidos')}</th>
@@ -183,10 +183,10 @@ export default function PerformancePage() {
               {leaders.map((l, i) => (
                 <tr key={l.buyer_id} style={{ borderTop: '1px solid #f1f5f9' }}>
                   <td className="py-2.5">
-                    {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : <span style={{ color: '#94a3b8' }}>{i + 1}</span>}
+                    {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : <span style={{ color: 'var(--fg-muted)' }}>{i + 1}</span>}
                   </td>
-                  <td className="py-2.5 font-bold" style={{ color: '#1a1a2e' }}>{l.name}</td>
-                  <td className="py-2.5 text-right" style={{ color: '#64748b' }}>{l.received}</td>
+                  <td className="py-2.5 font-bold" style={{ color: 'var(--fg)' }}>{l.name}</td>
+                  <td className="py-2.5 text-right" style={{ color: 'var(--fg-secondary)' }}>{l.received}</td>
                   <td className="py-2.5 text-right font-bold" style={{ color: '#10b981' }}>{l.converted}</td>
                   <td className="py-2.5 text-right font-bold" style={{ color: l.conversion_rate >= 20 ? '#10b981' : l.conversion_rate >= 10 ? '#f59e0b' : '#ef4444' }}>
                     {l.conversion_rate.toFixed(1)}%

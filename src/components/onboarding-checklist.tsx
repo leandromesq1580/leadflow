@@ -45,14 +45,14 @@ export async function OnboardingChecklist({ buyerId }: Props) {
       <div className="px-6 pt-5 pb-4 flex items-center justify-between" style={{ borderBottom: '1px solid #f1f5f9' }}>
         <div>
           <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: '#6366f1' }}>Progresso da configuracao</p>
-          <p className="text-[16px] font-extrabold mt-0.5" style={{ color: '#1a1a2e' }}>{completed} de {total} completos</p>
+          <p className="text-[16px] font-extrabold mt-0.5" style={{ color: 'var(--fg)' }}>{completed} de {total} completos</p>
         </div>
         <DismissButton />
       </div>
 
       {/* Progress bar */}
       <div className="px-6 pt-3">
-        <div className="h-2 rounded-full" style={{ background: '#f1f5f9' }}>
+        <div className="h-2 rounded-full" style={{ background: 'var(--bg-soft)' }}>
           <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #6366f1, #8b5cf6)' }} />
         </div>
       </div>
@@ -64,23 +64,23 @@ export async function OnboardingChecklist({ buyerId }: Props) {
             {item.href && !item.done ? (
               <Link href={item.href} className="flex items-center gap-3 py-2.5 px-3 rounded-xl transition-all hover:bg-indigo-50/50">
                 <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 border-2"
-                  style={{ borderColor: '#e8ecf4', background: '#fff' }}>
+                  style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }}>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-bold" style={{ color: '#1a1a2e' }}>{item.label}</p>
-                  <p className="text-[11px] mt-0.5" style={{ color: '#94a3b8' }}>{item.desc}</p>
+                  <p className="text-[13px] font-bold" style={{ color: 'var(--fg)' }}>{item.label}</p>
+                  <p className="text-[11px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>{item.desc}</p>
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-1 rounded-md" style={{ background: '#eef2ff', color: '#6366f1' }}>Fazer</span>
+                <span className="text-[11px] font-bold px-2.5 py-1 rounded-md" style={{ background: 'var(--accent-light)', color: '#6366f1' }}>Fazer</span>
               </Link>
             ) : (
               <div className="flex items-center gap-3 py-2.5 px-3 rounded-xl" style={{ opacity: item.done ? 0.6 : 1 }}>
                 <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ background: item.done ? '#10b981' : '#f1f5f9' }}>
+                  style={{ background: item.done ? '#10b981' : 'var(--bg-soft)' }}>
                   {item.done && <span className="text-white text-[12px]">✓</span>}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-bold" style={{ color: '#1a1a2e', textDecoration: item.done ? 'line-through' : 'none' }}>{item.label}</p>
-                  <p className="text-[11px] mt-0.5" style={{ color: '#94a3b8' }}>{item.desc}</p>
+                  <p className="text-[13px] font-bold" style={{ color: 'var(--fg)', textDecoration: item.done ? 'line-through' : 'none' }}>{item.label}</p>
+                  <p className="text-[11px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>{item.desc}</p>
                 </div>
               </div>
             )}

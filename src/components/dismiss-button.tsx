@@ -30,7 +30,7 @@ export function DismissButton() {
   }
 
   return (
-    <button onClick={dismiss} disabled={loading} className="text-[11px] font-semibold disabled:opacity-50" style={{ color: '#94a3b8' }}>
+    <button onClick={dismiss} disabled={loading} className="text-[11px] font-semibold disabled:opacity-50" style={{ color: 'var(--fg-muted)' }}>
       {loading ? '...' : L('Esconder ✕', 'Hide ✕', 'Ocultar ✕')}
     </button>
   )

@@ -318,8 +318,8 @@ export default function PipelinePage() {
             style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)' }}>
             <span className="text-[36px]">📋</span>
           </div>
-          <h1 className="text-[24px] font-extrabold mb-2" style={{ color: '#1a1a2e' }}>{L('Pipeline de Vendas', 'Sales Pipeline', 'Pipeline de Ventas')}</h1>
-          <p className="text-[14px] mb-8 leading-relaxed" style={{ color: '#94a3b8' }}>
+          <h1 className="text-[24px] font-extrabold mb-2" style={{ color: 'var(--fg)' }}>{L('Pipeline de Vendas', 'Sales Pipeline', 'Pipeline de Ventas')}</h1>
+          <p className="text-[14px] mb-8 leading-relaxed" style={{ color: 'var(--fg-muted)' }}>
             {L('Gerencie seus leads visualmente com Kanban.', 'Manage your leads visually with Kanban.', 'Gestiona tus leads visualmente con Kanban.')}<br/>{L('Arraste entre estagios conforme avanca a venda.', 'Drag between stages as the sale moves forward.', 'Arrastra entre etapas a medida que avanza la venta.')}
           </p>
           <button onClick={createPipeline} disabled={creating}
@@ -349,24 +349,24 @@ export default function PipelinePage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>Pipeline</h1>
+            <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>Pipeline</h1>
             {pipelines.length > 1 && (
               <select value={activePipeline?.id || ''} onChange={e => {
                 const p = pipelines.find(pp => pp.id === e.target.value)
                 if (p) { setActivePipeline(p); loadLeads(p.id) }
               }}
                 className="px-3 py-1.5 rounded-lg text-[13px] font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                style={{ border: '1px solid #e8ecf4', color: '#1a1a2e', background: '#fff' }}>
+                style={{ border: '1px solid #e8ecf4', color: 'var(--fg)', background: 'var(--bg-card)' }}>
                 {pipelines.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             )}
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-[12px] font-semibold" style={{ color: '#94a3b8' }}>
+            <span className="text-[12px] font-semibold" style={{ color: 'var(--fg-muted)' }}>
               {totalLeads} leads
             </span>
             {closedLeads > 0 && (
-              <span className="text-[12px] font-bold px-2 py-0.5 rounded-md" style={{ background: '#dcfce7', color: '#15803d' }}>
+              <span className="text-[12px] font-bold px-2 py-0.5 rounded-md" style={{ background: 'var(--ok-line)', color: '#15803d' }}>
                 {closedLeads} {L('fechados', 'closed', 'cerrados')}
               </span>
             )}
@@ -375,7 +375,7 @@ export default function PipelinePage() {
         <div className="flex items-center gap-2">
           <Link href="/dashboard/pipeline/archived"
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-bold transition-all hover:shadow-sm"
-            style={{ background: '#fff', color: '#64748b', border: '1px solid #e8ecf4' }}>
+            style={{ background: 'var(--bg-card)', color: 'var(--fg-secondary)', border: '1px solid #e8ecf4' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="4" width="20" height="5" rx="1" />
               <path d="M4 9v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9" />
@@ -385,7 +385,7 @@ export default function PipelinePage() {
           </Link>
           <Link href="/dashboard/pipeline/settings"
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-bold transition-all hover:shadow-sm"
-            style={{ background: '#fff', color: '#64748b', border: '1px solid #e8ecf4' }}>
+            style={{ background: 'var(--bg-card)', color: 'var(--fg-secondary)', border: '1px solid #e8ecf4' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3v18M3 12h18"/></svg>
             {t.pipeline.manage}
           </Link>
@@ -394,10 +394,10 @@ export default function PipelinePage() {
 
       {/* View toggle (agency only) */}
       {isAgency && (
-        <div className="flex gap-1 p-1 rounded-xl mb-5" style={{ background: '#f1f5f9', display: 'inline-flex' }}>
+        <div className="flex gap-1 p-1 rounded-xl mb-5" style={{ background: 'var(--bg-soft)', display: 'inline-flex' }}>
           <button onClick={() => setView('mine')}
             className="px-5 py-2 rounded-lg text-[12px] font-bold transition-all"
-            style={{ background: view === 'mine' ? '#fff' : 'transparent', color: view === 'mine' ? '#6366f1' : '#94a3b8',
+            style={{ background: view === 'mine' ? 'var(--bg-card)' : 'transparent', color: view === 'mine' ? '#6366f1' : '#94a3b8',
               boxShadow: view === 'mine' ? '0 1px 4px rgba(0,0,0,0.06)' : 'none' }}>
             {t.pipeline.viewMine}
           </button>
@@ -411,7 +411,7 @@ export default function PipelinePage() {
               }
             }}
             className="px-5 py-2 rounded-lg text-[12px] font-bold transition-all"
-            style={{ background: view === 'team' ? '#fff' : 'transparent', color: view === 'team' ? '#6366f1' : '#94a3b8',
+            style={{ background: view === 'team' ? 'var(--bg-card)' : 'transparent', color: view === 'team' ? '#6366f1' : '#94a3b8',
               boxShadow: view === 'team' ? '0 1px 4px rgba(0,0,0,0.06)' : 'none' }}>
             {t.pipeline.viewTeam} ({teamMembers.filter(m => m.is_active).length})
           </button>
@@ -432,7 +432,7 @@ export default function PipelinePage() {
                   onClick={() => loadMemberPipeline(member.id)}
                   className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl transition-all flex-shrink-0"
                   style={{
-                    background: isSelected ? '#fff' : 'transparent',
+                    background: isSelected ? 'var(--bg-card)' : 'transparent',
                     border: isSelected ? '1px solid #6366f1' : '1px solid #e8ecf4',
                     boxShadow: isSelected ? '0 2px 8px rgba(99,102,241,0.15)' : 'none',
                   }}>
@@ -441,16 +441,16 @@ export default function PipelinePage() {
                     {member.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="text-left">
-                    <p className="text-[12px] font-bold" style={{ color: isSelected ? '#1a1a2e' : '#64748b' }}>
+                    <p className="text-[12px] font-bold" style={{ color: isSelected ? 'var(--fg)' : 'var(--fg-secondary)' }}>
                       {member.name}
                     </p>
-                    <p className="text-[10px]" style={{ color: '#94a3b8' }}>{mLeadsCount} leads</p>
+                    <p className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>{mLeadsCount} leads</p>
                   </div>
                 </button>
               )
             })}
             {teamMembers.filter(m => m.is_active).length === 0 && (
-              <p className="text-[12px] px-4 py-3" style={{ color: '#94a3b8' }}>
+              <p className="text-[12px] px-4 py-3" style={{ color: 'var(--fg-muted)' }}>
                 {L('Nenhum membro ativo.', 'No active members.', 'Ningún miembro activo.')} <Link href="/dashboard/team" className="font-bold" style={{ color: '#6366f1' }}>{L('Adicionar membro →', 'Add member →', 'Agregar miembro →')}</Link>
               </p>
             )}
@@ -458,24 +458,24 @@ export default function PipelinePage() {
 
           {/* Pipeline espelhado do membro */}
           {!selectedMemberId ? (
-            <div className="rounded-xl py-16 text-center" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+            <div className="rounded-xl py-16 text-center" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
               <p className="text-[32px] mb-2">👥</p>
-              <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>{L('Selecione um membro do time', 'Select a team member', 'Selecciona un miembro del equipo')}</p>
-              <p className="text-[12px] mt-1" style={{ color: '#94a3b8' }}>{L('Você verá o pipeline completo dele — mesmas colunas, mesmos leads.', "You'll see their full pipeline — same columns, same leads.", 'Verás su pipeline completo — mismas columnas, mismos leads.')}</p>
+              <p className="text-[14px] font-bold" style={{ color: 'var(--fg)' }}>{L('Selecione um membro do time', 'Select a team member', 'Selecciona un miembro del equipo')}</p>
+              <p className="text-[12px] mt-1" style={{ color: 'var(--fg-muted)' }}>{L('Você verá o pipeline completo dele — mesmas colunas, mesmos leads.', "You'll see their full pipeline — same columns, same leads.", 'Verás su pipeline completo — mismas columnas, mismos leads.')}</p>
             </div>
           ) : loadingMember ? (
-            <div className="rounded-xl py-16 text-center" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-              <p className="text-[12px]" style={{ color: '#94a3b8' }}>{L('Carregando pipeline...', 'Loading pipeline...', 'Cargando pipeline...')}</p>
+            <div className="rounded-xl py-16 text-center" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+              <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{L('Carregando pipeline...', 'Loading pipeline...', 'Cargando pipeline...')}</p>
             </div>
           ) : !memberPipeline ? (
-            <div className="rounded-xl py-16 text-center" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-              <p className="text-[12px]" style={{ color: '#94a3b8' }}>{L('Esse membro ainda não tem pipeline.', "This member doesn't have a pipeline yet.", 'Este miembro aún no tiene pipeline.')}</p>
+            <div className="rounded-xl py-16 text-center" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+              <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{L('Esse membro ainda não tem pipeline.', "This member doesn't have a pipeline yet.", 'Este miembro aún no tiene pipeline.')}</p>
             </div>
           ) : (
             <>
               {!memberHasOwn && (
                 <div className="mb-3 rounded-xl px-4 py-2.5 flex items-center gap-2"
-                  style={{ background: '#fef3c7', border: '1px solid #fde68a' }}>
+                  style={{ background: 'var(--warn-line)', border: '1px solid #fde68a' }}>
                   <span className="text-[14px]">ℹ️</span>
                   <p className="text-[12px]" style={{ color: '#92400e' }}>
                     {L('Esse membro ainda não tem conta própria — você está vendo os leads atribuídos a ele. Quando ele se cadastrar em lead4producers.com com o email ',
@@ -509,10 +509,10 @@ export default function PipelinePage() {
 
       {view === 'mine' && <>
       {/* Filters */}
-      <div className="rounded-xl mb-5 overflow-hidden" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+      <div className="rounded-xl mb-5 overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
         <div className="flex items-center justify-between px-4 py-2.5">
           <button onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 text-[12px] font-bold" style={{ color: showFilters ? '#6366f1' : '#94a3b8' }}>
+            className="flex items-center gap-2 text-[12px] font-bold" style={{ color: showFilters ? '#6366f1' : 'var(--fg-muted)' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
             {t.pipeline.filters}
             {hasFilters && <span className="w-2 h-2 rounded-full" style={{ background: '#6366f1' }} />}
@@ -525,7 +525,7 @@ export default function PipelinePage() {
                 {t.pipeline.clearFilters}
               </button>
             )}
-            <span className="text-[11px] font-semibold" style={{ color: '#94a3b8' }}>
+            <span className="text-[11px] font-semibold" style={{ color: 'var(--fg-muted)' }}>
               {filteredLeads.length}/{leads.length} {t.pipeline.leadsCount}
             </span>
           </div>
@@ -537,13 +537,13 @@ export default function PipelinePage() {
               <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#c0c8d4' }}>{t.common.search}</label>
               <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={t.pipeline.searchPlaceholder}
                 className="w-full px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+                style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
             </div>
             <div className="min-w-[140px]">
               <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#c0c8d4' }}>{t.pipeline.stage}</label>
               <select value={filterStage} onChange={e => setFilterStage(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200 cursor-pointer"
-                style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }}>
+                style={{ background: 'var(--bg)', border: '1px solid #e8ecf4', color: 'var(--fg)' }}>
                 <option value="">{t.pipeline.all}</option>
                 {activePipeline?.stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
@@ -555,7 +555,7 @@ export default function PipelinePage() {
                 if (e.target.value !== 'custom') { setFilterDateFrom(''); setFilterDateTo('') }
               }}
                 className="w-full px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200 cursor-pointer"
-                style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }}>
+                style={{ background: 'var(--bg)', border: '1px solid #e8ecf4', color: 'var(--fg)' }}>
                 <option value="">{t.pipeline.all}</option>
                 <option value="today">{t.pipeline.today}</option>
                 <option value="yesterday">{t.pipeline.yesterday}</option>
@@ -573,27 +573,27 @@ export default function PipelinePage() {
                   <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#c0c8d4' }}>{L('De', 'From', 'Desde')}</label>
                   <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)}
                     className="px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                    style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
+                    style={{ background: 'var(--bg)', border: '1px solid #e8ecf4', color: 'var(--fg)' }} />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#c0c8d4' }}>{L('Até', 'To', 'Hasta')}</label>
                   <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)}
                     className="px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                    style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
+                    style={{ background: 'var(--bg)', border: '1px solid #e8ecf4', color: 'var(--fg)' }} />
                 </div>
               </div>
             )}
             <label className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer"
-              style={{ background: closedOnly ? '#f0fdf4' : '#f8f9fc', border: `1px solid ${closedOnly ? '#86efac' : '#e8ecf4'}` }}>
+              style={{ background: closedOnly ? 'var(--ok-soft)' : 'var(--bg)', border: `1px solid ${closedOnly ? '#86efac' : 'var(--border)'}` }}>
               <input type="checkbox" checked={closedOnly} onChange={e => setClosedOnly(e.target.checked)}
                 className="w-3.5 h-3.5 rounded accent-green-500" />
-              <span className="text-[11px] font-bold" style={{ color: closedOnly ? '#15803d' : '#94a3b8' }}>{L('Fechados', 'Closed', 'Cerrados')}</span>
+              <span className="text-[11px] font-bold" style={{ color: closedOnly ? '#15803d' : 'var(--fg-muted)' }}>{L('Fechados', 'Closed', 'Cerrados')}</span>
             </label>
             <label className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer"
-              style={{ background: staleOnly ? '#fff7ed' : '#f8f9fc', border: `1px solid ${staleOnly ? '#fed7aa' : '#e8ecf4'}` }}>
+              style={{ background: staleOnly ? '#fff7ed' : 'var(--bg)', border: `1px solid ${staleOnly ? '#fed7aa' : 'var(--border)'}` }}>
               <input type="checkbox" checked={staleOnly} onChange={e => setStaleOnly(e.target.checked)}
                 className="w-3.5 h-3.5 rounded accent-orange-500" />
-              <span className="text-[11px] font-bold" style={{ color: staleOnly ? '#ea580c' : '#94a3b8' }}>{L('⚠️ Parados 3+ dias', '⚠️ Stale 3+ days', '⚠️ Parados 3+ días')}</span>
+              <span className="text-[11px] font-bold" style={{ color: staleOnly ? '#ea580c' : 'var(--fg-muted)' }}>{L('⚠️ Parados 3+ dias', '⚠️ Stale 3+ days', '⚠️ Parados 3+ días')}</span>
             </label>
           </div>
         )}

@@ -31,9 +31,14 @@ export default async function RootLayout({
   // primeira visita, o idioma do navegador — americano cai em EN, hispano em ES já no
   // login/cadastro. O provider do dashboard continua existindo (mesmo valor, inócuo).
   const locale = await getLocale();
+  // Tema no servidor (reconcept Fase 2): cookie l4p-theme → html já nasce escuro
+  // pra quem escolheu escuro (sem flash branco). Padrão: claro, como sempre foi.
+  const { cookies } = await import("next/headers");
+  const tema = (await cookies()).get("l4p-theme")?.value === "dark" ? "dark" : "light";
   return (
     <html
       lang={locale}
+      data-theme={tema}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">

@@ -215,8 +215,8 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
     setSaving(false)
   }
 
-  const lblStyle = { fontSize: 11, fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 5 } as const
-  const inStyle = { width: '100%', padding: '9px 11px', borderRadius: 10, border: '1px solid #e8ecf4', fontSize: 13, color: '#1a1a2e', background: '#fff', outline: 'none' } as const
+  const lblStyle = { fontSize: 11, fontWeight: 700, color: 'var(--fg-secondary)', display: 'block', marginBottom: 5 } as const
+  const inStyle = { width: '100%', padding: '9px 11px', borderRadius: 10, border: '1px solid #e8ecf4', fontSize: 13, color: 'var(--fg)', background: 'var(--bg-card)', outline: 'none' } as const
 
   function renderField(field: Field) {
     const v = f[field.k]
@@ -226,7 +226,7 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
           {field.options!.map(opt => (
             <button key={opt} type="button" onClick={() => set(field.k, opt)}
               style={{ padding: '7px 14px', borderRadius: 9, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                border: `1px solid ${v === opt ? '#6366f1' : '#e8ecf4'}`, background: v === opt ? '#eef2ff' : '#fff', color: v === opt ? '#6366f1' : '#64748b' }}>
+                border: `1px solid ${v === opt ? '#6366f1' : 'var(--border)'}`, background: v === opt ? 'var(--accent-light)' : 'var(--bg-card)', color: v === opt ? '#6366f1' : '#64748b' }}>
               {opt}
             </button>
           ))}
@@ -242,8 +242,8 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
             return (
               <button key={opt} type="button" onClick={() => toggleHealth(opt)}
                 style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 10px', borderRadius: 9, fontSize: 12, fontWeight: 600, cursor: 'pointer', textAlign: 'left',
-                  border: `1px solid ${on ? '#6366f1' : '#e8ecf4'}`, background: on ? '#eef2ff' : '#fff', color: on ? '#4f46e5' : '#64748b' }}>
-                <span style={{ width: 15, height: 15, borderRadius: 4, border: `1.5px solid ${on ? '#6366f1' : '#cbd5e1'}`, background: on ? '#6366f1' : '#fff', color: '#fff', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{on ? '✓' : ''}</span>
+                  border: `1px solid ${on ? '#6366f1' : 'var(--border)'}`, background: on ? 'var(--accent-light)' : 'var(--bg-card)', color: on ? '#4f46e5' : '#64748b' }}>
+                <span style={{ width: 15, height: 15, borderRadius: 4, border: `1.5px solid ${on ? '#6366f1' : '#cbd5e1'}`, background: on ? '#6366f1' : 'var(--bg-card)', color: 'var(--bg-card)', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{on ? '✓' : ''}</span>
                 {opt}
               </button>
             )
@@ -280,12 +280,12 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
 
   // Só a tela toda espera. Com o formulário aberto, recarregar o histórico não pode
   // desmontar o que está sendo digitado.
-  if (loading && !show) return <div style={{ textAlign: 'center', padding: 40, color: '#94a3b8', fontSize: 13 }}>{L('Carregando…', 'Loading…', 'Cargando…')}</div>
+  if (loading && !show) return <div style={{ textAlign: 'center', padding: 40, color: 'var(--fg-muted)', fontSize: 13 }}>{L('Carregando…', 'Loading…', 'Cargando…')}</div>
 
   return (
     <div>
       {needsMigration && (
-        <div style={{ padding: '10px 13px', borderRadius: 10, background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e', fontSize: 12, marginBottom: 14 }}>
+        <div style={{ padding: '10px 13px', borderRadius: 10, background: 'var(--warn-soft)', border: '1px solid #fde68a', color: '#92400e', fontSize: 12, marginBottom: 14 }}>
           ⚠️ {L('A tabela', 'Table', 'La tabla')} <b>lead_forms</b> {L('ainda não foi criada no banco. Histórico e salvamento só funcionam depois de rodar a migration', "hasn't been created in the database yet. History and saving only work after running migration", 'aún no se creó en la base de datos. El historial y el guardado solo funcionan después de ejecutar la migración')} <code>021_lead_forms.sql</code>.
         </div>
       )}
@@ -301,7 +301,7 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
       {show && (
         <div style={{ border: '1px solid #e8ecf4', borderRadius: 14, padding: 16, marginBottom: 18, background: '#fafbff' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', margin: '0 0 14px' }}>
-            <p style={{ fontSize: 14, fontWeight: 800, color: '#1a1a2e', margin: 0 }}>{L('Nova aplicação · cadastro do cliente', 'New application · client intake', 'Nueva aplicación · registro del cliente')}</p>
+            <p style={{ fontSize: 14, fontWeight: 800, color: 'var(--fg)', margin: 0 }}>{L('Nova aplicação · cadastro do cliente', 'New application · client intake', 'Nueva aplicación · registro del cliente')}</p>
             {rascunhoEm && (
               <span style={{ fontSize: 11, fontWeight: 700, color: '#059669' }}>
                 ✓ {L('Rascunho guardado', 'Draft saved', 'Borrador guardado')} {new Date(rascunhoEm).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })} — {L('pode sair e voltar', 'you can leave and come back', 'puede salir y volver')}
@@ -315,7 +315,7 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
                 {renderField(field)}
               </div>
             ))}
-            <div style={{ height: 1, background: '#e8ecf4', margin: '2px 0' }} />
+            <div style={{ height: 1, background: 'var(--border)', margin: '2px 0' }} />
             {docInput('driver_license', L("Driver's License ou ID", "Driver's License or ID", "Driver's License o ID"))}
             {docInput('passport', L('Foto do Passaporte (se não for cidadão)', 'Passport photo (if not a citizen)', 'Foto del pasaporte (si no es ciudadano)'))}
           </div>
@@ -329,7 +329,7 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
               if (temConteudo(f) && !confirm(L('Descartar o que você preencheu? O rascunho será apagado.', 'Discard what you filled in? The draft will be deleted.', '¿Descartar lo que llenó? El borrador se eliminará.'))) return
               descartarRascunho(); setF(blank()); setShow(false)
             }} disabled={saving}
-              className="px-5 py-3 rounded-xl text-[13px] font-bold" style={{ background: '#f1f5f9', color: '#64748b' }}>
+              className="px-5 py-3 rounded-xl text-[13px] font-bold" style={{ background: 'var(--bg-soft)', color: 'var(--fg-secondary)' }}>
               {L('Cancelar', 'Cancel', 'Cancelar')}
             </button>
           </div>
@@ -341,7 +341,7 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
       {forms.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 28 }}>
           <span style={{ fontSize: 30, display: 'block', marginBottom: 6 }}>🗂️</span>
-          <p style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8', margin: 0 }}>{L('Nenhuma aplicação ainda', 'No applications yet', 'Aún no hay aplicaciones')}</p>
+          <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)', margin: 0 }}>{L('Nenhuma aplicação ainda', 'No applications yet', 'Aún no hay aplicaciones')}</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -349,14 +349,14 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
             const data = rec.data || {}
             const open = expanded === rec.id
             return (
-              <div key={rec.id} style={{ border: '1px solid #e8ecf4', borderRadius: 12, background: '#fff', overflow: 'hidden' }}>
+              <div key={rec.id} style={{ border: '1px solid #e8ecf4', borderRadius: 12, background: 'var(--bg-card)', overflow: 'hidden' }}>
                 <button onClick={() => setExpanded(open ? null : rec.id)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
                   <span style={{ fontSize: 18 }}>📄</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: '#1a1a2e', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{data.nome_completo || L('Aplicação', 'Application', 'Aplicación')}</p>
-                    <p style={{ fontSize: 11, color: '#94a3b8', margin: '1px 0 0' }}>{new Date(rec.created_at).toLocaleString(dateLocale)}</p>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{data.nome_completo || L('Aplicação', 'Application', 'Aplicación')}</p>
+                    <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '1px 0 0' }}>{new Date(rec.created_at).toLocaleString(dateLocale)}</p>
                   </div>
-                  <span style={{ fontSize: 12, color: '#94a3b8' }}>{open ? '▲' : '▼'}</span>
+                  <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{open ? '▲' : '▼'}</span>
                 </button>
                 {open && (
                   <div style={{ padding: '4px 14px 14px', borderTop: '1px solid #f1f5f9' }}>
@@ -365,20 +365,20 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
                       if (!val) return null
                       return (
                         <div key={field.k} style={{ display: 'flex', gap: 8, padding: '5px 0', borderBottom: '1px solid #f8fafc' }}>
-                          <span style={{ fontSize: 11, color: '#94a3b8', width: 150, flexShrink: 0 }}>{field.label.replace(/^\d+\s·\s/, '')}</span>
-                          <span style={{ fontSize: 12, color: '#1a1a2e', fontWeight: 500, whiteSpace: 'pre-wrap' }}>{val}</span>
+                          <span style={{ fontSize: 11, color: 'var(--fg-muted)', width: 150, flexShrink: 0 }}>{field.label.replace(/^\d+\s·\s/, '')}</span>
+                          <span style={{ fontSize: 12, color: 'var(--fg)', fontWeight: 500, whiteSpace: 'pre-wrap' }}>{val}</span>
                         </div>
                       )
                     })}
                     <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
                       {data.driver_license?.path && (
-                        <button onClick={() => download(data.driver_license.path)} style={{ fontSize: 11, fontWeight: 700, padding: '7px 12px', borderRadius: 9, background: '#eef2ff', color: '#6366f1', border: 'none', cursor: 'pointer' }}>⬇ Driver's License / ID</button>
+                        <button onClick={() => download(data.driver_license.path)} style={{ fontSize: 11, fontWeight: 700, padding: '7px 12px', borderRadius: 9, background: 'var(--accent-light)', color: '#6366f1', border: 'none', cursor: 'pointer' }}>⬇ Driver's License / ID</button>
                       )}
                       {data.passport?.path && (
-                        <button onClick={() => download(data.passport.path)} style={{ fontSize: 11, fontWeight: 700, padding: '7px 12px', borderRadius: 9, background: '#eef2ff', color: '#6366f1', border: 'none', cursor: 'pointer' }}>⬇ {L('Passaporte', 'Passport', 'Pasaporte')}</button>
+                        <button onClick={() => download(data.passport.path)} style={{ fontSize: 11, fontWeight: 700, padding: '7px 12px', borderRadius: 9, background: 'var(--accent-light)', color: '#6366f1', border: 'none', cursor: 'pointer' }}>⬇ {L('Passaporte', 'Passport', 'Pasaporte')}</button>
                       )}
                       <button onClick={async () => { if (!confirm(L('Remover esta aplicação do histórico?', 'Remove this application from history?', '¿Quitar esta aplicación del historial?'))) return; await fetch(`/api/leads/${leadId}/forms`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ form_id: rec.id }) }); load() }}
-                        style={{ fontSize: 11, fontWeight: 700, padding: '7px 12px', borderRadius: 9, background: '#fef2f2', color: '#ef4444', border: 'none', cursor: 'pointer', marginLeft: 'auto' }}>{L('Excluir', 'Delete', 'Eliminar')}</button>
+                        style={{ fontSize: 11, fontWeight: 700, padding: '7px 12px', borderRadius: 9, background: 'var(--err-soft)', color: '#ef4444', border: 'none', cursor: 'pointer', marginLeft: 'auto' }}>{L('Excluir', 'Delete', 'Eliminar')}</button>
                     </div>
                   </div>
                 )}

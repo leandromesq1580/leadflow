@@ -78,7 +78,7 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
     <>
       <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="fixed inset-x-4 top-[5%] bottom-[5%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-[680px] md:max-h-[90vh] z-[70] rounded-2xl overflow-hidden flex flex-col"
-        style={{ background: '#fff', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+        style={{ background: 'var(--bg-card)', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
 
         {/* Header */}
         <div className="px-6 py-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
@@ -93,26 +93,26 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
           {/* Template picker */}
           {!selectedId && !editing && (
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: '#94a3b8' }}>{L('Escolha um template', 'Choose a template', 'Elige una plantilla')}</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--fg-muted)' }}>{L('Escolha um template', 'Choose a template', 'Elige una plantilla')}</p>
               <div className="space-y-2 mb-4">
                 {templates.map(t => (
                   <button key={t.id} onClick={() => setSelectedId(t.id)}
                     className="w-full text-left p-3 rounded-xl flex items-center gap-3 transition-colors hover:bg-indigo-50/50"
-                    style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
+                    style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }}>
                     <span className="text-[18px]">{t.type === 'whatsapp' ? '💬' : '📧'}</span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-[13px] font-bold" style={{ color: '#1a1a2e' }}>{t.name}</p>
-                        {t.is_system && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: '#fef3c7', color: '#92400e' }}>{L('Sistema', 'System', 'Sistema')}</span>}
+                        <p className="text-[13px] font-bold" style={{ color: 'var(--fg)' }}>{t.name}</p>
+                        {t.is_system && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: 'var(--warn-line)', color: '#92400e' }}>{L('Sistema', 'System', 'Sistema')}</span>}
                       </div>
-                      <p className="text-[11px] line-clamp-1" style={{ color: '#94a3b8' }}>{t.body}</p>
+                      <p className="text-[11px] line-clamp-1" style={{ color: 'var(--fg-muted)' }}>{t.body}</p>
                     </div>
                   </button>
                 ))}
               </div>
               <button onClick={() => { setEditing(true); setCustomBody(''); setSelectedId(null) }}
                 className="w-full py-3 rounded-xl text-[13px] font-bold"
-                style={{ background: '#eef2ff', color: '#6366f1', border: '1px dashed #c7d2fe' }}>
+                style={{ background: 'var(--accent-light)', color: '#6366f1', border: '1px dashed #c7d2fe' }}>
                 + {L('Mensagem customizada', 'Custom message', 'Mensaje personalizado')}
               </button>
             </div>
@@ -123,7 +123,7 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
             <div>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>
+                  <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>
                     {editing ? L('Customizada', 'Custom', 'Personalizado') : selected?.name}
                   </p>
                   {!editing && (
@@ -134,21 +134,21 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
                   )}
                 </div>
                 <button onClick={() => { setSelectedId(null); setEditing(false); setCustomBody('') }}
-                  className="text-[11px] font-bold" style={{ color: '#94a3b8' }}>← {L('Trocar template', 'Change template', 'Cambiar plantilla')}</button>
+                  className="text-[11px] font-bold" style={{ color: 'var(--fg-muted)' }}>← {L('Trocar template', 'Change template', 'Cambiar plantilla')}</button>
               </div>
 
               {editing && !selected && (
                 <div className="mb-3">
-                  <label className="text-[11px] font-bold uppercase tracking-wider block mb-1" style={{ color: '#94a3b8' }}>{L('Canal', 'Channel', 'Canal')}</label>
+                  <label className="text-[11px] font-bold uppercase tracking-wider block mb-1" style={{ color: 'var(--fg-muted)' }}>{L('Canal', 'Channel', 'Canal')}</label>
                   <div className="flex gap-2">
                     <button onClick={() => setCustomType('whatsapp')}
                       className="flex-1 py-2 rounded-lg text-[12px] font-bold"
-                      style={{ background: customType === 'whatsapp' ? '#10b981' : '#f8f9fc', color: customType === 'whatsapp' ? '#fff' : '#64748b', border: '1px solid #e8ecf4' }}>
+                      style={{ background: customType === 'whatsapp' ? '#10b981' : 'var(--bg)', color: customType === 'whatsapp' ? 'var(--bg-card)' : '#64748b', border: '1px solid #e8ecf4' }}>
                       💬 WhatsApp
                     </button>
                     <button onClick={() => setCustomType('email')}
                       className="flex-1 py-2 rounded-lg text-[12px] font-bold"
-                      style={{ background: customType === 'email' ? '#6366f1' : '#f8f9fc', color: customType === 'email' ? '#fff' : '#64748b', border: '1px solid #e8ecf4' }}>
+                      style={{ background: customType === 'email' ? '#6366f1' : 'var(--bg)', color: customType === 'email' ? 'var(--bg-card)' : '#64748b', border: '1px solid #e8ecf4' }}>
                       📧 Email
                     </button>
                   </div>
@@ -159,22 +159,22 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
                 <textarea value={customBody} onChange={e => setCustomBody(e.target.value)}
                   rows={8} placeholder={L('Digite sua mensagem. Use {primeiro_nome}, {nome}, etc.', 'Type your message. Use {primeiro_nome}, {nome}, etc.', 'Escribe tu mensaje. Usa {primeiro_nome}, {nome}, etc.')}
                   className="w-full px-4 py-3 rounded-xl text-[13px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                  style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />
+                  style={{ background: 'var(--bg)', border: '1px solid #e8ecf4', color: 'var(--fg)' }} />
               ) : (
-                <div className="rounded-xl p-4 mb-2" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
-                  <p className="text-[13px] whitespace-pre-wrap" style={{ color: '#1a1a2e' }}>{preview}</p>
+                <div className="rounded-xl p-4 mb-2" style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }}>
+                  <p className="text-[13px] whitespace-pre-wrap" style={{ color: 'var(--fg)' }}>{preview}</p>
                 </div>
               )}
 
               {editing && preview && (
                 <div className="mt-3 rounded-xl p-4" style={{ background: '#f0f4ff', border: '1px solid #e0e7ff' }}>
                   <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#6366f1' }}>{L('Preview (variaveis substituidas)', 'Preview (variables filled in)', 'Vista previa (variables sustituidas)')}</p>
-                  <p className="text-[13px] whitespace-pre-wrap" style={{ color: '#1a1a2e' }}>{preview}</p>
+                  <p className="text-[13px] whitespace-pre-wrap" style={{ color: 'var(--fg)' }}>{preview}</p>
                 </div>
               )}
 
               {!canSend && (
-                <p className="text-[12px] mt-3 px-4 py-3 rounded-lg" style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
+                <p className="text-[12px] mt-3 px-4 py-3 rounded-lg" style={{ background: 'var(--err-soft)', color: '#dc2626', border: '1px solid #fecaca' }}>
                   ⚠️ {activeType === 'whatsapp'
                     ? L('Lead sem telefone', 'Lead has no phone number', 'El lead no tiene teléfono')
                     : L('Lead sem email', 'Lead has no email', 'El lead no tiene email')} — {L('nao e possivel enviar', 'unable to send', 'no se puede enviar')}
@@ -187,7 +187,7 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
         {/* Footer */}
         {(selected || editing) && (
           <div className="px-6 py-4 flex justify-end gap-3" style={{ borderTop: '1px solid #f1f5f9' }}>
-            <button onClick={onClose} className="px-4 py-2 text-[13px] font-semibold" style={{ color: '#64748b' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
+            <button onClick={onClose} className="px-4 py-2 text-[13px] font-semibold" style={{ color: 'var(--fg-secondary)' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
             <button onClick={send} disabled={sending || !canSend || !preview.trim()}
               className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50"
               style={{ background: activeType === 'whatsapp' ? '#10b981' : '#6366f1', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>

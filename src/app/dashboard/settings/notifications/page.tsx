@@ -31,8 +31,8 @@ export default async function NotificationsSettingsPage() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-[24px] font-extrabold mb-1" style={{ color: '#1a1a2e' }}>🔔 Gestão de Avisos</h1>
-      <p className="text-[14px] mb-8" style={{ color: '#64748b' }}>
+      <h1 className="text-[24px] font-extrabold mb-1" style={{ color: 'var(--fg)' }}>🔔 Gestão de Avisos</h1>
+      <p className="text-[14px] mb-8" style={{ color: 'var(--fg-secondary)' }}>
         Configure como e quando receber lembretes de reuniões. Ninguém perde um appointment.
       </p>
 

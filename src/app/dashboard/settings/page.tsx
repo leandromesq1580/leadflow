@@ -43,8 +43,8 @@ export default async function SettingsPage() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-[24px] font-extrabold mb-1" style={{ color: '#1a1a2e' }}>Configuracoes</h1>
-      <p className="text-[14px] mb-8" style={{ color: '#64748b' }}>Gerencie seu perfil, licencas e disponibilidade</p>
+      <h1 className="text-[24px] font-extrabold mb-1" style={{ color: 'var(--fg)' }}>Configuracoes</h1>
+      <p className="text-[14px] mb-8" style={{ color: 'var(--fg-secondary)' }}>Gerencie seu perfil, licencas e disponibilidade</p>
 
       <SettingsForm
         buyer={buyer}

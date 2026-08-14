@@ -72,7 +72,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <I18nProvider locale={locale}>
       <PrivacyProvider>
-      <div className="flex min-h-screen" style={{ background: '#f8f9fc' }}>
+      <div className="flex min-h-screen" style={{ background: 'var(--bg)' }}>
         <div className="hidden md:block">
           <Sidebar type="buyer" userName={buyer?.name || user!.email || ''} isAgency={buyer?.is_agency || false} buyerId={buyer?.id} crmPlan={buyer?.crm_plan || 'free'} isAdmin={!!buyer?.is_admin} podeVerApolices={podeApolices} />
         </div>

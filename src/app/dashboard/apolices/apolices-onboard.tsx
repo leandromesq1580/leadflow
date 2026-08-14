@@ -60,26 +60,26 @@ export function ApolicesOnboard({ addonAtivo: addonInicial }: { addonAtivo: bool
     } catch { setErro(L('Erro de conexão.', 'Connection error.', 'Error de conexión.')); setCarregando(false) }
   }
 
-  const inStyle = { width: '100%', padding: '10px 13px', borderRadius: 10, border: '1px solid #e8ecf4', fontSize: 14, color: '#1a1a2e', background: '#fff', outline: 'none' } as const
-  const lbl = { fontSize: 12, fontWeight: 700, color: '#64748b', display: 'block', margin: '14px 0 5px' } as const
+  const inStyle = { width: '100%', padding: '10px 13px', borderRadius: 10, border: '1px solid #e8ecf4', fontSize: 14, color: 'var(--fg)', background: 'var(--bg-card)', outline: 'none' } as const
+  const lbl = { fontSize: 12, fontWeight: 700, color: 'var(--fg-secondary)', display: 'block', margin: '14px 0 5px' } as const
 
   return (
     <div className="max-w-[720px]">
-      <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>{L('Gestão de Apólices', 'Policy Management', 'Gestión de Pólizas')}</h1>
-      <p className="text-[14px] mt-1 mb-6" style={{ color: '#64748b' }}>
+      <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{L('Gestão de Apólices', 'Policy Management', 'Gestión de Pólizas')}</h1>
+      <p className="text-[14px] mt-1 mb-6" style={{ color: 'var(--fg-secondary)' }}>
         {L('Pós-venda: o que precisa da sua ação hoje para não perder cliente nem comissão',
            'Post-sale: what needs your action today so you do not lose the client or the commission',
            'Posventa: lo que necesita tu acción hoy para no perder al cliente ni la comisión')}
       </p>
 
       {!addonAtivo ? (
-        <div className="rounded-2xl p-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-          <p className="text-[16px] font-bold" style={{ color: '#1a1a2e' }}>
+        <div className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+          <p className="text-[16px] font-bold" style={{ color: 'var(--fg)' }}>
             {L('Seu book inteiro, vigiado todos os dias — direto do portal da National Life',
                'Your entire book, watched every day — straight from the National Life portal',
                'Todo tu book, vigilado todos los días — directo del portal de National Life')}
           </p>
-          <ul className="mt-4 space-y-2 text-[14px]" style={{ color: '#475569' }}>
+          <ul className="mt-4 space-y-2 text-[14px]" style={{ color: 'var(--fg-secondary)' }}>
             <li>🤖 {L('O robô entra no SEU portal todo dia e traz 100% das apólices', 'The robot logs into YOUR portal daily and brings 100% of your policies', 'El robot entra a TU portal cada día y trae el 100% de tus pólizas')}</li>
             <li>🔴 {L('Apólice caducando aparece com dívida, prazo e telefone do cliente — antes do chargeback', 'A lapsing policy shows up with debt, deadline and client phone — before the chargeback', 'La póliza por caducar aparece con deuda, plazo y teléfono del cliente — antes del chargeback')}</li>
             <li>📋 {L('Pendências organizadas: o que é sua ação, o que é do cliente, o que é da seguradora', 'Pending items organized: your action, the client’s, the carrier’s', 'Pendientes organizados: tu acción, la del cliente, la de la aseguradora')}</li>
@@ -91,13 +91,13 @@ export function ApolicesOnboard({ addonAtivo: addonInicial }: { addonAtivo: bool
               style={{ background: 'linear-gradient(135deg,#6366f1,#4f46e5)', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
               {carregando ? L('Abrindo…', 'Opening…', 'Abriendo…') : L('Assinar — $39/mês', 'Subscribe — $39/mo', 'Suscribir — $39/mes')}
             </button>
-            <span className="text-[12px]" style={{ color: '#94a3b8' }}>
+            <span className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>
               {L('Separado do CRM · cancele quando quiser', 'Separate from the CRM · cancel anytime', 'Separado del CRM · cancela cuando quieras')}
             </span>
           </div>
         </div>
       ) : (
-        <div className="rounded-2xl p-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+        <div className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
           <p className="text-[15px] font-bold" style={{ color: '#059669' }}>
             ✅ {L('Add-on ativo! Agora conecte seu portal da National Life:', 'Add-on active! Now connect your National Life portal:', '¡Add-on activo! Ahora conecta tu portal de National Life:')}
           </p>
@@ -107,7 +107,7 @@ export function ApolicesOnboard({ addonAtivo: addonInicial }: { addonAtivo: bool
           <input style={inStyle} type="password" value={senha} onChange={e => setSenha(e.target.value)} autoComplete="new-password" />
           <label style={lbl}>{L('Seu número de agente (ex.: 484G2) — opcional', 'Your agent number (e.g., 484G2) — optional', 'Tu número de agente (ej.: 484G2) — opcional')}</label>
           <input style={inStyle} value={agente} onChange={e => setAgente(e.target.value)} placeholder="484G2" />
-          <p className="text-[12px] mt-3" style={{ color: '#94a3b8' }}>
+          <p className="text-[12px] mt-3" style={{ color: 'var(--fg-muted)' }}>
             🔒 {L('Suas credenciais vão por conexão segura direto pro robô no servidor e ficam num arquivo protegido — nunca no banco de dados. Se o portal pedir código de verificação (chega no seu e-mail), a tela vai te mostrar onde digitar.',
                   'Your credentials go over a secure connection straight to the robot on the server and live in a protected file — never in the database. If the portal asks for a verification code (sent to your email), the screen will show you where to type it.',
                   'Tus credenciales van por conexión segura directo al robot en el servidor y viven en un archivo protegido — nunca en la base de datos. Si el portal pide un código de verificación (llega a tu correo), la pantalla te mostrará dónde escribirlo.')}
@@ -121,7 +121,7 @@ export function ApolicesOnboard({ addonAtivo: addonInicial }: { addonAtivo: bool
       )}
 
       {erro && (
-        <div className="rounded-xl p-3 mt-4 text-[13px] font-semibold" style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c' }}>
+        <div className="rounded-xl p-3 mt-4 text-[13px] font-semibold" style={{ background: 'var(--err-soft)', border: '1px solid #fecaca', color: '#b91c1c' }}>
           {erro}
         </div>
       )}

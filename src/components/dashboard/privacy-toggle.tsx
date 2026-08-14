@@ -12,9 +12,9 @@ export function PrivacyToggle() {
       onClick={toggle}
       className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] font-bold transition-colors"
       style={{
-        background: enabled ? '#0f172a' : '#f1f5f9',
-        color: enabled ? '#fff' : '#64748b',
-        border: `1px solid ${enabled ? '#0f172a' : '#e8ecf4'}`,
+        background: enabled ? '#0f172a' : 'var(--bg-soft)',
+        color: enabled ? '#fff' : 'var(--fg-secondary)',
+        border: `1px solid ${enabled ? '#0f172a' : 'var(--border)'}`,
       }}
       title={enabled
         ? L('Modo apresentação ATIVO (telefones/emails ocultos)', 'Presentation mode ON (phones/emails hidden)', 'Modo presentación ACTIVO (teléfonos/emails ocultos)')

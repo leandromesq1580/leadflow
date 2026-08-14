@@ -29,7 +29,7 @@ export function ImpersonationBanner({ name }: { name: string }) {
         onClick={stop}
         disabled={busy}
         className="text-[12px] font-bold px-3 py-1.5 rounded-lg disabled:opacity-50"
-        style={{ background: '#fff', color: '#312e81' }}
+        style={{ background: 'var(--bg-card)', color: '#312e81' }}
       >
         {busy ? L('Voltando…', 'Returning…', 'Volviendo…') : L('← Voltar para admin', '← Back to admin', '← Volver al admin')}
       </button>

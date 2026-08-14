@@ -36,11 +36,11 @@ export function KanbanColumn({ stage, items, onLeadClick, unreadCounts = {}, tea
   return (
     <div className="flex-shrink-0 w-[290px]">
       {/* Sticky header (title + accent bar) */}
-      <div className="sticky top-0 z-20 pt-1 pb-0" style={{ background: '#f8f9fc' }}>
+      <div className="sticky top-0 z-20 pt-1 pb-0" style={{ background: 'var(--bg)' }}>
         <div className="flex items-center justify-between mb-3 px-1">
           <div className="flex items-center gap-2.5">
             <div className="w-2.5 h-2.5 rounded-full" style={{ background: stage.color, boxShadow: `0 0 8px ${stage.color}40` }} />
-            <h3 className="text-[13px] font-bold tracking-tight" style={{ color: '#1a1a2e' }}>{stage.name}</h3>
+            <h3 className="text-[13px] font-bold tracking-tight" style={{ color: 'var(--fg)' }}>{stage.name}</h3>
           </div>
           <span className="text-[11px] font-extrabold w-6 h-6 rounded-lg flex items-center justify-center"
             style={{ background: `${stage.color}15`, color: stage.color }}>

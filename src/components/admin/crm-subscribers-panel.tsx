@@ -38,35 +38,35 @@ export async function CrmSubscribersPanel() {
   const mrr = payers.length * 99
 
   return (
-    <div className="rounded-2xl overflow-hidden mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+    <div className="rounded-2xl overflow-hidden mb-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
       <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-2" style={{ borderBottom: '1px solid #e8ecf4' }}>
-        <h2 className="text-[15px] font-bold" style={{ color: '#1a1a2e' }}>💳 CRM Pro — quem paga</h2>
+        <h2 className="text-[15px] font-bold" style={{ color: 'var(--fg)' }}>💳 CRM Pro — quem paga</h2>
         <span className="text-[13px] font-extrabold" style={{ color: '#15803d' }}>MRR ${mrr.toLocaleString()} · {payers.length} pagante{payers.length === 1 ? '' : 's'} · {courtesy.length} cortesia</span>
       </div>
       {payers.length === 0 && courtesy.length === 0 ? (
-        <p className="text-center py-8 text-[13px]" style={{ color: '#94a3b8' }}>Nenhum assinante Pro</p>
+        <p className="text-center py-8 text-[13px]" style={{ color: 'var(--fg-muted)' }}>Nenhum assinante Pro</p>
       ) : (
         <div>
           {payers.map((b) => (
             <Link key={b.id} href={`/admin/buyers/${b.id}`} className="flex items-center gap-4 px-6 py-3 hover:bg-slate-50" style={{ borderBottom: '1px solid #f1f5f9' }}>
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-bold truncate" style={{ color: '#1a1a2e' }}>{b.name}</p>
-                <p className="text-[11px] truncate" style={{ color: '#94a3b8' }}>{b.email}</p>
+                <p className="text-[13px] font-bold truncate" style={{ color: 'var(--fg)' }}>{b.name}</p>
+                <p className="text-[11px] truncate" style={{ color: 'var(--fg-muted)' }}>{b.email}</p>
               </div>
               <div className="text-right hidden sm:block flex-shrink-0">
-                <p className="text-[11px] font-semibold" style={{ color: '#64748b' }}>{fmtTs(subDates[b.id]?.paid ?? null) ? `pgto ${fmtTs(subDates[b.id]?.paid ?? null)}` : '—'}</p>
-                <p className="text-[10px]" style={{ color: '#94a3b8' }}>{fmtTs(subDates[b.id]?.renews ?? null) ? `renova ${fmtTs(subDates[b.id]?.renews ?? null)}` : ''}</p>
+                <p className="text-[11px] font-semibold" style={{ color: 'var(--fg-secondary)' }}>{fmtTs(subDates[b.id]?.paid ?? null) ? `pgto ${fmtTs(subDates[b.id]?.paid ?? null)}` : '—'}</p>
+                <p className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>{fmtTs(subDates[b.id]?.renews ?? null) ? `renova ${fmtTs(subDates[b.id]?.renews ?? null)}` : ''}</p>
               </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase flex-shrink-0" style={{ background: '#dcfce7', color: '#15803d' }}>Paga $99/mês</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase flex-shrink-0" style={{ background: 'var(--ok-line)', color: '#15803d' }}>Paga $99/mês</span>
             </Link>
           ))}
           {courtesy.map((b, i) => (
             <Link key={b.id} href={`/admin/buyers/${b.id}`} className="flex items-center gap-4 px-6 py-3 hover:bg-slate-50" style={{ borderBottom: i < courtesy.length - 1 ? '1px solid #f1f5f9' : 'none', opacity: 0.7 }}>
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-semibold truncate" style={{ color: '#64748b' }}>{b.name}</p>
-                <p className="text-[11px] truncate" style={{ color: '#94a3b8' }}>{b.email}</p>
+                <p className="text-[13px] font-semibold truncate" style={{ color: 'var(--fg-secondary)' }}>{b.name}</p>
+                <p className="text-[11px] truncate" style={{ color: 'var(--fg-muted)' }}>{b.email}</p>
               </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase flex-shrink-0" style={{ background: '#f1f5f9', color: '#94a3b8' }}>Cortesia</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase flex-shrink-0" style={{ background: 'var(--bg-soft)', color: 'var(--fg-muted)' }}>Cortesia</span>
             </Link>
           ))}
         </div>

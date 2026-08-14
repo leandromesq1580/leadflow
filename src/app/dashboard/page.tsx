@@ -34,11 +34,11 @@ export default async function DashboardPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: '#eef2ff' }}>
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'var(--accent-light)' }}>
             <span className="text-2xl">⏳</span>
           </div>
-          <h2 className="text-lg font-bold" style={{ color: '#1a1a2e' }}>{t.dashboardHome.setupAccount}</h2>
-          <p className="text-sm mt-1 mb-5" style={{ color: '#94a3b8' }}>{t.dashboardHome.setupHelp}</p>
+          <h2 className="text-lg font-bold" style={{ color: 'var(--fg)' }}>{t.dashboardHome.setupAccount}</h2>
+          <p className="text-sm mt-1 mb-5" style={{ color: 'var(--fg-muted)' }}>{t.dashboardHome.setupHelp}</p>
           <a href="/dashboard" className="inline-block px-5 py-2.5 rounded-xl text-sm font-bold text-white" style={{ background: '#6366f1' }}>{t.dashboardHome.reload}</a>
         </div>
       </div>
@@ -78,10 +78,10 @@ export default async function DashboardPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-3">
         <div>
-          <h1 className="text-[22px] sm:text-[26px] font-extrabold tracking-tight" style={{ color: '#1a1a2e' }}>
+          <h1 className="text-[22px] sm:text-[26px] font-extrabold tracking-tight" style={{ color: 'var(--fg)' }}>
             {t.dashboardHome.helloGreeting(firstName)}
           </h1>
-          <p className="text-[13px] sm:text-[14px] mt-1" style={{ color: '#64748b' }}>
+          <p className="text-[13px] sm:text-[14px] mt-1" style={{ color: 'var(--fg-secondary)' }}>
             {t.dashboardHome.subtitle}
           </p>
         </div>
@@ -133,11 +133,11 @@ export default async function DashboardPage() {
       </div>
 
       {/* Leads Table */}
-      <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e8ecf4', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+      <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: '1px solid #e8ecf4' }}>
           <div>
-            <h2 className="text-[16px] font-bold" style={{ color: '#1a1a2e' }}>{t.dashboardHome.recentLeads}</h2>
-            <p className="text-[12px] mt-0.5" style={{ color: '#94a3b8' }}>{t.dashboardHome.recentLeadsSub}</p>
+            <h2 className="text-[16px] font-bold" style={{ color: 'var(--fg)' }}>{t.dashboardHome.recentLeads}</h2>
+            <p className="text-[12px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>{t.dashboardHome.recentLeadsSub}</p>
           </div>
           <Link href="/dashboard/leads" className="text-[13px] font-semibold flex items-center gap-1" style={{ color: '#6366f1' }}>
             {t.dashboardHome.seeAll} <span>→</span>
@@ -158,25 +158,25 @@ export default async function DashboardPage() {
                   {getInitials(lead.name)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-semibold group-hover:text-indigo-600" style={{ color: '#1a1a2e' }}>{lead.name}</p>
-                  <p className="text-[12px]" style={{ color: '#94a3b8' }}>{lead.city}, {lead.state} · {lead.interest}</p>
+                  <p className="text-[14px] font-semibold group-hover:text-indigo-600" style={{ color: 'var(--fg)' }}>{lead.name}</p>
+                  <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{lead.city}, {lead.state} · {lead.interest}</p>
                 </div>
                 <div className="hidden sm:block">
                   <PrivatePhone value={lead.phone} className="text-[13px] font-semibold" style={{ color: '#6366f1' }} />
                 </div>
                 <Badge status={lead.status} />
-                <span className="text-[12px] whitespace-nowrap" style={{ color: '#94a3b8' }}>{timeAgo(lead.created_at, locale)}</span>
-                <span className="text-[18px] opacity-0 group-hover:opacity-100" style={{ color: '#94a3b8' }}>›</span>
+                <span className="text-[12px] whitespace-nowrap" style={{ color: 'var(--fg-muted)' }}>{timeAgo(lead.created_at, locale)}</span>
+                <span className="text-[18px] opacity-0 group-hover:opacity-100" style={{ color: 'var(--fg-muted)' }}>›</span>
               </Link>
             ))}
           </div>
         ) : (
           <div className="text-center py-20 px-6">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ background: '#f1f5f9' }}>
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ background: 'var(--bg-soft)' }}>
               <span className="text-3xl">📭</span>
             </div>
-            <h3 className="text-[18px] font-bold mb-1" style={{ color: '#1a1a2e' }}>{t.dashboardHome.empty}</h3>
-            <p className="text-[14px] max-w-sm mx-auto mb-6" style={{ color: '#94a3b8' }}>{t.dashboardHome.emptyHelp}</p>
+            <h3 className="text-[18px] font-bold mb-1" style={{ color: 'var(--fg)' }}>{t.dashboardHome.empty}</h3>
+            <p className="text-[14px] max-w-sm mx-auto mb-6" style={{ color: 'var(--fg-muted)' }}>{t.dashboardHome.emptyHelp}</p>
             <Link href="/dashboard/credits"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-[14px] font-bold text-white"
               style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
@@ -194,13 +194,13 @@ export default async function DashboardPage() {
             { step: '02', icon: '⚡', title: t.dashboardHome.tip2Title, desc: t.dashboardHome.tip2Desc },
             { step: '03', icon: '🏆', title: t.dashboardHome.tip3Title, desc: t.dashboardHome.tip3Desc },
           ].map((tip) => (
-            <div key={tip.step} className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
+            <div key={tip.step} className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-2xl">{tip.icon}</span>
-                <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#94a3b8' }}>{t.dashboardHome.step} {tip.step}</span>
+                <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--fg-muted)' }}>{t.dashboardHome.step} {tip.step}</span>
               </div>
-              <h3 className="text-[14px] font-bold mb-1" style={{ color: '#1a1a2e' }}>{tip.title}</h3>
-              <p className="text-[12px] leading-relaxed" style={{ color: '#64748b' }}>{tip.desc}</p>
+              <h3 className="text-[14px] font-bold mb-1" style={{ color: 'var(--fg)' }}>{tip.title}</h3>
+              <p className="text-[12px] leading-relaxed" style={{ color: 'var(--fg-secondary)' }}>{tip.desc}</p>
             </div>
           ))}
         </div>

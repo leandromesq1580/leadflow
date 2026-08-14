@@ -48,7 +48,7 @@ export function BulkDeleteManual() {
     <>
       <button onClick={abrir} disabled={busy}
         className="px-3 py-2 rounded-lg text-[12px] font-bold disabled:opacity-50"
-        style={{ background: '#fff', color: '#b91c1c', border: '1px solid #fecaca' }}>
+        style={{ background: 'var(--bg-card)', color: '#b91c1c', border: '1px solid #fecaca' }}>
         🗑️ {L('Excluir meus leads manuais', 'Delete my manual leads', 'Eliminar mis leads manuales')}
       </button>
 
@@ -56,13 +56,13 @@ export function BulkDeleteManual() {
         <div onClick={() => !busy && setOpen(false)}
           style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <div onClick={e => e.stopPropagation()}
-            style={{ background: '#fff', borderRadius: 18, padding: 24, width: 460, maxWidth: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.25)' }}>
+            style={{ background: 'var(--bg-card)', borderRadius: 18, padding: 24, width: 460, maxWidth: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.25)' }}>
             {feito ? (
               <>
                 <p className="text-[16px] font-extrabold mb-2" style={{ color: '#059669' }}>✅ {feito.deleted} {L('lead(s) excluído(s)', 'lead(s) deleted', 'lead(s) eliminados')}</p>
                 {feito.remaining > 0 ? (
                   <>
-                    <p className="text-[13px] mb-4" style={{ color: '#64748b' }}>
+                    <p className="text-[13px] mb-4" style={{ color: 'var(--fg-secondary)' }}>
                       {L('Ainda restam', 'There are still', 'Aún quedan')} <b>{feito.remaining}</b> {L('(excluímos em lotes pra não travar). Clique de novo para continuar.', 'left (we delete in batches so nothing freezes). Click again to continue.', '(eliminamos por lotes para que no se trabe). Haz clic de nuevo para continuar.')}
                     </p>
                     <button onClick={excluir} disabled={busy} className="w-full py-2.5 rounded-xl text-[13px] font-bold text-white" style={{ background: '#dc2626' }}>
@@ -70,23 +70,23 @@ export function BulkDeleteManual() {
                     </button>
                   </>
                 ) : (
-                  <p className="text-[13px]" style={{ color: '#64748b' }}>{L('Atualizando a lista…', 'Refreshing the list…', 'Actualizando la lista…')}</p>
+                  <p className="text-[13px]" style={{ color: 'var(--fg-secondary)' }}>{L('Atualizando a lista…', 'Refreshing the list…', 'Actualizando la lista…')}</p>
                 )}
               </>
             ) : (
               <>
-                <p className="text-[17px] font-extrabold mb-1" style={{ color: '#1a1a2e' }}>{L('Excluir leads manuais', 'Delete manual leads', 'Eliminar leads manuales')}</p>
-                <p className="text-[13px] mb-4" style={{ color: '#64748b' }}>
+                <p className="text-[17px] font-extrabold mb-1" style={{ color: 'var(--fg)' }}>{L('Excluir leads manuais', 'Delete manual leads', 'Eliminar leads manuales')}</p>
+                <p className="text-[13px] mb-4" style={{ color: 'var(--fg-secondary)' }}>
                   {L('Apaga os leads que', 'Deletes the leads', 'Elimina los leads que')} <b>{L('você mesmo cadastrou', 'you added yourself', 'tú mismo registraste')}</b> {L('(manualmente ou por importação de planilha), com as conversas e follow-ups deles.', '(manually or via spreadsheet import), along with their conversations and follow-ups.', '(manualmente o por importación de planilla), con sus conversaciones y follow-ups.')}
                 </p>
 
-                <div className="rounded-xl p-3 mb-3" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
+                <div className="rounded-xl p-3 mb-3" style={{ background: 'var(--err-soft)', border: '1px solid #fecaca' }}>
                   <p className="text-[13px] font-bold" style={{ color: '#b91c1c' }}>
                     {preview?.toDelete ?? 0} {L('lead(s) serão excluídos — não dá para desfazer', "lead(s) will be deleted — this can't be undone", 'lead(s) serán eliminados — no se puede deshacer')}
                   </p>
                 </div>
 
-                <div className="rounded-xl p-3 mb-4" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                <div className="rounded-xl p-3 mb-4" style={{ background: 'var(--ok-soft)', border: '1px solid #bbf7d0' }}>
                   <p className="text-[12.5px] font-bold mb-1" style={{ color: '#166534' }}>{L('Ficam protegidos:', 'These stay protected:', 'Quedan protegidos:')}</p>
                   <ul className="text-[12px] space-y-0.5" style={{ color: '#15803d' }}>
                     <li>• {L('Todos os leads que você', 'All the leads you', 'Todos los leads que')} <b>{L('comprou', 'bought', 'compraste')}</b> {L('(entregues pela plataforma)', '(delivered by the platform)', '(entregados por la plataforma)')}</li>
@@ -96,7 +96,7 @@ export function BulkDeleteManual() {
 
                 {(preview?.toDelete ?? 0) > 0 ? (
                   <>
-                    <label className="block text-[12px] font-semibold mb-1.5" style={{ color: '#64748b' }}>
+                    <label className="block text-[12px] font-semibold mb-1.5" style={{ color: 'var(--fg-secondary)' }}>
                       {L('Digite', 'Type', 'Escribe')} <b style={{ color: '#b91c1c' }}>EXCLUIR</b> {L('para confirmar:', 'to confirm:', 'para confirmar:')}
                     </label>
                     <input value={texto} onChange={e => setTexto(e.target.value.toUpperCase())}
@@ -104,7 +104,7 @@ export function BulkDeleteManual() {
                       style={{ border: '1px solid #e2e8f0', letterSpacing: 1 }} placeholder="EXCLUIR" />
                     <div className="flex gap-2">
                       <button onClick={() => setOpen(false)} disabled={busy}
-                        className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold" style={{ background: '#f1f5f9', color: '#475569' }}>
+                        className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold" style={{ background: 'var(--bg-soft)', color: 'var(--fg-secondary)' }}>
                         {L('Cancelar', 'Cancel', 'Cancelar')}
                       </button>
                       <button onClick={excluir} disabled={busy || texto !== 'EXCLUIR'}
@@ -115,7 +115,7 @@ export function BulkDeleteManual() {
                     </div>
                   </>
                 ) : (
-                  <button onClick={() => setOpen(false)} className="w-full py-2.5 rounded-xl text-[13px] font-bold" style={{ background: '#f1f5f9', color: '#475569' }}>
+                  <button onClick={() => setOpen(false)} className="w-full py-2.5 rounded-xl text-[13px] font-bold" style={{ background: 'var(--bg-soft)', color: 'var(--fg-secondary)' }}>
                     {L('Você não tem leads manuais para excluir — fechar', 'You have no manual leads to delete — close', 'No tienes leads manuales para eliminar — cerrar')}
                   </button>
                 )}

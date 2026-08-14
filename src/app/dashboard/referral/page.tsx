@@ -63,13 +63,13 @@ export default function ReferralPage() {
     else window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
   }
 
-  if (loading) return <div className="p-8 text-[13px]" style={{ color: '#64748b' }}>{L('Carregando...', 'Loading...', 'Cargando...')}</div>
-  if (!data) return <div className="p-8 text-[13px]" style={{ color: '#64748b' }}>{L('Sem dados', 'No data', 'Sin datos')}</div>
+  if (loading) return <div className="p-8 text-[13px]" style={{ color: 'var(--fg-secondary)' }}>{L('Carregando...', 'Loading...', 'Cargando...')}</div>
+  if (!data) return <div className="p-8 text-[13px]" style={{ color: 'var(--fg-secondary)' }}>{L('Sem dados', 'No data', 'Sin datos')}</div>
 
   return (
     <div className="max-w-[720px]">
-      <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>{L('Programa de Indicação', 'Referral Program', 'Programa de Referidos')}</h1>
-      <p className="text-[14px] mb-6" style={{ color: '#64748b' }}>{L('Indique corretores e ganhe crédito em dólar', 'Refer agents and earn credit in dollars', 'Recomienda agentes y gana crédito en dólares')}</p>
+      <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{L('Programa de Indicação', 'Referral Program', 'Programa de Referidos')}</h1>
+      <p className="text-[14px] mb-6" style={{ color: 'var(--fg-secondary)' }}>{L('Indique corretores e ganhe crédito em dólar', 'Refer agents and earn credit in dollars', 'Recomienda agentes y gana crédito en dólares')}</p>
 
       {/* Credit card */}
       <div className="rounded-2xl p-6 mb-6 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #1e1b4b, #312e81)' }}>
@@ -96,9 +96,9 @@ export default function ReferralPage() {
       </div>
 
       {/* Regras — o cliente precisa entender antes de indicar (feedback 2026-07-30) */}
-      <div className="rounded-2xl p-5 mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-        <p className="text-[13px] font-bold mb-3" style={{ color: '#1a1a2e' }}>📋 {L('Como funciona', 'How it works', 'Cómo funciona')}</p>
-        <ol className="space-y-2.5 text-[12.5px]" style={{ color: '#475569' }}>
+      <div className="rounded-2xl p-5 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+        <p className="text-[13px] font-bold mb-3" style={{ color: 'var(--fg)' }}>📋 {L('Como funciona', 'How it works', 'Cómo funciona')}</p>
+        <ol className="space-y-2.5 text-[12.5px]" style={{ color: 'var(--fg-secondary)' }}>
           {t._locale === 'en' ? (
             <>
               <li><b>1.</b> Share your link. Whoever signs up through it becomes your referral.</li>
@@ -122,24 +122,24 @@ export default function ReferralPage() {
             </>
           )}
         </ol>
-        <div className="mt-3 pt-3 text-[11.5px]" style={{ borderTop: '1px solid #f1f5f9', color: '#94a3b8' }}>
+        <div className="mt-3 pt-3 text-[11.5px]" style={{ borderTop: '1px solid #f1f5f9', color: 'var(--fg-muted)' }}>
           {t._locale === 'en' ? (
             <>
-              <b style={{ color: '#64748b' }}>Rules:</b> 1 reward per referral (on their first purchase) ·
+              <b style={{ color: 'var(--fg-secondary)' }}>Rules:</b> 1 reward per referral (on their first purchase) ·
               the referral must be a new account · referring yourself doesn&apos;t count (same email/phone) ·
               if the referral cancels or requests a refund, the credit is reversed ·
               limit of <b>$300 per month</b> in rewards · credit is not redeemable for cash.
             </>
           ) : t._locale === 'es' ? (
             <>
-              <b style={{ color: '#64748b' }}>Reglas:</b> 1 recompensa por referido (en su primera compra) ·
+              <b style={{ color: 'var(--fg-secondary)' }}>Reglas:</b> 1 recompensa por referido (en su primera compra) ·
               el referido debe ser una cuenta nueva · no vale referirte a ti mismo (mismo email/teléfono) ·
               si el referido cancela o pide reembolso, el crédito se revierte ·
               límite de <b>$300 por mes</b> en recompensas · el crédito no es canjeable por dinero.
             </>
           ) : (
             <>
-              <b style={{ color: '#64748b' }}>Regras:</b> 1 recompensa por indicado (na primeira compra dele) ·
+              <b style={{ color: 'var(--fg-secondary)' }}>Regras:</b> 1 recompensa por indicado (na primeira compra dele) ·
               o indicado precisa ser conta nova · não vale indicar a si mesmo (mesmo email/telefone) ·
               se o indicado cancelar ou pedir reembolso, o crédito é estornado ·
               limite de <b>$300 por mês</b> em recompensas · crédito não é resgatável em dinheiro.
@@ -149,15 +149,15 @@ export default function ReferralPage() {
       </div>
 
       {/* Share link */}
-      <div className="rounded-2xl p-5 mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-        <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: '#94a3b8' }}>{L('Seu link de indicação', 'Your referral link', 'Tu enlace de referido')}</p>
+      <div className="rounded-2xl p-5 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+        <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--fg-muted)' }}>{L('Seu link de indicação', 'Your referral link', 'Tu enlace de referido')}</p>
         <div className="flex gap-2">
           <input readOnly value={link}
             className="flex-1 px-3 py-2 rounded-lg text-[12px] font-mono"
-            style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }} />
+            style={{ background: 'var(--bg)', border: '1px solid #e8ecf4' }} />
           <button onClick={copy}
             className="px-4 py-2 rounded-lg text-[12px] font-bold"
-            style={{ background: copied ? '#10b981' : '#eef2ff', color: copied ? '#fff' : '#6366f1' }}>
+            style={{ background: copied ? '#10b981' : 'var(--accent-light)', color: copied ? 'var(--bg-card)' : '#6366f1' }}>
             {copied ? L('✓ Copiado', '✓ Copied', '✓ Copiado') : L('Copiar', 'Copy', 'Copiar')}
           </button>
           <button onClick={share}
@@ -166,8 +166,8 @@ export default function ReferralPage() {
             {L('Compartilhar', 'Share', 'Compartir')}
           </button>
         </div>
-        <p className="text-[11px] mt-2" style={{ color: '#94a3b8' }}>
-          {L('Código:', 'Code:', 'Código:')} <span className="font-mono font-bold" style={{ color: '#1a1a2e' }}>{data.code}</span>
+        <p className="text-[11px] mt-2" style={{ color: 'var(--fg-muted)' }}>
+          {L('Código:', 'Code:', 'Código:')} <span className="font-mono font-bold" style={{ color: 'var(--fg)' }}>{data.code}</span>
         </p>
       </div>
 
@@ -184,16 +184,16 @@ export default function ReferralPage() {
 
       {/* Rewards list */}
       {data.rewards.length > 0 && (
-        <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-          <p className="text-[13px] font-bold mb-3" style={{ color: '#1a1a2e' }}>{L('Histórico', 'History', 'Historial')}</p>
+        <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid #e8ecf4' }}>
+          <p className="text-[13px] font-bold mb-3" style={{ color: 'var(--fg)' }}>{L('Histórico', 'History', 'Historial')}</p>
           <div className="space-y-2">
             {data.rewards.map((r, i) => (
               <div key={i} className="flex justify-between items-center py-2" style={{ borderBottom: i < data.rewards.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
                 <div>
-                  <p className="text-[13px] font-bold" style={{ color: '#1a1a2e' }}>{r.name}</p>
-                  <p className="text-[11px]" style={{ color: '#94a3b8' }}>{triggerLabels(L)[r.trigger]} · {new Date(r.granted_at).toLocaleDateString(t._locale === 'en' ? 'en-US' : t._locale === 'es' ? 'es-US' : 'pt-BR')}</p>
+                  <p className="text-[13px] font-bold" style={{ color: 'var(--fg)' }}>{r.name}</p>
+                  <p className="text-[11px]" style={{ color: 'var(--fg-muted)' }}>{triggerLabels(L)[r.trigger]} · {new Date(r.granted_at).toLocaleDateString(t._locale === 'en' ? 'en-US' : t._locale === 'es' ? 'es-US' : 'pt-BR')}</p>
                 </div>
-                <span className="text-[14px] font-bold" style={{ color: r.cents > 0 ? '#10b981' : '#94a3b8' }}>
+                <span className="text-[14px] font-bold" style={{ color: r.cents > 0 ? '#10b981' : 'var(--fg-muted)' }}>
                   {r.cents > 0 ? `+$${(r.cents / 100).toFixed(2)}` : '—'}
                 </span>
               </div>
