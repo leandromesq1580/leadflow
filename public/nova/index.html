@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lead4Pro — Pare de comprar leads. Comece a receber clientes.</title>
+<meta name="description" content="A plataforma de clientes do agente de life insurance brasileiro nos EUA: clientes exclusivos entregues em minutos, IA na ligação, WhatsApp e operação completa em português. Agende sua consultoria estratégica.">
+<meta name="theme-color" content="#04060c">
+<meta name="format-detection" content="telephone=no">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   LEAD4PRO · PÁGINA DE CAPTURA v2 · identidade Reconcept
+   Tokens extraídos de CRM Novo/Lead4Pro-CRM-Reconcept:
+   navy #04060c/#0b0f1c · violeta #7c3aed→#6366f1→#0ea5e9
+   verde IA #10b981 · Inter · glass cards
+   ============================================================ */
+:root{
+  --bg:#04060c; --bg2:#0b0f1c; --bg3:#0d1120;
+  --card:rgba(30,34,52,.82); --card2:rgba(16,19,32,.72);
+  --line:rgba(255,255,255,.075); --line2:rgba(255,255,255,.14);
+  --txt:#eef1f8; --mut:#9aa5bd; --dim:#5d6880;
+  --vio:#7c3aed; --vio2:#8b5cf6; --vio3:#a78bfa; --ind:#6366f1; --cyan:#0ea5e9;
+  --grad:linear-gradient(100deg,#7c3aed,#6366f1 45%,#0ea5e9);
+  --grad-txt:linear-gradient(100deg,#a78bfa,#818cf8 45%,#67e8f9);
+  --ok:#10b981; --ok2:#34d399; --zap:#3ddc84;
+  --warn:#f59e0b; --bad:#f43f5e;
+  --r:14px; --rL:22px;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  --shadow:0 24px 70px -18px rgba(0,0,0,.65);
+  --glow:0 0 44px rgba(124,58,237,.28);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font:16px/1.62 'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:rgba(124,58,237,.45)}
+img,svg{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+
+/* ---------- utilitários ---------- */
+.wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+.eyebrow{font:700 11px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--vio3);display:flex;align-items:center;gap:10px}
+.eyebrow::before{content:"";width:22px;height:1px;background:var(--grad)}
+.h2{font-size:clamp(28px,4.4vw,44px);font-weight:900;letter-spacing:-.02em;line-height:1.08;margin:14px 0 10px}
+/* linhas equilibradas: nunca uma palavra órfã sozinha na última linha */
+.h1,.h2,.ato h3,.veredito,.fxp h3,.comp h4,.comps-fecho,.palco .fecho{text-wrap:balance}
+.m-only{display:none}
+/* seções com fundo alternado (início e fim de assunto visíveis) */
+.sec.alt{background:var(--bg2);border-block:1px solid var(--line)}
+.tight{padding-top:0}
+.h2 .gtx{background:var(--grad-txt);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--mut);max-width:640px;font-size:17px}
+.sec{padding:clamp(64px,9vw,110px) 0;position:relative}
+.center{text-align:center}
+.center .eyebrow{justify-content:center}
+.center .sub{margin:0 auto}
+
+/* revelação no scroll */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
+.rv.on{opacity:1;transform:none}
+
+/* CTA */
+.btn{display:inline-flex;align-items:center;gap:10px;background:var(--grad);color:#fff;font-weight:800;font-size:16px;padding:17px 30px;border-radius:999px;box-shadow:var(--glow);transition:transform .18s ease,box-shadow .18s ease;position:relative}
+.btn:hover{transform:translateY(-2px);box-shadow:0 0 60px rgba(124,58,237,.45)}
+.btn:focus-visible,a:focus-visible,button:focus-visible{outline:2px solid var(--vio3);outline-offset:3px}
+.btn small{display:block;font-weight:600;font-size:11.5px;opacity:.85}
+.btn .arr{transition:transform .18s ease}
+.btn:hover .arr{transform:translateX(4px)}
+.btn-note{font-size:12.5px;color:var(--dim);margin-top:12px}
+
+/* ---------- barra topo ---------- */
+.topbar{background:linear-gradient(90deg,rgba(124,58,237,.16),rgba(14,165,233,.12));border-bottom:1px solid var(--line);font-size:13px;color:var(--mut);padding:9px 0;text-align:center}
+.topbar b{color:var(--txt)}
+.topbar a{color:var(--vio3);font-weight:700;white-space:nowrap}
+
+/* ---------- header ---------- */
+header.nav{position:sticky;top:0;z-index:60;background:rgba(4,6,12,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.nav-in{display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:900;font-size:19px;letter-spacing:-.02em}
+.logo-ico{width:34px;height:34px;border-radius:10px;background:var(--grad);display:grid;place-items:center;box-shadow:var(--glow)}
+.nav-cta{background:var(--grad);color:#fff;font-weight:700;font-size:14px;padding:10px 20px;border-radius:999px}
+
+/* ---------- HERO ---------- */
+.hero{position:relative;padding:clamp(56px,8vw,96px) 0 clamp(56px,7vw,88px);overflow:hidden}
+.hero::before{content:"";position:absolute;inset:-20% -10% auto;height:130%;background:
+  radial-gradient(52% 42% at 74% 30%,rgba(124,58,237,.22),transparent 60%),
+  radial-gradient(40% 34% at 18% 74%,rgba(14,165,233,.12),transparent 60%);pointer-events:none}
+.hero::after{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);background-size:26px 26px;mask-image:radial-gradient(60% 55% at 60% 40%,#000 30%,transparent 75%);pointer-events:none}
+.hero-grid{position:relative;display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,.98fr);gap:clamp(28px,5vw,64px);align-items:center;z-index:1}
+.h1{font-size:clamp(38px,5.6vw,64px);font-weight:900;letter-spacing:-.03em;line-height:1.03;margin:18px 0 20px}
+.h1 .no{position:relative;white-space:nowrap;color:var(--mut)}
+.h1 .no::after{content:"";position:absolute;left:-2%;right:-2%;top:54%;height:.09em;background:var(--bad);border-radius:99px;transform:rotate(-2deg);transform-origin:left;animation:riscar .5s .9s ease both}
+@keyframes riscar{from{transform:scaleX(0) rotate(-2deg)}to{transform:scaleX(1) rotate(-2deg)}}
+.h1 .sim{background:var(--grad-txt);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .sub{font-size:18px;margin-bottom:30px}
+.hero .sub b{color:var(--txt)}
+.selos{display:flex;flex-wrap:wrap;gap:9px;margin-top:26px}
+.selo{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--mut);border:1px solid var(--line2);background:rgba(255,255,255,.03);padding:8px 14px;border-radius:999px}
+.selo i{font-style:normal}
+
+/* mockup pipeline vivo (assinatura da página) */
+.mock{position:relative;border-radius:var(--rL);border:1px solid var(--line2);background:linear-gradient(160deg,#171b2cd9,#0d1020c9);box-shadow:var(--shadow);overflow:hidden}
+.mock-top{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.025)}
+.dot{width:10px;height:10px;border-radius:50%;background:#2a3046}
+.dot.r{background:#f4635e}.dot.y{background:#f5bd4f}.dot.g{background:#41c463}
+.mock-url{font:600 11px var(--mono);color:var(--dim);margin-left:8px;letter-spacing:.04em}
+.pipe-vp{position:relative}
+.pipe{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px}
+.col{background:rgba(255,255,255,.028);border:1px solid var(--line);border-radius:12px;padding:10px;min-height:236px}
+.col h5{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;color:var(--mut)}
+.col h5 .cnt{font:700 10px var(--mono);background:rgba(124,58,237,.22);color:var(--vio3);border-radius:99px;padding:2px 7px}
+.c1 h5 b{color:var(--vio3)}.c2 h5 b{color:var(--cyan)}.c3 h5 b{color:var(--ok2)}
+.cardL{background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.02));border:1px solid var(--line2);border-radius:10px;padding:9px 10px;margin-bottom:8px}
+.cardL .nm{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700}
+.av{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:9px;font-weight:800;color:#fff;flex:none}
+.cardL .mt{font-size:10.5px;color:var(--dim);margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tagz{font:700 9px var(--mono);padding:2px 6px;border-radius:6px}
+.tz-v{background:rgba(124,58,237,.2);color:var(--vio3)}
+.tz-g{background:rgba(16,185,129,.16);color:var(--ok2)}
+.tz-c{background:rgba(14,165,233,.16);color:#67e8f9}
+.cardL.novo{border-color:rgba(16,185,129,.6);box-shadow:0 0 22px rgba(16,185,129,.22);animation:pousar 8s infinite}
+@keyframes pousar{0%{opacity:0;transform:translateY(-16px) scale(.96)}6%{opacity:1;transform:none}88%{opacity:1}96%,100%{opacity:1}}
+.toast{position:absolute;top:56px;right:14px;display:flex;gap:10px;align-items:flex-start;background:#0e1524f2;border:1px solid rgba(61,220,132,.5);border-radius:14px;padding:11px 14px;box-shadow:0 18px 44px rgba(0,0,0,.5);max-width:262px;animation:toastIn 8s infinite;z-index:3}
+@keyframes toastIn{0%,2%{opacity:0;transform:translateY(-14px)}8%,52%{opacity:1;transform:none}60%,100%{opacity:0;transform:translateY(-8px)}}
+.toast .zic{width:30px;height:30px;border-radius:9px;background:var(--zap);display:grid;place-items:center;flex:none}
+.toast b{font-size:12.5px;display:block}
+.toast span{font-size:11px;color:var(--mut);line-height:1.45;display:block}
+.toast .t5{color:var(--ok2);font-weight:700}
+.live{position:absolute;bottom:14px;left:16px;display:inline-flex;align-items:center;gap:7px;font:700 10px var(--mono);letter-spacing:.14em;color:var(--ok2);background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.35);padding:6px 11px;border-radius:99px}
+.live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ---------- barra de fatos ---------- */
+.fatos{border-block:1px solid var(--line);background:var(--bg2)}
+.fatos-in{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+.fato{padding:26px 18px;text-align:center;border-left:1px solid var(--line)}
+.fato:first-child{border-left:0}
+.fato b{font-size:clamp(19px,2.4vw,26px);font-weight:900;letter-spacing:-.02em;display:block}
+.fato b .gtx{background:var(--grad-txt);-webkit-background-clip:text;background-clip:text;color:transparent}
+.fato span{font:600 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+
+/* ---------- BIG IDEA: planilha × cliente ---------- */
+.duelo{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:44px;align-items:stretch;position:relative}
+.vsb{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;width:52px;height:52px;border-radius:50%;background:#0b0f1c;border:1px solid var(--line2);box-shadow:0 0 0 6px rgba(4,6,12,.9),0 12px 34px rgba(0,0,0,.6);display:grid;place-items:center;font:900 13px var(--mono);letter-spacing:.08em;color:var(--vio3)}
+.painel{border-radius:var(--rL);overflow:hidden;position:relative;display:flex;flex-direction:column}
+.painel h4{font-size:15px;font-weight:800;display:flex;align-items:center;gap:9px;padding:16px 20px}
+/* o "lead" morto — mesmo dark, mas sem vida: dessaturado, riscado, vermelho apagado */
+.morto{background:linear-gradient(165deg,#14161f,#0b0d15);border:1px solid rgba(255,255,255,.08)}
+.morto h4{color:var(--dim);border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12.5px;letter-spacing:.04em;font-weight:600}
+.csv{flex:1;font:12.5px/1 var(--mono);color:#7d8699}
+.csv .row{display:grid;grid-template-columns:34px 1.2fr 1fr .9fr;gap:0;border-bottom:1px solid rgba(255,255,255,.05);padding:12px 16px;align-items:center}
+.csv .row.head{background:rgba(255,255,255,.035);color:var(--dim);font-weight:700;font-size:10.5px;letter-spacing:.08em}
+.csv .row.dead{color:#4d5567;text-decoration:line-through;text-decoration-color:rgba(244,63,94,.45)}
+.csv .row .st{color:rgba(244,99,122,.85);font-weight:700}
+.morto .verdito{padding:13px 18px;background:rgba(255,255,255,.028);color:var(--dim);font-size:12px;font-family:var(--mono);border-top:1px solid var(--line)}
+/* cliente vivo */
+.vivo{background:linear-gradient(160deg,#151a2ce6,#0c1020dd);border:1px solid rgba(124,58,237,.4);box-shadow:var(--glow)}
+.vivo h4{color:var(--ok2);border-bottom:1px solid var(--line)}
+.fichaC{padding:18px 20px;flex:1}
+.fichaC .top{display:flex;align-items:center;gap:13px}
+.avG{width:46px;height:46px;border-radius:14px;background:var(--grad);display:grid;place-items:center;font-weight:900;font-size:15px}
+.fichaC .top b{font-size:17px;display:block}
+.fichaC .top span{font-size:12.5px;color:var(--mut)}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0}
+.chip{font-size:11.5px;font-weight:700;padding:5px 11px;border-radius:99px;border:1px solid var(--line2);color:var(--mut)}
+.chip.g{background:rgba(16,185,129,.13);border-color:rgba(16,185,129,.4);color:var(--ok2)}
+.chip.v{background:rgba(124,58,237,.15);border-color:rgba(124,58,237,.45);color:var(--vio3)}
+.chip.c{background:rgba(14,165,233,.13);border-color:rgba(14,165,233,.4);color:#67e8f9}
+.acoes{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:6px}
+.acao{display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:700;border-radius:11px;padding:11px}
+.acao.lig{background:var(--grad)}
+.acao.zap{background:rgba(61,220,132,.14);border:1px solid rgba(61,220,132,.45);color:var(--zap)}
+.linhaT{display:flex;gap:9px;align-items:center;font-size:12px;color:var(--mut);margin-top:14px;border-top:1px dashed var(--line2);padding-top:12px}
+.linhaT b{color:var(--ok2);font-family:var(--mono);font-size:11px}
+.veredito{margin-top:34px;text-align:center;font-size:clamp(18px,2.6vw,24px);font-weight:800;letter-spacing:-.01em}
+.veredito .gtx{background:var(--grad-txt);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* ---------- CICLO ---------- */
+.ciclo{display:grid;gap:20px;margin-top:46px}
+.ato{display:grid;grid-template-columns:1fr 1fr;gap:clamp(22px,4vw,56px);align-items:center;background:linear-gradient(160deg,rgba(255,255,255,.035),rgba(255,255,255,.008));border:1px solid var(--line);border-radius:var(--rL);padding:clamp(22px,3.4vw,40px)}
+.ato:nth-child(even){direction:rtl}
+.ato>*{direction:ltr}
+.ato .n{font:900 13px var(--mono);letter-spacing:.2em;color:var(--vio3)}
+.ato h3{font-size:clamp(22px,3vw,30px);font-weight:900;letter-spacing:-.02em;line-height:1.12;margin:10px 0 12px}
+.ato p{color:var(--mut);font-size:15.5px}
+.ato p b{color:var(--txt)}
+.ato .nota{margin-top:14px;font-size:13px;color:var(--dim);border-left:2px solid var(--vio);padding-left:12px}
+.ato .nota b{color:var(--vio3)}
+/* mini-mocks dos atos */
+.mini{border-radius:16px;border:1px solid var(--line2);background:#0c101dee;box-shadow:var(--shadow);overflow:hidden}
+.mini-h{font:700 10.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--dim);padding:10px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.mini-b{padding:14px}
+.push{display:flex;gap:11px;background:rgba(255,255,255,.045);border:1px solid var(--line2);border-radius:13px;padding:12px;margin-bottom:9px}
+.push .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none}
+.push b{font-size:13px;display:block}
+.push span{font-size:11.5px;color:var(--mut);display:block;line-height:1.5}
+.push .quando{font:600 10px var(--mono);color:var(--dim);margin-left:auto;white-space:nowrap}
+.p1 .ic{background:var(--zap)} .p2 .ic{background:var(--grad)} .p3 .ic{background:rgba(245,158,11,.9)}
+.fone{padding:14px}
+.fone .fx{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.fone .quem b{font-size:14px;display:block}
+.fone .quem span{font:600 11px var(--mono);color:var(--ok2)}
+.wave{display:flex;gap:3px;align-items:flex-end;height:26px}
+.wave i{width:3.5px;border-radius:3px;background:var(--cyan);animation:wv 1s infinite ease-in-out}
+.wave i:nth-child(2n){animation-delay:.15s;background:var(--vio2)}
+.wave i:nth-child(3n){animation-delay:.3s}
+@keyframes wv{0%,100%{height:6px}50%{height:24px}}
+.iaCard{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.55);border-radius:13px;padding:12px 14px;box-shadow:0 0 26px rgba(16,185,129,.18)}
+.iaCard .tt{display:flex;align-items:center;gap:8px;font:800 10.5px var(--mono);letter-spacing:.14em;color:var(--ok2);margin-bottom:7px}
+.iaCard .tt::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok);animation:pulse 1.4s infinite}
+.iaCard p{font-size:13px;color:#d7f5e9;line-height:1.55}
+.iaCard .pq{font-size:10.5px;color:var(--dim);margin-top:7px;font-family:var(--mono)}
+.apoL{display:flex;align-items:center;gap:10px;border:1px solid var(--line2);border-radius:11px;padding:10px 12px;margin-bottom:8px;font-size:12.5px}
+.apoL .sq{width:9px;height:9px;border-radius:3px;flex:none}
+.apoL b{font-weight:700}
+.apoL span{color:var(--dim);font-size:11px;margin-left:auto;font-family:var(--mono);text-align:right}
+.apoL.u .sq{background:var(--bad)} .apoL.a .sq{background:var(--warn)} .apoL.o .sq{background:var(--ok)}
+
+/* ---------- IA ESPETÁCULO ---------- */
+.palco{background:radial-gradient(60% 70% at 50% 0%,rgba(16,185,129,.09),transparent 60%),var(--bg2);border-block:1px solid var(--line)}
+.call{max-width:760px;margin:46px auto 0;border-radius:var(--rL);border:1px solid var(--line2);background:#0a0e1af2;box-shadow:var(--shadow);overflow:hidden}
+.call-h{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--line)}
+.call-h .cli b{display:block;font-size:15px}
+.call-h .cli span{font:600 11px var(--mono);color:var(--mut)}
+.call-h .tempo{font:700 13px var(--mono);color:var(--ok2);display:flex;align-items:center;gap:8px}
+.call-h .tempo::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ok);animation:pulse 1.4s infinite}
+.call-b{padding:22px;display:grid;gap:12px}
+.fala{max-width:82%;border-radius:14px;padding:11px 15px;font-size:14px;line-height:1.55;opacity:0;animation:falaIn .5s forwards}
+.fala.cli{background:rgba(255,255,255,.055);border:1px solid var(--line2);animation-delay:.4s}
+.fala.cli em{color:var(--bad);font-style:normal;font-weight:700}
+.fala .de{font:700 10px var(--mono);letter-spacing:.12em;color:var(--dim);display:block;margin-bottom:4px}
+@keyframes falaIn{to{opacity:1}}
+.iaBig{border:1px solid rgba(16,185,129,.6);background:linear-gradient(160deg,rgba(16,185,129,.13),rgba(16,185,129,.05));border-radius:16px;padding:16px 18px;box-shadow:0 0 38px rgba(16,185,129,.2);opacity:0;animation:falaIn .6s 1.3s forwards}
+.iaBig .tt{display:flex;align-items:center;gap:9px;font:800 11px var(--mono);letter-spacing:.16em;color:var(--ok2);margin-bottom:9px}
+.iaBig .tt::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ok);animation:pulse 1.2s infinite}
+.iaBig p{font-size:15px;color:#e2f8ee;line-height:1.6}
+.iaBig .pq{font-size:11.5px;color:var(--dim);margin-top:10px;font-family:var(--mono)}
+.ia-pontos{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:860px;margin:34px auto 0}
+.iap{text-align:center;font-size:13.5px;color:var(--mut);border:1px solid var(--line);border-radius:var(--r);padding:16px 12px;background:rgba(255,255,255,.02)}
+.iap b{display:block;color:var(--txt);margin-bottom:3px}
+.palco .fecho{text-align:center;margin-top:34px;font-size:15px;color:var(--mut)}
+.palco .fecho b{color:var(--txt)}
+
+/* ---------- CONTRASTE ---------- */
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:44px}
+.vs .lado{border-radius:var(--rL);padding:28px;border:1px solid var(--line)}
+.vs .lado h4{font-size:17px;font-weight:900;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.vs .ruim{background:rgba(244,63,94,.03)}
+.vs .ruim h4{color:#f8a5b5}
+.vs .bom{background:linear-gradient(160deg,rgba(16,185,129,.07),rgba(16,185,129,.015));border-color:rgba(16,185,129,.35)}
+.vs .bom h4{color:var(--ok2)}
+.vs ul{list-style:none;display:grid;gap:12px}
+.vs li{display:flex;gap:11px;font-size:14.5px;color:var(--mut);align-items:flex-start}
+.vs li i{font-style:normal;flex:none;width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:11px;font-weight:900;margin-top:1px}
+.vs .ruim li i{background:rgba(244,63,94,.14);color:var(--bad)}
+.vs .bom li i{background:rgba(16,185,129,.16);color:var(--ok2)}
+.vs .bom li{color:#c9d4e6}
+
+/* ---------- CALCULADORA ---------- */
+.calc{background:var(--bg2);border-block:1px solid var(--line)}
+.calc-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(24px,4vw,54px);margin-top:44px;align-items:start}
+.ctrl{display:grid;gap:22px}
+.sl label{display:flex;justify-content:space-between;font-size:14px;font-weight:700;margin-bottom:10px}
+.sl label output{font:800 14px var(--mono);color:var(--vio3)}
+input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:99px;background:linear-gradient(90deg,var(--vio) var(--pct,50%),rgba(255,255,255,.09) var(--pct,50%));outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:5px solid var(--vio2);box-shadow:0 0 18px rgba(124,58,237,.5);cursor:grab}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:5px solid var(--vio2);cursor:grab}
+.res{border-radius:var(--rL);border:1px solid rgba(124,58,237,.45);background:linear-gradient(165deg,rgba(124,58,237,.13),rgba(14,165,233,.06));padding:28px;box-shadow:var(--glow)}
+.res .lin{display:flex;justify-content:space-between;align-items:baseline;padding:13px 0;border-bottom:1px dashed var(--line2);font-size:14px;color:var(--mut)}
+.res .lin b{font:800 19px var(--mono);color:var(--txt)}
+.res .big{padding:20px 0 6px;text-align:center}
+.res .big span{font:600 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--mut)}
+.res .big output{display:block;font-size:clamp(34px,4.4vw,46px);font-weight:900;letter-spacing:-.02em;background:var(--grad-txt);-webkit-background-clip:text;background-clip:text;color:transparent}
+.res .paga{margin-top:14px;text-align:center;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.4);color:var(--ok2);font-size:13.5px;font-weight:700;border-radius:12px;padding:11px}
+.res .disc{font-size:11px;color:var(--dim);margin-top:14px;text-align:center;line-height:1.5}
+.calc .btnrow{text-align:center;margin-top:38px}
+
+/* ---------- MAPA ---------- */
+.mapa-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:clamp(24px,4vw,50px);margin-top:44px;align-items:center}
+.tiles{display:grid;grid-template-columns:repeat(12,1fr);gap:5px}
+.tile{aspect-ratio:1;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid var(--line);display:grid;place-items:center;font:700 10px var(--mono);color:var(--mut);cursor:pointer;transition:all .15s ease;position:relative}
+.tile:hover{background:rgba(124,58,237,.3);color:#fff;transform:scale(1.12);z-index:2;border-color:var(--vio2)}
+.tile.hot{background:rgba(124,58,237,.22);border-color:rgba(124,58,237,.55);color:var(--vio3)}
+.tile.hot::after{content:"";position:absolute;top:4px;right:4px;width:5px;height:5px;border-radius:50%;background:var(--ok2)}
+.tile.sel{background:var(--grad);color:#fff;border-color:transparent;box-shadow:var(--glow);transform:scale(1.12);z-index:2}
+.tile.void{visibility:hidden;pointer-events:none}
+.mapa-lg{display:flex;gap:18px;margin-top:14px;font-size:11.5px;color:var(--dim);font-family:var(--mono)}
+.mapa-lg i{font-style:normal;display:inline-flex;align-items:center;gap:6px}
+.mapa-lg .sw{width:10px;height:10px;border-radius:3px;display:inline-block}
+.stCard{border-radius:var(--rL);border:1px solid var(--line2);background:linear-gradient(160deg,#141930e8,#0b0e1ce0);padding:26px;box-shadow:var(--shadow)}
+.stCard .uf{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.stCard .ufIc{width:52px;height:52px;border-radius:14px;background:var(--grad);display:grid;place-items:center;font:900 16px var(--mono)}
+.stCard .uf b{font-size:21px;display:block;letter-spacing:-.01em}
+.stCard .uf span{font:700 11px var(--mono);color:var(--ok2);letter-spacing:.1em}
+.stCard .props{display:grid;gap:10px;margin-bottom:18px}
+.stCard .prop{display:flex;justify-content:space-between;font-size:13.5px;color:var(--mut);border-bottom:1px dashed var(--line);padding-bottom:9px}
+.stCard .prop b{color:var(--txt);text-align:right}
+.stCard .cities{font-size:12.5px;color:var(--dim)}
+.stCard .cities b{color:var(--vio3);font-weight:700}
+.stBtn{display:flex;margin-top:18px;background:var(--grad);border-radius:12px;padding:13px;justify-content:center;font-size:14px;font-weight:800}
+.mapa-note{margin-top:26px;text-align:center;font-size:13px;color:var(--dim);max-width:560px;margin-inline:auto}
+
+/* ---------- ARSENAL ---------- */
+.ars{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:44px}
+.ar{border:1px solid var(--line);border-radius:var(--r);background:linear-gradient(165deg,rgba(255,255,255,.04),rgba(255,255,255,.008));padding:22px 20px;transition:all .2s ease;position:relative;overflow:hidden}
+.ar:hover{border-color:rgba(124,58,237,.5);transform:translateY(-3px);box-shadow:0 16px 40px rgba(0,0,0,.4)}
+.ar .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;margin-bottom:14px;background:rgba(124,58,237,.14);border:1px solid rgba(124,58,237,.35)}
+.ar.dest .ic{background:rgba(16,185,129,.13);border-color:rgba(16,185,129,.4)}
+.ar h5{font-size:15px;font-weight:800;margin-bottom:6px}
+.ar p{font-size:12.8px;color:var(--mut);line-height:1.55}
+.ar .fx{position:absolute;inset:auto -30% -55% auto;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.16),transparent 70%)}
+
+/* ---------- COMPROMISSOS ---------- */
+.comps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:44px}
+.comp{border-radius:var(--rL);border:1px solid rgba(124,58,237,.4);background:linear-gradient(170deg,rgba(124,58,237,.1),rgba(14,165,233,.04));padding:30px 26px;text-align:center}
+.comp .n{width:56px;height:56px;margin:0 auto 16px;border-radius:16px;background:var(--grad);display:grid;place-items:center;box-shadow:var(--glow)}
+.comp h4{font-size:17px;font-weight:900;margin-bottom:8px}
+.comp p{font-size:13.5px;color:var(--mut)}
+.comp p b{color:var(--txt)}
+.comps-fecho{text-align:center;margin-top:30px;font-size:16px;color:var(--mut);font-weight:600}
+.comps-fecho b{color:var(--txt)}
+
+/* ---------- FAQ ---------- */
+.faq{max-width:780px;margin:40px auto 0;display:grid;gap:10px}
+.q{border:1px solid var(--line);border-radius:var(--r);background:rgba(255,255,255,.02);overflow:hidden}
+.q button{width:100%;display:flex;justify-content:space-between;align-items:center;gap:16px;text-align:left;padding:18px 22px;font-size:15px;font-weight:700}
+.q button .pm{flex:none;width:26px;height:26px;border-radius:8px;background:rgba(124,58,237,.16);color:var(--vio3);display:grid;place-items:center;font-weight:900;transition:transform .2s}
+.q.aberta button .pm{transform:rotate(45deg)}
+.q .a{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.q .a p{padding:0 22px 20px;font-size:14px;color:var(--mut);line-height:1.65}
+.q.aberta{border-color:rgba(124,58,237,.4)}
+
+/* ---------- FUNIL / AGENDA ---------- */
+.funil{background:radial-gradient(50% 60% at 50% 100%,rgba(124,58,237,.16),transparent 65%),var(--bg2);border-top:1px solid var(--line)}
+.ops{display:grid;gap:10px}
+.op{display:flex;align-items:center;gap:13px;border:1px solid var(--line2);border-radius:13px;padding:15px 18px;font-size:15px;font-weight:600;cursor:pointer;transition:all .15s;background:rgba(255,255,255,.025);width:100%;text-align:left}
+.op:hover{border-color:var(--vio2);background:rgba(124,58,237,.09)}
+.op .rd{width:20px;height:20px;border-radius:50%;border:2px solid var(--dim);flex:none}
+.op.sel{border-color:var(--vio2);background:rgba(124,58,237,.13)}
+.op.sel .rd{border-color:var(--vio2);background:radial-gradient(circle,#fff 38%,var(--vio2) 42%)}
+.f-nav{display:flex;justify-content:space-between;align-items:center;margin-top:26px}
+.f-volta{font-size:13.5px;color:var(--dim);font-weight:600}
+.f-volta:hover{color:var(--mut)}
+.f-prox{background:var(--grad);border-radius:999px;font-weight:800;font-size:15px;padding:14px 30px;display:inline-flex;align-items:center;gap:8px;box-shadow:var(--glow)}
+.f-prox:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+
+/* ---------- FLUXO DE AGENDAMENTO (modal 4 páginas) ---------- */
+body.trancado{overflow:hidden}
+.fxo{position:fixed;inset:0;z-index:100;background:rgba(4,6,12,.9);backdrop-filter:blur(10px);display:none;overflow-y:auto;padding:4vh 16px 6vh}
+.fxo.on{display:block;animation:falaIn .25s ease}
+.fxo-card{max-width:660px;margin:0 auto;border-radius:var(--rL);border:1px solid var(--line2);background:#0a0e1afa;box-shadow:var(--shadow);overflow:hidden}
+.fxo-card.larga{max-width:900px}
+.fxo-top{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-bottom:1px solid var(--line)}
+.fxo-top .mini-logo{display:flex;align-items:center;gap:8px;font-weight:900;font-size:15px}
+.fxo-top .mini-logo .logo-ico{width:26px;height:26px;border-radius:8px}
+.fxo-x{width:34px;height:34px;border-radius:10px;border:1px solid var(--line2);display:grid;place-items:center;color:var(--mut);font-size:16px;transition:all .15s}
+.fxo-x:hover{color:var(--txt);border-color:var(--vio2)}
+.fxo-prog{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:14px 22px 0}
+.fxo-prog i{height:4px;border-radius:99px;background:rgba(255,255,255,.08)}
+.fxo-prog i.feito{background:var(--ok)}
+.fxo-prog i.atual{background:var(--grad)}
+.fxp{display:none;padding:26px 26px 32px}
+.fxp.on{display:block;animation:falaIn .3s ease}
+.fxp h3{font-size:clamp(20px,2.6vw,26px);font-weight:900;letter-spacing:-.02em;margin-bottom:6px}
+.fxp .dica{font-size:13.5px;color:var(--dim);margin-bottom:20px}
+.campo{margin-bottom:14px}
+.campo label{display:block;font-size:13px;font-weight:700;color:var(--mut);margin-bottom:7px}
+.campo input,.campo select{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--line2);border-radius:13px;color:var(--txt);font:600 16px 'Inter';padding:15px 17px;outline:none;transition:border .15s}
+.campo input:focus,.campo select:focus{border-color:var(--vio2);box-shadow:0 0 0 3px rgba(124,58,237,.22)}
+.campo input[aria-invalid="true"],.campo select[aria-invalid="true"]{border-color:var(--bad)}
+.campo .erro{display:none;font-size:12px;color:var(--bad);margin-top:6px}
+.campo input[aria-invalid="true"]~.erro,.campo select[aria-invalid="true"]~.erro{display:block}
+.fuso-nota{display:flex;gap:9px;align-items:center;font-size:13px;color:var(--mut);background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.35);border-radius:11px;padding:11px 14px;margin-top:4px}
+.fuso-nota b{color:#67e8f9}
+/* calendário */
+.fusoSel{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--mut);margin-bottom:18px;flex-wrap:wrap}
+.fusoSel select{background:rgba(255,255,255,.05);border:1px solid var(--line2);border-radius:10px;color:var(--txt);font:700 13px 'Inter';padding:8px 12px;outline:none}
+.cal2{display:grid;grid-template-columns:1fr 1.05fr;gap:22px;align-items:start}
+.calBox{border:1px solid var(--line);border-radius:14px;padding:16px;background:rgba(255,255,255,.02)}
+.calNav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.calNav b{font-size:14.5px}
+.calNav button{width:30px;height:30px;border-radius:9px;border:1px solid var(--line2);color:var(--mut);font-size:15px;display:grid;place-items:center}
+.calNav button:hover:not(:disabled){border-color:var(--vio2);color:var(--txt)}
+.calNav button:disabled{opacity:.25;cursor:not-allowed}
+.dow{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px}
+.dow span{text-align:center;font:700 9.5px var(--mono);letter-spacing:.08em;color:var(--dim)}
+#calDias{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dia{aspect-ratio:1;border-radius:9px;font:600 13px 'Inter';color:var(--dim);display:grid;place-items:center;position:relative;border:1px solid transparent}
+.dia--vazio{visibility:hidden}
+.dia:disabled{opacity:.28;cursor:not-allowed}
+.dia--livre{color:var(--txt);border-color:var(--line2);background:rgba(255,255,255,.03)}
+.dia--livre::after{content:"";position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--ok2)}
+.dia--livre:hover{border-color:var(--vio2)}
+.dia--hoje{outline:1px dashed rgba(255,255,255,.25);outline-offset:-3px}
+.dia--sel{background:var(--grad);color:#fff;border-color:transparent;box-shadow:var(--glow)}
+.dia--sel::after{background:#fff}
+.hr__t{font-size:14.5px;font-weight:800;text-transform:capitalize}
+.hr__d{font:600 11px var(--mono);color:var(--ok2);margin:3px 0 12px}
+.hr__grupo{font:700 10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:12px 0 7px}
+.hr__lista{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.hora{padding:10px 6px;border-radius:10px;border:1px solid var(--line2);font:700 13px var(--mono);color:var(--txt);background:rgba(255,255,255,.03);transition:all .12s}
+.hora:hover:not(:disabled){border-color:var(--vio2)}
+.hora:disabled{opacity:.28;text-decoration:line-through;cursor:not-allowed}
+.hora--sel{background:var(--grad);border-color:transparent;box-shadow:var(--glow)}
+.hr__vazio{font-size:13.5px;color:var(--dim);border:1px dashed var(--line2);border-radius:12px;padding:26px 16px;text-align:center}
+.calConf{margin-top:18px;border:1px solid rgba(16,185,129,.5);background:rgba(16,185,129,.08);border-radius:14px;padding:16px 18px}
+.calConf b{display:block;font-size:16px;text-transform:capitalize}
+.calConf span{font-size:12.5px;color:var(--mut)}
+.fxIr{display:flex;justify-content:center;align-items:center;gap:9px;margin-top:14px;background:var(--grad);border-radius:13px;padding:15px;font-size:15px;font-weight:900;box-shadow:var(--glow);transition:opacity .15s}
+.fxIr[aria-disabled="true"]{opacity:.35;pointer-events:none}
+@media (max-width:760px){.cal2{grid-template-columns:1fr}.hr__lista{grid-template-columns:repeat(3,1fr)}.fxp{padding:20px 16px 26px}}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--line);padding:44px 0 54px;background:var(--bg)}
+.ft{display:flex;justify-content:space-between;gap:26px;flex-wrap:wrap;align-items:flex-start}
+.ft .logo{font-size:16px}
+.ft .links{display:flex;gap:22px;font-size:13px;color:var(--mut);flex-wrap:wrap}
+.ft .links a:hover{color:var(--txt)}
+.disc{margin-top:26px;font-size:11.5px;color:var(--dim);line-height:1.7;max-width:860px}
+
+/* ---------- responsivo ---------- */
+@media (max-width:980px){
+  .hero-grid,.calc-grid,.mapa-grid{grid-template-columns:minmax(0,1fr)}
+  .ato{grid-template-columns:1fr}
+  .ato:nth-child(even){direction:ltr}
+  .ars{grid-template-columns:repeat(2,1fr)}
+  .ia-pontos{grid-template-columns:repeat(2,1fr)}
+  .fatos-in{grid-template-columns:repeat(2,1fr)}
+  .fato{border-left:0;border-top:1px solid var(--line)}
+  .fato:nth-child(-n+2){border-top:0}
+  .fato:nth-child(2n){border-left:1px solid var(--line)}
+  .mock{max-width:560px;margin:0 auto}
+}
+/* ---------- barra fixa de conversão (só mobile) ---------- */
+.ctaFixa{position:fixed;left:0;right:0;bottom:0;z-index:90;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(4,6,12,.97) 60%,rgba(4,6,12,0));display:none;transform:translateY(110%);transition:transform .3s ease}
+.ctaFixa.on{transform:none}
+.ctaFixa .btn{width:100%;justify-content:center;padding:15px 20px;font-size:15px}
+/* seletor de estado (interação primária no toque) */
+.mapa-selm{display:none;margin-bottom:14px}
+.mapa-selm label{display:block;font-size:13px;font-weight:700;color:var(--mut);margin-bottom:7px}
+.mapa-selm select{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--line2);border-radius:13px;color:var(--txt);font:600 16px 'Inter';padding:14px 16px;outline:none}
+.mapa-selm select:focus{border-color:var(--vio2)}
+
+@media (max-width:720px){
+  /* estrutura geral */
+  .duelo,.vs,.comps{grid-template-columns:1fr}
+  /* bolinha VS entre o "antes" (lead que vendem) e o "hoje" (cliente que chega) */
+  .duelo{gap:14px}
+  .painel.morto{order:-1}
+  .vsb{position:static;transform:none;justify-self:center;margin:-8px auto;width:46px;height:46px;font-size:12px}
+  .h1{font-size:clamp(34px,9.6vw,44px)}
+  .btn{width:100%;justify-content:center}
+  .ars{grid-template-columns:1fr}
+  /* topo compacto */
+  .topbar{font-size:11px;padding:7px 12px}
+  .tb-x{display:none}
+  .eb-x{display:none}
+  .nav-in{height:56px}
+  .nav-cta{display:inline-flex;font-size:12.5px;padding:8px 15px}
+  /* selos 2×2 */
+  .selos{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .selo{font-size:11.5px;padding:9px 10px;justify-content:flex-start}
+  /* dashboard deitado: kanban completo (3 colunas) em miniatura proporcional */
+  .pipe-vp{overflow:hidden}
+  .pipe{width:590px;transform-origin:top left}
+  .toast{position:static;margin:12px 12px 0;max-width:none;animation:none;opacity:1}
+  .live{position:static;display:inline-flex;margin:0 0 12px 16px}
+  .mock{max-width:100%;width:100%}
+  .pipe-vp{max-width:100%}
+  /* barra de fatos */
+  .fato{padding:20px 12px}
+  .fato span{font-size:9.5px;letter-spacing:.08em}
+  /* csv do duelo: some a coluna #, respiro maior */
+  .csv .row{grid-template-columns:1.1fr 1fr .78fr;font-size:11px;padding:11px 12px;column-gap:6px}
+  .csv .row span:first-child{display:none}
+  .csv .row .st{font-size:10.5px}
+  .morto h4{font-size:11px;padding:13px 14px}
+  /* mapa: legenda compacta + tiles um pouco maiores */
+  .tiles{gap:3px}
+  .tile{font-size:8.5px;border-radius:6px}
+  .mapa-lg{gap:12px;font-size:10.5px;flex-wrap:wrap}
+  .mapa-selm{display:block}
+  /* fluxo modal */
+  .fxo{padding:2vh 10px 5vh}
+  .fxp{padding:20px 16px 26px}
+  .f-prox{flex:1;justify-content:center;margin-left:14px}
+  /* barra fixa ativa */
+  .ctaFixa{display:block}
+  /* ——— tipografia harmônica ——— */
+  .h1{font-size:clamp(30px,8.6vw,38px)}
+  .h2{font-size:clamp(20.5px,5.6vw,26px);line-height:1.16}
+  .sub{font-size:15px}
+  .hero .sub{font-size:16px}
+  .eyebrow{font-size:10px;letter-spacing:.18em}
+  .btn{font-size:14.5px;padding:15px 22px}
+  .btn-note{font-size:11.5px}
+  .veredito{font-size:clamp(15.5px,4.5vw,19px)}
+  .ato h3{font-size:clamp(20px,5.6vw,24px)}
+  .ato p{font-size:14.5px}
+  .ato .nota{font-size:12.5px}
+  .ar p{font-size:12.5px}
+  .comp p{font-size:13px}
+  .iap{font-size:12.5px}
+  /* ——— dieta de texto ——— */
+  .m-x{display:none}
+  .m-only{display:inline}
+  /* ——— separação clara entre blocos: respiro + traço-assinatura ——— */
+  .tight{position:relative;padding-top:60px}
+  .tight::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:56px;height:3px;border-radius:99px;background:var(--grad);opacity:.55}
+  .sec{padding:60px 0}
+  .sec.alt,.palco,.calc{padding:64px 0}
+}
+/* motion off */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001s !important;animation-iteration-count:1 !important;transition-duration:.001s !important}
+  .rv{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<!-- BARRA TOPO -->
+<div class="topbar">🇧🇷 <b>A primeira plataforma de clientes feita em português</b><span class="tb-x"> para agentes de life insurance nos EUA</span> &nbsp;·&nbsp; <a href="#consultoria">Agendar consultoria →</a></div>
+
+<!-- NAV -->
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="logo" href="#topo" aria-label="Lead4Pro">
+      <span class="logo-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M13 2 4.5 13.5h6L10 22l9-12h-6l0-8z" fill="#fff"/></svg></span>
+      Lead4Pro
+    </a>
+    <a class="nav-cta" href="#consultoria">Agendar consultoria</a>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="hero" id="topo">
+  <div class="wrap hero-grid">
+    <div>
+      <p class="eyebrow">A plataforma do agente de life insurance nos EUA<span class="eb-x"> · EN · PT · ES</span></p>
+      <h1 class="h1">Pare de <span class="no">comprar leads</span>.<br>Comece a <span class="sim">receber clientes.</span></h1>
+      <p class="sub">Pessoas reais, interessadas em seguro de vida, entregues em <b>minutos</b> no seu pipeline — <b>exclusivas, só suas</b>, com <span class="m-x">uma inteligência artificial</span><span class="m-only">IA</span> do seu lado na hora de fechar.</p>
+      <div class="rv" style="margin-top:18px;padding:14px 18px;border:1px solid rgba(139,92,246,.35);border-radius:14px;background:rgba(139,92,246,.07)">
+        <p style="font-size:14.5px;line-height:1.55"><b style="color:var(--txt)">Clientes exclusivos chegando</b> + <b style="color:var(--txt)">a máquina inteira pra fechar</b> <span style="opacity:.75">(CRM · WhatsApp · telefone com IA · pós-venda)</span> = <b class="gtx">uma plataforma só.</b></p>
+        <p style="font-size:12.5px;margin-top:4px;opacity:.65">Não somos vendedor de leads. Não somos só um CRM. Somos a operação completa do agente.</p>
+      </div>
+      <a class="btn" href="#consultoria">AGENDAR <span class="m-x">MINHA </span>CONSULTORIA ESTRATÉGICA <span class="arr">→</span></a>
+      <p class="btn-note">Gratuita · 20 min · demonstração <span class="m-x">da plataforma </span>+ estratégias <span class="m-x">para o seu negócio </span>+ planos</p>
+      <div class="selos">
+        <span class="selo"><i>⚡</i> Entrega em minutos</span>
+        <span class="selo"><i>🔒</i> 1 cliente = 1 agente</span>
+        <span class="selo"><i>🇧🇷</i> 100% em português</span>
+        <span class="selo"><i>🖥️</i> Demonstração ao vivo</span>
+      </div>
+    </div>
+
+    <!-- ASSINATURA: pipeline vivo — um cliente chega sozinho a cada ciclo -->
+    <div class="mock" aria-label="Demonstração do pipeline Lead4Pro recebendo um cliente novo">
+      <div class="mock-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="mock-url">app.lead4producers.com · Pipeline</span></div>
+      <div class="toast">
+        <span class="zic"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2z"/></svg></span>
+        <div><b>Novo cliente na sua fila 🎉</b><span>Mariana S. · Orlando, FL · proteção + acúmulo<br><span class="t5">Ligue nos próximos 5 minutos.</span></span></div>
+      </div>
+      <div class="pipe-vp"><div class="pipe">
+        <div class="col c1">
+          <h5><b>● Novo cliente</b><span class="cnt">3</span></h5>
+          <div class="cardL novo">
+            <div class="nm"><span class="av" style="background:linear-gradient(135deg,#7c3aed,#0ea5e9)">MS</span> Mariana S.</div>
+            <div class="mt">Orlando, FL <span class="tagz tz-g">há 2 min</span> <span class="tagz tz-v">IUL</span></div>
+          </div>
+          <div class="cardL">
+            <div class="nm"><span class="av" style="background:linear-gradient(135deg,#f59e0b,#f43f5e)">JR</span> João R.</div>
+            <div class="mt">Boston, MA <span class="tagz tz-c">hoje</span></div>
+          </div>
+          <div class="cardL m-hide">
+            <div class="nm"><span class="av" style="background:linear-gradient(135deg,#0ea5e9,#10b981)">AC</span> Ana Clara P.</div>
+            <div class="mt">Newark, NJ <span class="tagz tz-c">hoje</span></div>
+          </div>
+        </div>
+        <div class="col c2">
+          <h5><b>● Em conversa</b><span class="cnt">2</span></h5>
+          <div class="cardL">
+            <div class="nm"><span class="av" style="background:linear-gradient(135deg,#6366f1,#a78bfa)">CF</span> Carlos F.</div>
+            <div class="mt">Miami, FL <span class="tagz tz-g">WhatsApp ✓✓</span></div>
+          </div>
+          <div class="cardL m-hide">
+            <div class="nm"><span class="av" style="background:linear-gradient(135deg,#10b981,#0ea5e9)">LV</span> Luana V.</div>
+            <div class="mt">Danbury, CT <span class="tagz tz-v">reunião 19h</span></div>
+          </div>
+        </div>
+        <div class="col c3">
+          <h5><b>● Fechado</b><span class="cnt">2</span></h5>
+          <div class="cardL">
+            <div class="nm"><span class="av" style="background:linear-gradient(135deg,#10b981,#34d399)">PM</span> Paulo M.</div>
+            <div class="mt"><span class="tagz tz-g">✓ $4.800 AP</span></div>
+          </div>
+          <div class="cardL m-hide">
+            <div class="nm"><span class="av" style="background:linear-gradient(135deg,#7c3aed,#f43f5e)">RS</span> Renata S.</div>
+            <div class="mt"><span class="tagz tz-g">✓ $3.600 AP</span></div>
+          </div>
+        </div>
+      </div></div>
+      <span class="live">CLIENTES CHEGANDO AO VIVO</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FATOS ============ -->
+<div class="fatos">
+  <div class="wrap fatos-in">
+    <!-- 🔧 Trocar/adicionar métricas reais autorizadas (ex.: agentes ativos, clientes entregues) -->
+    <div class="fato"><b><span class="gtx">50 estados</span> + DC</b><span>cobertura de captação</span></div>
+    <div class="fato"><b>Minutos</b><span>do interesse ao seu pipeline</span></div>
+    <div class="fato"><b>PT · EN · ES</b><span>plataforma em 3 idiomas</span></div>
+    <div class="fato"><b>IA <span class="gtx">em tempo real</span></b><span>na ligação, do seu lado</span></div>
+  </div>
+</div>
+
+<!-- ============ BIG IDEA ============ -->
+<section class="sec">
+  <div class="wrap">
+    <div class="center rv">
+      <p class="eyebrow">A diferença que muda tudo</p>
+      <h2 class="h2">Todo mundo te vende "leads".<br>A gente entrega <span class="gtx">clientes exclusivos</span> — só seus.</h2>
+    </div>
+    <div class="duelo">
+      <div class="vsb" aria-hidden="true">VS</div>
+      <!-- o "lead" morto (dark dessaturado) -->
+      <div class="painel morto rv" aria-label="Como um lead comprado chega: uma linha fria de planilha">
+        <h4>📄 LEADS_EXPORT_FINAL(3).csv — o que te vendem por aí</h4>
+        <div class="csv">
+          <div class="row head"><span>#</span><span>NAME</span><span>PHONE</span><span>STATUS</span></div>
+          <div class="row dead"><span>41</span><span>J. Smith</span><span>(407) 5••-••31</span><span class="st">vendido 5×</span></div>
+          <div class="row dead"><span>42</span><span>M. Johnson</span><span>(305) 8••-••90</span><span class="st">não atende</span></div>
+          <div class="row"><span>43</span><span>D. Williams</span><span>(561) 2••-••44</span><span class="st">frio · 9 dias</span></div>
+          <div class="row dead"><span>44</span><span>K. Brown</span><span>(689) 3••-••02</span><span class="st">nº errado</span></div>
+          <div class="row"><span>45</span><span>S. Miller</span><span>(786) 6••-••17</span><span class="st">já comprou</span></div>
+        </div>
+        <div class="verdito">→ chega horas depois · dividido com outros agentes · em inglês · boa sorte.</div>
+      </div>
+      <!-- cliente vivo -->
+      <div class="painel vivo rv" aria-label="Como um cliente chega na Lead4Pro: ficha completa e exclusiva">
+        <h4>● O cliente que chega aqui</h4>
+        <div class="fichaC">
+          <div class="top">
+            <span class="avG">MS</span>
+            <div><b>Mariana Souza</b><span>Orlando, FL · pediu cotação <b style="color:var(--ok2)">há 2 minutos</b></span></div>
+          </div>
+          <div class="chips">
+            <span class="chip g">🔒 Exclusiva — só sua</span>
+            <span class="chip v">Interesse: proteção + acúmulo</span>
+            <span class="chip c">Fala português</span>
+            <span class="chip">34 anos · casada · 2 filhos</span>
+          </div>
+          <div class="acoes">
+            <span class="acao lig">📞 Ligar agora</span>
+            <span class="acao zap">WhatsApp</span>
+          </div>
+          <div class="linhaT"><b>SISTEMA →</b> aviso enviado no seu WhatsApp · roteiro pronto · IA de ligação em standby</div>
+        </div>
+      </div>
+    </div>
+    <p class="veredito rv">É por isso que a gente não chama de lead.<br>A gente chama de <span class="gtx">cliente chegando.</span></p>
+  </div>
+</section>
+
+<!-- ============ CICLO ============ -->
+<section class="sec tight">
+  <div class="wrap">
+    <div class="center rv">
+      <p class="eyebrow">Como funciona</p>
+      <h2 class="h2">Da cotação à apólice — <span class="gtx">sem nada escapar</span> no caminho.</h2>
+    </div>
+    <div class="ciclo">
+
+      <div class="ato rv">
+        <div>
+          <span class="n">ATO 1 — CHEGA</span>
+          <h3>Seu celular apita.<br>É cliente.</h3>
+          <p>Alguém pede cotação de seguro de vida nas redes. Em <b>minutos</b>, essa pessoa está no seu pipeline<span class="m-x"> — nome, estado, interesse e telefone —</span> e o aviso chega no seu WhatsApp.</p>
+          <p class="nota"><b>Por que minutos importam:</b> quem liga em até 5 minutos tem <b>21× mais chance</b> de qualificar o cliente (estudo MIT).</p>
+        </div>
+        <div class="mini">
+          <div class="mini-h">Avisos · agora</div>
+          <div class="mini-b">
+            <div class="push p1"><span class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2z"/></svg></span><div><b>Lead4Pro · WhatsApp</b><span>🔥 Novo cliente: Mariana S. — Orlando, FL. <b>Ligue nos próximos 5 minutos!</b></span></div><span class="quando">agora</span></div>
+            <div class="push p2"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="#fff"><path d="M13 2 4.5 13.5h6L10 22l9-12h-6l0-8z"/></svg></span><div><b>Pipeline atualizado</b><span>Mariana entrou na coluna “Novo cliente” — ficha completa pronta.</span></div><span class="quando">agora</span></div>
+            <div class="push p3"><span class="ic">📧</span><div><b>E-mail de reforço</b><span>Detalhes do cliente + link direto pra ficha.</span></div><span class="quando">agora</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ato rv">
+        <div>
+          <span class="n">ATO 2 — FECHA</span>
+          <h3>Você liga em 1 clique.<br>E nunca liga sozinho.</h3>
+          <p>O telefone é dentro da plataforma, com <b>número local do cliente</b> — atende muito mais.<span class="m-x"> Do lado, seu roteiro passo a passo.</span> E a IA escutando ao vivo: o cliente objeta, <b>a resposta certa aparece na sua tela</b>.</p>
+          <p class="nota"><b>Não atendeu?</b> O sistema manda um SMS educado sozinho, no horário certo — e registra tudo na ficha.</p>
+        </div>
+        <div class="mini">
+          <div class="mini-h">Ligação em andamento · 04:37</div>
+          <div class="fone">
+            <div class="fx">
+              <div class="quem"><b>Carlos Ferreira</b><span>● conectado · (305) local</span></div>
+              <div class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            </div>
+            <div class="iaCard">
+              <div class="tt">IA SUGERE AGORA</div>
+              <p>“Entendo, Carlos. Por menos de <b>$5 por dia</b>, sua família não fica desprotegida. Posso te mostrar como cabe no seu orçamento?”</p>
+              <div class="pq">💡 objeção de preço detectada · contorno do seu roteiro · etapa 7/9</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ato rv">
+        <div>
+          <span class="n">ATO 3 — MANTÉM</span>
+          <h3>Ninguém esquece de ninguém.<br>Nem depois da venda.</h3>
+          <p>Follow-up automático<span class="m-x"> em WhatsApp, SMS e e-mail</span>. Reunião marcada = confirmação automática pro cliente (<b>adeus, bolo</b>). E depois da apólice emitida, o sistema acompanha ela na seguradora — você fica sabendo <b>antes</b> do chargeback.</p>
+        </div>
+        <div class="mini">
+          <div class="mini-h">Guardião de apólices · hoje</div>
+          <div class="mini-b">
+            <div class="apoL u"><span class="sq"></span><b>Roberto L.</b> — cobrar pagamento <span>$312 · prazo 9 dias</span></div>
+            <div class="apoL a"><span class="sq"></span><b>Família Duarte</b> — assinatura pendente <span>eDelivery</span></div>
+            <div class="apoL o"><span class="sq"></span><b>Mariana S.</b> — apólice ativa ✓ <span>em dia</span></div>
+            <div class="apoL o"><span class="sq"></span><b>Paulo M.</b> — apólice ativa ✓ <span>em dia</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============ IA ESPETÁCULO ============ -->
+<section class="sec palco">
+  <div class="wrap">
+    <div class="center rv">
+      <p class="eyebrow">Tecnologia que ninguém mais tem</p>
+      <h2 class="h2">O cliente disse <em style="font-style:normal;color:var(--bad)">“tá caro”</em>.<br>Olha o que apareceu <span class="gtx">na tela do agente.</span></h2>
+    </div>
+    <!-- 🔧 Substituir este mockup pelo VÍDEO real da IA (60–90s) quando gravado -->
+    <p class="center rv" style="font-size:13px;color:var(--mut,#94a3b8);margin:-6px 0 18px">Cenário simulado pra você entender a mecânica — a IA é real e está em produção. Abaixo, uma sugestão <b style="color:var(--txt)">de verdade</b>, registrada pela plataforma:</p>
+    <div class="rv" style="max-width:640px;margin:0 auto 26px;background:linear-gradient(135deg,#065f46,#047857);border:1.5px solid #34d399;border-radius:14px;padding:14px 18px">
+      <p style="font-size:10.5px;font-weight:800;letter-spacing:.14em;color:#6ee7b7">💡 SUGESTÃO REAL — LIGAÇÃO DE 12/08/2026 (nome preservado)</p>
+      <p style="font-size:14.5px;color:#fff;font-weight:600;line-height:1.5;margin-top:6px">“Ótimo, então você trabalha com mecânica, isso é ótimo! E com esse trabalho, como é que você tá de saúde? Tudo bem?”</p>
+      <p style="font-size:11px;color:#a7f3d0;margin-top:6px">Gerada em ~1 segundo depois do cliente contar a profissão — conduzindo pra etapa de saúde do script do agente.</p>
+    </div>
+    <div class="call rv" aria-label="Simulação da IA sugerindo resposta durante a ligação">
+      <div class="call-h">
+        <div class="cli"><b>Carlos Ferreira</b><span>Miami, FL · interesse: IUL</span></div>
+        <div class="tempo">GRAVANDO · 04:37</div>
+      </div>
+      <div class="call-b">
+        <div class="fala cli"><span class="de">CLIENTE</span>“Olha, eu gostei… mas sinceramente? <em>Achei caro.</em> Não sei se cabe agora.”</div>
+        <div class="iaBig">
+          <div class="tt">IA SUGERE AGORA</div>
+          <p>“Entendo, Carlos. Deixa eu te mostrar uma coisa: por menos de <b>$5 por dia</b>, sua família não fica desprotegida. Posso te mostrar como fica no seu orçamento?”</p>
+          <div class="pq">💡 Objeção de preço detectada — contorno do seu roteiro, etapa 7 de 9 · quem decide o que falar é você</div>
+        </div>
+      </div>
+    </div>
+    <div class="ia-pontos rv">
+      <div class="iap"><b>Escuta ao vivo</b>a ligação inteira, em tempo real</div>
+      <div class="iap"><b>Detecta a objeção</b>“tá caro” · “já tenho” · “me liga depois”</div>
+      <div class="iap"><b>Sugere na tela</b>você decide o que falar</div>
+      <div class="iap"><b>Avança o roteiro</b>acompanha a conversa sozinha</div>
+    </div>
+    <p class="fecho rv"><b>Isso não existe em nenhuma outra plataforma. Em nenhum idioma.</b><span class="m-x"><br>Call centers gigantes pagam mais de $100 por agente/mês por tecnologia parecida. Aqui, ela vem com a sua operação.</span></p>
+  </div>
+</section>
+
+<!-- ============ CONTRASTE ============ -->
+<section class="sec">
+  <div class="wrap">
+    <div class="center rv">
+      <p class="eyebrow">A estatística que ninguém te contou</p>
+      <h2 class="h2">9 em cada 10 agentes desistem<span class="m-x"> em até 3 anos</span>.<br><span class="gtx">Não é falta de talento.<span class="m-x"> </span><span class="m-only"><br></span>É falta de equipamento.</span></h2>
+    </div>
+    <div class="vs">
+      <div class="lado ruim rv">
+        <h4>✖ O agente largado</h4>
+        <ul>
+          <li><i>✖</i> A lista de contatos acabou — e agora?</li>
+          <li><i>✖</i> Caderno, planilha e WhatsApp pessoal lotado</li>
+          <li><i>✖</i> Liga sem script, trava na objeção</li>
+          <li><i>✖</i> Reunião marcada, cliente some</li>
+          <li><i>✖</i> Mês bom, mês ruim — zero previsibilidade</li>
+          <li><i>✖</i> Sozinho, aprendendo por tentativa e erro</li>
+        </ul>
+      </div>
+      <div class="lado bom rv">
+        <h4>✔ O agente equipado</h4>
+        <ul>
+          <li><i>✔</i> Clientes chegando toda semana, direto no pipeline</li>
+          <li><i>✔</i> Operação inteira numa tela só — em português</li>
+          <li><i>✔</i> Roteiro + IA na ligação: nunca mais congelar</li>
+          <li><i>✔</i> Confirmação e lembrete automáticos — bolo despenca</li>
+          <li><i>✔</i> Fila transparente: você VÊ o que vem pela frente</li>
+          <li><i>✔</i> Comunidade, ranking e treinamento do lado</li>
+        </ul>
+      </div>
+    </div>
+    <p class="veredito rv" style="font-size:clamp(16px,2.2vw,21px)">O top producer da sua equipe não tem mais talento que você.<br>Tem <span class="gtx">mais equipamento.</span></p>
+  </div>
+</section>
+
+<!-- ============ CALCULADORA ============ -->
+<section class="sec calc" id="calculadora">
+  <div class="wrap">
+    <div class="center rv">
+      <p class="eyebrow">Simulador interativo</p>
+      <h2 class="h2">Faça a conta com <span class="gtx">os SEUS números.</span></h2>
+      <p class="sub">Arraste os controles e veja o potencial da sua operação.</p>
+    </div>
+    <div class="calc-grid rv">
+      <div class="ctrl">
+        <div class="sl">
+          <label>Clientes recebidos por mês <output id="oC">25</output></label>
+          <input type="range" id="rC" min="10" max="100" step="5" value="25" aria-label="Clientes recebidos por mês">
+        </div>
+        <div class="sl">
+          <label>Sua taxa de fechamento <output id="oT">15%</output></label>
+          <input type="range" id="rT" min="5" max="40" step="1" value="15" aria-label="Taxa de fechamento em porcentagem">
+        </div>
+        <div class="sl">
+          <label>Prêmio anual médio (AP) <output id="oA">$4.000</output></label>
+          <input type="range" id="rA" min="2000" max="8000" step="250" value="4000" aria-label="Prêmio anual médio em dólares">
+        </div>
+        <div class="sl">
+          <label>Sua comissão <output id="oK">90%</output></label>
+          <input type="range" id="rK" min="50" max="110" step="5" value="90" aria-label="Comissão em porcentagem">
+        </div>
+      </div>
+      <div class="res" aria-live="polite">
+        <div class="lin"><span>Apólices fechadas / mês</span><b id="rApol">4</b></div>
+        <div class="lin"><span>Investimento em clientes*</span><b id="rInv">$700</b></div>
+        <div class="big"><span>Comissão estimada / mês</span><output id="rCom">$13.500</output></div>
+        <div class="paga" id="rPaga">⚡ 1 apólice fechada paga o custo de 128 clientes novos.</div>
+        <p class="disc">*Valor de referência do pacote de entrada. Simulação com os parâmetros escolhidos — não é promessa de resultado. Na consultoria, a conta é refeita com os seus números reais.</p>
+      </div>
+    </div>
+    <div class="btnrow rv">
+      <a class="btn" href="#consultoria">QUERO ESSE RESULTADO — AGENDAR CONSULTORIA <span class="arr">→</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MAPA ============ -->
+<section class="sec" id="mapa">
+  <div class="wrap">
+    <div class="center rv">
+      <p class="eyebrow">Cobertura nacional</p>
+      <h2 class="h2">Clientes chegando em <span class="gtx">todos os 50 estados.</span></h2>
+      <p class="sub">A distribuição respeita a sua licença e o seu horário — e a fila de cada estado é limitada<span class="m-x">, para a exclusividade continuar sendo exclusiva</span>.</p>
+    </div>
+    <div class="mapa-grid">
+      <div class="rv">
+        <div class="mapa-selm">
+          <label for="mapaSelect">Toque e escolha seu estado</label>
+          <select id="mapaSelect" aria-label="Escolha seu estado"></select>
+        </div>
+        <div class="tiles" id="tiles" role="listbox" aria-label="Mapa de estados dos EUA — selecione um estado"></div>
+        <div class="mapa-lg">
+          <i><span class="sw" style="background:rgba(124,58,237,.5)"></span> alto volume de brasileiros</i>
+          <i><span class="sw" style="background:rgba(255,255,255,.14)"></span> cobertura ativa</i>
+        </div>
+      </div>
+      <div class="stCard rv" id="stCard" aria-live="polite">
+        <div class="uf">
+          <span class="ufIc" id="stUF">FL</span>
+          <div><b id="stNome">Flórida</b><span id="stStatus">● CAPTAÇÃO ATIVA</span></div>
+        </div>
+        <div class="props">
+          <div class="prop"><span>Comunidade brasileira</span><b id="stBR">Uma das maiores dos EUA</b></div>
+          <div class="prop"><span>Entrega</span><b>Exclusiva · em minutos</b></div>
+          <div class="prop"><span>Idiomas das campanhas</span><b>Português e espanhol</b></div>
+        </div>
+        <p class="cities" id="stCidades"><b>Maior volume:</b> Orlando · Miami · Boca Raton · Tampa</p>
+        <a class="stBtn" href="#consultoria" id="stBtn">Verificar vaga na fila da FL →</a>
+      </div>
+    </div>
+    <p class="mapa-note rv">A limitação da fila é real: só entra quem a gente consegue abastecer. Vagas do seu estado são confirmadas na consultoria.</p>
+  </div>
+</section>
+
+<!-- ============ ARSENAL ============ -->
+<section class="sec alt">
+  <div class="wrap">
+    <div class="center rv">
+      <p class="eyebrow">O que vem junto</p>
+      <h2 class="h2">Os clientes chegam.<br>E chegam <span class="gtx">armados.</span></h2>
+    </div>
+    <div class="ars">
+      <div class="ar rv"><span class="fx"></span><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span><h5>Sala de Comando</h5><p>Sua carteira inteira numa tela: quem esquentou, quem parou, quem fecha essa semana.<span class="m-x"> O CRM que pensa como agente — não como planilha.</span></p></div>
+      <div class="ar rv"><span class="fx"></span><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3ddc84" stroke-width="2"><path d="M12 3a9 9 0 0 0-7.7 13.6L3 21l4.4-1.2A9 9 0 1 0 12 3z"/></svg></span><h5>WhatsApp Profissional</h5><p>Seu número conectado, cada conversa grudada no cliente certo.<span class="m-x"> Do computador ou do celular — tudo registrado.</span></p></div>
+      <div class="ar rv"><span class="fx"></span><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#67e8f9" stroke-width="2"><path d="M5 4h4l2 5-2.5 1.5a12 12 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2.2 2A17 17 0 0 1 3 6.2 2 2 0 0 1 5 4z"/></svg></span><h5>Telefone com GPS de Venda</h5><p>Ligação em 1 clique, número local do cliente e o roteiro andando do lado.<span class="m-x"> Gravada e registrada sozinha.</span></p></div>
+      <div class="ar dest rv"><span class="fx"></span><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l2.8 2.8M16.2 16.2 19 19M19 5l-2.8 2.8M7.8 16.2 5 19"/><circle cx="12" cy="12" r="3.4"/></svg></span><h5>Copiloto de Fechamento</h5><p>A IA que escuta a ligação e sugere a resposta na hora da objeção. Um gerente experiente soprando — em todas as ligações.</p></div>
+      <div class="ar rv"><span class="fx"></span><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><path d="M17 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M7 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/></svg></span><h5>Follow-up Infinito</h5><p>Sequências que cobram, lembram e confirmam por você. Educadamente. Sempre.<span class="m-x"> Ninguém mais esfria por esquecimento.</span></p></div>
+      <div class="ar rv"><span class="fx"></span><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><h5>Consultor 24/7</h5><p>Dúvida de produto às 22h?<span class="m-x"> Caso difícil de saúde?</span> Pergunta em português, resposta de especialista em segundos.</p></div>
+      <div class="ar rv"><span class="fx"></span><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M12 2 4 6v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V6l-8-4z"/></svg></span><h5>Guardião de Apólices</h5><p>Depois da venda, o sistema visita o portal da seguradora todo dia. Apólice em risco = você sabe antes do chargeback.</p></div>
+      <div class="ar rv"><span class="fx"></span><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0a63c" stroke-width="2"><path d="M8 21h8M12 17v4M6 3h12v5a6 6 0 0 1-12 0V3zM6 5H3v2a4 4 0 0 0 3 3.9M18 5h3v2a4 4 0 0 1-3 3.9"/></svg></span><h5>Vestiário dos Campeões</h5><p>Comunidade só de agentes, ranking mensal, vitórias reais todo dia<span class="m-x"> — e treinamento completo</span>. Você nunca mais vende sozinho.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ COMPROMISSOS ============ -->
+<section class="sec tight">
+  <div class="wrap">
+    <div class="center rv">
+      <p class="eyebrow">Sem letra miúda</p>
+      <h2 class="h2">Quatro compromissos.<span class="gtx"> Ponto.</span></h2>
+    </div>
+    <div class="comps">
+      <div class="comp rv">
+        <span class="n"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+        <h4>Exclusividade Radical</h4>
+        <p><b>1 cliente = 1 agente.</b> O cliente que chega pra você não é vendido pra mais ninguém. Nunca.<span class="m-x"> Nem revendido, nem reciclado, nem “compartilhado com só mais um”.</span></p>
+      </div>
+      <div class="comp rv">
+        <span class="n"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M13 2 4.5 13.5h6L10 22l9-12h-6l0-8z"/></svg></span>
+        <h4>Entrega em Minutos</h4>
+        <p>Do pedido de cotação ao seu pipeline em <b>minutos</b> — com aviso imediato no seu WhatsApp. Porque cliente esfriando é comissão evaporando.</p>
+      </div>
+      <div class="comp rv">
+        <span class="n"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span>
+        <h4>Transparência Total</h4>
+        <p>Você vê sua <b>posição na fila do seu estado em tempo real</b><span class="m-x">, o volume da região e uma estimativa honesta de chegada</span>. Sem caixa-preta.</p>
+      </div>
+      <div class="comp rv">
+        <span class="n"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg></span>
+        <h4>Garantia de Troca</h4>
+        <p><b>Cliente que nunca respondeu? A gente troca.</b> Você tentou de verdade, ele sumiu — outro cliente entra no lugar.<span class="m-x"> Regra escrita, critérios claros, sem discussão.</span></p>
+      </div>
+    </div>
+    <p class="comps-fecho rv">É assim que se trata cliente — <b>o seu e o nosso.</b></p>
+  </div>
+</section>
+
+<!-- ============ NÚMEROS REAIS (v3) ============ -->
+<section class="sec tight">
+  <div class="wrap">
+    <div class="center rv">
+      <p class="eyebrow">Números reais — direto do banco de dados</p>
+      <h2 class="h2">A operação já roda.<span class="gtx"> Todos os dias.</span></h2>
+    </div>
+    <div class="comps">
+      <div class="comp rv"><h4>2.300+</h4><p><b>clientes entregues</b> — um a um, exclusivos, direto no pipeline de cada agente.</p></div>
+      <div class="comp rv"><h4>32.000+</h4><p><b>conversas de WhatsApp</b> acontecendo dentro da plataforma, grudadas no cliente certo.</p></div>
+      <div class="comp rv"><h4>2.400+</h4><p><b>ligações em 1 clique</b> — gravadas, registradas e, agora, com a IA do lado.</p></div>
+    </div>
+    <!-- TODO v4: depoimentos reais de agentes (com permissão) + prints da comunidade -->
+  </div>
+</section>
+
+<!-- 🔧 BLOCO DEPOIMENTOS: ativar quando houver vitórias reais autorizadas da comunidade.
+     Formato: card estilo "post de vitória" (avatar, nome, cidade, texto curto, $AP · dias · produto). -->
+
+<!-- ============ FAQ ============ -->
+<!-- ============ LÍDERES DE EQUIPE (v3) ============ -->
+<section class="sec" id="lideres">
+  <div class="wrap">
+    <div class="center rv">
+      <p class="eyebrow">Para quem lidera equipe</p>
+      <h2 class="h2">Você recruta. Eles desistem.<br><span class="gtx">A gente muda esse final.</span></h2>
+      <p class="sub">9 em cada 10 recrutas abandonam a carreira em até 3 anos — levando junto o seu tempo e o seu investimento. Equipe equipada é equipe que fica: <b style="color:var(--txt)">clientes chegando, IA na ligação e treinamento</b> pros SEUS agentes — e o seu acompanhamento num painel só.</p>
+      <div style="margin-top:28px">
+        <a class="btn" href="#/agendar/1">CONSULTORIA PARA LÍDERES DE EQUIPE <span class="arr">→</span></a>
+        <p class="btn-note">Planos de equipe com painel do líder · com a sua marca, se quiser</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec alt">
+  <div class="wrap">
+    <div class="center rv">
+      <p class="eyebrow">Perguntas diretas, respostas diretas</p>
+      <h2 class="h2">O que todo agente pergunta<span class="gtx"> antes de entrar.</span></h2>
+    </div>
+    <div class="faq rv">
+      <div class="q aberta"><button aria-expanded="true">Isso é mais um “vendedor de leads”?<span class="pm">+</span></button><div class="a"><p>Não — e essa é a diferença inteira. Vendedor de lead te entrega um telefone e desaparece. Aqui o cliente chega exclusivo, em minutos, dentro de uma operação completa — CRM, WhatsApp, telefone com IA e follow-up automático — que existe para transformar interesse em apólice. Lead é commodity. Cliente chegando é sistema.</p></div></div>
+      <div class="q"><button aria-expanded="false">Minha equipe já me dá um CRM grátis. Por que pagar?<span class="pm">+</span></button><div class="a"><p>O CRM grátis da equipe é genérico, em inglês, não te entrega clientes — e desaparece se você trocar de time. A Lead4Pro é SUA: seus clientes, seu número, seu histórico, para sempre. E funciona em paralelo com qualquer equipe ou upline — a gente não é IMO, não mexe no seu contrato nem na sua comissão.</p></div></div>
+      <div class="q"><button aria-expanded="false">Já comprei lead uma vez e me arrependi.<span class="pm">+</span></button><div class="a"><p>Quase todo agente que chega aqui já passou por isso. A diferença está no modelo: aqui o cliente é exclusivo de verdade (1 cliente = 1 agente), chega em minutos e cai dentro de uma operação que multiplica sua chance de contato — número local, IA na ligação e follow-up automático. Na consultoria, você vê tudo funcionando ao vivo antes de decidir qualquer coisa.</p></div></div>
+      <div class="q"><button aria-expanded="false">Funciona no meu estado?<span class="pm">+</span></button><div class="a"><p>Captamos clientes nos 50 estados. Você entra na fila dos estados onde tem licença e vê sua posição em tempo real, com transparência total. As vagas do seu estado são confirmadas na consultoria.</p></div></div>
+      <div class="q"><button aria-expanded="false">Quanto custa?<span class="pm">+</span></button><div class="a"><p>Com transparência, como tudo aqui: plano a partir de <b>$99/mês</b> + o pacote de clientes que você escolher (a partir de <b>$280</b>). O tamanho certo do pacote depende de quantos clientes/mês você quer receber — e na consultoria a conta é refeita com a calculadora, com os SEUS números. Você sai sabendo exatamente o investimento e o retorno esperado.</p></div></div>
+      <div class="q"><button aria-expanded="false">Não entendo de tecnologia. Vou me perder?<span class="pm">+</span></button><div class="a"><p>A plataforma foi feita pra quem vende, não pra quem programa. Onboarding guiado em menos de 2 minutos, tudo em português, e a Zoe — nossa assistente — te ensina qualquer coisa, dentro da tela, a qualquer hora.</p></div></div>
+      <div class="q"><button aria-expanded="false">A IA fala com o meu cliente?<span class="pm">+</span></button><div class="a"><p>Não. A IA trabalha PRA você, não no seu lugar: ela escuta, entende o momento da conversa e sugere na sua tela. Quem fala é você. Quem fecha é você.</p></div></div>
+      <div class="q"><button aria-expanded="false">Ainda estou tirando minha licença. Posso entrar?<span class="pm">+</span></button><div class="a"><p>Pode se preparar: a consultoria monta seu plano pra começar com o pé direito no dia em que a licença sair — e você já conhece a fila do seu estado. Agende normalmente e conte sua situação na primeira pergunta.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FECHAMENTO / CTA FINAL ============ -->
+<section class="sec funil" id="consultoria">
+  <div class="wrap">
+    <div class="center rv">
+      <p class="eyebrow">Consultoria estratégica · gratuita</p>
+      <h2 class="h2">Isso não é para todo mundo.<br><span class="gtx">É para agente que quer receber clientes.</span></h2>
+      <p class="sub">Três perguntas rápidas, você escolhe o horário no calendário — <b style="color:var(--txt)">já convertido para o seu fuso</b> — e pronto.<span class="m-x"> Na consultoria: demonstração ao vivo da plataforma, estratégias para o seu negócio e os planos do seu estado.</span></p>
+      <div style="margin-top:34px">
+        <a class="btn" href="#/agendar/1">AGENDAR MINHA CONSULTORIA ESTRATÉGICA <span class="arr">→</span></a>
+        <p class="btn-note">Gratuita · 20 minutos · no seu horário · planos a partir de $99/mês + pacote de clientes</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FLUXO DE AGENDAMENTO (modal · 4 páginas · rota #/agendar/N) ============ -->
+<div class="fxo" id="fluxo" role="dialog" aria-modal="true" aria-label="Agendar consultoria estratégica">
+  <div class="fxo-card" id="fxoCard">
+    <div class="fxo-top">
+      <span class="mini-logo"><span class="logo-ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M13 2 4.5 13.5h6L10 22l9-12h-6l0-8z" fill="#fff"/></svg></span>Consultoria Estratégica</span>
+      <button class="fxo-x" data-fechar aria-label="Fechar">✕</button>
+    </div>
+    <div class="fxo-prog" id="fxProg" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+    <!-- ── PÁGINA 1 · nome, telefone e e-mail ── -->
+    <section class="fxp" data-passo="1">
+      <h3>Vamos garantir sua vaga.</h3>
+      <p class="dica">Seus dados ficam só com a gente — é como enviamos a confirmação da consultoria.</p>
+      <div class="campo">
+        <label for="fNome">Seu nome completo</label>
+        <input type="text" id="fNome" name="nome" required autocomplete="name" placeholder="Maria Silva">
+        <span class="erro">Digite seu nome.</span>
+      </div>
+      <div class="campo">
+        <label for="fTel">Telefone / WhatsApp (EUA)</label>
+        <input type="tel" id="fTel" name="telefone" required autocomplete="tel" inputmode="numeric" placeholder="(321) 555-0100">
+        <span class="erro">Digite um telefone americano válido (10 dígitos).</span>
+      </div>
+      <div class="campo">
+        <label for="fEmail">Seu melhor e-mail</label>
+        <input type="text" id="fEmail" name="email" required autocomplete="email" inputmode="email" placeholder="voce@email.com">
+        <span class="erro">Digite um e-mail válido.</span>
+      </div>
+      <div class="f-nav"><span></span><button class="f-prox" data-avancar>Continuar →</button></div>
+    </section>
+
+    <!-- ── PÁGINA 2 · licenciado? ── -->
+    <section class="fxp" data-passo="2">
+      <h3>Você já é agente licenciado de life insurance?</h3>
+      <p class="dica">A consultoria é personalizada pro seu momento de carreira.</p>
+      <div class="ops" data-grupo="licenca" data-obrigatorio>
+        <button type="button" class="op" data-v="Sim, licenciado"><span class="rd"></span>Sim, já sou licenciado</button>
+        <button type="button" class="op" data-v="Tirando a licença"><span class="rd"></span>Estou tirando a licença</button>
+        <button type="button" class="op" data-v="Ainda não"><span class="rd"></span>Ainda não — quero entender como começar</button>
+      </div>
+      <div class="f-nav"><button class="f-volta" data-voltar>← Voltar</button><button class="f-prox" data-avancar disabled>Continuar →</button></div>
+    </section>
+
+    <!-- ── PÁGINA 3 · estado (define o fuso) ── -->
+    <section class="fxp" data-passo="3">
+      <h3>Em qual estado você mora?</h3>
+      <p class="dica">Os EUA têm vários fusos. A gente pergunta para marcar a reunião no <b style="color:var(--txt)">seu</b> horário — não no nosso.</p>
+      <div class="campo">
+        <label for="fEstado">Seu estado</label>
+        <select id="fEstado" name="estado" required>
+          <option value="" disabled selected>Escolha o estado…</option>
+        </select>
+        <span class="erro">Escolha o estado onde você mora.</span>
+      </div>
+      <div class="fuso-nota" id="fxFusoNota" hidden>
+        🕐 <span>Seu fuso: <b id="fxFusoTx"></b>. Dá para ajustar no próximo passo, se precisar.</span>
+      </div>
+      <div class="f-nav"><button class="f-volta" data-voltar>← Voltar</button><button class="f-prox" data-avancar>Ver o calendário →</button></div>
+    </section>
+
+    <!-- ── PÁGINA 4 · calendário no fuso do cliente ── -->
+    <section class="fxp" data-passo="4">
+      <h3>Perfeito, <span id="fxNome">tudo certo</span>! Escolha seu horário.</h3>
+      <p class="dica">Horários exibidos <b style="color:var(--txt)">já no seu fuso</b> — a conversão para a agenda do time é automática.</p>
+      <div class="fusoSel">
+        <span>Horários no fuso:</span>
+        <select id="fxFuso" aria-label="Seu fuso horário"></select>
+      </div>
+      <div class="cal2">
+        <div class="calBox">
+          <div class="calNav">
+            <button type="button" id="calAnt" aria-label="Mês anterior">‹</button>
+            <b id="calMes">—</b>
+            <button type="button" id="calProx" aria-label="Próximo mês">›</button>
+          </div>
+          <div class="dow"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+          <div id="calDias"></div>
+        </div>
+        <div class="calBox" id="calHoras">
+          <div class="hr__vazio">Escolha um dia no calendário para ver os horários.</div>
+        </div>
+      </div>
+      <div class="calConf" id="calConf" hidden>
+        <b id="calConfT">—</b>
+        <span id="calConfS">—</span>
+        <!-- 🔧 O link final leva ao agendamento (CONFIG.agendamento) com nome, e-mail, telefone,
+             licença, estado, fuso e o instante escolhido (ISO) na querystring. -->
+        <a class="fxIr" id="fxIr" href="#" aria-disabled="true" target="_blank" rel="noopener">CONFIRMAR MEU HORÁRIO <span class="arr">→</span></a>
+      </div>
+      <div class="f-nav" style="margin-top:18px"><button class="f-volta" data-voltar>← Voltar</button><span></span></div>
+    </section>
+
+  </div>
+</div>
+
+<!-- barra fixa de conversão (mobile) — aparece após o herói, some com o fluxo aberto -->
+<div class="ctaFixa" id="ctaFixa" aria-hidden="true">
+  <a class="btn" href="#/agendar/1">QUERO RECEBER CLIENTES <span class="arr">→</span></a>
+</div>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="wrap">
+    <div class="ft">
+      <div>
+        <a class="logo" href="#topo"><span class="logo-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M13 2 4.5 13.5h6L10 22l9-12h-6l0-8z" fill="#fff"/></svg></span>Lead4Pro</a>
+        <p style="color:var(--dim);font-size:12.5px;margin-top:10px">A plataforma de clientes do agente de life insurance.<br>Feita nos EUA, em português.</p>
+      </div>
+      <div class="links">
+        <a href="#" rel="nofollow">Política de Privacidade</a>
+        <a href="#" rel="nofollow">Termos e Política de Uso</a>
+        <a href="https://wa.me/SEUNUMERO" rel="noopener">Suporte (WhatsApp)</a>
+      </div>
+    </div>
+    <p class="disc">Os resultados apresentados em simulações não constituem promessa de ganhos. Resultados individuais dependem de licença ativa, esforço e mercado. A Lead4Pro é uma plataforma de tecnologia e geração de demanda; não é IMO, não interfere em contratos de comissão. © 2026 Lead4Pro. Todos os direitos reservados.</p>
+  </div>
+</footer>
+
+<script>
+/* ================= revelação no scroll ================= */
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target)}}),{threshold:.12});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+/* fallback: garante revelação mesmo se o IO não disparar (navegadores/webviews antigos) */
+function rvFallback(){
+  const vh=window.innerHeight||document.documentElement.clientHeight;
+  if(!vh){ /* viewport não confiável (webview) → conteúdo sempre visível */
+    document.querySelectorAll('.rv:not(.on)').forEach(el=>el.classList.add('on'));
+    return;
+  }
+  document.querySelectorAll('.rv:not(.on)').forEach(el=>{
+    const r=el.getBoundingClientRect();
+    if(r.top<vh*.95&&r.bottom>0)el.classList.add('on');
+  });
+}
+let rvTick=false;
+window.addEventListener('scroll',()=>{if(!rvTick){rvTick=true;requestAnimationFrame(()=>{rvFallback();rvTick=false})}},{passive:true});
+window.addEventListener('load',rvFallback);setTimeout(rvFallback,600);
+
+/* ================= calculadora ================= */
+const PRECO_CLIENTE=28; // 🔧 valor de referência do pacote de entrada (pacote 10 = $28/cliente)
+const fmt=n=>'$'+Math.round(n).toLocaleString('en-US');
+const rC=document.getElementById('rC'),rT=document.getElementById('rT'),rA=document.getElementById('rA'),rK=document.getElementById('rK');
+function slider(el){const p=(el.value-el.min)/(el.max-el.min)*100;el.style.setProperty('--pct',p+'%')}
+function calc(){
+  const C=+rC.value,T=+rT.value/100,A=+rA.value,K=+rK.value/100;
+  const apol=C*T, com=apol*A*K, inv=C*PRECO_CLIENTE;
+  document.getElementById('oC').textContent=C;
+  document.getElementById('oT').textContent=Math.round(T*100)+'%';
+  document.getElementById('oA').textContent=fmt(A);
+  document.getElementById('oK').textContent=Math.round(K*100)+'%';
+  document.getElementById('rApol').textContent=apol<10?apol.toFixed(1).replace('.0',''):Math.round(apol);
+  document.getElementById('rInv').textContent=fmt(inv);
+  document.getElementById('rCom').textContent=fmt(com);
+  const paga=Math.floor((A*K)/PRECO_CLIENTE);
+  document.getElementById('rPaga').textContent='⚡ 1 apólice fechada paga o custo de '+paga.toLocaleString('en-US')+' clientes novos.';
+  [rC,rT,rA,rK].forEach(slider);
+}
+[rC,rT,rA,rK].forEach(el=>el.addEventListener('input',calc));calc();
+
+/* ================= mapa (tile grid EUA) ================= */
+/* col,row · hot = alto volume de comunidade brasileira */
+const ESTADOS=[
+["AK",1,1],["ME",12,1],
+["VT",11,2],["NH",12,2],
+["WA",2,3],["MT",3,3],["ND",4,3],["MN",5,3],["WI",6,3],["MI",8,3],["NY",10,3,1],["MA",11,3,1],["RI",12,3],
+["OR",2,4],["ID",3,4],["SD",4,4],["IA",5,4],["IL",6,4],["IN",7,4],["OH",8,4],["PA",9,4],["NJ",10,4,1],["CT",11,4,1],
+["CA",1,5,1],["NV",2,5],["WY",3,5],["NE",4,5],["MO",5,5],["KY",6,5],["WV",7,5],["VA",8,5],["MD",9,5],["DE",10,5],
+["UT",2,6],["CO",3,6],["KS",4,6],["AR",5,6],["TN",6,6],["NC",7,6],["SC",8,6],["DC",9,6],
+["AZ",2,7],["NM",3,7],["OK",4,7],["LA",5,7],["MS",6,7],["AL",7,7],["GA",8,7,1],
+["HI",1,8],["TX",4,8,1],["FL",9,8,1]];
+const NOMES={AK:"Alasca",ME:"Maine",VT:"Vermont",NH:"New Hampshire",WA:"Washington",MT:"Montana",ND:"Dakota do Norte",MN:"Minnesota",WI:"Wisconsin",MI:"Michigan",NY:"Nova York",MA:"Massachusetts",RI:"Rhode Island",OR:"Oregon",ID:"Idaho",SD:"Dakota do Sul",IA:"Iowa",IL:"Illinois",IN:"Indiana",OH:"Ohio",PA:"Pensilvânia",NJ:"New Jersey",CT:"Connecticut",CA:"Califórnia",NV:"Nevada",WY:"Wyoming",NE:"Nebraska",MO:"Missouri",KY:"Kentucky",WV:"Virgínia Ocidental",VA:"Virgínia",MD:"Maryland",DE:"Delaware",UT:"Utah",CO:"Colorado",KS:"Kansas",AR:"Arkansas",TN:"Tennessee",NC:"Carolina do Norte",SC:"Carolina do Sul",DC:"Washington DC",AZ:"Arizona",NM:"Novo México",OK:"Oklahoma",LA:"Louisiana",MS:"Mississippi",AL:"Alabama",GA:"Geórgia",HI:"Havaí",TX:"Texas",FL:"Flórida"};
+const CIDADES={FL:"Orlando · Miami · Boca Raton · Tampa",MA:"Boston · Framingham · Everett",NJ:"Newark · Elizabeth · Long Branch",CT:"Danbury · Bridgeport · Hartford",GA:"Atlanta · Marietta",TX:"Houston · Dallas · Austin",NY:"Nova York · Mount Vernon",CA:"Los Angeles · San Diego"};
+const BRTX={FL:"Uma das maiores dos EUA",MA:"Muito alta (2ª maior)",NJ:"Muito alta",CT:"Alta",GA:"Alta",TX:"Alta e crescendo",NY:"Alta",CA:"Alta"};
+const tiles=document.getElementById('tiles');
+const tileRef={};
+ESTADOS.forEach(([uf,c,r,hot])=>{
+  const b=document.createElement('button');
+  b.className='tile'+(hot?' hot':'');b.textContent=uf;b.style.gridColumn=c;b.style.gridRow=r;
+  b.setAttribute('role','option');b.setAttribute('aria-label',NOMES[uf]);
+  b.addEventListener('click',()=>selEstado(uf,b));
+  tileRef[uf]=b;
+  tiles.appendChild(b);
+});
+function selEstado(uf,btn){
+  document.querySelectorAll('.tile.sel').forEach(t=>t.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('stUF').textContent=uf;
+  document.getElementById('stNome').textContent=NOMES[uf];
+  document.getElementById('stBR').textContent=BRTX[uf]||"Presente e atendida";
+  // montagem segura (sem innerHTML)
+  const cid=document.getElementById('stCidades');cid.textContent='';
+  const bb=document.createElement('b');
+  bb.textContent=CIDADES[uf]?'Maior volume: ':'Cobertura: ';
+  cid.appendChild(bb);
+  cid.appendChild(document.createTextNode(CIDADES[uf]||'estado inteiro, com campanhas em português e espanhol'));
+  document.getElementById('stBtn').textContent='Verificar vaga na fila de '+uf+' →';
+  const ms=document.getElementById('mapaSelect');
+  if(ms&&ms.value!==uf)ms.value=uf;
+}
+/* seletor de estado (interação primária no celular), sincronizado com o mapa */
+(()=>{
+  const ms=document.getElementById('mapaSelect');
+  Object.keys(NOMES).sort((a,b)=>NOMES[a].localeCompare(NOMES[b])).forEach(uf=>{
+    const o=document.createElement('option');o.value=uf;o.textContent=NOMES[uf]+' ('+uf+')';ms.appendChild(o);
+  });
+  ms.addEventListener('change',()=>selEstado(ms.value,tileRef[ms.value]));
+})();
+selEstado('FL',tileRef['FL']);
+
+/* barra fixa de conversão: aparece depois do herói, some com o fluxo aberto */
+(()=>{
+  const barra=document.getElementById('ctaFixa');
+  function tick(){
+    const fluxoAberto=document.getElementById('fluxo')?.classList.contains('on');
+    barra.classList.toggle('on',window.scrollY>560&&!fluxoAberto);
+  }
+  addEventListener('scroll',tick,{passive:true});
+  addEventListener('hashchange',()=>setTimeout(tick,60));
+  tick();
+})();
+
+/* dashboard do herói: no celular, o kanban completo vira miniatura proporcional (3 colunas deitadas) */
+(()=>{
+  const vp=document.querySelector('.pipe-vp'),pipe=vp&&vp.querySelector('.pipe');
+  if(!pipe)return;
+  const BASE=590; /* largura de desenho do kanban (px) — igual ao CSS mobile */
+  function esc(){
+    if(!matchMedia('(max-width:720px)').matches){pipe.style.transform='';vp.style.height='';return}
+    /* menor entre o container e a tela — robusto a medidas inconsistentes de webviews */
+    const dw=(document.documentElement.clientWidth||window.innerWidth||375)-44;
+    const w=Math.min(vp.clientWidth||331,dw>0?dw:331);
+    const e=Math.min(w/BASE,1);
+    pipe.style.transform='scale('+e+')';
+    vp.style.height=Math.ceil(pipe.scrollHeight*e)+'px';
+  }
+  addEventListener('resize',esc);
+  addEventListener('load',esc);
+  esc();
+})();
+
+/* ================= FAQ ================= */
+document.querySelectorAll('.q button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const q=btn.parentElement,aberta=q.classList.contains('aberta');
+    document.querySelectorAll('.q').forEach(o=>{o.classList.remove('aberta');o.querySelector('.a').style.maxHeight=null;o.querySelector('button').setAttribute('aria-expanded','false')});
+    if(!aberta){q.classList.add('aberta');const a=q.querySelector('.a');a.style.maxHeight=a.scrollHeight+'px';btn.setAttribute('aria-expanded','true')}
+  });
+});
+const q1=document.querySelector('.q.aberta .a');if(q1)q1.style.maxHeight=q1.scrollHeight+'px';
+
+/* ╔═══════════════════════════════════════════════════════════════════╗
+   ║  ⚙️  CONFIGURAÇÃO DO AGENDAMENTO — única parte que precisa editar  ║
+   ╚═══════════════════════════════════════════════════════════════════╝ */
+const CONFIG = {
+  /* 1. Link de agendamento (Cal.com, Calendly…) — OBRIGATÓRIO */
+  agendamento: 'https://cal.com/SEU-LINK',
+  /* 2. WhatsApp do time, só números com país e DDD — OBRIGATÓRIO */
+  whatsapp: 'https://wa.me/SEUNUMERO',
+  /* 3. Fuso da agenda do time de vendas (vendedor no Brasil) */
+  fusoTime: 'America/Sao_Paulo',
+  /* 4. Horários oferecidos, no fuso acima */
+  grade: ['09:00','09:30','10:00','10:30','11:00','11:30',
+          '13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30'],
+  /* 5. Dias de atendimento — 0=domingo … 6=sábado */
+  diasSemana: [1,2,3,4,5],
+  /* 6. Antecedência mínima, em horas */
+  antecedencia: 4,
+  /* 7. Até quantos dias à frente dá para marcar */
+  janelaDias: 30,
+  /* 8. Datas bloqueadas. Ex.: ['2026-12-25'] */
+  feriados: [],
+  /* 9. Endpoint de disponibilidade (Google Agenda do time).
+        Vazio = ocupados SIMULADOS (layout). Quando o servidor estiver no ar:
+          'https://seudominio.com/api/disponibilidade'
+        Resposta p/ ?dia=2026-08-14 → { "2026-08-14": ["09:00","10:30"] } (já ocupados, fuso do time) */
+  apiDisponibilidade: ''
+};
+
+/* aviso na tela se subir sem configurar — melhor gritar do que perder lead em silêncio */
+(()=>{ const falta=[];
+  if(CONFIG.agendamento.includes('SEU-LINK')) falta.push('link de agendamento');
+  if(CONFIG.whatsapp.includes('SEUNUMERO'))   falta.push('WhatsApp');
+  if(!falta.length) return;
+  const a=document.createElement('div');
+  a.style.cssText='position:fixed;left:0;right:0;top:0;z-index:9999;padding:8px 14px;background:#F0A63C;color:#1A1200;font:700 11.5px/1.35 Inter,system-ui,sans-serif;text-align:center';
+  a.textContent='⚠️ Configuração pendente: '+falta.join(' e ')+'. Edite o bloco CONFIG no <script> do arquivo.';
+  document.body.prepend(a);
+})();
+
+/* ═══ ESTADOS DOS EUA → FUSO (partidos recebem o fuso predominante) ═══ */
+const FUSOS=[
+  ['America/New_York','Leste (ET)'],['America/Chicago','Central (CT)'],
+  ['America/Denver','Montanha (MT)'],['America/Phoenix','Arizona (MST)'],
+  ['America/Los_Angeles','Pacífico (PT)'],['America/Anchorage','Alasca (AKT)'],
+  ['Pacific/Honolulu','Havaí (HST)'],['America/Puerto_Rico','Atlântico (AST)'],
+  ['America/Sao_Paulo','Brasília (BRT)']];
+const ESTADOS_FUSO=[
+  ['Leste (ET)','America/New_York',['Carolina do Norte','Carolina do Sul','Connecticut','Delaware','Distrito de Colúmbia','Flórida','Geórgia','Indiana','Kentucky','Maine','Maryland','Massachusetts','Michigan','New Hampshire','Nova Jersey','Nova York','Ohio','Pensilvânia','Rhode Island','Tennessee','Vermont','Virgínia','Virgínia Ocidental']],
+  ['Central (CT)','America/Chicago',['Alabama','Arkansas','Dakota do Norte','Dakota do Sul','Illinois','Iowa','Kansas','Luisiana','Minnesota','Mississippi','Missouri','Nebraska','Oklahoma','Texas','Wisconsin']],
+  ['Montanha (MT)','America/Denver',['Colorado','Idaho','Montana','Novo México','Utah','Wyoming']],
+  ['Arizona (MST)','America/Phoenix',['Arizona']],
+  ['Pacífico (PT)','America/Los_Angeles',['Califórnia','Nevada','Oregon','Washington']],
+  ['Outros fusos',null,[['Alasca','America/Anchorage'],['Havaí','Pacific/Honolulu'],['Porto Rico','America/Puerto_Rico']]],
+  ['Fora dos EUA',null,[['Brasil','America/Sao_Paulo']]]];
+const FUSO_DO_ESTADO={};
+ESTADOS_FUSO.forEach(([,fuso,lista])=>lista.forEach(it=>
+  Array.isArray(it)?(FUSO_DO_ESTADO[it[0]]=it[1]):(FUSO_DO_ESTADO[it]=fuso)));
+const nomeFuso=f=>(FUSOS.find(x=>x[0]===f)||['',f])[1];
+
+/* ═══ CALENDÁRIO — grade do time (BR) convertida para o fuso do cliente ═══ */
+const CAL=(()=>{
+  const CFG=CONFIG;
+  /* disponibilidade: API real do Google Agenda ou simulação determinística */
+  const cacheOcup=new Map();
+  async function ocupados(diaISO){
+    if(cacheOcup.has(diaISO)) return cacheOcup.get(diaISO);
+    if(CONFIG.apiDisponibilidade){
+      try{
+        const r=await fetch(`${CONFIG.apiDisponibilidade}?dia=${diaISO}`);
+        const j=await r.json();
+        const oc=Array.isArray(j)?j:(j[diaISO]||[]);
+        cacheOcup.set(diaISO,oc); return oc;
+      }catch(e){ console.warn('Disponibilidade indisponível, liberando o dia:',e);
+        cacheOcup.set(diaISO,[]); return []; }
+    }
+    /* simulação (mesma data → mesmo resultado). Remover ao plugar a API. */
+    const hash=t=>{let h=2166136261;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,16777619)>>>0}return h};
+    const r=CFG.grade.filter(hh=>hash(diaISO+hh)%100<38);
+    cacheOcup.set(diaISO,r); return r;
+  }
+  /* fuso: duas passadas para acertar o horário de verão (EUA e BR) */
+  function desloc(data,fuso){
+    const f=new Intl.DateTimeFormat('en-US',{timeZone:fuso,hour12:false,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const p=Object.fromEntries(f.formatToParts(data).map(x=>[x.type,x.value]));
+    return Date.UTC(p.year,p.month-1,p.day,p.hour==='24'?0:p.hour,p.minute,p.second)-data.getTime();
+  }
+  function instante(diaISO,hhmm,fuso){
+    const [y,m,d]=diaISO.split('-').map(Number),[hh,mi]=hhmm.split(':').map(Number);
+    const chute=Date.UTC(y,m-1,d,hh,mi);
+    const o1=desloc(new Date(chute),fuso);
+    const o2=desloc(new Date(chute-o1),fuso);
+    return new Date(chute-o2);
+  }
+  const horaEm=(dt,fuso)=>new Intl.DateTimeFormat('pt-BR',{timeZone:fuso,hour:'2-digit',minute:'2-digit',hour12:false}).format(dt);
+  const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  const limite=new Date(hoje); limite.setDate(limite.getDate()+CFG.janelaDias);
+  let mesVis=new Date(hoje.getFullYear(),hoje.getMonth(),1);
+  let fusoVis=CFG.fusoTime, diaSel=null, horaSel=null;
+  const $=id=>document.getElementById(id);
+  function diaAberto(d){
+    if(d<hoje||d>limite) return false;
+    if(!CFG.diasSemana.includes(d.getDay())) return false;
+    return !CFG.feriados.includes(iso(d));
+  }
+  const cedoDemais=(diaISO,hhmm)=>instante(diaISO,hhmm,CFG.fusoTime).getTime()<Date.now()+CFG.antecedencia*36e5;
+  async function pintarMes(){
+    const y=mesVis.getFullYear(),m=mesVis.getMonth();
+    const rot=new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric'}).format(mesVis);
+    $('calMes').textContent=rot.charAt(0).toUpperCase()+rot.slice(1);
+    $('calAnt').disabled=new Date(y,m,1)<=new Date(hoje.getFullYear(),hoje.getMonth(),1);
+    $('calProx').disabled=new Date(y,m+1,1)>limite;
+    const primeiro=new Date(y,m,1).getDay(), total=new Date(y,m+1,0).getDate();
+    const grade=$('calDias'); grade.textContent='';
+    for(let i=0;i<primeiro;i++){const s=document.createElement('span');s.className='dia dia--vazio';grade.appendChild(s)}
+    for(let n=1;n<=total;n++){
+      const d=new Date(y,m,n),s=iso(d);
+      const b=document.createElement('button');
+      b.type='button';b.className='dia';b.textContent=n;b.dataset.dia=s;
+      b.disabled=!diaAberto(d);
+      if(s===iso(hoje))b.classList.add('dia--hoje');
+      if(s===diaSel)b.classList.add('dia--sel');
+      grade.appendChild(b);
+      if(!b.disabled) ocupados(s).then(oc=>{
+        const livre=CFG.grade.some(h=>!oc.includes(h)&&!cedoDemais(s,h));
+        b.classList.toggle('dia--livre',livre);
+        b.disabled=!livre;
+      });
+    }
+  }
+  async function pintarHoras(){
+    const cx=$('calHoras');
+    if(!diaSel){cx.textContent='';const v=document.createElement('div');v.className='hr__vazio';v.textContent='Escolha um dia no calendário para ver os horários.';cx.appendChild(v);return}
+    const oc=await ocupados(diaSel);
+    /* rótulo derivado do INSTANTE, já no fuso do cliente */
+    const rotulo=new Intl.DateTimeFormat('pt-BR',{weekday:'long',day:'numeric',month:'long',timeZone:fusoVis}).format(instante(diaSel,CFG.grade[0],CFG.fusoTime));
+    const itens=CFG.grade.map(h=>{
+      const dt=instante(diaSel,h,CFG.fusoTime);
+      return {h,exibe:horaEm(dt,fusoVis),livre:!oc.includes(h)&&!cedoDemais(diaSel,h),manha:+h.slice(0,2)<12};
+    });
+    const vagas=itens.filter(i=>i.livre).length;
+    cx.textContent='';
+    const t=document.createElement('div');t.className='hr__t';t.textContent=rotulo;cx.appendChild(t);
+    const d2=document.createElement('div');d2.className='hr__d';
+    d2.textContent=vagas?vagas+(vagas>1?' horários livres':' horário livre'):'sem vaga neste dia';cx.appendChild(d2);
+    const bloco=(titulo,lista)=>{
+      if(!lista.length)return;
+      const g=document.createElement('div');g.className='hr__grupo';g.textContent=titulo;cx.appendChild(g);
+      const l=document.createElement('div');l.className='hr__lista';
+      lista.forEach(i=>{
+        const b=document.createElement('button');
+        b.type='button';b.className='hora'+(i.h===horaSel?' hora--sel':'');
+        b.dataset.hora=i.h;b.disabled=!i.livre;b.textContent=i.exibe;
+        b.setAttribute('aria-label',i.exibe+(i.livre?'':' — ocupado'));
+        l.appendChild(b);
+      });
+      cx.appendChild(l);
+    };
+    bloco('Manhã',itens.filter(i=>i.manha));
+    bloco('Tarde',itens.filter(i=>!i.manha));
+  }
+  function pintarConf(dados,destino){
+    const conf=$('calConf'),ir=$('fxIr');
+    if(!diaSel||!horaSel){conf.hidden=true;ir.setAttribute('aria-disabled','true');return}
+    const dt=instante(diaSel,horaSel,CFG.fusoTime);
+    const dia=new Intl.DateTimeFormat('pt-BR',{weekday:'long',day:'numeric',month:'long',timeZone:fusoVis}).format(dt);
+    conf.hidden=false;
+    $('calConfT').textContent=`${dia}, às ${horaEm(dt,fusoVis)}`;
+    $('calConfS').textContent=`${nomeFuso(fusoVis)} · 20 minutos · você recebe o convite por e-mail`;
+    ir.setAttribute('aria-disabled','false');
+    dados.data=diaSel;dados.hora=horaSel;dados.fuso=fusoVis;
+    const u=new URL(destino);
+    u.searchParams.set('date',diaSel);
+    u.searchParams.set('month',diaSel.slice(0,7));
+    u.searchParams.set('slot',dt.toISOString());
+    if(dados.nome)u.searchParams.set('name',dados.nome);
+    if(dados.email)u.searchParams.set('email',dados.email);
+    if(dados.telefone)u.searchParams.set('phone',dados.telefone);
+    if(dados.licenca)u.searchParams.set('licenca',dados.licenca);
+    if(dados.estado)u.searchParams.set('estado',dados.estado);
+    u.searchParams.set('fuso',fusoVis);
+    ir.href=u.toString();
+  }
+  function iniciar(dados,destino,aoMudar){
+    fusoVis=dados.fuso||FUSO_DO_ESTADO[dados.estado]||Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if(!FUSOS.some(f=>f[0]===fusoVis))fusoVis=CFG.fusoTime;
+    const sel=$('fxFuso');
+    sel.textContent='';
+    FUSOS.forEach(([v,n])=>{const o=document.createElement('option');o.value=v;o.textContent=n;if(v===fusoVis)o.selected=true;sel.appendChild(o)});
+    sel.addEventListener('change',()=>{fusoVis=sel.value;dados.fuso=fusoVis;pintarHoras();pintarConf(dados,destino);aoMudar()});
+    $('calAnt').onclick=()=>{mesVis.setMonth(mesVis.getMonth()-1);pintarMes()};
+    $('calProx').onclick=()=>{mesVis.setMonth(mesVis.getMonth()+1);pintarMes()};
+    $('calDias').addEventListener('click',e=>{
+      const b=e.target.closest('.dia');if(!b||b.disabled)return;
+      diaSel=b.dataset.dia;horaSel=null;
+      $('calDias').querySelectorAll('.dia--sel').forEach(x=>x.classList.remove('dia--sel'));
+      b.classList.add('dia--sel');
+      pintarHoras();pintarConf(dados,destino);aoMudar();
+    });
+    $('calHoras').addEventListener('click',e=>{
+      const b=e.target.closest('.hora');if(!b||b.disabled)return;
+      horaSel=b.dataset.hora;
+      $('calHoras').querySelectorAll('.hora--sel').forEach(x=>x.classList.remove('hora--sel'));
+      b.classList.add('hora--sel');
+      pintarConf(dados,destino);aoMudar();
+    });
+    pintarMes();
+  }
+  return {iniciar,repintar:(dados,destino)=>{pintarMes();pintarHoras();pintarConf(dados,destino)}};
+})();
+
+/* ═══ FLUXO DE AGENDAMENTO — 4 páginas, rota #/agendar/N ═══ */
+(()=>{
+  const DESTINO=CONFIG.agendamento;
+  const fx=document.getElementById('fluxo');
+  const passos=[...fx.querySelectorAll('.fxp')];
+  const prog=[...fx.querySelectorAll('#fxProg i')];
+  const TOTAL=passos.length;
+  const CHAVE='l4p_agendamento';
+  let dados={};
+  try{dados=JSON.parse(localStorage.getItem(CHAVE))||{}}catch{}
+  const salvar=()=>{try{localStorage.setItem(CHAVE,JSON.stringify(dados))}catch{}};
+
+  /* validação */
+  const so=v=>v.replace(/\D/g,'');
+  const valida={
+    nome:v=>v.trim().length>=2,
+    telefone:v=>so(v).length===10||so(v).length===11,
+    email:v=>/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(v.trim())
+  };
+
+  /* seletor de estado agrupado por fuso */
+  const selEstadoFx=fx.querySelector('#fEstado');
+  ESTADOS_FUSO.forEach(([grupo,,lista])=>{
+    const og=document.createElement('optgroup');og.label=grupo;
+    lista.forEach(it=>{
+      const nome=Array.isArray(it)?it[0]:it;
+      const o=document.createElement('option');o.value=nome;o.textContent=nome;og.appendChild(o);
+    });
+    selEstadoFx.appendChild(og);
+  });
+  function mostrarFuso(){
+    const f=FUSO_DO_ESTADO[selEstadoFx.value];
+    const cx=fx.querySelector('#fxFusoNota');
+    if(!f){cx.hidden=true;return}
+    fx.querySelector('#fxFusoTx').textContent=nomeFuso(f);
+    cx.hidden=false;
+  }
+  selEstadoFx.addEventListener('change',mostrarFuso);
+
+  /* máscara progressiva de telefone americano */
+  const tel=fx.querySelector('#fTel');
+  tel.addEventListener('input',()=>{
+    const d=so(tel.value).slice(0,10);
+    tel.value=d.length>6?`(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`
+             :d.length>3?`(${d.slice(0,3)}) ${d.slice(3)}`
+             :d.length?`(${d}`:'';
+  });
+
+  function conferir(passo){
+    let ok=true;
+    passo.querySelectorAll('input[required],select[required]').forEach(i=>{
+      const bom=(valida[i.name]||(v=>v.trim()!==''))(i.value);
+      i.setAttribute('aria-invalid',bom?'false':'true');
+      if(!bom&&ok){i.focus();ok=false}
+    });
+    passo.querySelectorAll('.ops[data-obrigatorio]').forEach(g=>{
+      if(!dados[g.dataset.grupo]&&ok)ok=false;
+    });
+    return ok;
+  }
+  function coletar(passo){
+    passo.querySelectorAll('input[type="text"],input[type="tel"],select').forEach(i=>dados[i.name]=i.value.trim());
+    if(dados.estado)dados.fuso=FUSO_DO_ESTADO[dados.estado]||dados.fuso;
+    salvar();
+  }
+  fx.addEventListener('input',e=>{
+    if(e.target.matches('input[required],select[required]'))e.target.setAttribute('aria-invalid','false');
+  });
+
+  /* opções (licença): marca, guarda e habilita o avançar */
+  fx.querySelectorAll('.ops').forEach(g=>{
+    g.querySelectorAll('.op').forEach(op=>op.addEventListener('click',()=>{
+      g.querySelectorAll('.op').forEach(o=>o.classList.remove('sel'));
+      op.classList.add('sel');
+      dados[g.dataset.grupo]=op.dataset.v;salvar();
+      const btn=op.closest('.fxp').querySelector('[data-avancar]');
+      if(btn)btn.disabled=false;
+    }));
+  });
+
+  /* passo final */
+  let calPronto=false;
+  function prepararFinal(){
+    const p=(dados.nome||'').split(' ')[0];
+    document.getElementById('fxNome').textContent=p||'tudo certo';
+    if(!calPronto){CAL.iniciar(dados,DESTINO,salvar);calPronto=true}
+    else CAL.repintar(dados,DESTINO);
+  }
+
+  /* navegação */
+  let atual=0;
+  function mostrar(n,viaHash){
+    atual=Math.min(Math.max(n,1),TOTAL);
+    passos.forEach((p,i)=>p.classList.toggle('on',i===atual-1));
+    prog.forEach((b,i)=>{b.classList.toggle('feito',i<atual-1);b.classList.toggle('atual',i===atual-1)});
+    document.getElementById('fxoCard').classList.toggle('larga',atual===TOTAL);
+    if(atual===TOTAL)prepararFinal();
+    fx.classList.add('on');
+    document.body.classList.add('trancado');
+    fx.scrollTo({top:0,behavior:'instant'});
+    if(!matchMedia('(hover:none)').matches){
+      passos[atual-1].querySelector('input:not([type=radio])')?.focus();
+    }
+    if(!viaHash)location.hash=`#/agendar/${atual}`;
+  }
+  function fechar(viaHash){
+    fx.classList.remove('on');
+    document.body.classList.remove('trancado');
+    if(!viaHash)history.pushState('','',location.pathname+location.search);
+  }
+  function rota(){
+    const m=location.hash.match(/^#\/agendar\/(\d)/);
+    if(m)mostrar(+m[1],true);else fechar(true);
+  }
+
+  /* preenche de volta o que já foi respondido (refresh, voltar) */
+  Object.entries(dados).forEach(([k,v])=>{
+    const campo=fx.querySelector(`input[name="${k}"],select[name="${k}"]`);
+    if(campo){campo.value=v;return}
+    const op=fx.querySelector(`.ops[data-grupo="${k}"] .op[data-v="${CSS.escape(v)}"]`);
+    if(op){op.classList.add('sel');const btn=op.closest('.fxp')?.querySelector('[data-avancar]');if(btn)btn.disabled=false}
+  });
+  mostrarFuso();
+
+  fx.addEventListener('click',e=>{
+    if(e.target===fx){fechar();return}
+    if(e.target.closest('[data-fechar]')){e.preventDefault();fechar();return}
+    if(e.target.closest('[data-voltar]')){history.back();return}
+    const av=e.target.closest('[data-avancar]');
+    if(!av)return;
+    const p=passos[atual-1];
+    if(!conferir(p))return;
+    coletar(p);
+    mostrar(atual+1);
+  });
+  fx.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&e.target.matches('input')){e.preventDefault();passos[atual-1].querySelector('[data-avancar]')?.click()}
+    if(e.key==='Escape')fechar();
+  });
+
+  /* todos os CTAs da página abrem o fluxo */
+  document.querySelectorAll('a[href="#consultoria"]').forEach(a=>a.setAttribute('href','#/agendar/1'));
+
+  addEventListener('hashchange',rota);
+  rota();
+})();
+</script>
+</body>
+</html>
