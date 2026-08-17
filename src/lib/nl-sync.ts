@@ -157,6 +157,9 @@ function statusPortal(st?: string | null): PolicyStatus | null {
   const s = String(st || '')
   if (/lapsed/i.test(s)) return 'lapsed'
   if (/pending lapse/i.test(s)) return 'at_risk'
+  // NB "Pending" = caso em análise na seguradora (cartão "novos negócios em
+  // análise" do portal — incidente 17/08: os 8 casos sumiam num 'submitted' genérico)
+  if (/pending|pendente/i.test(s)) return 'in_review'
   if (/active|in ?force/i.test(s)) return 'active'
   if (/issued/i.test(s)) return 'issued'
   if (/incomplete|closed|declin|withdraw/i.test(s)) return 'declined'
@@ -259,6 +262,14 @@ export function montarDoFeed(d: any): Registro[] {
     if (v.phone) p.client_phone = String(v.phone).replace(/^\)?/, '').trim()
     if (v.email) p.client_email = v.email
     if (p.status === 'active') p.status = 'at_risk'
+  }
+
+  // 4b) Risco de estorno (cartão "Company at Risk" do relatório NB) — a comissão
+  // volta se a apólice cair. É urgência: vira at_risk, a menos que já encerrada.
+  for (const pol of (d.estorno || []) as string[]) {
+    const p = porPol.get(normPol(pol) || '')
+    if (!p) continue
+    if (!['lapsed', 'cancelled', 'declined'].includes(p.status || '')) p.status = 'at_risk'
   }
 
   // 5) Limbo — enviada no iGo e o portal ainda não processou
