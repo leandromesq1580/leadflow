@@ -328,9 +328,17 @@ export function montarDoFeed(d: any): Registro[] {
     if (!p) continue
     p._fonteReq = true
     if (Array.isArray(v?.comms) && v.comms.length) p._comms = v.comms
-    const trk = v?.tracker ? ` ${v.tracker}` : ''
-    const req = `Underwriting${trk} — responder o Case Communication no portal`
-    if (!p.requirements.some(x => x.startsWith('Underwriting'))) p.requirements.push(req)
+    // "Responder o Case Communication" só é pendência quando o caso está EM ANÁLISE
+    // e a ÚLTIMA palavra é da National (bola com o time). Conversa encerrada ou
+    // última mensagem nossa = sem pendência falsa (auditoria 17/08: 18 casos
+    // resolvidos estavam carimbados de "responder").
+    const ultima = (v?.comms || []).slice(-1)[0]
+    const bolaComAGente = !ultima || /national life|nlg/i.test(String(ultima.quem || 'National Life'))
+    if (p.status === 'in_review' && bolaComAGente) {
+      const trk = v?.tracker ? ` ${v.tracker}` : ''
+      const req = `Underwriting${trk} — responder o Case Communication no portal`
+      if (!p.requirements.some(x => x.startsWith('Underwriting'))) p.requirements.push(req)
+    }
   }
 
   return lista.filter(p => p.client_name)
