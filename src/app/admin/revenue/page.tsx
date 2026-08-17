@@ -16,18 +16,16 @@ export default async function RevenuePage() {
 
   const db = createAdminClient()
 
-  const [paymentsRes, creditsRes, buyersRes] = await Promise.all([
+  const [paymentsRes, buyersRes] = await Promise.all([
     db.from('payments').select('*, buyer:buyers(name, email)').order('created_at', { ascending: false }),
-    db.from('credits').select('buyer_id, type, total_purchased, total_used, price_per_unit, purchased_at, stripe_payment_id'),
     db.from('buyers').select('id, name, email, crm_plan, crm_subscription_status, crm_subscription_id, created_at'),
   ])
 
   const payments = paymentsRes.data || []
-  const credits = creditsRes.data || []
   const buyers = buyersRes.data || []
 
   const completed = payments.filter(p => p.status === 'completed')
-  const totalStripeRevenue = completed.reduce((s, p) => s + Number(p.amount), 0)
+  const totalRevenue = completed.reduce((s, p) => s + Number(p.amount), 0)
 
   // MRR: SO assinaturas pagas reais. O webhook do Stripe grava crm_subscription_id
   // quando ha assinatura paga; contas Pro de cortesia (setadas na mao) tem id null
@@ -36,22 +34,21 @@ export default async function RevenuePage() {
   const payingProSubs = activePro.filter(b => !!b.crm_subscription_id).length
   const compProSubs = activePro.filter(b => !b.crm_subscription_id).length
 
-  // This month revenue (stripe)
+  // Receita deste mes em todos os provedores registrados em payments.
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
   const thisMonthRevenue = completed.filter(p => p.created_at >= monthStart).reduce((s, p) => s + Number(p.amount), 0)
 
-  // Last 30 days credits (non-manual)
+  // Receita real dos ultimos 30 dias: payments inclui pacotes e CRM.
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString()
-  const recentCredits = credits.filter(c => !c.stripe_payment_id?.startsWith('manual:') && c.purchased_at >= thirtyDaysAgo)
-  const last30dRevenue = recentCredits.reduce((s, c) => s + (c.total_purchased * (c.price_per_unit || 0)), 0)
+  const last30dRevenue = completed
+    .filter(p => p.created_at >= thirtyDaysAgo)
+    .reduce((s, p) => s + Number(p.amount), 0)
 
-  // Top customers by total spent (via credits table since it includes everything)
+  // Top customers por pagamento real; inclui pacotes, leads frios e CRM sem duplicar credits.
   const revenueByBuyer: Record<string, number> = {}
-  for (const c of credits) {
-    if (c.stripe_payment_id?.startsWith('manual:')) continue
-    const val = c.total_purchased * (c.price_per_unit || 0)
-    revenueByBuyer[c.buyer_id] = (revenueByBuyer[c.buyer_id] || 0) + val
+  for (const payment of completed) {
+    revenueByBuyer[payment.buyer_id] = (revenueByBuyer[payment.buyer_id] || 0) + Number(payment.amount)
   }
   const topCustomers = Object.entries(revenueByBuyer)
     .sort((a, b) => b[1] - a[1])
@@ -102,8 +99,8 @@ export default async function RevenuePage() {
   }
   const maxMonthRev = Math.max(...months.map(m => m.revenue), 1)
 
-  const totalLeadsSold = credits.filter(c => c.type === 'lead').reduce((s, c) => s + c.total_purchased, 0)
-  const totalApptsSold = credits.filter(c => c.type === 'appointment').reduce((s, c) => s + c.total_purchased, 0)
+  const totalLeadsSold = completed.filter(p => p.product_type === 'lead' || p.product_type === 'cold_lead').reduce((s, p) => s + Number(p.quantity || 0), 0)
+  const totalApptsSold = completed.filter(p => p.product_type === 'appointment').reduce((s, p) => s + Number(p.quantity || 0), 0)
 
   return (
     <div className="max-w-[1100px]">
@@ -121,7 +118,7 @@ export default async function RevenuePage() {
         <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
           <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Receita este mês</p>
           <p className="text-[28px] font-extrabold mt-1" style={{ color: '#10b981' }}>${thisMonthRevenue.toLocaleString()}</p>
-          <p className="text-[11px] mt-1" style={{ color: '#94a3b8' }}>Pagamentos Stripe</p>
+          <p className="text-[11px] mt-1" style={{ color: '#94a3b8' }}>Pagamentos confirmados</p>
         </div>
         <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
           <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Últimos 30 dias</p>
@@ -130,7 +127,7 @@ export default async function RevenuePage() {
         </div>
         <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
           <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Total histórico</p>
-          <p className="text-[28px] font-extrabold mt-1" style={{ color: '#1a1a2e' }}>${totalStripeRevenue.toLocaleString()}</p>
+          <p className="text-[28px] font-extrabold mt-1" style={{ color: '#1a1a2e' }}>${totalRevenue.toLocaleString()}</p>
           <p className="text-[11px] mt-1" style={{ color: '#94a3b8' }}>{totalLeadsSold} leads · {totalApptsSold} appts</p>
         </div>
       </div>

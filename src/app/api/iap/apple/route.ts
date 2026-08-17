@@ -94,6 +94,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, skipped: 'stripe_sub_present' })
     }
 
+    // Registra cada transação Apple como compra de CRM para o histórico unificado.
+    // Restore/entitlement pode enviar a mesma transação várias vezes, por isso o
+    // marcador apple:<transactionId> é verificado antes do insert.
+    const appleTransactionId = String(tx.transactionId || '')
+    if (appleTransactionId) {
+      const transactionMarker = `apple:${appleTransactionId}`
+      const { data: existingPayment } = await db.from('payments')
+        .select('id')
+        .eq('stripe_session_id', transactionMarker)
+        .maybeSingle()
+
+      if (!existingPayment) {
+        const purchaseDateMs = Number(tx.purchaseDate || Date.now())
+        const { error: paymentError } = await db.from('payments').insert({
+          buyer_id: buyer.id,
+          stripe_session_id: transactionMarker,
+          stripe_payment_intent_id: null,
+          amount: 99,
+          product_type: 'crm',
+          quantity: 1,
+          price_per_unit: 99,
+          status: 'completed',
+          created_at: new Date(purchaseDateMs).toISOString(),
+        })
+        if (paymentError) console.error('[iap/apple] falha ao registrar pagamento:', paymentError.message)
+      }
+    }
+
     await db.from('buyers').update({
       crm_plan: active ? 'pro' : 'free',
       crm_subscription_id: appleSubId,

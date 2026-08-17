@@ -5,6 +5,8 @@ import { formatDate, getInitials } from '@/lib/utils'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { AdminActions } from './admin-actions'
+import { CRM_PLAN_LIST } from '@/lib/crm-plans'
+import { buildPurchaseHistory } from '@/lib/purchase-history'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,6 +24,10 @@ export default async function BuyerDetailPage({ params }: { params: Promise<{ id
   const { data: states } = await db.from('buyer_states').select('state_code').eq('buyer_id', id)
   const { data: availability } = await db.from('buyer_availability').select('day_type, period').eq('buyer_id', id)
   const { data: credits } = await db.from('credits').select('*').eq('buyer_id', id).order('purchased_at', { ascending: false })
+  const { data: payments } = await db.from('payments')
+    .select('id, amount, product_type, quantity, price_per_unit, status, created_at, stripe_session_id, stripe_payment_intent_id')
+    .eq('buyer_id', id)
+    .order('created_at', { ascending: false })
   // Total REAL de leads recebidos (count separado — a lista abaixo é limitada só pra exibição).
   // Bug antigo: o título usava leads.length, que era capado pelo .limit() → mostrava "(10)" mesmo com 15.
   const { count: leadsCount } = await db.from('leads').select('id', { count: 'exact', head: true }).eq('assigned_to', id).not('meta_lead_id', 'is', null)
@@ -34,6 +40,10 @@ export default async function BuyerDetailPage({ params }: { params: Promise<{ id
   const usedLeadCredits = leadCredits.reduce((s, c) => s + c.total_used, 0)
   const totalApptCredits = apptCredits.reduce((s, c) => s + c.total_purchased, 0)
   const usedApptCredits = apptCredits.reduce((s, c) => s + c.total_used, 0)
+  const purchaseHistory = buildPurchaseHistory(payments || [], credits || [])
+  const paidTotal = purchaseHistory
+    .filter(p => p.source === 'payment' && p.status === 'completed')
+    .reduce((sum, p) => sum + p.amount, 0)
 
   const dayLabels: Record<string, string> = { weekday: 'Seg-Sex', saturday: 'Sabado', sunday: 'Domingo', holiday: 'Feriados' }
   const periodLabels: Record<string, string> = { morning: 'Manha', afternoon: 'Tarde', evening: 'Noite' }
@@ -144,40 +154,49 @@ export default async function BuyerDetailPage({ params }: { params: Promise<{ id
         )}
       </div>
 
-      {/* Credits History */}
+      {/* Unified purchase history */}
       <div className="rounded-2xl overflow-hidden mb-6" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
         <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #e8ecf4' }}>
-          <h2 className="text-[15px] font-bold" style={{ color: '#1a1a2e' }}>Histórico de Compras ({credits?.length || 0})</h2>
-          {credits && credits.length > 0 && (
+          <h2 className="text-[15px] font-bold" style={{ color: '#1a1a2e' }}>Histórico de Compras e Assinaturas ({purchaseHistory.length})</h2>
+          {paidTotal > 0 && (
             <p className="text-[12px] font-bold" style={{ color: '#10b981' }}>
-              ${credits.reduce((s: number, c: any) => s + (c.total_purchased * (c.price_per_unit || 0)), 0).toFixed(2)} total
+              ${paidTotal.toFixed(2)} pago
             </p>
           )}
         </div>
-        {credits && credits.length > 0 ? (
+        {purchaseHistory.length > 0 ? (
           <div>
-            {credits.map((c: any, i: number) => {
-              const isManual = c.stripe_payment_id?.startsWith('manual:')
-              const value = c.total_purchased * (c.price_per_unit || 0)
-              const remaining = c.total_purchased - c.total_used
+            {purchaseHistory.map((purchase, i) => {
+              const crmPlan = purchase.productType === 'crm'
+                ? CRM_PLAN_LIST.find(plan => plan.amountCents === Math.round(purchase.amount * 100))
+                : null
+              const productLabel = purchase.productType === 'crm'
+                ? `CRM Pro${crmPlan ? ` — ${crmPlan.label}` : ''}`
+                : purchase.productType === 'appointment'
+                  ? `${purchase.quantity}x appointments`
+                  : purchase.productType === 'cold_lead'
+                    ? `${purchase.quantity}x leads frios`
+                    : `${purchase.quantity}x leads`
+              const prefix = purchase.source === 'manual_credit' ? 'Cortesia · ' : purchase.source === 'bonus_credit' ? 'Bônus CRM · ' : ''
+              const statusLabel = purchase.status === 'refunded' ? 'Reembolsado' : purchase.status === 'pending' ? 'Pendente' : purchase.status === 'courtesy' ? 'Cortesia' : purchase.status === 'bonus' ? 'Bônus' : 'Pago'
               return (
-                <div key={c.id} className="flex items-center gap-3 px-6 py-3" style={{ borderBottom: i < credits.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                <div key={purchase.id} className="flex items-center gap-3 px-6 py-3" style={{ borderBottom: i < purchaseHistory.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[14px]"
-                    style={{ background: isManual ? '#fef3c7' : '#eef2ff' }}>
-                    {isManual ? '🎁' : c.type === 'lead' ? '🎯' : c.type === 'appointment' ? '📅' : '❄️'}
+                    style={{ background: purchase.source === 'manual_credit' ? '#fef3c7' : purchase.productType === 'crm' ? '#ede9fe' : '#eef2ff' }}>
+                    {purchase.productType === 'crm' ? '💳' : purchase.source === 'manual_credit' ? '🎁' : purchase.productType === 'appointment' ? '📅' : purchase.productType === 'cold_lead' ? '❄️' : '🎯'}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-semibold" style={{ color: '#1a1a2e' }}>
-                      {c.total_purchased}x {c.type === 'lead' ? 'leads' : c.type === 'appointment' ? 'appointments' : 'leads frios'}
-                      {isManual && <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#fef3c7', color: '#92400e' }}>CORTESIA</span>}
+                      {prefix}{productLabel}
                     </p>
                     <p className="text-[11px]" style={{ color: '#94a3b8' }}>
-                      {formatDate(c.purchased_at)} · {c.total_used} usados · {remaining} restantes
-                      {isManual && ` · ${c.stripe_payment_id.replace('manual:', '')}`}
+                      {formatDate(purchase.purchasedAt)} · {statusLabel}
+                      {purchase.remaining !== null ? ` · ${purchase.totalUsed} usados · ${purchase.remaining} restantes` : ''}
+                      {purchase.note ? ` · ${purchase.note}` : ''}
                     </p>
                   </div>
-                  <span className="text-[13px] font-bold" style={{ color: isManual ? '#94a3b8' : '#10b981' }}>
-                    {isManual ? '—' : `$${value.toFixed(2)}`}
+                  <span className="text-[13px] font-bold" style={{ color: purchase.status === 'refunded' ? '#ef4444' : purchase.status === 'pending' ? '#f59e0b' : purchase.source === 'payment' ? '#10b981' : '#94a3b8' }}>
+                    {purchase.source === 'payment' ? `$${purchase.amount.toFixed(2)}` : statusLabel}
                   </span>
                 </div>
               )

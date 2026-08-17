@@ -8,8 +8,9 @@ import { MIcon } from '@/components/mobile/icons'
 import { PRODUCTS } from '@/lib/stripe'
 import { PolicyCheck } from '@/components/policy-check'
 import { CRM_PLAN_LIST } from '@/lib/crm-plans'
+import type { PurchaseHistoryItem } from '@/lib/purchase-history'
 
-interface CreditsData { totalLeads: number; totalAppts: number; crm_plan: string; crm_subscription_status: string | null; crm_plan_key: string | null; history: Array<{ id: string; type: string; total_purchased: number; total_used: number; price_per_unit: number; purchased_at: string }> }
+interface CreditsData { totalLeads: number; totalAppts: number; crm_plan: string; crm_subscription_status: string | null; crm_plan_key: string | null; history: PurchaseHistoryItem[] }
 
 export default function MobileCreditos() {
   const t = useT()
@@ -94,6 +95,36 @@ export default function MobileCreditos() {
   const isActive = d?.crm_subscription_status === 'active'
   const currentPlanKey = d?.crm_plan_key || null
   const leadPkgs = PRODUCTS.lead.packages
+  const historyLabel = (item: PurchaseHistoryItem) => {
+    let label: string
+    if (item.productType === 'crm') {
+      const plan = CRM_PLAN_LIST.find(p => p.amountCents === Math.round(item.amount * 100))
+      const planLabel = plan
+        ? (loc === 'en' ? ({ mensal: 'Monthly', trimestral: 'Quarterly', semestral: 'Semi-annual', anual: 'Annual' } as Record<string, string>)[plan.key]
+          : loc === 'es' ? ({ mensal: 'Mensual', trimestral: 'Trimestral', semestral: 'Semestral', anual: 'Anual' } as Record<string, string>)[plan.key]
+            : plan.label)
+        : null
+      label = `CRM Pro${planLabel ? ` · ${planLabel}` : ''}`
+    } else if (item.productType === 'appointment') {
+      label = `${item.quantity} Appointments`
+    } else if (item.productType === 'cold_lead') {
+      label = `${item.quantity} ${L('Leads frios', 'Cold leads', 'Leads fríos')}`
+    } else {
+      label = `${item.quantity} Leads`
+    }
+    if (item.source === 'manual_credit') return `${L('Cortesia', 'Courtesy', 'Cortesía')} · ${label}`
+    if (item.source === 'bonus_credit') return `${L('Bônus CRM', 'CRM bonus', 'Bono CRM')} · ${label}`
+    return label
+  }
+  const historyStatus = (item: PurchaseHistoryItem) => item.status === 'refunded'
+    ? L('Reembolsado', 'Refunded', 'Reembolsado')
+    : item.status === 'pending'
+      ? L('Pendente', 'Pending', 'Pendiente')
+      : item.status === 'courtesy'
+        ? L('Cortesia', 'Courtesy', 'Cortesía')
+        : item.status === 'bonus'
+          ? L('Bônus', 'Bonus', 'Bono')
+          : L('Pago', 'Paid', 'Pagado')
 
   // Cupom de plataforma (paridade com o web, 2026-07-24): validado no servidor; quando
   // aplicado, os pacotes de LEAD mostram o preço com desconto e o checkout recebe o código.
@@ -299,17 +330,22 @@ export default function MobileCreditos() {
           </div>
           </>}
 
-          {/* Histórico */}
+          {/* Histórico unificado: pacotes, assinatura CRM e ajustes de crédito */}
           {d.history.length > 0 && (
             <div className="m-card" style={{ padding: 16, marginBottom: 8 }}>
-              <p style={{ fontSize: 14, fontWeight: 700, margin: '0 0 10px' }}>{L('Histórico', 'History', 'Historial')}</p>
+              <p style={{ fontSize: 14, fontWeight: 700, margin: '0 0 10px' }}>{L('Compras e assinaturas', 'Purchases & subscriptions', 'Compras y suscripciones')}</p>
               {d.history.map((h, i) => (
                 <div key={h.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 0', borderBottom: i < d.history.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
-                  <div>
-                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>{h.total_purchased} {h.type === 'appointment' ? 'Appts' : 'Leads'}</p>
-                    <p className="m-muted" style={{ margin: '1px 0 0', fontSize: 11 }}>{new Date(h.purchased_at).toLocaleDateString(loc === 'en' ? 'en-US' : loc === 'es' ? 'es-US' : 'pt-BR')} · {h.total_purchased - h.total_used} {L('restantes', 'left', 'restantes')}</p>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>{historyLabel(h)}</p>
+                    <p className="m-muted" style={{ margin: '1px 0 0', fontSize: 11 }}>
+                      {new Date(h.purchasedAt).toLocaleDateString(loc === 'en' ? 'en-US' : loc === 'es' ? 'es-US' : 'pt-BR')} · {historyStatus(h)}
+                      {h.remaining !== null ? ` · ${h.remaining} ${L('restantes', 'left', 'restantes')}` : ''}
+                    </p>
                   </div>
-                  <span className="m-faint" style={{ fontSize: 12 }}>${h.price_per_unit}/{L('un', 'un', 'un')}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: h.status === 'refunded' ? '#f87171' : h.status === 'pending' ? '#fbbf24' : h.source === 'payment' ? '#4ade80' : 'var(--m-muted)', marginLeft: 12, whiteSpace: 'nowrap' }}>
+                    {h.source === 'payment' ? `$${h.amount.toFixed(2)}` : historyStatus(h)}
+                  </span>
                 </div>
               ))}
             </div>

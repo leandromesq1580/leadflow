@@ -11,6 +11,7 @@ import { CrmChangePlan } from './crm-change-plan'
 import { getCrmPlan, CRM_PLAN_LIST } from '@/lib/crm-plans'
 import { BillingPortalButton } from '@/components/billing-portal-button'
 import { getLocale } from '@/lib/locale'
+import { buildPurchaseHistory, type PurchaseHistoryItem } from '@/lib/purchase-history'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,13 +32,19 @@ export default async function CreditsPage({
   const { data: buyer } = await db.from('buyers').select('id, crm_plan, crm_subscription_status, crm_subscription_id').eq('auth_user_id', user.id).single()
   if (!buyer) redirect('/login')
 
-  const { data: credits } = await db
-    .from('credits')
-    .select('*')
-    .eq('buyer_id', buyer.id)
-    .order('purchased_at', { ascending: false })
+  const [creditsRes, paymentsRes] = await Promise.all([
+    db.from('credits')
+      .select('id, type, total_purchased, total_used, price_per_unit, purchased_at, stripe_payment_id')
+      .eq('buyer_id', buyer.id)
+      .order('purchased_at', { ascending: false }),
+    db.from('payments')
+      .select('id, amount, product_type, quantity, price_per_unit, status, created_at, stripe_session_id, stripe_payment_intent_id')
+      .eq('buyer_id', buyer.id)
+      .order('created_at', { ascending: false }),
+  ])
 
-  const allCredits = credits || []
+  const allCredits = creditsRes.data || []
+  const purchaseHistory = buildPurchaseHistory(paymentsRes.data || [], allCredits)
   const totalLeads = allCredits.filter(c => c.type === 'lead').reduce((s, c) => s + c.total_purchased - c.total_used, 0)
   const totalAppts = allCredits.filter(c => c.type === 'appointment').reduce((s, c) => s + c.total_purchased - c.total_used, 0)
 
@@ -79,6 +86,36 @@ export default async function CreditsPage({
     ? (locale === 'en' ? planLabelI18n[currentPlanKey][0] : planLabelI18n[currentPlanKey][1])
     : rawPlanLabel
   const cancelDateStr = cancelAtEnd && periodEndTs ? new Date(periodEndTs * 1000).toLocaleDateString(dateLocale) : null
+  const localizedPlanLabel = (key: string) => {
+    const plan = getCrmPlan(key)
+    if (!plan) return null
+    if (locale === 'pt') return plan.label
+    return locale === 'en' ? planLabelI18n[key]?.[0] : planLabelI18n[key]?.[1]
+  }
+  const purchaseLabel = (purchase: PurchaseHistoryItem) => {
+    let label: string
+    if (purchase.productType === 'crm') {
+      const plan = CRM_PLAN_LIST.find(p => p.amountCents === Math.round(purchase.amount * 100))
+      const planLabel = plan ? localizedPlanLabel(plan.key) : null
+      label = `CRM Pro${planLabel ? ` — ${planLabel}` : ''}`
+    } else if (purchase.productType === 'appointment') {
+      label = `${purchase.quantity} ${L('Appointments', 'Appointments', 'Appointments')}`
+    } else if (purchase.productType === 'cold_lead') {
+      label = `${purchase.quantity} ${L('Leads Frios', 'Cold Leads', 'Leads Fríos')}`
+    } else {
+      label = `${purchase.quantity} Leads`
+    }
+    if (purchase.source === 'manual_credit') return `${L('Cortesia', 'Courtesy', 'Cortesía')} · ${label}`
+    if (purchase.source === 'bonus_credit') return `${L('Bônus CRM', 'CRM Bonus', 'Bono CRM')} · ${label}`
+    return label
+  }
+  const purchaseStatus = (purchase: PurchaseHistoryItem) => {
+    if (purchase.status === 'refunded') return L('Reembolsado', 'Refunded', 'Reembolsado')
+    if (purchase.status === 'pending') return L('Pendente', 'Pending', 'Pendiente')
+    if (purchase.status === 'courtesy') return L('Cortesia', 'Courtesy', 'Cortesía')
+    if (purchase.status === 'bonus') return L('Bônus', 'Bonus', 'Bono')
+    return L('Pago', 'Paid', 'Pagado')
+  }
 
   return (
     <div className="max-w-[1040px]">
@@ -189,35 +226,41 @@ export default async function CreditsPage({
         ))}
       </div>
 
-      {/* Purchase History */}
-      <h2 className="text-[16px] font-bold mb-4" style={{ color: 'var(--fg)' }}>{L('Historico de Compras', 'Purchase History', 'Historial de Compras')}</h2>
+      {/* Unified purchase history: paid packages + CRM subscriptions + credit adjustments */}
+      <h2 className="text-[16px] font-bold mb-4" style={{ color: 'var(--fg)' }}>{L('Histórico de Compras e Assinaturas', 'Purchase & Subscription History', 'Historial de Compras y Suscripciones')}</h2>
       <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-        {allCredits.length > 0 ? (
+        {purchaseHistory.length > 0 ? (
           <div>
-            {allCredits.map((c, i) => (
-              <div key={c.id} className="flex items-center gap-4 px-6 py-4" style={{ borderBottom: i < allCredits.length - 1 ? '1px solid var(--bg-soft)' : 'none' }}>
-                <span className="text-[20px]">{c.type === 'lead' ? '📋' : '📅'}</span>
-                <div className="flex-1">
-                  <p className="text-[14px] font-semibold" style={{ color: 'var(--fg)' }}>
-                    {c.total_purchased} {c.type === 'lead' ? 'Leads' : 'Appointments'}
-                  </p>
-                  <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>
-                    ${Number(c.price_per_unit).toFixed(0)}/{c.type === 'lead' ? 'lead' : 'appt'}
-                  </p>
+            {purchaseHistory.map((purchase, i) => {
+              const isRefunded = purchase.status === 'refunded'
+              const isPending = purchase.status === 'pending'
+              return (
+                <div key={purchase.id} className="flex items-center gap-4 px-6 py-4" style={{ borderBottom: i < purchaseHistory.length - 1 ? '1px solid var(--bg-soft)' : 'none' }}>
+                  <span className="text-[20px]">{purchase.productType === 'crm' ? '💳' : purchase.productType === 'appointment' ? '📅' : purchase.productType === 'cold_lead' ? '❄️' : purchase.source === 'manual_credit' ? '🎁' : '📋'}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-semibold" style={{ color: 'var(--fg)' }}>{purchaseLabel(purchase)}</p>
+                    <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>
+                      {new Date(purchase.purchasedAt).toLocaleDateString(dateLocale)} · {purchaseStatus(purchase)}
+                      {purchase.note ? ` · ${purchase.note}` : ''}
+                    </p>
+                  </div>
+                  {purchase.remaining !== null && (
+                    <div className="text-right hidden sm:block">
+                      <p className="text-[13px] font-bold" style={{ color: '#10b981' }}>{purchase.remaining} {L('restantes', 'left', 'restantes')}</p>
+                      <p className="text-[11px]" style={{ color: 'var(--fg-muted)' }}>{purchase.totalUsed} {L('usados', 'used', 'usados')}</p>
+                    </div>
+                  )}
+                  <div className="text-right min-w-[82px]">
+                    <p className="text-[14px] font-bold" style={{ color: isRefunded ? '#ef4444' : isPending ? '#f59e0b' : purchase.source === 'payment' ? '#10b981' : 'var(--fg-muted)' }}>
+                      {purchase.source === 'payment' ? `$${purchase.amount.toFixed(2)}` : purchaseStatus(purchase)}
+                    </p>
+                    {purchase.source === 'payment' && purchase.productType !== 'crm' && purchase.quantity > 0 && (
+                      <p className="text-[11px]" style={{ color: 'var(--fg-muted)' }}>${purchase.pricePerUnit.toFixed(2)}/{L('un.', 'unit', 'un.')}</p>
+                    )}
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-[13px] font-bold" style={{ color: '#10b981' }}>
-                    {c.total_purchased - c.total_used} {locale === 'en' ? 'left' : (c.total_purchased - c.total_used !== 1 ? 'restantes' : 'restante')}
-                  </p>
-                  <p className="text-[11px]" style={{ color: 'var(--fg-muted)' }}>
-                    {c.total_used} {locale === 'en' ? 'used' : (c.total_used !== 1 ? 'usados' : 'usado')}
-                  </p>
-                </div>
-                <span className="text-[11px]" style={{ color: 'var(--fg-muted)' }}>
-                  {new Date(c.purchased_at).toLocaleDateString(dateLocale)}
-                </span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         ) : (
           <div className="text-center py-12 text-[13px]" style={{ color: 'var(--fg-muted)' }}>{L('Nenhuma compra ainda', 'No purchases yet', 'Aún no hay compras')}</div>

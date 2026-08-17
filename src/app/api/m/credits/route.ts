@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getStripe } from '@/lib/stripe'
+import { buildPurchaseHistory } from '@/lib/purchase-history'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,10 +19,20 @@ export async function GET() {
   const { data: buyer } = await db.from('buyers').select('id, crm_plan, crm_subscription_status, crm_subscription_id').eq('auth_user_id', user.id).single()
   if (!buyer) return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
 
-  let history: any[] = []
-  try { const { data } = await db.from('credits').select('id, type, total_purchased, total_used, price_per_unit, purchased_at').eq('buyer_id', buyer.id).order('purchased_at', { ascending: false }); history = data || [] } catch {}
+  const [creditsRes, paymentsRes] = await Promise.all([
+    db.from('credits')
+      .select('id, type, total_purchased, total_used, price_per_unit, purchased_at, stripe_payment_id')
+      .eq('buyer_id', buyer.id)
+      .order('purchased_at', { ascending: false }),
+    db.from('payments')
+      .select('id, amount, product_type, quantity, price_per_unit, status, created_at, stripe_session_id, stripe_payment_intent_id')
+      .eq('buyer_id', buyer.id)
+      .order('created_at', { ascending: false }),
+  ])
+  const creditRows = creditsRes.data || []
+  const history = buildPurchaseHistory(paymentsRes.data || [], creditRows)
 
-  const sum = (type: string) => history.filter(c => c.type === type).reduce((s, c) => s + ((c.total_purchased || 0) - (c.total_used || 0)), 0)
+  const sum = (type: string) => creditRows.filter(c => c.type === type).reduce((s, c) => s + ((c.total_purchased || 0) - (c.total_used || 0)), 0)
 
   // Plano exato do assinante ativo (só existe no metadata da assinatura Stripe)
   let crm_plan_key: string | null = null
