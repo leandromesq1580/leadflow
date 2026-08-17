@@ -15,6 +15,35 @@ export const dynamic = 'force-dynamic'
 
 const EMAIL_VENDAS = 'regiane@myhomefirst.us'
 
+function descricaoDoAgendamento(
+  slot: Date,
+  { fuso, idioma, licenca, estado }: { fuso: string; idioma: string; licenca: string; estado: string },
+) {
+  let quando: string
+  try {
+    quando = new Intl.DateTimeFormat('pt-BR', {
+      dateStyle: 'full',
+      timeStyle: 'short',
+      timeZone: fuso || 'America/New_York',
+    }).format(slot)
+  } catch {
+    quando = new Intl.DateTimeFormat('pt-BR', {
+      dateStyle: 'full',
+      timeStyle: 'short',
+      timeZone: 'America/New_York',
+    }).format(slot)
+  }
+
+  return [
+    '📅 Consultoria agendada pela página Lead4Pro',
+    `Data e horário: ${quando}`,
+    `Fuso escolhido: ${fuso || 'America/New_York'}`,
+    `Idioma: ${idioma.toUpperCase()}`,
+    `Licença: ${licenca || '—'}`,
+    `Estado: ${estado || '—'}`,
+  ].join('\n')
+}
+
 export async function POST(req: Request) {
   let body: Record<string, string> = {}
   try { body = await req.json() } catch { return NextResponse.json({ error: 'JSON inválido' }, { status: 400 }) }
@@ -130,7 +159,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Não consegui registrar no atendimento — tente de novo.' }, { status: 500 })
   }
 
-  // 4) aviso imediato pro time (falha aqui não derruba o agendamento)
+  // 4) deixa o resumo da reserva no histórico de Follow-ups do card. A data fica
+  // no texto, mas scheduled_at permanece nulo: o compromisso verdadeiro já está
+  // em appointments e duplicá-lo aqui faria a agenda e os lembretes aparecerem 2x.
+  const { data: followUp, error: followUpErr } = await db.from('follow_ups').insert({
+    lead_id: leadId,
+    buyer_id: vendas.id,
+    type: 'meeting',
+    description: descricaoDoAgendamento(slot, { fuso, idioma, licenca, estado }),
+    scheduled_at: null,
+  }).select('id').single()
+  if (followUpErr || !followUp) {
+    console.error('[nova/agendar] falha ao gravar follow-up:', followUpErr)
+    await desfazerLead('erro no follow-up')
+    return NextResponse.json({ error: 'Não consegui registrar os dados do agendamento — tente de novo.' }, { status: 500 })
+  }
+
+  // 5) aviso imediato pro time (falha aqui não derruba o agendamento)
   try {
     const { pushToBuyer } = await import('@/lib/push-notify')
     const quando = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/New_York' }).format(slot)
@@ -142,5 +187,10 @@ export async function POST(req: Request) {
     })
   } catch { /* push é conforto */ }
 
-  return NextResponse.json({ ok: true, lead_id: leadId, appointment_id: appointment.id })
+  return NextResponse.json({
+    ok: true,
+    lead_id: leadId,
+    appointment_id: appointment.id,
+    follow_up_id: followUp.id,
+  })
 }

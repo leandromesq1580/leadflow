@@ -854,7 +854,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                             </div>
                           ) : (
                             <>
-                              <p className="text-[13px] font-semibold" style={{ color: 'var(--fg)', textDecoration: done ? 'line-through' : 'none' }}>
+                              <p className="text-[13px] font-semibold" style={{ color: 'var(--fg)', textDecoration: done ? 'line-through' : 'none', whiteSpace: 'pre-line' }}>
                                 {fu.description}
                               </p>
                               <p className="text-[11px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>
