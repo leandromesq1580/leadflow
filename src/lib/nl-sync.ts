@@ -160,6 +160,7 @@ function statusPortal(st?: string | null): PolicyStatus | null {
   // NB "Pending" = caso em análise na seguradora (cartão "novos negócios em
   // análise" do portal — incidente 17/08: os 8 casos sumiam num 'submitted' genérico)
   if (/pending|pendente/i.test(s)) return 'in_review'
+  if (/approved/i.test(s)) return 'issued'
   if (/active|in ?force/i.test(s)) return 'active'
   if (/issued/i.test(s)) return 'issued'
   if (/incomplete|closed|declin|withdraw/i.test(s)) return 'declined'
