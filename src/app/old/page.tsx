@@ -10,6 +10,10 @@ import { MetaPixel } from '@/components/meta-pixel'
 import { BuyCheckoutCta } from '@/components/buy-checkout-cta'
 import { CrmPlansGrid } from '@/app/dashboard/planos/crm-plans-grid'
 
+export const metadata = {
+  robots: { index: false, follow: false },   // versão antiga arquivada em /old
+}
+
 export default async function LandingPage() {
   const locale = await getLocale()
   const t = getMessages(locale)
