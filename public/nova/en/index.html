@@ -1635,11 +1635,15 @@ ir.addEventListener('click',async e=>{
   try{
     const r=await fetch('/api/nova/agendar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome:p.name||'',email:p.email||'',telefone:p.phone||'',licenca:p.licenca||'',estado:p.estado||'',fuso:p.fuso||'',slot:p.slot||'',idioma:'en'})});
     const d=await r.json().catch(()=>({}));
-    if(!r.ok)throw new Error(d.error||'erro');
+    if(!r.ok){const x=new Error(d.error||'error');x.code=d.code||'';throw x}
     document.getElementById('calConf').innerHTML='<b style="font-size:18px">✅ You’re booked!</b><br><span style="opacity:.85;font-size:13.5px">Our team got your slot — confirmation is on its way via WhatsApp and email.</span>';
     try{localStorage.removeItem('l4p_agendamento')}catch{}
     try{window.fbq&&fbq('track','Lead')}catch{}
   }catch(err){
+    if(err&&err.code==='slot_taken'){
+      const c=document.getElementById('calConf');c.hidden=false;c.textContent='That time was just booked. Refreshing the available times…';
+      setTimeout(()=>location.reload(),1600);return;
+    }
     ir.style.pointerEvents='';ir.textContent='Something failed — try again in a moment';
     setTimeout(()=>{ir.innerHTML=orig},2800);
   }

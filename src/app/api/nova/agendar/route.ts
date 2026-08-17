@@ -45,6 +45,27 @@ export async function POST(req: Request) {
   const { data: vendas } = await db.from('buyers').select('id, name').eq('email', EMAIL_VENDAS).single()
   if (!vendas) return NextResponse.json({ error: 'Agenda indisponível no momento.' }, { status: 503 })
 
+  // A disponibilidade mostrada no navegador pode ter sido carregada há alguns
+  // minutos. Confere novamente no servidor para não aceitar duas pessoas no
+  // mesmo horário quando duas abas confirmam quase juntas.
+  const { data: ocupado, error: ocupadoErr } = await db.from('appointments')
+    .select('id')
+    .eq('buyer_id', vendas.id)
+    .eq('scheduled_at', slot.toISOString())
+    .in('status', ['scheduled', 'confirmed'])
+    .limit(1)
+    .maybeSingle()
+  if (ocupadoErr) {
+    console.error('[nova/agendar] falha ao conferir disponibilidade:', ocupadoErr)
+    return NextResponse.json({ error: 'Não consegui confirmar o horário — tente novamente.' }, { status: 503 })
+  }
+  if (ocupado) {
+    return NextResponse.json({
+      error: 'Esse horário acabou de ser reservado. Escolha outro horário.',
+      code: 'slot_taken',
+    }, { status: 409 })
+  }
+
   // 1) o prospect vira lead no pipeline do time de vendas
   const { data: lead, error: leadErr } = await db.from('leads').insert({
     name: nome,
@@ -61,34 +82,55 @@ export async function POST(req: Request) {
     raw_data: { source: 'landing_nova', licenca, fuso, idioma, slot: slot.toISOString() },
   }).select('id').single()
   if (leadErr || !lead) return NextResponse.json({ error: 'Não consegui registrar — tente de novo.' }, { status: 500 })
+  const leadId = lead.id
 
-  // primeira coluna do pipeline padrão (mesmo idiom do lead manual)
-  try {
-    const { data: pipe } = await db.from('pipelines')
-      .select('id, pipeline_stages(id, position)')
-      .eq('buyer_id', vendas.id).eq('is_default', true).single()
-    if (pipe) {
-      const stages = ((pipe as any).pipeline_stages || []).sort((a: any, b: any) => a.position - b.position)
-      if (stages.length > 0) {
-        await db.from('pipeline_leads').insert({
-          lead_id: lead.id, pipeline_id: pipe.id, stage_id: stages[0].id,
-          position: 0, moved_at: new Date().toISOString(),
-        })
-      }
-    }
-  } catch { /* pipeline é conforto; a consultoria abaixo é o que não pode falhar */ }
+  // Se uma das duas gravações obrigatórias falhar, removemos o lead. Assim a
+  // landing nunca confirma parcialmente (só pipeline ou só agenda).
+  async function desfazerLead(motivo: string) {
+    const { error } = await db.from('leads').delete().eq('id', leadId)
+    if (error) console.error(`[nova/agendar] falha ao desfazer lead apó ${motivo}:`, error)
+  }
 
   // 2) a consultoria entra na agenda do sistema
-  const { error: apptErr } = await db.from('appointments').insert({
-    lead_id: lead.id,
+  const { data: appointment, error: apptErr } = await db.from('appointments').insert({
+    lead_id: leadId,
     buyer_id: vendas.id,
     scheduled_at: slot.toISOString(),
     qualification_notes: `Consultoria estratégica (landing /nova · ${idioma.toUpperCase()}) · Licença: ${licenca || '—'} · Estado: ${estado || '—'} · Fuso do prospect: ${fuso || '—'}`,
     status: 'scheduled',
-  })
-  if (apptErr) return NextResponse.json({ error: 'Não consegui agendar — tente de novo.' }, { status: 500 })
+  }).select('id').single()
+  if (apptErr || !appointment) {
+    console.error('[nova/agendar] falha ao gravar agenda:', apptErr)
+    await desfazerLead('erro na agenda')
+    return NextResponse.json({ error: 'Não consegui agendar — tente de novo.' }, { status: 500 })
+  }
 
-  // 3) aviso imediato pro time (falha aqui não derruba o agendamento)
+  // 3) o lead entra na primeira coluna do pipeline padrão
+  const { data: pipe, error: pipeErr } = await db.from('pipelines')
+    .select('id, pipeline_stages(id, position)')
+    .eq('buyer_id', vendas.id).eq('is_default', true).single()
+  const stages = ((pipe?.pipeline_stages || []) as Array<{ id: string; position: number }>)
+    .sort((a, b) => a.position - b.position)
+  if (pipeErr || !pipe || stages.length === 0) {
+    console.error('[nova/agendar] pipeline padrão indisponível:', pipeErr)
+    await desfazerLead('erro ao localizar pipeline')
+    return NextResponse.json({ error: 'Não consegui registrar no atendimento — tente de novo.' }, { status: 500 })
+  }
+
+  const { error: cardErr } = await db.from('pipeline_leads').upsert({
+    lead_id: leadId,
+    pipeline_id: pipe.id,
+    stage_id: stages[0].id,
+    position: 0,
+    moved_at: new Date().toISOString(),
+  }, { onConflict: 'lead_id,pipeline_id' })
+  if (cardErr) {
+    console.error('[nova/agendar] falha ao gravar pipeline:', cardErr)
+    await desfazerLead('erro no pipeline')
+    return NextResponse.json({ error: 'Não consegui registrar no atendimento — tente de novo.' }, { status: 500 })
+  }
+
+  // 4) aviso imediato pro time (falha aqui não derruba o agendamento)
   try {
     const { pushToBuyer } = await import('@/lib/push-notify')
     const quando = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/New_York' }).format(slot)
@@ -96,9 +138,9 @@ export async function POST(req: Request) {
       title: `📅 Consultoria agendada — ${nome}`,
       body: `${quando} (ET) · ${estado || 'estado n/i'} · ${licenca || 'licença n/i'} · via landing ${idioma.toUpperCase()}`,
       url: '/dashboard/appointments',
-      tag: `consultoria-${lead.id}`,
+      tag: `consultoria-${leadId}`,
     })
   } catch { /* push é conforto */ }
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, lead_id: leadId, appointment_id: appointment.id })
 }
