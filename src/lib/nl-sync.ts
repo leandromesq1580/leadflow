@@ -187,6 +187,8 @@ interface Registro {
   _dias?: number | null
   /** veio só do iGo (nunca apareceu no portal) — não serve pra reabrir caso encerrado */
   _igo?: boolean
+  /** histórico do Case Communication (portal) — quem/quando/texto */
+  _comms?: { quem: string | null; quando: string | null; texto: string }[] | null
   /** o portal falou sobre as pendências desta apólice nesta leitura */
   _fonteReq?: boolean
   /** o portal confirmou a entrega eletrônica assinada */
@@ -325,6 +327,7 @@ export function montarDoFeed(d: any): Registro[] {
     const p = porPol.get(normPol(pol) || '')
     if (!p) continue
     p._fonteReq = true
+    if (Array.isArray(v?.comms) && v.comms.length) p._comms = v.comms
     const trk = v?.tracker ? ` ${v.tracker}` : ''
     const req = `Underwriting${trk} — responder o Case Communication no portal`
     if (!p.requirements.some(x => x.startsWith('Underwriting'))) p.requirements.push(req)
@@ -383,6 +386,7 @@ export async function sincronizarNL(db: Db, buyerId: string): Promise<NLResultad
         requirements: [...new Set(r.requirements)], amount_due_cents: r.amount_due_cents || null,
         due_date: r.due_date || null,
         notes: r._dias != null ? `iGo: enviada e ainda não processada — ${r._dias} dia(s) de espera.` : null,
+        case_comm: r._comms || null,
       })
       continue
     }
@@ -414,6 +418,7 @@ export async function sincronizarNL(db: Db, buyerId: string): Promise<NLResultad
       if ((r.amount_due_cents ?? null) !== (atual.amount_due_cents ?? null)) mud.amount_due_cents = r.amount_due_cents ?? null
       if ((r.due_date ?? null) !== (atual.due_date ?? null)) mud.due_date = r.due_date ?? null
     }
+    if (r._comms && JSON.stringify(r._comms) !== JSON.stringify(atual.case_comm || null)) mud.case_comm = r._comms
     if (r.policy_number && !atual.policy_number) mud.policy_number = r.policy_number
     for (const c of ['product', 'premium_cents', 'coverage_cents', 'submitted_at', 'issued_at', 'effective_date'] as const) {
       if (atual[c] == null && (r as any)[c] != null) mud[c] = (r as any)[c]
@@ -423,12 +428,23 @@ export async function sincronizarNL(db: Db, buyerId: string): Promise<NLResultad
     // mudou de estado → a ação anterior não vale mais
     if (mud.status || mud.requirements) mud.done_at = null
     mud.updated_at = new Date().toISOString()
-    const { error: upErr } = await db.from('policies').update(mud).eq('id', atual.id).eq('buyer_id', buyerId)
+    let { error: upErr } = await db.from('policies').update(mud).eq('id', atual.id).eq('buyer_id', buyerId)
+    if (upErr && /case_comm/i.test(upErr.message) && 'case_comm' in mud) {
+      delete mud.case_comm   // migration 040 ainda não rodou — segue sem o histórico
+      if (Object.keys(mud).filter(k => k !== 'updated_at').length) {
+        ;({ error: upErr } = await db.from('policies').update(mud).eq('id', atual.id).eq('buyer_id', buyerId))
+      } else { semMudanca++; continue }
+    }
     if (!upErr) atualizadas++
   }
 
   for (let i = 0; i < inserir.length; i += 50) {
-    const { data, error: insErr } = await db.from('policies').insert(inserir.slice(i, i + 50)).select('id')
+    let lote = inserir.slice(i, i + 50)
+    let { data, error: insErr } = await db.from('policies').insert(lote).select('id')
+    if (insErr && /case_comm/i.test(insErr.message)) {
+      lote = lote.map(({ case_comm, ...resto }: any) => resto)   // sem migration 040
+      ;({ data, error: insErr } = await db.from('policies').insert(lote).select('id'))
+    }
     if (!insErr) novas += (data || []).length
   }
 

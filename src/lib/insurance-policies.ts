@@ -45,6 +45,8 @@ export interface Policy {
   effective_date: string | null
   paid_through: string | null
   requirements: string[] | null
+  /** histórico do Case Communication vindo do portal (migration 040) */
+  case_comm?: { quem: string | null; quando: string | null; texto: string }[] | null
   amount_due_cents: number | null
   due_date: string | null
   next_action: string | null
