@@ -1293,11 +1293,8 @@ const CONFIG = {
   janelaDias: 30,
   /* 8. Datas bloqueadas. Ex.: ['2026-12-25'] */
   feriados: [],
-  /* 9. Endpoint de disponibilidade (Google Agenda do time).
-        Vazio = ocupados SIMULADOS (layout). Quando o servidor estiver no ar:
-          'https://seudominio.com/api/disponibilidade'
-        Resposta p/ ?dia=2026-08-14 → { "2026-08-14": ["09:00","10:30"] } (já ocupados, fuso do time) */
-  apiDisponibilidade: ''
+  /* 9. Endpoint de disponibilidade da agenda real do time. */
+  apiDisponibilidade: '/api/nova/disponibilidade'
 };
 
 /* aviso na tela se subir sem configurar — melhor gritar do que perder lead em silêncio */
@@ -1346,10 +1343,7 @@ const CAL=(()=>{
       }catch(e){ console.warn('Disponibilidade indisponível, liberando o dia:',e);
         cacheOcup.set(diaISO,[]); return []; }
     }
-    /* simulação (mesma data → mesmo resultado). Remover ao plugar a API. */
-    const hash=t=>{let h=2166136261;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,16777619)>>>0}return h};
-    const r=CFG.grade.filter(hh=>hash(diaISO+hh)%100<38);
-    cacheOcup.set(diaISO,r); return r;
+    cacheOcup.set(diaISO,[]); return [];
   }
   /* fuso: duas passadas para acertar o horário de verão (EUA e BR) */
   function desloc(data,fuso){
