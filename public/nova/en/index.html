@@ -520,6 +520,12 @@ footer{border-top:1px solid var(--line);padding:44px 0 54px;background:var(--bg)
   .rv{opacity:1;transform:none}
 }
 </style>
+<!-- Meta Pixel (mesmo ID da pagina principal) -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','2063191714573000');fbq('track','PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=2063191714573000&ev=PageView&noscript=1" alt=""/></noscript>
 </head>
 <body>
 
@@ -1639,6 +1645,7 @@ ir.addEventListener('click',async e=>{
     if(!r.ok)throw new Error(d.error||'erro');
     document.getElementById('calConf').innerHTML='<b style="font-size:18px">✅ You’re booked!</b><br><span style="opacity:.85;font-size:13.5px">Our team got your slot — confirmation is on its way via WhatsApp and email.</span>';
     try{localStorage.removeItem('l4p_agendamento')}catch{}
+    try{window.fbq&&fbq('track','Lead')}catch{}
   }catch(err){
     ir.style.pointerEvents='';ir.textContent='Something failed — try again in a moment';
     setTimeout(()=>{ir.innerHTML=orig},2800);
