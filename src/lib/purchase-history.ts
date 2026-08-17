@@ -90,7 +90,7 @@ export function buildPurchaseHistory(
 
     const reference = credit.stripe_payment_id || ''
     const isManual = reference.startsWith('manual:')
-    const isBonus = reference.startsWith('crm-bonus:') || reference.startsWith('crm-drip:')
+    const isBonus = reference.startsWith('crm-bonus:') || reference.startsWith('crm-bonus-cycle:') || reference.startsWith('crm-drip:')
     const pricePerUnit = numeric(credit.price_per_unit)
 
     history.push({

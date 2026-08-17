@@ -10,9 +10,10 @@ import { CRM_PLAN_LIST, LEADS_PER_MONTH } from './crm-plans'
  * 6, anual 12). Mensal não dripa (m1 já é o total).
  *
  * Idempotente: cada mês é um credit com marker `crm-bonus:<invoice>:m<N>` único —
- * não credita 2x. Roda pelo poll-leads (a cada 2 min); só age quando passaram 30 dias
- * do último mês creditado E ainda há meses pendentes no ciclo. Renovação = nova
- * cobrança = novo invoice = novo m1 (ciclo recomeça).
+ * não credita 2x. Exceções válidas somente no ciclo atual usam
+ * `crm-bonus-cycle:<invoice>:m<N>`; esse prefixo nunca ativa bônus na renovação.
+ * Roda pelo poll-leads (a cada 2 min); só age quando passaram 30 dias do último mês
+ * creditado E ainda há meses pendentes no ciclo.
  */
 // ⚖️ EXCEÇÃO (2026-07-28, regra corrigida pelo dono: "assinou o CRM = 5 leads POR MÊS"):
 // 5 assinantes de jul/2026 (Ivone, Rita, Adriana, Elma, Mariana Fonseca) mantêm o benefício CLÁSSICO —
@@ -28,7 +29,7 @@ export async function dripCrmBonusLeads(): Promise<number> {
   // tem direito aos meses dele (eles pagaram o trimestre/semestre/ano à vista).
   const { data: subs } = await supabase
     .from('buyers')
-    .select('id, name')
+    .select('id, name, crm_subscription_status')
     .not('crm_subscription_id', 'is', null)
 
   for (const b of subs || []) {
@@ -45,12 +46,24 @@ export async function dripCrmBonusLeads(): Promise<number> {
       if (!plan || plan.months <= 1) continue // mensal não tem drip
 
       const invoice = pay.stripe_session_id
-      const { data: months } = await supabase
-        .from('credits')
-        .select('purchased_at')
-        .eq('buyer_id', b.id).eq('type', 'lead')
-        .like('stripe_payment_id', `crm-bonus:${invoice}:m%`)
-        .order('purchased_at', { ascending: false })
+      const [classicRes, cycleOnlyRes] = await Promise.all([
+        supabase.from('credits')
+          .select('purchased_at')
+          .eq('buyer_id', b.id).eq('type', 'lead')
+          .like('stripe_payment_id', `crm-bonus:${invoice}:m%`)
+          .order('purchased_at', { ascending: false }),
+        supabase.from('credits')
+          .select('purchased_at')
+          .eq('buyer_id', b.id).eq('type', 'lead')
+          .like('stripe_payment_id', `crm-bonus-cycle:${invoice}:m%`)
+          .order('purchased_at', { ascending: false }),
+      ])
+
+      const isCycleOnly = (cycleOnlyRes.data?.length || 0) > 0 && (classicRes.data?.length || 0) === 0
+      const months = isCycleOnly ? cycleOnlyRes.data : classicRes.data
+      // Benefício de ciclo único exige assinatura ativa. Ao cancelar/encerrar, para;
+      // na renovação o invoice muda e não haverá m1 para iniciar o ciclo seguinte.
+      if (isCycleOnly && b.crm_subscription_status !== 'active') continue
 
       const monthsGranted = months?.length || 0
       if (monthsGranted === 0) continue          // m1 vem do webhook; se não há, nada a dripar
@@ -61,7 +74,8 @@ export async function dripCrmBonusLeads(): Promise<number> {
       if (daysSince < 30) continue               // ainda não fechou 30 dias
 
       const nextMonth = monthsGranted + 1
-      const marker = `crm-bonus:${invoice}:m${nextMonth}`
+      const markerPrefix = isCycleOnly ? 'crm-bonus-cycle' : 'crm-bonus'
+      const marker = `${markerPrefix}:${invoice}:m${nextMonth}`
       const { data: dup } = await supabase.from('credits').select('id').eq('stripe_payment_id', marker).maybeSingle()
       if (dup) continue
 
