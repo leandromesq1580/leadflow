@@ -27,6 +27,7 @@ FORWARD_URL=https://lead4producers.com/api/webhook/wa-bridge
 FORWARD_KEY=leadflow-bridge-2026
 SUPABASE_URL=https://nkedavhzzddxuhpxcofd.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=__PREENCHER_SERVICE_ROLE_KEY__
+CHROME_LEAN=1
 ENVEOF
 chmod 600 "$ENV_FILE"
 

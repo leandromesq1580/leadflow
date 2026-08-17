@@ -16,6 +16,7 @@ no Mac do Leandro — contém `/etc/wa-bridge/*.env` (API keys por bridge) + uni
 4. `cd /opt/wa-bridge && npm install whatsapp-web.js express qrcode` (usar git-main do wwebjs se o npm estiver quebrado c/ o WhatsApp: `npm i github:pedroslopez/whatsapp-web.js`)
 5. Units: tarball traz `/etc/systemd/system/wa-bridge@.service`, `wa-bridge-admin.service`, `wa-bridge-watchdog.{service,timer}` → `systemctl daemon-reload`
 6. Subir: `systemctl enable --now wa-bridge-admin wa-bridge-watchdog.timer` e `for f in /etc/wa-bridge/*.env; do systemctl enable --now wa-bridge@$(basename $f .env); done`
+   - Todas as instâncias devem ter `CHROME_LEAN=1` no arquivo `/etc/wa-bridge/<instância>.env`; sem isso, dezenas de Chromes esgotam RAM/swap e o download de áudios falha silenciosamente.
 7. Sessões WhatsApp NÃO são restauráveis (expiram) → clientes reescaneiam QR (fica sempre vivo)
 8. Conferir: `bash /opt/wa-bridge/watchdog.sh && tail /var/log/wa-bridge-watchdog.log`
 

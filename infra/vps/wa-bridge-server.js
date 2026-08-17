@@ -42,20 +42,29 @@ process.on("uncaughtException", (err) => {
 
 
 async function uploadToStorage(buffer, filename, mimetype) {
-  const path = `incoming/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${filename}`;
+  const safeName = String(filename || "media.bin").replace(/[^A-Za-z0-9._-]/g, "_").slice(-120);
+  const path = `incoming/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
   const url = `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${SUPABASE_KEY}`,
-      "apikey": SUPABASE_KEY,
-      "Content-Type": mimetype || "application/octet-stream",
-      "x-upsert": "true",
-    },
-    body: buffer,
-  });
-  if (!res.ok) { console.error("[Upload] non-200:", res.status); return null; }
-  return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await withTimeout(fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${SUPABASE_KEY}`,
+          "apikey": SUPABASE_KEY,
+          "Content-Type": mimetype || "application/octet-stream",
+          "x-upsert": "true",
+        },
+        body: buffer,
+      }), 30000, "MEDIA_UPLOAD");
+      if (res.ok) return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
+      console.error(`[${INSTANCE_NAME}][Upload] tentativa ${attempt}/3 non-200:`, res.status);
+    } catch (e) {
+      console.error(`[${INSTANCE_NAME}][Upload] tentativa ${attempt}/3:`, e.message);
+    }
+    if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+  }
+  return null;
 }
 
 // Pin OPCIONAL da versao do WhatsApp Web (gated por env WA_WEB_VERSION). Sem a env =
@@ -230,24 +239,7 @@ client.on("message", async (msg) => {
     if (msg.fromMe) return;
     if (msg.from.endsWith("@g.us")) return;
 
-    let media_url = null, media_type = null, media_mimetype = null;
-    if (msg.hasMedia) {
-      try {
-        const media = await msg.downloadMedia();
-        if (media && media.data) {
-          const buffer = Buffer.from(media.data, "base64");
-          const rawMime = media.mimetype || "application/octet-stream";
-          media_mimetype = rawMime.split(";")[0].trim();
-          const ext = (media.mimetype || "").split("/")[1]?.split(";")[0] || "bin";
-          const filename = media.filename || `${msg.type || "file"}.${ext}`;
-          media_url = await uploadToStorage(buffer, filename, media_mimetype);
-          if (media_mimetype.startsWith("image/")) media_type = "image";
-          else if (media_mimetype.startsWith("audio/") || media_mimetype.includes("ogg") || media_mimetype.includes("ptt")) media_type = "audio";
-          else if (media_mimetype.startsWith("video/")) media_type = "video";
-          else media_type = "document";
-        }
-      } catch (mediaErr) { console.error(`[${INSTANCE_NAME}][Media IN]`, mediaErr.message); }
-    }
+    const { media_url, media_type, media_mimetype } = await extractMedia(msg, "Media IN");
 
     let fromNumber = msg.from.replace("@c.us", "").replace("@lid", "");
     if (msg.from.endsWith("@lid")) {
@@ -319,13 +311,16 @@ async function widToNumber(wid) {
   return num;
 }
 
-async function extractMedia(msg) {
+async function extractMedia(msg, logTag = "Media", maxAttempts = 3) {
   let media_url = null, media_type = null, media_mimetype = null;
-  if (msg.hasMedia) {
+  if (!msg.hasMedia) return { media_url, media_type, media_mimetype };
+
+  for (let attempt = 1; attempt <= maxAttempts && !media_url; attempt++) {
     try {
-      const media = await msg.downloadMedia();
+      const media = await withTimeout(msg.downloadMedia(), 45000, "MEDIA_DOWNLOAD");
       if (media && media.data) {
         const buffer = Buffer.from(media.data, "base64");
+        if (!buffer.length) throw new Error("arquivo vazio");
         media_mimetype = (media.mimetype || "application/octet-stream").split(";")[0].trim();
         const ext = (media.mimetype || "").split("/")[1]?.split(";")[0] || "bin";
         const filename = media.filename || `${msg.type || "file"}.${ext}`;
@@ -334,8 +329,14 @@ async function extractMedia(msg) {
         else if (media_mimetype.startsWith("audio/") || media_mimetype.includes("ogg") || media_mimetype.includes("ptt")) media_type = "audio";
         else if (media_mimetype.startsWith("video/")) media_type = "video";
         else media_type = "document";
+        if (!media_url) throw new Error("upload nao retornou URL");
+      } else {
+        throw new Error("downloadMedia retornou vazio");
       }
-    } catch (e) { console.error(`[${INSTANCE_NAME}][Media]`, e.message); }
+    } catch (e) {
+      console.error(`[${INSTANCE_NAME}][${logTag}] tentativa ${attempt}/${maxAttempts}:`, e.message);
+      if (attempt < maxAttempts) await new Promise((resolve) => setTimeout(resolve, attempt * 1200));
+    }
   }
   return { media_url, media_type, media_mimetype };
 }
@@ -475,6 +476,75 @@ app.post("/backfill", async (req, res) => {
   const limit = parseInt(req.body?.limit || "30", 10);
   const result = await backfillHistory(limit);
   res.json(result);
+});
+
+// Recupera uma mídia específica que chegou sem arquivo. Evita varrer centenas de
+// conversas: abre somente o chat informado, encontra o wa_message_id e reenvia o
+// mesmo evento ao app. O webhook faz o healing idempotente da linha já existente.
+let mediaRecoveryRunning = false;
+app.post("/recover-media", async (req, res) => {
+  if (!isReady) return res.status(503).json({ error: "not ready" });
+  if (mediaRecoveryRunning) return res.status(409).json({ error: "recovery already running" });
+
+  const digits = String(req.body?.number || "").replace(/\D/g, "");
+  const requestedIds = Array.isArray(req.body?.messageIds)
+    ? req.body.messageIds.map((id) => String(id || "").trim()).filter(Boolean).slice(0, 100)
+    : [String(req.body?.messageId || "").trim()].filter(Boolean);
+  const limit = Math.min(Math.max(parseInt(req.body?.limit || "300", 10), 30), 1000);
+  if (!digits || !requestedIds.length) return res.status(400).json({ error: "number and messageId(s) required" });
+
+  mediaRecoveryRunning = true;
+  try {
+    const chatId = await tryGetChatId(digits);
+    if (!chatId) return res.status(404).json({ error: "chat not found" });
+    const chat = await client.getChatById(chatId);
+    const messages = await chat.fetchMessages({ limit });
+    const wanted = new Set(requestedIds);
+    const found = messages.filter((item) => wanted.has(msgId(item)));
+    let recovered = 0;
+    let downloadFailed = 0;
+    let forwardFailed = 0;
+    const meNum = myNumber();
+
+    for (const msg of found) {
+      if (!msg.hasMedia) { downloadFailed++; continue; }
+      // Histórico antigo normalmente falha rápido quando a mídia já expirou. Duas
+      // tentativas recuperam falhas transitórias sem prender a bridge por minutos.
+      const { media_url, media_type, media_mimetype } = await extractMedia(msg, "Media RECOVER", 2);
+      if (!media_url) { downloadFailed++; continue; }
+      const peer = await widToNumber(msg.fromMe ? (msg.to || chatId) : (msg.from || chatId));
+      if (!peer || !meNum) { forwardFailed++; continue; }
+      const ok = await forwardToApp({
+        wa_message_id: msgId(msg),
+        direction: msg.fromMe ? "out" : "in",
+        from: msg.fromMe ? meNum : peer,
+        to: msg.fromMe ? peer : meNum,
+        body: msg.body || "",
+        type: msg.type,
+        timestamp: msg.timestamp,
+        has_media: true,
+        media_url, media_type, media_mimetype,
+        bridge_owner_buyer_id: BRIDGE_OWNER_BUYER_ID,
+      });
+      if (ok) recovered++; else forwardFailed++;
+    }
+
+    return res.json({
+      ok: true,
+      requested: requestedIds.length,
+      checked: messages.length,
+      found: found.length,
+      recovered,
+      notFound: requestedIds.length - found.length,
+      downloadFailed,
+      forwardFailed,
+    });
+  } catch (e) {
+    console.error(`[${INSTANCE_NAME}][Media RECOVER]`, e.message);
+    return res.status(500).json({ error: e.message });
+  } finally {
+    mediaRecoveryRunning = false;
+  }
 });
 
 // Le o NOME (pushname) real do WhatsApp de uma lista de numeros — pra backfill de
