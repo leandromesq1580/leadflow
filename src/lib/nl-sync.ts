@@ -402,6 +402,11 @@ export async function sincronizarNL(db: Db, buyerId: string): Promise<NLResultad
     // A lista de requisitos do portal não enxerga o eDelivery (isso vive na coluna de
     // entrega). Só tiramos "eDelivery" quando o portal confirma que foi assinado.
     if (!r._edeliveryOk && reqAtuais.includes('eDelivery') && !reqNovos.includes('eDelivery')) reqNovos.push('eDelivery')
+    // Pendência MANUAL do corretor (prefixo ✋) sobrevive à sincronização — o portal
+    // não sabe dela (ex.: pagamento devolvido avisado só por e-mail — caso Silvia 17/08).
+    for (const manual of reqAtuais.filter(x => x.startsWith('✋'))) {
+      if (!reqNovos.includes(manual)) reqNovos.push(manual)
+    }
     const podeTrocarReq = r._fonteReq || reqNovos.length > 0
     if (podeTrocarReq && JSON.stringify(reqNovos.slice().sort()) !== JSON.stringify(reqAtuais.slice().sort())) mud.requirements = reqNovos
     // Em caso encerrado, a dívida que ficou é histórico — não apaga.

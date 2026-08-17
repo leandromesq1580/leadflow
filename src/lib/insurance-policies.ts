@@ -249,5 +249,7 @@ export function STATUS_LABEL(locale: PolicyLocale = 'pt'): Record<PolicyStatus, 
 export function REQUISITOS_COMUNS(locale: PolicyLocale = 'pt'): string[] {
   const L = pick(locale)
   return ['eDelivery', 'Policy Receipt', 'Amendment', 'ID Verification', 'Illustration',
-    L('Exame médico', 'Medical exam', 'Examen médico'), L('1º prêmio', '1st premium', '1er pago')]
+    L('Exame médico', 'Medical exam', 'Examen médico'), L('1º prêmio', '1st premium', '1er pago'),
+    // ✋ = pendência manual: o sync do portal preserva (o portal não sabe dela)
+    L('✋ Pagamento devolvido (EFT)', '✋ Payment returned (EFT)', '✋ Pago devuelto (EFT)')]
 }
