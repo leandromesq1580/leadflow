@@ -9,7 +9,7 @@ import { PRODUCTS } from '@/lib/stripe'
 import { PolicyCheck } from '@/components/policy-check'
 import { CRM_PLAN_LIST } from '@/lib/crm-plans'
 
-interface CreditsData { totalLeads: number; totalAppts: number; crm_plan: string; crm_subscription_status: string | null; crm_plan_key: string | null; history: Array<{ id: string; type: string; total_purchased: number; total_used: number; price_per_unit: number; purchased_at: string }> }
+interface CreditsData { totalLeads: number; totalAppts: number; crm_plan: string; crm_subscription_status: string | null; crm_plan_key: string | null; sub_source: 'apple' | 'stripe' | null; history: Array<{ id: string; type: string; total_purchased: number; total_used: number; price_per_unit: number; purchased_at: string }> }
 
 export default function MobileCreditos() {
   const t = useT()
@@ -122,12 +122,15 @@ export default function MobileCreditos() {
   async function changePlan(planKey: string) {
     if (busy || planKey === currentPlanKey) return
     const pl = CRM_PLAN_LIST.find(p => p.key === planKey)
-    if (!confirm(L(`Trocar para o plano ${pl?.label}? A diferença é calculada proporcionalmente (proração) — você não cancela nem perde o acesso.`, `Switch to ${pl?.label}? Prorated difference — no cancel, no loss of access.`, `¿Cambiar al plan ${pl?.label}? Diferencia prorrateada.`))) return
+    // Endpoint /api/subscription/change foi DESATIVADO (410). O fluxo novo é o upgrade-checkout:
+    // upgrade abre checkout pra pagar só a diferença; downgrade aplica na hora.
+    if (!confirm(L(`Trocar para o plano ${pl?.label}? No upgrade abrimos um checkout pra pagar só a diferença; no downgrade a troca é aplicada na hora.`, `Switch to ${pl?.label}? Upgrades open a checkout to pay only the difference; downgrades apply immediately.`, `¿Cambiar al plan ${pl?.label}? El upgrade abre un checkout para pagar la diferencia.`))) return
     setBusy(true)
     try {
-      const r = await fetch('/api/subscription/change', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plan: planKey }) })
+      const r = await fetch('/api/subscription/upgrade-checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plan: planKey }) })
       const j = await r.json().catch(() => ({}))
-      if (r.ok) { window.location.reload(); return }
+      if (r.ok && j.url) { window.location.href = j.url; return }       // upgrade → checkout pra pagar a diferença
+      if (r.ok && j.switched) { window.location.reload(); return }      // downgrade → aplicado na hora
       alert(j.error || L('Não consegui trocar de plano.', "Couldn't switch plan.", 'Error.'))
     } catch { alert(L('Erro de conexão.', 'Connection error.', 'Error.')) }
     setBusy(false)
@@ -190,9 +193,26 @@ export default function MobileCreditos() {
                     <p style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>CRM Pro</p>
                     <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: '#34d399', background: 'rgba(52,211,153,0.15)', padding: '3px 10px', borderRadius: 999 }}>{L('Ativo', 'Active', 'Activo')}</span>
                   </div>
-                  <p className="m-muted" style={{ fontSize: 12, margin: '10px 0 0', lineHeight: 1.5 }}>
-                    {L('Sua assinatura está ativa. Assinaturas feitas pelo App Store são gerenciadas nos Ajustes do iPhone.', 'Your subscription is active. App Store subscriptions are managed in iPhone Settings.', 'Suscripción activa.')}
-                  </p>
+                  {/* A instrução de gerenciamento depende da ORIGEM. Antes dizia "Ajustes do iPhone"
+                      pra todo mundo — errado pra quem assinou via Stripe no site (ficava órfão). */}
+                  {d.sub_source === 'apple' ? (
+                    <p className="m-muted" style={{ fontSize: 12, margin: '10px 0 0', lineHeight: 1.5 }}>
+                      {L('Sua assinatura está ativa. Assinaturas feitas pelo App Store são gerenciadas nos Ajustes do iPhone.', 'Your subscription is active. App Store subscriptions are managed in iPhone Settings.', 'Suscripción activa. Se gestiona en los Ajustes del iPhone.')}
+                    </p>
+                  ) : (
+                    <>
+                      <p className="m-muted" style={{ fontSize: 12, margin: '10px 0 12px', lineHeight: 1.5 }}>
+                        {L('Sua assinatura está ativa, feita na sua conta Lead4Pro. Gerencie ou troque de plano no site.', 'Your subscription is active via your Lead4Pro account. Manage or change your plan on the website.', 'Tu suscripción está activa en tu cuenta Lead4Pro. Gestiónala en el sitio.')}
+                      </p>
+                      <a href="https://wdtusa.group/l4p-billing" target="_blank" rel="noopener noreferrer" className="m-tap"
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--m-border)', color: 'var(--m-text)', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
+                        {L('Gerenciar no site', 'Manage on website', 'Gestionar en el sitio')}
+                      </a>
+                      <p className="m-faint" style={{ fontSize: 10.5, margin: '6px 0 0', textAlign: 'center' }}>
+                        {L('Abre no navegador', 'Opens in your browser', 'Se abre en el navegador')}
+                      </p>
+                    </>
+                  )}
                 </>
               ) : (
                 <>
