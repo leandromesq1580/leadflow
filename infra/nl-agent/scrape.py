@@ -310,10 +310,21 @@ def main():
         estorno_pols = []
         try:
             clicked = page.evaluate("""() => {
-                const els = Array.from(document.querySelectorAll('div,a,button,span'));
-                const el = els.find(e => /at\\s*risk\\s*of|risco\\s*de\\s*estorno/i.test(e.innerText || '') && (e.innerText||'').trim().length < 90 && e.querySelector('div,a,button,span,table') == null);
-                const alvo = el ? (el.closest('a,button,[onclick],[role=button]') || el) : null;
-                if (!alvo) return false; alvo.click(); return true;
+                const els = Array.from(document.querySelectorAll('div,a,button,span'))
+                  .filter(e => /business\\s*at\\s*risk\\s*of\\s*chargeback|risco\\s*de\\s*estorno/i.test(e.innerText || ''))
+                  .sort((a,b) => (a.innerText||'').length - (b.innerText||'').length);
+                for (const el of els) {
+                  let alvo = el;
+                  while (alvo && alvo !== document.body) {
+                    const style = getComputedStyle(alvo);
+                    if (alvo.matches('a,button,[onclick],[role=button]') || style.cursor === 'pointer') {
+                      alvo.click(); return true;
+                    }
+                    alvo = alvo.parentElement;
+                  }
+                }
+                if (!els[0]) return false;
+                els[0].click(); return true;
             }""")
             if clicked:
                 page.wait_for_timeout(5000)
@@ -325,10 +336,21 @@ def main():
                 estorno_pols = [p for p in rows_e if p]
                 log(f"risco de estorno: {len(estorno_pols)} apolices")
                 page.evaluate("""() => {
-                    const els = Array.from(document.querySelectorAll('div,a,button,span'));
-                    const el = els.find(e => /all\\s*cases|todos\\s*os\\s*casos|all\\s*new\\s*business/i.test(e.innerText || '') && (e.innerText||'').trim().length < 90 && e.querySelector('div,a,button,span,table') == null);
-                    const alvo = el ? (el.closest('a,button,[onclick],[role=button]') || el) : null;
-                    if (alvo) alvo.click();
+                    const els = Array.from(document.querySelectorAll('div,a,button,span'))
+                      .filter(e => /all\\s*cases\\s*in\\s*new\\s*business|all\\s*new\\s*business\\s*cases|todos\\s*os\\s*casos/i.test(e.innerText || ''))
+                      .sort((a,b) => (a.innerText||'').length - (b.innerText||'').length);
+                    for (const el of els) {
+                      let alvo = el;
+                      while (alvo && alvo !== document.body) {
+                        const style = getComputedStyle(alvo);
+                        if (alvo.matches('a,button,[onclick],[role=button]') || style.cursor === 'pointer') {
+                          alvo.click(); return true;
+                        }
+                        alvo = alvo.parentElement;
+                      }
+                    }
+                    if (els[0]) { els[0].click(); return true; }
+                    return false;
                 }""")
                 page.wait_for_timeout(5000)
             else:
