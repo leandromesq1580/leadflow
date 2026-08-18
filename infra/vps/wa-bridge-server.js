@@ -18,6 +18,7 @@ const FORWARD_KEY = process.env.FORWARD_KEY || "leadflow-bridge-2026";
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://nkedavhzzddxuhpxcofd.supabase.co";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const BUCKET = "wa-media";
+const SESSION_PATH = `${SESSION_DIR}/session-${INSTANCE_NAME}`;
 
 let currentQR = null;
 let isReady = false;
@@ -105,14 +106,26 @@ function withTimeout(p, ms, tag) {
 }
 // Limpa locks Singleton e Chromes orfaos do PROPRIO perfil antes de abrir o navegador —
 // e o lock zumbi que deixava todo init em "Waiting failed: 30000ms" pra sempre.
-try {
-  const sessPath = `${SESSION_DIR}/session-${INSTANCE_NAME}`;
-  for (const lf of ["SingletonLock", "SingletonCookie", "SingletonSocket"]) {
-    try { fs.rmSync(`${sessPath}/${lf}`, { force: true }); } catch {}
-  }
+function cleanProfileBeforeInit(wipeSession = false) {
+  // client.destroy()/logout() nem sempre encerram o Chrome. Se ele continuar vivo,
+  // a reinicializacao entra em loop com "browser is already running" e o usuario
+  // fica eternamente em "Iniciando bridge" sem receber o QR.
   try {
-    require("child_process").execSync(`pkill -9 -f "chrome.*${sessPath}" || true`, { stdio: "ignore" });
+    execFileSync("pkill", ["-9", "-f", SESSION_PATH], { stdio: "ignore" });
   } catch {}
+
+  if (wipeSession) {
+    try { fs.rmSync(SESSION_PATH, { recursive: true, force: true }); } catch {}
+    return;
+  }
+
+  for (const lf of ["SingletonLock", "SingletonCookie", "SingletonSocket"]) {
+    try { fs.rmSync(`${SESSION_PATH}/${lf}`, { force: true }); } catch {}
+  }
+}
+
+try {
+  cleanProfileBeforeInit(false);
   console.log(`[${INSTANCE_NAME}][BOOT] locks/chromes do perfil limpos`);
 } catch {}
 
@@ -169,21 +182,17 @@ client.on("authenticated", () => { bootAliveAt = Date.now(); console.log(`[${INS
 // Antes, o handler de "disconnected" só setava isReady=false e o bridge ficava preso
 // (ready:false + hasQR:false) ate alguem reiniciar na mao. Agora ele se recupera sozinho.
 let recovering = false;
-async function recover(reason) {
+async function recover(reason, forceWipe = false) {
   if (recovering) return;
   recovering = true;
   bootAliveAt = Date.now(); lastQrAt = 0;
   isReady = false;
   currentQR = null;
-  const wipe = /LOGOUT|UNPAIRED|CONFLICT|BANNED|AUTH/i.test(String(reason));
+  const wipe = forceWipe || /LOGOUT|UNPAIRED|CONFLICT|BANNED|AUTH/i.test(String(reason));
   console.log(`[${INSTANCE_NAME}][RECOVER] reason=${reason} wipeSession=${wipe}`);
   try { await client.destroy(); } catch (e) { console.error(`[${INSTANCE_NAME}][destroy]`, e.message); }
-  if (wipe) {
-    try {
-      fs.rmSync(`${SESSION_DIR}/session-${INSTANCE_NAME}`, { recursive: true, force: true });
-      console.log(`[${INSTANCE_NAME}][RECOVER] sessao limpa — vai gerar QR novo`);
-    } catch (e) { console.error(`[${INSTANCE_NAME}][wipe]`, e.message); }
-  }
+  cleanProfileBeforeInit(wipe);
+  if (wipe) console.log(`[${INSTANCE_NAME}][RECOVER] sessao e Chrome limpos — vai gerar QR novo`);
   setTimeout(() => {
     client.initialize()
       .then(() => { recovering = false; console.log(`[${INSTANCE_NAME}][RECOVER] reinicializado`); })
@@ -471,6 +480,14 @@ app.get("/qr", (req, res) => {
 app.post("/logout", async (req, res) => {
   try { await client.logout(); isReady = false; currentQR = null; res.json({ ok: true }); }
   catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.post("/restart", async (req, res) => {
+  try {
+    await recover("MANUAL_RESET", true);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 app.post("/backfill", async (req, res) => {
   const limit = parseInt(req.body?.limit || "30", 10);

@@ -10,6 +10,10 @@ interface QrState {
   qr: string | null
 }
 
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback
+}
+
 export function WaConnectCard() {
   const [state, setState] = useState<QrState | null>(null)
   const [loading, setLoading] = useState(true)
@@ -42,8 +46,8 @@ export function WaConnectCard() {
       if (!r.ok) throw new Error(d.error || L('Erro ao conectar', 'Error connecting', 'Error al conectar'))
       // re-poll imediatamente
       poll()
-    } catch (e: any) {
-      setErr(e?.message || L('Falha', 'Failed', 'Falló'))
+    } catch (error: unknown) {
+      setErr(errorMessage(error, L('Falha', 'Failed', 'Falló')))
     } finally {
       setCreating(false)
     }
@@ -53,6 +57,25 @@ export function WaConnectCard() {
     if (!confirm(t.waConnect.disconnectConfirm)) return
     await fetch('/api/whatsapp/qr', { method: 'POST' })
     poll()
+  }
+
+  async function restartQr() {
+    setCreating(true)
+    setErr(null)
+    try {
+      const r = await fetch('/api/whatsapp/qr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'restart' }),
+      })
+      const d = await r.json().catch(() => ({}))
+      if (!r.ok) throw new Error(d.error || L('Não consegui reiniciar o QR.', 'Could not restart the QR.', 'No pude reiniciar el QR.'))
+      await poll()
+    } catch (error: unknown) {
+      setErr(errorMessage(error, L('Falha ao reiniciar.', 'Restart failed.', 'Error al reiniciar.')))
+    } finally {
+      setCreating(false)
+    }
   }
 
   if (loading) {
@@ -104,6 +127,14 @@ export function WaConnectCard() {
         <div className="rounded-xl p-4" style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}>
           <p className="text-[13px] font-bold" style={{ color: '#1d4ed8' }}>{t.waConnect.starting}</p>
           <p className="text-[11px] mt-1" style={{ color: '#1e40af' }}>{t.waConnect.startingHelp}</p>
+          <button onClick={restartQr} disabled={creating}
+            className="mt-3 px-3 py-1.5 rounded-lg text-[11px] font-bold disabled:opacity-50"
+            style={{ background: '#dbeafe', color: '#1d4ed8' }}>
+            {creating
+              ? L('Reiniciando…', 'Restarting…', 'Reiniciando…')
+              : L('↻ Reiniciar e gerar novo QR', '↻ Restart and generate a new QR', '↻ Reiniciar y generar un QR nuevo')}
+          </button>
+          {err && <p className="text-[11px] mt-2 font-semibold" style={{ color: '#dc2626' }}>⚠️ {err}</p>}
         </div>
       )}
 
