@@ -6,6 +6,8 @@ import {
   STATUS_LABEL, REQUISITOS_COMUNS, type Policy, type Bucket, type PolicyKpis,
 } from '@/lib/insurance-policies'
 import { useT } from '@/lib/i18n-client'
+import { PolicyPortalCenter } from './portal-center'
+import type { PolicyPortalSnapshot } from '@/lib/policy-portal'
 
 /**
  * Tela de Apólices (pós-venda) — traz o modelo do "Status do Book" pro Lead4Pro,
@@ -21,6 +23,8 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
   const dias = (n: number) => L(`${n} dia(s)`, `${n} day(s)`, `${n} día(s)`)
   const [lista, setLista] = useState<Policy[]>([])
   const [kpis, setKpis] = useState<PolicyKpis | null>(null)
+  const [portal, setPortal] = useState<PolicyPortalSnapshot | null>(null)
+  const [visao, setVisao] = useState<'central' | 'new_business' | 'client_intelligence'>('central')
   const [carregando, setCarregando] = useState(true)
   const [migracao, setMigracao] = useState(false)
   const [filtro, setFiltro] = useState<Bucket | 'todas'>('todas')
@@ -40,7 +44,7 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
   async function carregar() {
     try {
       const d = await fetch('/api/apolices', { cache: 'no-store' }).then(r => r.json())
-      setLista(d.policies || []); setKpis(d.kpis || null); setMigracao(!!d.needsMigration)
+      setLista(d.policies || []); setKpis(d.kpis || null); setPortal(d.portal || null); setMigracao(!!d.needsMigration)
     } catch {}
     setCarregando(false)
   }
@@ -224,14 +228,14 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
   )
 
   return (
-    <div className="max-w-[1040px]">
+    <div className="max-w-[1320px]">
       <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{L('Gestão de Apólices', 'Policy Management', 'Gestión de Pólizas')}</h1>
           <p className="text-[14px] mt-1" style={{ color: 'var(--fg-secondary)' }}>
-            {L('Pós-venda: o que precisa da sua ação hoje para não perder cliente nem comissão',
-               'Post-sale: what needs your action today so you do not lose the client or the commission',
-               'Posventa: lo que necesita tu acción hoy para no perder al cliente ni la comisión')}
+            {L('Seu portal da seguradora dentro do Lead4Pro: informações, pendências, inteligência e ações',
+               'Your carrier portal inside Lead4Pro: information, pending items, intelligence and actions',
+               'Tu portal de la aseguradora dentro de Lead4Pro: información, pendientes, inteligencia y acciones')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -303,6 +307,23 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
           {L(' no Supabase para começar a usar.', ' migration in Supabase to start using it.', ' en Supabase para empezar a usarla.')}
         </div>
       )}
+
+      <div className="flex gap-2 mb-5 p-1 rounded-xl w-fit max-w-full overflow-x-auto" style={{ background: 'var(--bg-soft)', border: '1px solid var(--border)' }}>
+        {([
+          ['central', L('🎯 Central de ações', '🎯 Action center', '🎯 Centro de acciones')],
+          ['new_business', '📋 New Business'],
+          ['client_intelligence', '🧠 Client Intelligence'],
+        ] as const).map(([key, label]) => (
+          <button key={key} onClick={() => setVisao(key)}
+            className="px-4 py-2 rounded-lg text-[12px] font-bold whitespace-nowrap"
+            style={{ background: visao === key ? 'var(--bg-card)' : 'transparent', color: visao === key ? 'var(--accent)' : 'var(--fg-muted)', boxShadow: visao === key ? '0 1px 5px rgba(15,23,42,.08)' : 'none' }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {visao === 'central' ? (
+        <>
 
       {/* KPIs */}
       {kpis && (
@@ -470,6 +491,18 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
             </div>
           )
         })
+      )}
+
+        </>
+      ) : (
+        <PolicyPortalCenter
+          snapshot={portal}
+          policies={lista}
+          view={visao}
+          search={busca}
+          onEdit={setEdit}
+          onToggleDone={marcarFeito}
+        />
       )}
 
       {/* Modal cadastro/edição */}

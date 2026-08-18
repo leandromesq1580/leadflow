@@ -3,6 +3,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { callerBuyer } from '@/lib/api-auth'
 import { kpisDe, type Policy } from '@/lib/insurance-policies'
 import { acessoApolices } from '@/lib/policies-access'
+import { normPol, sincronizarNL, snapshotApolicesDe } from '@/lib/nl-sync'
+import type { PolicyPortalSnapshot } from '@/lib/policy-portal'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,12 +45,41 @@ export async function GET() {
       .eq('buyer_id', acesso.bookDe).order('updated_at', { ascending: false })
     if (error) throw error
     const lista = (data || []) as Policy[]
-    return NextResponse.json({ policies: lista, kpis: kpisDe(lista) })
+    let portal = await snapshotApolicesDe(db, acesso.bookDe)
+    if (!portal) {
+      // Primeira abertura depois da atualização: converte o último feed já lido
+      // sem obrigar o usuário a esperar uma nova varredura do portal.
+      await sincronizarNL(db, acesso.bookDe)
+      portal = await snapshotApolicesDe(db, acesso.bookDe)
+    }
+    return NextResponse.json({ policies: lista, kpis: kpisDe(lista), portal: vincularPortal(portal, lista) })
   } catch (e: any) {
     if (/does not exist|relation/i.test(e?.message || '')) {
       return NextResponse.json({ policies: [], kpis: kpisDe([]), needsMigration: true })
     }
     return NextResponse.json({ error: e?.message || 'Falha ao carregar' }, { status: 500 })
+  }
+}
+
+function vincularPortal(snapshot: PolicyPortalSnapshot | null, policies: Policy[]): PolicyPortalSnapshot | null {
+  if (!snapshot) return null
+  const porNumero = new Map(policies.map(policy => [normPol(policy.policy_number), policy.id]))
+  return {
+    ...snapshot,
+    new_business: {
+      ...snapshot.new_business,
+      cases: snapshot.new_business.cases.map(item => ({
+        ...item,
+        policy_id: (item.policy_number && porNumero.get(normPol(item.policy_number))) || null,
+      })),
+    },
+    client_intelligence: {
+      ...snapshot.client_intelligence,
+      events: snapshot.client_intelligence.events.map(item => ({
+        ...item,
+        policy_id: (item.policy_number && porNumero.get(normPol(item.policy_number))) || null,
+      })),
+    },
   }
 }
 

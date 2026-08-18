@@ -1,5 +1,12 @@
 import { createAdminClient } from './supabase/admin'
 import type { PolicyStatus } from './insurance-policies'
+import {
+  EMPTY_CLIENT_INTELLIGENCE,
+  type PolicyPortalSnapshot,
+  type PortalClientIntelligenceEvent,
+  type PortalCommunication,
+  type PortalRequirement,
+} from './policy-portal'
 
 /**
  * CONECTOR NATIONAL LIFE — mantém o book de apólices vivo dentro do Lead4Pro.
@@ -151,6 +158,144 @@ function centavos(v?: string | null): number | null {
 function dataUS(s?: string | null): string | null {
   const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(String(s || ''))
   return m ? `${m[3]}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}` : null
+}
+
+function inteiro(v: unknown, fallback = 0): number {
+  if (typeof v === 'number' && Number.isFinite(v)) return Math.round(v)
+  const m = String(v ?? '').replace(/,/g, '').match(/-?\d+(?:\.\d+)?/)
+  return m ? Math.round(Number(m[0])) : fallback
+}
+
+function requisitosPortal(txt: unknown): PortalRequirement[] {
+  const texto = String(txt || '').trim()
+  if (!texto) return []
+  const out: PortalRequirement[] = []
+  for (const m of texto.matchAll(/\[(\d{2}\/\d{2}\/\d{4})\]\s*([^[]+)/g)) {
+    const name = m[2].trim().replace(/^LSW\s+/, '')
+    if (name) out.push({ name, received_at: dataUS(m[1]) })
+  }
+  if (!out.length) out.push({ name: texto.replace(/^LSW\s+/, ''), received_at: null })
+  return out
+}
+
+/** Snapshot completo usado pelas abas New Business e Client Intelligence. */
+export function snapshotDoFeed(d: any): PolicyPortalSnapshot {
+  const summary = d?.nb_summary || {}
+  const exact = Object.keys(summary).length > 0
+  const estorno = new Set((d?.estorno || []).map((p: unknown) => normPol(String(p))).filter(Boolean))
+  const cases = (d?.nb_rows || []).map((r: any) => {
+    const policy = normPol(r.pol)
+    const uw = (policy && (d?.uw_cases?.[r.pol] || d?.uw_cases?.[policy])) || {}
+    const communications: PortalCommunication[] = (uw?.comms || []).map((c: any) => ({
+      author: c?.quem || null,
+      sent_at: c?.quando || null,
+      text: String(c?.texto || '').trim(),
+    })).filter((c: PortalCommunication) => c.text)
+    const requirements = requisitosPortal((policy && (d?.reqs?.[r.pol] || d?.reqs?.[policy])) || '')
+    return {
+      policy_number: policy,
+      policy_id: null,
+      client_name: String(r.name || r.owner || '').trim(),
+      owner: r.owner || null,
+      submitted_at: dataUS(r.sub),
+      sent_at: dataUS(r.sent),
+      annual_premium_cents: centavos(r.aap),
+      modal_premium_cents: centavos(r.mp),
+      product: r.prod || null,
+      portal_status: r.st || null,
+      delivery_status: r.deliv || null,
+      case_manager: r.cm || null,
+      underwriter: uw?.underwriter || null,
+      underwriting_tracker: uw?.tracker || null,
+      requirements,
+      communications,
+      at_risk_chargeback: !!(policy && estorno.has(policy)),
+    }
+  })
+
+  const ci = d?.client_intelligence || {}
+  const ciHeaders = Array.isArray(ci.headers) ? ci.headers.map(String) : []
+  const ciEvents: PortalClientIntelligenceEvent[] = (ci.rows || []).map((row: any, index: number) => {
+    const columns = (row?.columns && typeof row.columns === 'object')
+      ? Object.fromEntries(Object.entries(row.columns).map(([k, v]) => [String(k), String(v ?? '')]))
+      : Object.fromEntries(ciHeaders.map((header: string, i: number) => [header, String(row?.cells?.[i] ?? '')]))
+    const find = (patterns: RegExp[]) => {
+      const entry = Object.entries(columns).find(([key]) => patterns.some(p => p.test(key)))
+      return entry?.[1] || null
+    }
+    const policy = normPol(row?.policy_number || find([/policy/i, /ap[oó]lice/i]))
+    const client = row?.client_name || find([/client/i, /owner/i, /insured/i, /cliente/i])
+    const occurred = row?.occurred_at || find([/date/i, /data/i, /received/i])
+    return {
+      id: String(row?.id || `${row?.category || 'all'}-${policy || client || index}-${index}`),
+      category: String(row?.category || 'all'),
+      policy_number: policy,
+      policy_id: null,
+      client_name: client || null,
+      occurred_at: occurred || null,
+      portal_url: row?.portal_url || null,
+      columns,
+    }
+  })
+
+  const annualFallback = cases.reduce((sum: number, item: any) => sum + (item.annual_premium_cents || 0), 0)
+  const modalFallback = cases.reduce((sum: number, item: any) => sum + (item.modal_premium_cents || 0), 0)
+  const pending = cases.filter((item: any) => /pending/i.test(item.portal_status || '')).length
+  const outstandingEdelivery = cases.filter((item: any) => /edelivery/i.test(item.delivery_status || '') && !/completed|locked/i.test(item.delivery_status || '')).length
+
+  return {
+    carrier: 'National Life',
+    generated_at: d?.generated_at || null,
+    portal_last_updated: d?.portal_last_updated || null,
+    new_business: {
+      metrics: {
+        all: inteiro(summary.all, cases.length),
+        pending: inteiro(summary.pending, pending),
+        at_risk_chargeback: inteiro(summary.at_risk_chargeback, estorno.size),
+        pending_requirements: inteiro(summary.pending_requirements, Object.keys(d?.reqs || {}).length),
+        outstanding_edelivery: inteiro(summary.outstanding_edelivery, outstandingEdelivery),
+        pending_eft: inteiro(summary.pending_eft, 0),
+        unread_messages: inteiro(summary.unread_messages, 0),
+        anticipated_annual_premium_cents: centavos(summary.anticipated_annual_premium) ?? annualFallback,
+        modal_premium_cents: centavos(summary.modal_premium) ?? modalFallback,
+        exact_portal_totals: exact,
+      },
+      cases,
+    },
+    client_intelligence: {
+      ...EMPTY_CLIENT_INTELLIGENCE,
+      available: !!ci.available,
+      error: ci.error || null,
+      portal_url: ci.portal_url || null,
+      metrics: (ci.metrics && typeof ci.metrics === 'object')
+        ? Object.fromEntries(Object.entries(ci.metrics).map(([key, value]) => [key, inteiro(value)]))
+        : {},
+      columns: ciHeaders,
+      events: ciEvents,
+    },
+    changes: (d?.changes || []).map((change: any) => ({
+      policy: String(change?.pol || ''),
+      kind: String(change?.kind || ''),
+      change: String(change?.change || ''),
+    })),
+  }
+}
+
+async function salvarSnapshot(db: Db, buyerId: string, snapshot: PolicyPortalSnapshot) {
+  const key = 'policies_portal_snapshot'
+  const { data } = await db.from('settings').select('value').eq('key', key).maybeSingle()
+  const map = ((data?.value as Record<string, PolicyPortalSnapshot>) || {})
+  map[buyerId] = snapshot
+  await db.from('settings').upsert({ key, value: map, updated_at: new Date().toISOString() }, { onConflict: 'key' })
+}
+
+export async function snapshotApolicesDe(db: Db, buyerId: string): Promise<PolicyPortalSnapshot | null> {
+  try {
+    const { data } = await db.from('settings').select('value').eq('key', 'policies_portal_snapshot').maybeSingle()
+    return ((data?.value as Record<string, PolicyPortalSnapshot>) || {})[buyerId] || null
+  } catch {
+    return null
+  }
 }
 
 function statusPortal(st?: string | null): PolicyStatus | null {
@@ -340,6 +485,8 @@ export async function sincronizarNL(db: Db, buyerId: string): Promise<NLResultad
   if (!doPortal.length) {
     return { ok: false, novas: 0, atualizadas: 0, semMudanca: 0, erro: 'O portal não devolveu nenhuma apólice.' }
   }
+
+  await salvarSnapshot(db, buyerId, snapshotDoFeed(feed))
 
   const { data: atuais, error } = await db.from('policies').select('*').eq('buyer_id', buyerId)
   if (error) return { ok: false, novas: 0, atualizadas: 0, semMudanca: 0, erro: error.message }
