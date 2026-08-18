@@ -266,7 +266,9 @@ def main():
             # Os cards quebram títulos em elementos/linhas diferentes (por exemplo,
             # "Commission\nImpact"). Normalizar o whitespace evita perder o total.
             normalized = re.sub(r"\s+", " ", text or " ").strip()
-            found = re.search(re.escape(label) + r"\s*(\d+)", normalized, re.I)
+            # O texto acessível de alguns cards inclui "is" entre título e total
+            # ("Pending New Business is 8").
+            found = re.search(re.escape(label) + r"(?:\s+is)?\s*(\d+)", normalized, re.I)
             return int(found.group(1)) if found else None
 
         def money_metric(text, label):
