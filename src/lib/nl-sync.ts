@@ -181,7 +181,11 @@ function requisitosPortal(txt: unknown): PortalRequirement[] {
 /** Snapshot completo usado pelas abas New Business e Client Intelligence. */
 export function snapshotDoFeed(d: any): PolicyPortalSnapshot {
   const summary = d?.nb_summary || {}
-  const exact = Object.keys(summary).length > 0
+  const exact = [
+    'all', 'pending', 'at_risk_chargeback', 'pending_requirements',
+    'outstanding_edelivery', 'pending_eft', 'unread_messages',
+    'anticipated_annual_premium', 'modal_premium',
+  ].every(key => summary[key] !== undefined && summary[key] !== null)
   const estorno = new Set((d?.estorno || []).map((p: unknown) => normPol(String(p))).filter(Boolean))
   const cases = (d?.nb_rows || []).map((r: any) => {
     const policy = normPol(r.pol)

@@ -263,11 +263,15 @@ def main():
         portal_last_updated = m.group(1) if m else None
 
         def metric(text, label):
-            found = re.search(re.escape(label) + r"\s*(\d+)", text, re.I)
+            # Os cards quebram títulos em elementos/linhas diferentes (por exemplo,
+            # "Commission\nImpact"). Normalizar o whitespace evita perder o total.
+            normalized = re.sub(r"\s+", " ", text or " ").strip()
+            found = re.search(re.escape(label) + r"\s*(\d+)", normalized, re.I)
             return int(found.group(1)) if found else None
 
         def money_metric(text, label):
-            found = re.search(re.escape(label) + r"\s*(\$[0-9,.]+)", text, re.I)
+            normalized = re.sub(r"\s+", " ", text or " ").strip()
+            found = re.search(re.escape(label) + r"\s*(\$[0-9,.]+)", normalized, re.I)
             return found.group(1) if found else None
 
         # Os cards do topo são a fonte oficial dos totais (o somatório das linhas
@@ -470,6 +474,15 @@ def main():
             ci_metrics = {key: metric(ci_text, label) for key, label in ci_defs}
             ci_metrics = {k: v for k, v in ci_metrics.items() if v is not None}
 
+            def ci_show_all():
+                page.evaluate(r"""() => {
+                    const table = Array.from(document.querySelectorAll('table')).find(t => t.querySelector('tbody tr'));
+                    if (!table || !window.jQuery || !window.jQuery.fn.DataTable) return;
+                    const dt = window.jQuery(table).DataTable();
+                    dt.page.len(100).draw();
+                }""")
+                page.wait_for_timeout(2500)
+
             def ci_rows_now(category):
                 payload = page.evaluate(r"""() => {
                     const tables = Array.from(document.querySelectorAll('table'));
@@ -498,6 +511,7 @@ def main():
                                 "columns": columns, "cells": cells, "portal_url": raw.get("portal_url")})
                 return headers, out
 
+            ci_show_all()
             ci_headers, ci_rows = ci_rows_now("all")
             # Cada card aplica um filtro próprio; capturar por categoria preserva a
             # classificação mesmo quando a tabela não possui uma coluna "Type".
@@ -508,6 +522,7 @@ def main():
                 try:
                     page.get_by_text(label, exact=True).first.click(timeout=5000, force=True)
                     page.wait_for_timeout(2500)
+                    ci_show_all()
                     headers, rows = ci_rows_now(key)
                     if headers and not ci_headers:
                         ci_headers = headers
