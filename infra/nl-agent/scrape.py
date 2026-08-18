@@ -258,10 +258,6 @@ def main():
         page.wait_for_selector("#DataTables_Table_0", timeout=60000)
         page.wait_for_timeout(4000)
 
-        body_text = page.evaluate("() => document.body.innerText")
-        m = re.search(r"Last Updated:\s*([0-9/]+\s+[0-9:]+\s*[AP]M)", body_text)
-        portal_last_updated = m.group(1) if m else None
-
         def metric(text, label):
             # Os cards quebram títulos em elementos/linhas diferentes (por exemplo,
             # "Commission\nImpact"). Normalizar o whitespace evita perder o total.
@@ -275,6 +271,25 @@ def main():
             normalized = re.sub(r"\s+", " ", text or " ").strip()
             found = re.search(re.escape(label) + r"\s*(\$[0-9,.]+)", normalized, re.I)
             return found.group(1) if found else None
+
+        def click_nb_card(label):
+            clicked = page.evaluate(r"""(label) => {
+                const wanted = String(label || '').toLowerCase();
+                const card = Array.from(document.querySelectorAll('.apnewbussinesstopcard'))
+                  .find(e => (e.innerText || '').replace(/\s+/g, ' ').toLowerCase().includes(wanted));
+                if (!card) return false;
+                card.click(); return true;
+            }""", label)
+            if clicked:
+                page.wait_for_timeout(5000)
+            return clicked
+
+        # O portal mantém o último card selecionado entre sessões. Limpar antes
+        # de ler inclusive os prêmios, porque eles variam conforme o filtro ativo.
+        click_nb_card("all cases in new business")
+        body_text = page.evaluate("() => document.body.innerText")
+        m = re.search(r"Last Updated:\s*([0-9/]+\s+[0-9:]+\s*[AP]M)", body_text)
+        portal_last_updated = m.group(1) if m else None
 
         # Os cards do topo são a fonte oficial dos totais (o somatório das linhas
         # não é igual ao painel porque a seguradora aplica regras próprias de prêmio).
@@ -303,31 +318,17 @@ def main():
                 pass
             page.wait_for_timeout(2000)
 
+        # O filtro escolhido no portal fica salvo entre sessões. Sempre começar
+        # explicitamente pelo card All, inclusive após uma execução interrompida.
+        click_nb_card("all cases in new business")
         nb_rows = js_rows(page, "{sub:c[1], name:c[2], pol:c[3].replace(/\\s/g,''), aap:c[4], prod:c[5], st:c[6], deliv:c[7], owner:c[9], sent:c[10], mp:c[11], cm:c[13]}")
         log(f"NB: {len(nb_rows)} casos")
 
         # ---------- EMPRESA EM RISCO DE ESTORNO (cartão-filtro do relatório) ----------
         estorno_pols = []
         try:
-            clicked = page.evaluate("""() => {
-                const els = Array.from(document.querySelectorAll('div,a,button,span'))
-                  .filter(e => /business\\s*at\\s*risk\\s*of\\s*chargeback|risco\\s*de\\s*estorno/i.test(e.innerText || ''))
-                  .sort((a,b) => (a.innerText||'').length - (b.innerText||'').length);
-                for (const el of els) {
-                  let alvo = el;
-                  while (alvo && alvo !== document.body) {
-                    const style = getComputedStyle(alvo);
-                    if (alvo.matches('a,button,[onclick],[role=button]') || style.cursor === 'pointer') {
-                      alvo.click(); return true;
-                    }
-                    alvo = alvo.parentElement;
-                  }
-                }
-                if (!els[0]) return false;
-                els[0].click(); return true;
-            }""")
+            clicked = click_nb_card("business at risk of chargeback")
             if clicked:
-                page.wait_for_timeout(5000)
                 rows_e = page.evaluate(
                     "() => $('#DataTables_Table_0').DataTable().rows({search:'applied'}).nodes().toArray().map(tr => {"
                     " const c = Array.from(tr.cells).map(td => td.innerText.trim().replace(/\\s+/g,' '));"
@@ -335,11 +336,7 @@ def main():
                 )
                 estorno_pols = [p for p in rows_e if p]
                 log(f"risco de estorno: {len(estorno_pols)} apolices")
-                # Reabrir a URL remove o filtro do card com mais segurança do que
-                # tentar acertar o contêiner clicável do card "All".
-                goto(page, NB_URL)
-                page.wait_for_selector("#DataTables_Table_0", timeout=60000)
-                page.wait_for_timeout(3000)
+                click_nb_card("all cases in new business")
                 page.evaluate("$('#DataTables_Table_0').DataTable().page.len(100).draw()")
                 page.wait_for_timeout(3000)
             else:
