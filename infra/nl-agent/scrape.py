@@ -335,24 +335,13 @@ def main():
                 )
                 estorno_pols = [p for p in rows_e if p]
                 log(f"risco de estorno: {len(estorno_pols)} apolices")
-                page.evaluate("""() => {
-                    const els = Array.from(document.querySelectorAll('div,a,button,span'))
-                      .filter(e => /all\\s*cases\\s*in\\s*new\\s*business|all\\s*new\\s*business\\s*cases|todos\\s*os\\s*casos/i.test(e.innerText || ''))
-                      .sort((a,b) => (a.innerText||'').length - (b.innerText||'').length);
-                    for (const el of els) {
-                      let alvo = el;
-                      while (alvo && alvo !== document.body) {
-                        const style = getComputedStyle(alvo);
-                        if (alvo.matches('a,button,[onclick],[role=button]') || style.cursor === 'pointer') {
-                          alvo.click(); return true;
-                        }
-                        alvo = alvo.parentElement;
-                      }
-                    }
-                    if (els[0]) { els[0].click(); return true; }
-                    return false;
-                }""")
-                page.wait_for_timeout(5000)
+                # Reabrir a URL remove o filtro do card com mais segurança do que
+                # tentar acertar o contêiner clicável do card "All".
+                goto(page, NB_URL)
+                page.wait_for_selector("#DataTables_Table_0", timeout=60000)
+                page.wait_for_timeout(3000)
+                page.evaluate("$('#DataTables_Table_0').DataTable().page.len(100).draw()")
+                page.wait_for_timeout(3000)
             else:
                 cand = page.evaluate(r"""() => Array.from(document.querySelectorAll('div,a,span,button'))
                     .filter(e => /case|risk|review|pending|delivery|transfer/i.test(e.innerText||'') && (e.innerText||'').length < 90 && e.children.length <= 3)
