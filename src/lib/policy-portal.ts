@@ -52,6 +52,7 @@ export interface PortalClientIntelligenceEvent {
   client_name: string | null
   occurred_at: string | null
   portal_url: string | null
+  flags?: string[]
   columns: Record<string, string>
 }
 

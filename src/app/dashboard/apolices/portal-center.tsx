@@ -236,12 +236,12 @@ function ClientIntelligencePanel({ snapshot, policyById, search, onEdit }: {
   const [visibleColumns, setVisibleColumns] = useState<string[]>(ci.columns)
   const events = useMemo(() => {
     const query = search.trim().toLowerCase()
-    return ci.events.filter(event => (category === 'all' || event.category === category) && (!query || `${event.client_name || ''} ${event.policy_number || ''} ${Object.values(event.columns).join(' ')}`.toLowerCase().includes(query)))
+    return ci.events.filter(event => (category === 'all' || event.category === category || event.flags?.includes(category)) && (!query || `${event.client_name || ''} ${event.policy_number || ''} ${Object.values(event.columns).join(' ')}`.toLowerCase().includes(query)))
   }, [category, ci.events, search])
 
   const exportEvents = () => downloadCsv('lead4pro-client-intelligence.csv', [
     ['Categoria', 'Cliente', 'Apólice', ...visibleColumns],
-    ...events.map(event => [event.category, event.client_name || '', event.policy_number || '', ...visibleColumns.map(column => event.columns[column] || '')]),
+    ...events.map(event => [[event.category, ...(event.flags || [])].join(' | '), event.client_name || '', event.policy_number || '', ...visibleColumns.map(column => event.columns[column] || '')]),
   ])
 
   return (
@@ -273,5 +273,5 @@ function ClientIntelligencePanel({ snapshot, policyById, search, onEdit }: {
 
 function ClientEventRow({ event, policy, columns, onEdit }: { event: PortalClientIntelligenceEvent; policy?: Policy; columns: string[]; onEdit: (policy: Policy) => void }) {
   const meta = CI_LABELS[event.category] || { label: event.category.replace(/_/g, ' '), icon: '📌', color: '#475569' }
-  return <tr style={{ borderTop: '1px solid var(--border)' }}><td className="p-3 text-[11px] font-bold whitespace-nowrap" style={{ color: meta.color }}>{meta.icon} {meta.label}</td><td className="p-3"><p className="text-[12px] font-bold" style={{ color: 'var(--fg)' }}>{event.client_name || '—'}</p><p className="text-[10.5px]" style={{ color: 'var(--fg-muted)' }}>{event.policy_number || '—'}</p></td>{columns.map(column => <td key={column} className="p-3 text-[11px] min-w-36" style={{ color: 'var(--fg-secondary)' }}>{event.columns[column] || '—'}</td>)}<td className="p-3 whitespace-nowrap">{policy && <button onClick={() => onEdit(policy)} className="px-2.5 py-1.5 rounded-lg text-[10.5px] font-bold" style={{ background: 'var(--bg-soft)', color: 'var(--fg-secondary)' }}>✏️ Ação</button>}</td></tr>
+  return <tr style={{ borderTop: '1px solid var(--border)' }}><td className="p-3 text-[11px] font-bold whitespace-nowrap" style={{ color: meta.color }}>{meta.icon} {meta.label}{event.flags?.includes('commission_impact') && <span className="block mt-1 text-[9px]" style={{ color: '#dc2626' }}>💲 Impacto na comissão</span>}</td><td className="p-3"><p className="text-[12px] font-bold" style={{ color: 'var(--fg)' }}>{event.client_name || '—'}</p><p className="text-[10.5px]" style={{ color: 'var(--fg-muted)' }}>{event.policy_number || '—'}</p></td>{columns.map(column => <td key={column} className="p-3 text-[11px] min-w-36" style={{ color: 'var(--fg-secondary)' }}>{event.columns[column] || '—'}</td>)}<td className="p-3 whitespace-nowrap">{policy && <button onClick={() => onEdit(policy)} className="px-2.5 py-1.5 rounded-lg text-[10.5px] font-bold" style={{ background: 'var(--bg-soft)', color: 'var(--fg-secondary)' }}>✏️ Ação</button>}</td></tr>
 }

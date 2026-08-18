@@ -230,14 +230,20 @@ export function snapshotDoFeed(d: any): PolicyPortalSnapshot {
     const policy = normPol(row?.policy_number || find([/policy/i, /ap[oó]lice/i]))
     const client = row?.client_name || find([/client/i, /owner/i, /insured/i, /cliente/i])
     const occurred = row?.occurred_at || find([/date/i, /data/i, /received/i])
+    const portalCategory = (row?.category && row.category !== 'all')
+      ? String(row.category)
+      : (find([/^category$/i, /categoria/i]) || 'all')
+    const category = portalCategory.normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'all'
     return {
       id: String(row?.id || `${row?.category || 'all'}-${policy || client || index}-${index}`),
-      category: String(row?.category || 'all'),
+      category,
       policy_number: policy,
       policy_id: null,
       client_name: client || null,
       occurred_at: occurred || null,
       portal_url: row?.portal_url || null,
+      flags: row?.commission_impact ? ['commission_impact'] : [],
       columns,
     }
   })

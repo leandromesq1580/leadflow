@@ -507,7 +507,8 @@ def main():
                     const rows = nodes.filter(tr => getComputedStyle(tr).display !== 'none').map(tr => {
                       const cells = Array.from(tr.cells).map(td => (td.innerText||'').replace(/\s+/g,' ').trim());
                       const anchor = tr.querySelector('a[href]');
-                      return {cells, portal_url: anchor ? anchor.href : null};
+                      const commissionImpact = !!tr.querySelector('.commission-tooltip:not(.d-none)');
+                      return {cells, portal_url: anchor ? anchor.href : null, commission_impact: commissionImpact};
                     });
                     return {headers, rows};
                 }""")
@@ -518,27 +519,34 @@ def main():
                     columns = {headers[i] if i < len(headers) and headers[i] else f"Coluna {i+1}": value
                                for i, value in enumerate(cells)}
                     out.append({"id": f"{category}-{idx}-{'|'.join(cells)[:80]}", "category": category,
-                                "columns": columns, "cells": cells, "portal_url": raw.get("portal_url")})
+                                "columns": columns, "cells": cells, "portal_url": raw.get("portal_url"),
+                                "commission_impact": bool(raw.get("commission_impact"))})
                 return headers, out
 
             ci_show_all()
             ci_headers, ci_rows = ci_rows_now("all")
             # Cada card aplica um filtro próprio; capturar por categoria preserva a
-            # classificação mesmo quando a tabela não possui uma coluna "Type".
+            # classificação quando o portal não entrega a coluna "Category". Se a
+            # tabela All já trouxe todos os eventos, a coluna é a fonte mais precisa.
             categorized = []
-            for key, label in ci_defs[1:]:
-                if not ci_metrics.get(key):
-                    continue
-                try:
-                    page.get_by_text(label, exact=True).first.click(timeout=5000, force=True)
-                    page.wait_for_timeout(2500)
-                    ci_show_all()
-                    headers, rows = ci_rows_now(key)
-                    if headers and not ci_headers:
-                        ci_headers = headers
-                    categorized.extend(rows)
-                except Exception as e:
-                    log(f"Client Intelligence {label}: {str(e)[:100]}")
+            if len(ci_rows) < (ci_metrics.get("all") or 0):
+                for key, label in ci_defs[1:]:
+                    if not ci_metrics.get(key):
+                        continue
+                    try:
+                        targets = page.get_by_text(label, exact=True).all()
+                        target = next((item for item in targets if item.is_visible()), None)
+                        if target is None:
+                            raise RuntimeError("card visível não encontrado")
+                        target.click(timeout=5000, force=True)
+                        page.wait_for_timeout(2500)
+                        ci_show_all()
+                        headers, rows = ci_rows_now(key)
+                        if headers and not ci_headers:
+                            ci_headers = headers
+                        categorized.extend(rows)
+                    except Exception as e:
+                        log(f"Client Intelligence {label}: {str(e)[:100]}")
             if categorized:
                 ci_rows = categorized
 
