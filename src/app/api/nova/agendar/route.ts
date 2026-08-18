@@ -88,6 +88,16 @@ export async function POST(req: Request) {
   })
   if (apptErr) return NextResponse.json({ error: 'Não consegui agendar — tente de novo.' }, { status: 500 })
 
+  // 2b) a reunião também vira follow-up do LEAD (aba Follow-ups / no-show / timeline).
+  // O motor de "Aviso de reunião" deduplica por lead — não gera lembrete em dobro.
+  try {
+    await db.from('follow_ups').insert({
+      lead_id: lead.id, buyer_id: vendas.id, type: 'meeting',
+      description: `Consultoria estratégica agendada pelo site (${idioma.toUpperCase()})`,
+      scheduled_at: slot.toISOString(),
+    })
+  } catch { /* timeline é conforto; agenda acima é o contrato */ }
+
   // 3) aviso imediato pro time (falha aqui não derruba o agendamento)
   const quando = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/New_York' }).format(slot)
   try {
