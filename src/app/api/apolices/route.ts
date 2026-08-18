@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { callerBuyer } from '@/lib/api-auth'
 import { kpisDe, type Policy } from '@/lib/insurance-policies'
 import { acessoApolices } from '@/lib/policies-access'
-import { normPol, sincronizarNL, snapshotApolicesDe } from '@/lib/nl-sync'
+import { alertasApolicesDe, normPol, sincronizarNL, snapshotApolicesDe } from '@/lib/nl-sync'
 import type { PolicyPortalSnapshot } from '@/lib/policy-portal'
 
 export const dynamic = 'force-dynamic'
@@ -52,7 +52,8 @@ export async function GET() {
       await sincronizarNL(db, acesso.bookDe)
       portal = await snapshotApolicesDe(db, acesso.bookDe)
     }
-    return NextResponse.json({ policies: lista, kpis: kpisDe(lista), portal: vincularPortal(portal, lista) })
+    const alerts = await alertasApolicesDe(db, acesso.bookDe)
+    return NextResponse.json({ policies: lista, kpis: kpisDe(lista), portal: vincularPortal(portal, lista), alerts })
   } catch (e: any) {
     if (/does not exist|relation/i.test(e?.message || '')) {
       return NextResponse.json({ policies: [], kpis: kpisDe([]), needsMigration: true })

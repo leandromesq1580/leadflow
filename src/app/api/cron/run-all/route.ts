@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { processSequences } from '@/lib/sequence-engine'
 import { runAutomations } from '@/lib/automation-engine'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { importarPortaisPendentes } from '@/lib/nl-sync'
+
+export const maxDuration = 60
 
 /**
  * GET /api/cron/run-all?secret=X
@@ -33,18 +37,20 @@ export async function GET(request: NextRequest) {
   const base = request.nextUrl.origin
   const startedAt = Date.now()
 
-  const [seqResult, autoResult, remResult] = await Promise.allSettled([
+  const [seqResult, autoResult, remResult, policyResult] = await Promise.allSettled([
     processSequences(),
     runAutomations(),
     fetch(`${base}/api/cron/reminders?secret=${expected}`, {
       headers: { 'user-agent': 'run-all-orchestrator' },
     }).then(r => r.json()).catch(e => ({ error: String(e) })),
+    importarPortaisPendentes(createAdminClient()),
   ])
 
   const result = {
     sequences: seqResult.status === 'fulfilled' ? seqResult.value : { error: String(seqResult.reason) },
     automations: autoResult.status === 'fulfilled' ? autoResult.value : { error: String(autoResult.reason) },
     reminders: remResult.status === 'fulfilled' ? remResult.value : { error: String(remResult.reason) },
+    policies: policyResult.status === 'fulfilled' ? policyResult.value : { error: String(policyResult.reason) },
     duration_ms: Date.now() - startedAt,
   }
 

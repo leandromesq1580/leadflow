@@ -1,5 +1,5 @@
 import { createAdminClient } from './supabase/admin'
-import type { PolicyStatus } from './insurance-policies'
+import { orientarPendencia, type PolicyChangeAlert, type PolicyStatus } from './insurance-policies'
 import {
   EMPTY_CLIENT_INTELLIGENCE,
   type PolicyPortalSnapshot,
@@ -50,6 +50,8 @@ export interface NLResultado {
   semMudanca: number
   geradoEm?: string | null
   portalAtualizadoEm?: string | null
+  mudancas?: PolicyChangeAlert[]
+  avisosEnviados?: boolean
   erro?: string
 }
 
@@ -87,7 +89,9 @@ export async function enviarCodigoMfa(cfg: NLConfig, code: string): Promise<{ ok
 /** O robô está varrendo? Pediu MFA? Quando varreu por último? */
 export async function statusVarredura(cfg: NLConfig): Promise<NLStatusRobo | null> {
   try {
-    const r = await fetch(`${cfg.url.replace(/\/$/, '')}/status${q(cfg, false)}`, { cache: 'no-store', headers: { Accept: 'application/json' } })
+    const r = await fetch(`${cfg.url.replace(/\/$/, '')}/status${q(cfg, false)}`, {
+      cache: 'no-store', headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(8000),
+    })
     if (!r.ok) return null
     const d = await r.json()
     return {
@@ -308,6 +312,37 @@ export async function snapshotApolicesDe(db: Db, buyerId: string): Promise<Polic
   }
 }
 
+const POLICY_ALERTS_KEY = 'policy_change_alerts'
+
+export async function alertasApolicesDe(db: Db, buyerId: string): Promise<PolicyChangeAlert[]> {
+  try {
+    const { data } = await db.from('settings').select('value').eq('key', POLICY_ALERTS_KEY).maybeSingle()
+    const map = ((data?.value as Record<string, PolicyChangeAlert[]>) || {})
+    const cutoff = Date.now() - 30 * 86400_000
+    return (map[buyerId] || []).filter(item => new Date(item.created_at).getTime() >= cutoff).slice(0, 100)
+  } catch {
+    return []
+  }
+}
+
+async function salvarAlertasApolices(db: Db, buyerId: string, alerts: PolicyChangeAlert[]) {
+  if (!alerts.length) return
+  const { data } = await db.from('settings').select('value').eq('key', POLICY_ALERTS_KEY).maybeSingle()
+  const map = ((data?.value as Record<string, PolicyChangeAlert[]>) || {})
+  const previous = map[buyerId] || []
+  const ids = new Set<string>()
+  map[buyerId] = [...alerts, ...previous].filter(item => {
+    if (!item?.id || ids.has(item.id)) return false
+    ids.add(item.id)
+    return true
+  }).slice(0, 100)
+  await db.from('settings').upsert({ key: POLICY_ALERTS_KEY, value: map, updated_at: new Date().toISOString() }, { onConflict: 'key' })
+}
+
+function novoAlerta(base: Omit<PolicyChangeAlert, 'id' | 'created_at'>): PolicyChangeAlert {
+  return { ...base, id: crypto.randomUUID(), created_at: new Date().toISOString() }
+}
+
 function statusPortal(st?: string | null): PolicyStatus | null {
   const s = String(st || '')
   if (/lapsed/i.test(s)) return 'lapsed'
@@ -491,6 +526,12 @@ export async function sincronizarNL(db: Db, buyerId: string): Promise<NLResultad
     return { ok: false, novas: 0, atualizadas: 0, semMudanca: 0, erro: `Não consegui falar com o portal: ${e?.message || e}` }
   }
 
+  // O mesmo feed pode ser importado manualmente mais de uma vez. Só os fatos
+  // literais registrados pelo robô entram como alerta quando a leitura é nova.
+  const geradoEmMs = new Date(feed?.generated_at || 0).getTime()
+  const ultimoSyncMs = new Date(cfg.last_sync || 0).getTime()
+  const leituraNova = !cfg.last_sync || (Number.isFinite(geradoEmMs) && geradoEmMs > ultimoSyncMs)
+
   const doPortal = montarDoFeed(feed)
   if (!doPortal.length) {
     return { ok: false, novas: 0, atualizadas: 0, semMudanca: 0, erro: 'O portal não devolveu nenhuma apólice.' }
@@ -511,6 +552,8 @@ export async function sincronizarNL(db: Db, buyerId: string): Promise<NLResultad
   }
 
   let novas = 0, atualizadas = 0, semMudanca = 0
+  const mudancas: PolicyChangeAlert[] = []
+  const primeiraImportacao = (atuais || []).length === 0
   const inserir: any[] = []
 
   for (const r of doPortal) {
@@ -564,18 +607,146 @@ export async function sincronizarNL(db: Db, buyerId: string): Promise<NLResultad
     if (mud.status || mud.requirements) mud.done_at = null
     mud.updated_at = new Date().toISOString()
     const { error: upErr } = await db.from('policies').update(mud).eq('id', atual.id).eq('buyer_id', buyerId)
-    if (!upErr) atualizadas++
+    if (!upErr) {
+      atualizadas++
+      if (mud.status) mudancas.push(novoAlerta({
+        kind: 'status_changed', policy_id: atual.id, policy_number: r.policy_number || atual.policy_number,
+        client_name: r.client_name || atual.client_name, from_status: atual.status, to_status: mud.status,
+        action: reqNovos[0] ? orientarPendencia(reqNovos[0]).action : null,
+      }))
+      if (mud.requirements) {
+        const antigos = new Set(reqAtuais)
+        const novos = new Set(reqNovos)
+        for (const requirement of reqNovos.filter(item => !antigos.has(item))) mudancas.push(novoAlerta({
+          kind: 'requirement_added', policy_id: atual.id, policy_number: r.policy_number || atual.policy_number,
+          client_name: r.client_name || atual.client_name, requirement,
+          action: orientarPendencia(requirement).action,
+        }))
+        for (const requirement of reqAtuais.filter(item => !novos.has(item))) mudancas.push(novoAlerta({
+          kind: 'requirement_removed', policy_id: atual.id, policy_number: r.policy_number || atual.policy_number,
+          client_name: r.client_name || atual.client_name, requirement,
+          action: null,
+        }))
+      }
+    }
   }
 
   for (let i = 0; i < inserir.length; i += 50) {
-    const { data, error: insErr } = await db.from('policies').insert(inserir.slice(i, i + 50)).select('id')
-    if (!insErr) novas += (data || []).length
+    const lote = inserir.slice(i, i + 50)
+    const { data, error: insErr } = await db.from('policies').insert(lote).select('id')
+    if (!insErr) {
+      novas += (data || []).length
+      if (!primeiraImportacao) lote.forEach((item, index) => {
+        const policyId = data?.[index]?.id || null
+        mudancas.push(novoAlerta({
+          kind: 'policy_added', policy_id: policyId, policy_number: item.policy_number,
+          client_name: item.client_name, to_status: item.status || 'submitted',
+          action: item.requirements?.[0] ? orientarPendencia(item.requirements[0]).action : null,
+        }))
+        for (const requirement of item.requirements || []) mudancas.push(novoAlerta({
+          kind: 'requirement_added', policy_id: policyId, policy_number: item.policy_number,
+          client_name: item.client_name, requirement, action: orientarPendencia(requirement).action,
+        }))
+      })
+    }
   }
 
-  await marcarSync(db, buyerId)
+  // O status interno é propositalmente enxuto (enviada, emitida, ativa etc.).
+  // Quando a National Life muda um status mais específico sem trocar esse grupo
+  // interno, preservamos e avisamos o texto literal do portal também.
+  if (leituraNova && Array.isArray(feed?.changes)) {
+    for (const raw of feed.changes) {
+      if (!['nb', 'inforce'].includes(String(raw?.kind || '').toLowerCase())) continue
+      const policyNumber = normPol(raw?.pol)
+      const text = String(raw?.change || '').trim()
+      if (!policyNumber || !text || /^nova\b/i.test(text)) continue
+      if (mudancas.some(change => change.kind === 'status_changed' && normPol(change.policy_number) === policyNumber)) continue
+
+      const arrow = text.split(/\s*(?:→|->)\s*/, 2)
+      if (arrow.length !== 2 && !/saiu da lista|removed from/i.test(text)) continue
+      const portalPolicy = doPortal.find(item => item.policy_number === policyNumber)
+      const current = porPol.get(policyNumber)
+      mudancas.push(novoAlerta({
+        kind: 'status_changed',
+        policy_id: current?.id || null,
+        policy_number: policyNumber,
+        client_name: portalPolicy?.client_name || current?.client_name || policyNumber,
+        from_status: current?.status || null,
+        to_status: portalPolicy?.status || current?.status || null,
+        from_value: arrow.length === 2 ? arrow[0] : null,
+        to_value: arrow.length === 2 ? arrow[1] : text,
+        action: portalPolicy?.requirements?.[0] ? orientarPendencia(portalPolicy.requirements[0]).action : null,
+      }))
+    }
+  }
+
+  let avisosEnviados = false
+  if (mudancas.length) {
+    try { await salvarAlertasApolices(db, buyerId, mudancas) } catch (e) { console.error('[NL sync] histórico de alertas falhou:', e) }
+    // Marca a leitura antes dos canais externos: se WhatsApp/e-mail demorarem ou
+    // falharem, o cron não reprocessa o mesmo feed e não duplica os avisos.
+    await marcarSync(db, buyerId)
+    try {
+      const { notifyPolicyChanges } = await import('./notifications')
+      const delivered = await notifyPolicyChanges(buyerId, mudancas)
+      avisosEnviados = delivered.push > 0 || delivered.whatsapp || delivered.email
+    } catch (e) {
+      console.error('[NL sync] envio de alertas falhou:', e)
+    }
+  } else {
+    await marcarSync(db, buyerId)
+  }
   return {
     ok: true, novas, atualizadas, semMudanca,
     geradoEm: feed.generated_at || null,
     portalAtualizadoEm: feed.portal_last_updated || null,
+    mudancas,
+    avisosEnviados,
   }
+}
+
+export interface NLImportacaoAutomatica {
+  verificados: number
+  importados: number
+  mudancas: number
+  erros: { buyerId: string; erro: string }[]
+}
+
+/**
+ * Importa automaticamente toda varredura nova concluída pelo robô. O cron chama
+ * isto a cada minuto; `last_sync` garante que cada feed seja processado uma vez.
+ */
+export async function importarPortaisPendentes(db: Db = createAdminClient()): Promise<NLImportacaoAutomatica> {
+  const summary: NLImportacaoAutomatica = { verificados: 0, importados: 0, mudancas: 0, erros: [] }
+  const { data, error } = await db.from('settings').select('value').eq('key', 'nl_agent').maybeSingle()
+  if (error) {
+    summary.erros.push({ buyerId: 'settings', erro: error.message })
+    return summary
+  }
+  const configs = ((data?.value as Record<string, NLConfig>) || {})
+
+  // Sequencial de propósito: sincronizarNL atualiza mapas JSON compartilhados em
+  // settings; duas contas gravando ao mesmo tempo poderiam sobrescrever a outra.
+  for (const [buyerId, cfg] of Object.entries(configs)) {
+    if (!cfg?.url || !cfg?.key) continue
+    summary.verificados++
+    try {
+      const status = await statusVarredura(cfg)
+      if (!status || status.running || status.awaiting_mfa || !status.last_run) continue
+      const lastRun = new Date(status.last_run).getTime()
+      const lastSync = new Date(cfg.last_sync || 0).getTime()
+      if (!Number.isFinite(lastRun) || lastRun <= lastSync) continue
+
+      const result = await sincronizarNL(db, buyerId)
+      if (!result.ok) {
+        summary.erros.push({ buyerId, erro: result.erro || 'Falha desconhecida' })
+        continue
+      }
+      summary.importados++
+      summary.mudancas += result.mudancas?.length || 0
+    } catch (reason) {
+      summary.erros.push({ buyerId, erro: reason instanceof Error ? reason.message : String(reason) })
+    }
+  }
+  return summary
 }

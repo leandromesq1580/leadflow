@@ -1,5 +1,6 @@
 import { Resend } from 'resend'
 import { localeDoBuyer, trad, type BuyerLocale } from './buyer-locale'
+import { orientarPendencia, type PolicyChangeAlert, type PolicyStatus } from './insurance-policies'
 
 let _resend: Resend | null = null
 function getResend(): Resend {
@@ -38,6 +39,7 @@ async function sendWhatsApp(phone: string, message: string, bridge?: { url: stri
         method: 'POST',
         headers: { 'apikey': bridgeKey, 'Content-Type': 'application/json' },
         body: JSON.stringify({ number: cleanNumber, message }),
+        signal: AbortSignal.timeout(10000),
       })
       const data: any = await res.json().catch(() => null)
       const ok = res.ok && !!(data && (data.success === true || data.id))
@@ -53,6 +55,115 @@ async function sendWhatsApp(phone: string, message: string, bridge?: { url: stri
   if (await attempt()) return true
   await new Promise(r => setTimeout(r, 1500))
   return await attempt()
+}
+
+/**
+ * Avisa o dono do book quando a National Life muda uma apólice ou publica/remove
+ * uma exigência. O alerta é agrupado por leitura do portal para não transformar
+ * uma varredura com várias alterações em dezenas de mensagens separadas.
+ */
+export async function notifyPolicyChanges(
+  buyerId: string,
+  changes: PolicyChangeAlert[],
+): Promise<{ push: number; whatsapp: boolean; email: boolean }> {
+  const delivered = { push: 0, whatsapp: false, email: false }
+  if (!buyerId || !changes.length) return delivered
+
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const db = createAdminClient()
+  const { data: buyer } = await db.from('buyers')
+    .select('name, email, phone, whatsapp, notification_phone_2')
+    .eq('id', buyerId).maybeSingle()
+  if (!buyer) return delivered
+
+  const locale = await localeDoBuyer(db, buyerId)
+  const L = trad(locale)
+  const statusLabel = (status?: PolicyStatus | null) => ({
+    submitted: L('Enviada', 'Submitted', 'Enviada'),
+    issued: L('Emitida', 'Issued', 'Emitida'),
+    active: L('Ativa', 'Active', 'Activa'),
+    at_risk: L('Em risco', 'At risk', 'En riesgo'),
+    lapsed: L('Caducada', 'Lapsed', 'Caducada'),
+    cancelled: L('Cancelada', 'Cancelled', 'Cancelada'),
+    declined: L('Recusada', 'Declined', 'Rechazada'),
+  }[String(status || '')] || status || '—')
+  const statusValue = (value: string | null | undefined, fallback?: PolicyStatus | null) => value || statusLabel(fallback)
+  const policyLabel = (change: PolicyChangeAlert) => [change.client_name, change.policy_number].filter(Boolean).join(' · ')
+  const actionFor = (change: PolicyChangeAlert) => change.requirement
+    ? orientarPendencia(change.requirement, locale).action
+    : change.action
+  const lineFor = (change: PolicyChangeAlert) => {
+    if (change.kind === 'requirement_added') return `📥 *${L('Novo pedido', 'New request', 'Nueva solicitud')}* — ${policyLabel(change)}\n${change.requirement || '—'}\n➡️ ${actionFor(change)}`
+    if (change.kind === 'requirement_removed') return `✅ *${L('Pendência removida/concluída', 'Requirement removed/completed', 'Pendiente eliminado/completado')}* — ${policyLabel(change)}\n${change.requirement || '—'}`
+    if (change.kind === 'status_changed') return `🔄 *${L('Status alterado', 'Status changed', 'Estado actualizado')}* — ${policyLabel(change)}\n${statusValue(change.from_value, change.from_status)} → ${statusValue(change.to_value, change.to_status)}`
+    return `🆕 *${L('Nova apólice encontrada', 'New policy found', 'Nueva póliza encontrada')}* — ${policyLabel(change)}\n${statusLabel(change.to_status)}`
+  }
+
+  const visible = changes.slice(0, 12)
+  const remainder = changes.length - visible.length
+  const title = L('National Life — alterações no book', 'National Life — book changes', 'National Life — cambios en el book')
+  const message = `🚨 *${title}*\n\n${visible.map(lineFor).join('\n\n')}${remainder > 0 ? `\n\n+${remainder} ${L('alteração(ões) no portal', 'more change(s) in the portal', 'cambio(s) más en el portal')}` : ''}\n\n🔗 lead4producers.com/dashboard/apolices`
+
+  const primaryPhone = String(buyer.whatsapp || buyer.phone || '').trim()
+  const secondaryPhone = String(buyer.notification_phone_2 || '').trim()
+  const digits = (value: string) => value.replace(/\D/g, '')
+  const escapeHtml = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
+  }[character] || character))
+
+  // Os canais rodam juntos para a importação automática não ficar presa caso um
+  // provedor esteja lento. Cada canal continua isolado: falha de um não cancela os outros.
+  const pushTask = (async () => {
+    try {
+      const { pushToBuyer } = await import('@/lib/push-notify')
+      delivered.push = await pushToBuyer(buyerId, {
+        title: `🚨 ${title}`,
+        body: changes.length === 1
+          ? `${policyLabel(changes[0])}: ${changes[0].requirement || L('status alterado', 'status changed', 'estado actualizado')}`
+          : L(`${changes.length} alterações encontradas.`, `${changes.length} changes found.`, `${changes.length} cambios encontrados.`),
+        url: '/dashboard/apolices',
+        tag: `policies-${changes[0].id}`,
+      })
+    } catch (error) {
+      console.error('[Policy alerts] push falhou:', error)
+    }
+  })()
+
+  const whatsappTask = (async () => {
+    const phones = [primaryPhone]
+    if (secondaryPhone && digits(secondaryPhone) !== digits(primaryPhone)) phones.push(secondaryPhone)
+    const results = await Promise.all(phones.filter(Boolean).map(async phone => {
+      try { return await sendWhatsApp(phone, message) }
+      catch (error) { console.error('[Policy alerts] WhatsApp falhou:', error); return false }
+    }))
+    delivered.whatsapp = results.some(Boolean)
+  })()
+
+  const emailTask = (async () => {
+    if (!buyer.email) return
+    const rows = visible.map(change => {
+      const action = actionFor(change)
+      const detail = change.kind === 'status_changed'
+        ? `${statusValue(change.from_value, change.from_status)} → ${statusValue(change.to_value, change.to_status)}`
+        : change.requirement || statusLabel(change.to_status)
+      return `<div style="padding:14px 0;border-bottom:1px solid #e2e8f0"><b>${escapeHtml(policyLabel(change))}</b><br><span>${escapeHtml(detail)}</span>${action ? `<br><span style="color:#7c3aed"><b>${escapeHtml(L('O que fazer', 'What to do', 'Qué hacer'))}:</b> ${escapeHtml(action)}</span>` : ''}</div>`
+    }).join('')
+    try {
+      const result = await getResend().emails.send({
+        from: 'Lead4Producers <onboarding@resend.dev>',
+        to: buyer.email,
+        subject: `🚨 ${title} (${changes.length})`,
+        html: `<div style="font-family:Arial,sans-serif;max-width:640px;margin:auto"><h2>${escapeHtml(title)}</h2><p>${escapeHtml(L('A National Life publicou alterações que precisam da sua atenção.', 'National Life posted changes that need your attention.', 'National Life publicó cambios que requieren tu atención.'))}</p>${rows}<p style="margin-top:22px"><a href="${escapeHtml(process.env.NEXT_PUBLIC_APP_URL || 'https://lead4producers.com')}/dashboard/apolices" style="background:#7c3aed;color:white;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:bold">${escapeHtml(L('Abrir Gestão de Apólices', 'Open Policy Management', 'Abrir Gestión de Pólizas'))}</a></p></div>`,
+      })
+      delivered.email = !result.error
+    } catch (error) {
+      console.error('[Policy alerts] e-mail falhou:', error)
+    }
+  })()
+
+  await Promise.allSettled([pushTask, whatsappTask, emailTask])
+
+  return delivered
 }
 
 /**

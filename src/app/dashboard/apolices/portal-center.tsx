@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { money, type Policy } from '@/lib/insurance-policies'
+import { money, orientarPendencia, type Policy } from '@/lib/insurance-policies'
 import type {
   PolicyPortalSnapshot,
   PortalClientIntelligenceEvent,
@@ -171,6 +171,7 @@ function NewBusinessCaseCard({ item, policy, open, onOpen, onEdit, onToggleDone 
 }) {
   const t = useT()
   const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
+  const locale = t._locale
   const phone = policy?.client_phone?.replace(/\D/g, '') || ''
   const urgent = item.at_risk_chargeback || item.requirements.length > 0
   return (
@@ -183,8 +184,17 @@ function NewBusinessCaseCard({ item, policy, open, onOpen, onEdit, onToggleDone 
             {item.at_risk_chargeback && <span className="px-2 py-0.5 rounded-md text-[10px] font-bold" style={{ background: '#fef2f2', color: '#b91c1c' }}>⚠️ Chargeback</span>}
           </div>
           <p className="text-[11.5px] mt-1" style={{ color: 'var(--fg-muted)' }}>{[item.policy_number, item.product, item.modal_premium_cents ? `${money(item.modal_premium_cents)}/mês` : null, item.case_manager ? `Case manager: ${item.case_manager}` : null].filter(Boolean).join(' · ')}</p>
+          <div className="space-y-1.5 mt-2">
+            {item.requirements.map(requirement => {
+              const guide = orientarPendencia(requirement.name, locale)
+              return <div key={`${requirement.received_at}-${requirement.name}`} className="rounded-lg px-3 py-2" style={{ background: '#fffbeb', border: '1px solid #fde68a' }}>
+                <p className="text-[10.5px] font-extrabold" style={{ color: '#b45309' }}>⏳ {requirement.name}{requirement.received_at ? ` · ${requirement.received_at}` : ''}</p>
+                <p className="text-[11.5px] font-semibold mt-0.5" style={{ color: 'var(--fg-secondary)' }}>➡️ {guide.action}</p>
+                <p className="text-[10px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>{L('Responsável', 'Responsible', 'Responsable')}: <b>{guide.responsible}</b></p>
+              </div>
+            })}
+          </div>
           <div className="flex gap-1.5 flex-wrap mt-2">
-            {item.requirements.map(requirement => <span key={`${requirement.received_at}-${requirement.name}`} className="px-2 py-0.5 rounded-md text-[10.5px] font-semibold" style={{ background: '#fffbeb', color: '#b45309' }}>⏳ {requirement.name}{requirement.received_at ? ` · ${requirement.received_at}` : ''}</span>)}
             {item.delivery_status && item.delivery_status !== '-' && <span className="px-2 py-0.5 rounded-md text-[10.5px] font-semibold" style={{ background: '#f5f3ff', color: '#6d28d9' }}>📦 {item.delivery_status}</span>}
           </div>
         </div>

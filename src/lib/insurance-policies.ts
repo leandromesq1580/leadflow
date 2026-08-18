@@ -47,10 +47,98 @@ export interface Policy {
   updated_at: string
 }
 
+export type PolicyChangeKind = 'policy_added' | 'status_changed' | 'requirement_added' | 'requirement_removed'
+
+export interface PolicyChangeAlert {
+  id: string
+  created_at: string
+  kind: PolicyChangeKind
+  policy_id: string | null
+  policy_number: string | null
+  client_name: string
+  from_status?: PolicyStatus | null
+  to_status?: PolicyStatus | null
+  /** Valor literal exibido no portal quando ele é mais específico que o status interno. */
+  from_value?: string | null
+  to_value?: string | null
+  requirement?: string | null
+  action?: string | null
+}
+
 /** Locale das funções compartilhadas (default 'pt' — retrocompatível). */
 export type PolicyLocale = 'pt' | 'en' | 'es'
 const pick = (locale: PolicyLocale) => (pt: string, en: string, es: string) =>
   locale === 'en' ? en : locale === 'es' ? es : pt
+
+export interface RequirementGuidance {
+  action: string
+  responsible: string
+  responsibleKey: 'agent' | 'client' | 'carrier'
+  urgent: boolean
+}
+
+/** Traduz o nome técnico da exigência da National Life em uma ação executável. */
+export function orientarPendencia(requirement: string, locale: PolicyLocale = 'pt'): RequirementGuidance {
+  const L = pick(locale)
+  const value = String(requirement || '').trim()
+  const normalized = value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  const guidance = (responsibleKey: RequirementGuidance['responsibleKey'], action: string, urgent = true): RequirementGuidance => ({
+    action,
+    responsibleKey,
+    urgent,
+    responsible: responsibleKey === 'client'
+      ? L('Cliente', 'Client', 'Cliente')
+      : responsibleKey === 'carrier'
+        ? L('Seguradora', 'Carrier', 'Aseguradora')
+        : L('Corretor', 'Agent', 'Agente'),
+  })
+
+  if (/edelivery/.test(normalized)) return guidance('client', L(
+    'Enviar o link de eDelivery e cobrar a assinatura do cliente.',
+    'Send the eDelivery link and follow up for the client signature.',
+    'Enviar el enlace de eDelivery y pedir la firma del cliente.'))
+  if (/eft|bank|banking|automatic premium|premium authorization/.test(normalized)) return guidance('client', L(
+    'Pedir o formulário EFT e os dados bancários, conferir e enviar pelo portal.',
+    'Request the EFT form and banking details, verify them, and submit through the portal.',
+    'Pedir el formulario EFT y los datos bancarios, verificarlos y enviarlos por el portal.'))
+  if (/policy receipt|receipt/.test(normalized)) return guidance('client', L(
+    'Pedir a assinatura do Policy Receipt e devolver o documento à National Life.',
+    'Get the Policy Receipt signed and return it to National Life.',
+    'Pedir la firma del Policy Receipt y devolverlo a National Life.'))
+  if (/amendment|alteration|change form/.test(normalized)) return guidance('client', L(
+    'Explicar a alteração, colher a assinatura do cliente e enviar o Amendment.',
+    'Explain the change, obtain the client signature, and submit the Amendment.',
+    'Explicar el cambio, obtener la firma del cliente y enviar el Amendment.'))
+  if (/illustration/.test(normalized)) return guidance('client', L(
+    'Revisar a ilustração com o cliente, colher a assinatura e enviar a versão assinada.',
+    'Review the illustration with the client, obtain the signature, and submit the signed copy.',
+    'Revisar la ilustración con el cliente, obtener la firma y enviar la copia firmada.'))
+  if (/id verification|identity|identification|photo id|driver.*license/.test(normalized)) return guidance('client', L(
+    'Solicitar um documento de identidade válido e concluir a verificação no portal.',
+    'Request a valid photo ID and complete the verification in the portal.',
+    'Solicitar una identificación válida y completar la verificación en el portal.'))
+  if (/medical|exam|paramed|aps|physician|health record/.test(normalized)) return guidance('client', L(
+    'Confirmar o exame ou prontuário pendente com o cliente e acompanhar a entrega.',
+    'Confirm the pending exam or medical record with the client and track its delivery.',
+    'Confirmar el examen o expediente médico pendiente con el cliente y acompañar la entrega.'))
+  if (/first premium|1.? premio|initial premium|payment|past due/.test(normalized)) return guidance('client', L(
+    'Confirmar a forma de pagamento e cobrar o primeiro prêmio imediatamente.',
+    'Confirm the payment method and collect the first premium immediately.',
+    'Confirmar el método de pago y cobrar la primera prima inmediatamente.'))
+  if (/underwriting|case communication|case manager|info needed|information needed|replacement|producer|application/.test(normalized)) return guidance('agent', L(
+    'Abrir o Case Communication, ler a pergunta completa e responder ou anexar o solicitado.',
+    'Open Case Communication, read the full request, and reply or attach what was requested.',
+    'Abrir Case Communication, leer la solicitud completa y responder o adjuntar lo pedido.'))
+  if (/signature|signed|sign /.test(normalized)) return guidance('client', L(
+    'Enviar o documento ao cliente, colher a assinatura e devolver pelo portal.',
+    'Send the document to the client, obtain the signature, and return it through the portal.',
+    'Enviar el documento al cliente, obtener la firma y devolverlo por el portal.'))
+
+  return guidance('agent', L(
+    `Abrir “${value}” na National Life, conferir a descrição completa e enviar a resposta ou o documento pedido.`,
+    `Open “${value}” in National Life, review the full description, and send the requested response or document.`,
+    `Abrir “${value}” en National Life, revisar la descripción completa y enviar la respuesta o documento solicitado.`))
+}
 
 export function BUCKETS(locale: PolicyLocale = 'pt'): { key: Bucket; label: string; icon: string; color: string; bg: string; hint: string }[] {
   const L = pick(locale)
@@ -137,6 +225,11 @@ export function acaoSugerida(p: Policy, locale: PolicyLocale = 'pt'): string {
       'Policy at risk — talk to the client today.',
       'Póliza en riesgo — habla con el cliente hoy.')
   }
+  const requirementActions = [...new Set((p.requirements || []).filter(Boolean).map(requirement => orientarPendencia(requirement, locale).action))]
+  if (requirementActions.length > 0) return L(
+    `Fazer agora: ${requirementActions.slice(0, 3).join(' • ')}`,
+    `Do now: ${requirementActions.slice(0, 3).join(' • ')}`,
+    `Hacer ahora: ${requirementActions.slice(0, 3).join(' • ')}`)
   if (b === 'assinatura') {
     const req = (p.requirements || []).join(', ')
     const d = diasDesde(p.issued_at)

@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   BUCKETS, bucketOf, acaoSugerida, ordenar, money, diasAte, diasDesde,
-  STATUS_LABEL, REQUISITOS_COMUNS, type Policy, type Bucket, type PolicyKpis,
+  orientarPendencia, STATUS_LABEL, REQUISITOS_COMUNS,
+  type Policy, type Bucket, type PolicyKpis, type PolicyChangeAlert,
 } from '@/lib/insurance-policies'
 import { useT } from '@/lib/i18n-client'
 import { PolicyPortalCenter } from './portal-center'
@@ -24,6 +25,7 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
   const [lista, setLista] = useState<Policy[]>([])
   const [kpis, setKpis] = useState<PolicyKpis | null>(null)
   const [portal, setPortal] = useState<PolicyPortalSnapshot | null>(null)
+  const [alertas, setAlertas] = useState<PolicyChangeAlert[]>([])
   const [visao, setVisao] = useState<'central' | 'new_business' | 'client_intelligence'>('central')
   const [carregando, setCarregando] = useState(true)
   const [migracao, setMigracao] = useState(false)
@@ -44,7 +46,7 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
   async function carregar() {
     try {
       const d = await fetch('/api/apolices', { cache: 'no-store' }).then(r => r.json())
-      setLista(d.policies || []); setKpis(d.kpis || null); setPortal(d.portal || null); setMigracao(!!d.needsMigration)
+      setLista(d.policies || []); setKpis(d.kpis || null); setPortal(d.portal || null); setAlertas(d.alerts || []); setMigracao(!!d.needsMigration)
     } catch {}
     setCarregando(false)
   }
@@ -70,7 +72,14 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
           const r = await fetch('/api/apolices/sync', {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ modo: 'importar' }),
           })
-          if (r.ok) { await carregar(); fetch('/api/apolices/sync', { cache: 'no-store' }).then(x => x.json()).then(setConector).catch(() => {}) }
+          const imported = await r.json().catch(() => null)
+          if (r.ok) {
+            if (imported?.mudancas?.length) setAvisoSync(L(
+              `🚨 ${imported.mudancas.length} mudança(s) encontrada(s) na National Life. Os avisos foram enviados.`,
+              `🚨 ${imported.mudancas.length} change(s) found at National Life. Alerts were sent.`,
+              `🚨 Se encontraron ${imported.mudancas.length} cambio(s) en National Life. Se enviaron los avisos.`))
+            await carregar(); fetch('/api/apolices/sync', { cache: 'no-store' }).then(x => x.json()).then(setConector).catch(() => {})
+          }
         } catch {}
       }
     }).catch(() => {})
@@ -117,6 +126,7 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
     const partes = []
     if (d.novas) partes.push(L(`${d.novas} nova(s)`, `${d.novas} new`, `${d.novas} nueva(s)`))
     if (d.atualizadas) partes.push(L(`${d.atualizadas} atualizada(s)`, `${d.atualizadas} updated`, `${d.atualizadas} actualizada(s)`))
+    if (d.mudancas?.length) partes.push(L(`${d.mudancas.length} alerta(s)`, `${d.mudancas.length} alert(s)`, `${d.mudancas.length} alerta(s)`))
     setAvisoSync(partes.length
       ? L(`Portal lido: ${partes.join(' · ')}. ${d.semMudanca} sem mudança.`,
           `Portal read: ${partes.join(' · ')}. ${d.semMudanca} unchanged.`,
@@ -300,6 +310,44 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
         )
       })()}
 
+      {alertas.length > 0 && (
+        <div className="rounded-2xl p-4 mb-5" style={{ background: '#fff7ed', border: '1px solid #fed7aa' }}>
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div>
+              <p className="text-[14px] font-extrabold" style={{ color: '#9a3412' }}>🚨 {L('Mudanças recentes da National Life', 'Recent National Life changes', 'Cambios recientes de National Life')}</p>
+              <p className="text-[11px] mt-0.5" style={{ color: '#c2410c' }}>{L('Status e novos pedidos detectados automaticamente nos últimos 30 dias.', 'Status changes and new requests detected automatically in the last 30 days.', 'Cambios de estado y nuevas solicitudes detectados automáticamente en los últimos 30 días.')}</p>
+            </div>
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-extrabold" style={{ background: '#ffedd5', color: '#c2410c' }}>{alertas.length}</span>
+          </div>
+          <div className="space-y-2">
+            {alertas.slice(0, 6).map(alerta => {
+              const action = alerta.requirement ? orientarPendencia(alerta.requirement, loc).action : alerta.action
+              const statusFrom = alerta.from_value || (alerta.from_status ? statusLabels[alerta.from_status] : null)
+              const statusTo = alerta.to_value || (alerta.to_status ? statusLabels[alerta.to_status] : null)
+              const eventLabel = alerta.kind === 'requirement_added'
+                ? L('Novo pedido', 'New request', 'Nueva solicitud')
+                : alerta.kind === 'requirement_removed'
+                  ? L('Pendência concluída/removida', 'Requirement completed/removed', 'Pendiente completado/eliminado')
+                  : alerta.kind === 'status_changed'
+                    ? L('Status alterado', 'Status changed', 'Estado actualizado')
+                    : L('Nova apólice', 'New policy', 'Nueva póliza')
+              return (
+                <div key={alerta.id} className="rounded-xl p-3" style={{ background: 'var(--bg-card)', border: '1px solid #fed7aa' }}>
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div>
+                      <p className="text-[12px] font-extrabold" style={{ color: 'var(--fg)' }}>{eventLabel} · {alerta.client_name}{alerta.policy_number ? ` · ${alerta.policy_number}` : ''}</p>
+                      <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--fg-secondary)' }}>{alerta.requirement || (statusFrom || statusTo ? `${statusFrom || '—'} → ${statusTo || '—'}` : '')}</p>
+                      {action && alerta.kind !== 'requirement_removed' && <p className="text-[11.5px] font-bold mt-1" style={{ color: '#7c3aed' }}>➡️ {action}</p>}
+                    </div>
+                    <span className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>{new Date(alerta.created_at).toLocaleString(loc === 'en' ? 'en-US' : loc === 'es' ? 'es-US' : 'pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {migracao && (
         <div className="rounded-xl p-4 mb-5 text-[13px] font-semibold" style={{ background: 'var(--warn-soft)', border: '1px solid #fde68a', color: '#92400e' }}>
           {L('⚠️ Recurso em ativação — rode a migration ', '⚠️ Feature being activated — run the ', '⚠️ Función en activación — ejecuta la migración ')}
@@ -419,12 +467,17 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
                           <p className="text-[13px] font-bold mt-2" style={{ color: b.color }}>{acaoSugerida(p, loc)}</p>
 
                           {(p.requirements || []).length > 0 && (
-                            <div className="flex gap-1.5 flex-wrap mt-2">
-                              {(p.requirements || []).map(r => (
-                                <span key={r} className="text-[11px] font-semibold px-2 py-0.5 rounded-md" style={{ background: 'var(--warn-soft)', color: '#b45309' }}>
-                                  ⏳ {r}
-                                </span>
-                              ))}
+                            <div className="space-y-1.5 mt-2">
+                              {(p.requirements || []).map(r => {
+                                const guide = orientarPendencia(r, loc)
+                                return (
+                                  <div key={r} className="rounded-lg px-3 py-2" style={{ background: 'var(--warn-soft)', border: '1px solid var(--warn-line)' }}>
+                                    <p className="text-[11px] font-extrabold" style={{ color: '#b45309' }}>⏳ {r}</p>
+                                    <p className="text-[11.5px] mt-0.5 font-semibold" style={{ color: 'var(--fg-secondary)' }}>➡️ {guide.action}</p>
+                                    <p className="text-[10px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>{L('Responsável', 'Responsible', 'Responsable')}: <b>{guide.responsible}</b></p>
+                                  </div>
+                                )
+                              })}
                             </div>
                           )}
 
