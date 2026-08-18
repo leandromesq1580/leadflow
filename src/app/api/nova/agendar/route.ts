@@ -89,9 +89,9 @@ export async function POST(req: Request) {
   if (apptErr) return NextResponse.json({ error: 'Não consegui agendar — tente de novo.' }, { status: 500 })
 
   // 3) aviso imediato pro time (falha aqui não derruba o agendamento)
+  const quando = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/New_York' }).format(slot)
   try {
     const { pushToBuyer } = await import('@/lib/push-notify')
-    const quando = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/New_York' }).format(slot)
     await pushToBuyer(vendas.id, {
       title: `📅 Consultoria agendada — ${nome}`,
       body: `${quando} (ET) · ${estado || 'estado n/i'} · ${licenca || 'licença n/i'} · via landing ${idioma.toUpperCase()}`,
@@ -99,6 +99,20 @@ export async function POST(req: Request) {
       tag: `consultoria-${lead.id}`,
     })
   } catch { /* push é conforto */ }
+
+  // 3b) grupo do WhatsApp (pedido 18/08: todo agendamento do site avisa o grupo)
+  try {
+    const { notifyAdmins } = await import('@/lib/notifications')
+    await notifyAdmins(
+      `📅 *CONSULTORIA AGENDADA PELO SITE*\n\n` +
+      `👤 ${nome}\n` +
+      `📞 ${telefone || '—'}\n` +
+      `📧 ${email || '—'}\n` +
+      `📍 ${estado || 'estado n/i'}\n` +
+      `🕑 ${quando} (ET)\n` +
+      `🗣 ${idioma.toUpperCase()} · ${licenca || 'licença n/i'}\n\n` +
+      `👥 Na agenda de: ${(vendas.name || 'Lead4Pro').trim()}`)
+  } catch { /* aviso é conforto — o agendamento já está garantido acima */ }
 
   return NextResponse.json({ ok: true })
 }
