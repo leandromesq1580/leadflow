@@ -6,7 +6,7 @@ import { useT } from '@/lib/i18n-client'
 import { MIcon } from '@/components/mobile/icons'
 import { getInitials } from '@/lib/utils'
 
-interface Msg { id: string; direction: 'in' | 'out'; body: string | null; sent_at: string; status?: string; media_url?: string | null; media_type?: string | null }
+interface Msg { id: string; direction: 'in' | 'out'; body: string | null; sent_at: string; status?: string; media_url?: string | null; media_type?: string | null; wa_message_id?: string | null; channel?: string }
 
 function avatarBg(name: string) {
   const h = ((name?.charCodeAt(0) || 65) * 37) % 360
@@ -29,6 +29,7 @@ export default function MobileThread() {
   const [msgs, setMsgs] = useState<Msg[] | null>(null)
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [sendErr, setSendErr] = useState('')
   const endRef = useRef<HTMLDivElement>(null)
 
@@ -59,6 +60,35 @@ export default function MobileThread() {
     setSending(false)
   }
 
+  async function deleteMessage(message: Msg) {
+    if (deletingId) return
+    if (!window.confirm(L(
+      'Apagar esta mensagem para todos? Essa ação não pode ser desfeita.',
+      'Delete this message for everyone? This cannot be undone.',
+      '¿Eliminar este mensaje para todos? Esta acción no se puede deshacer.',
+    ))) return
+
+    setDeletingId(message.id)
+    setSendErr('')
+    try {
+      const response = await fetch('/api/whatsapp/messages', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message_id: message.id }),
+      })
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        setSendErr(result.error || L('Não consegui apagar.', "Couldn't delete it.", 'No pude eliminarlo.'))
+        return
+      }
+      setMsgs(current => (current || []).filter(item => item.id !== message.id))
+    } catch {
+      setSendErr(L('Não consegui apagar agora.', "Couldn't delete it right now.", 'No pude eliminarlo ahora.'))
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   return (
     <div>
       {/* header da conversa */}
@@ -85,6 +115,16 @@ export default function MobileThread() {
             )}
             {m.body && <span>{m.body}</span>}
             <span className="m-bubble-time">{hhmm(m.sent_at)}</span>
+            {m.direction === 'out' && m.channel !== 'sms' && m.wa_message_id && (
+              <button
+                type="button"
+                onClick={() => deleteMessage(m)}
+                disabled={deletingId !== null}
+                style={{ display: 'block', margin: '5px 0 0 auto', padding: 0, border: 0, background: 'transparent', color: '#fca5a5', fontSize: 10, fontWeight: 700 }}
+              >
+                {deletingId === m.id ? L('Apagando...', 'Deleting...', 'Eliminando...') : `🗑 ${L('Apagar', 'Delete', 'Eliminar')}`}
+              </button>
+            )}
           </div>
         ))}
         <div ref={endRef} />
