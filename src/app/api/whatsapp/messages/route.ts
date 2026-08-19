@@ -86,6 +86,7 @@ export async function POST(request: NextRequest) {
     const contentType = request.headers.get('content-type') || ''
 
     let lead_id: string, buyer_id: string, body: string
+    let canal: 'whatsapp' | 'sms' = 'whatsapp'
     let fileBuffer: ArrayBuffer | null = null
     let fileName = ''
     let fileMimetype = ''
@@ -107,6 +108,7 @@ export async function POST(request: NextRequest) {
       lead_id = json.lead_id
       buyer_id = json.buyer_id
       body = json.body || ''
+      canal = json.channel === 'sms' ? 'sms' : 'whatsapp'
     }
 
     if (!lead_id || !buyer_id || (!body.trim() && !fileBuffer)) {
@@ -117,6 +119,32 @@ export async function POST(request: NextRequest) {
     const caller = await callerBuyer(db)
     if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     if (!canActAs(caller, buyer_id)) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
+
+    // ─── Canal SMS (upgrade 18/08: responder SMS por SMS, no mesmo composer) ───
+    if (canal === 'sms') {
+      if (fileBuffer) return NextResponse.json({ error: 'SMS é só texto — anexos vão pelo WhatsApp.' }, { status: 400 })
+      const { sendSms, toE164 } = await import('@/lib/twilio')
+      const { data: leadSms } = await db.from('leads').select('phone, sms_opted_out').eq('id', lead_id).single()
+      if (!leadSms?.phone) return NextResponse.json({ error: 'Lead sem telefone.' }, { status: 400 })
+      if (leadSms.sms_opted_out) return NextResponse.json({ error: 'Esse contato pediu pra não receber SMS (opt-out) — use o WhatsApp.' }, { status: 400 })
+      const to = toE164(leadSms.phone)
+      if (!to) return NextResponse.json({ error: 'Telefone do lead inválido pra SMS.' }, { status: 400 })
+      const r = await sendSms(to, body.trim())
+      const { data: row } = await db.from('sms_messages').insert({
+        lead_id,
+        direction: 'out',
+        from_phone: '',
+        to_phone: to.replace(/\D/g, ''),
+        body: body.trim(),
+        status: r.ok ? 'sent' : 'failed',
+        twilio_sid: r.sid || null,
+      }).select('id, created_at').single()
+      if (!r.ok) return NextResponse.json({ error: `SMS não saiu: ${r.error || 'falha no envio'}` }, { status: 502 })
+      return NextResponse.json({ message: {
+        id: `sms-${row?.id || Date.now()}`, direction: 'out', body: body.trim(),
+        sent_at: row?.created_at || new Date().toISOString(), status: 'sent', channel: 'sms',
+      } })
+    }
 
     // 🔒 Bloqueia envio por quem nao e mais dono do lead
     const own = await assertBuyerOwnsLead(db, buyer_id, lead_id)

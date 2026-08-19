@@ -524,6 +524,21 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
                                   <p className="text-[13px] font-semibold" style={{ color: 'var(--fg)' }}>{v}</p>
                                 </div>
                               ))}
+                              {Array.isArray(p.case_comm) && p.case_comm.length > 0 && (
+                                <div className="col-span-2 mt-1">
+                                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>
+                                    💬 {L('Comunicação do caso (portal)', 'Case communication (portal)', 'Comunicación del caso (portal)')}
+                                  </p>
+                                  {p.case_comm.map((m, i) => (
+                                    <div key={i} className="mt-2 p-2.5 rounded-lg" style={{ background: 'var(--bg-soft)' }}>
+                                      <p className="text-[11px] font-bold" style={{ color: 'var(--fg-secondary)' }}>
+                                        {m.quem || 'National Life'}{m.quando ? ` · ${m.quando}` : ''}
+                                      </p>
+                                      <p className="text-[12.5px] whitespace-pre-wrap mt-0.5" style={{ color: 'var(--fg)' }}>{m.texto}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                               {p.notes && (
                                 <div className="col-span-2 mt-1">
                                   <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Histórico / leitura do caso', 'History / case notes', 'Historial / lectura del caso')}</p>

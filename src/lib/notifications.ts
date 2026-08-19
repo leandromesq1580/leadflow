@@ -80,6 +80,7 @@ export async function notifyPolicyChanges(
   const L = trad(locale)
   const statusLabel = (status?: PolicyStatus | null) => ({
     submitted: L('Enviada', 'Submitted', 'Enviada'),
+    in_review: L('Em análise', 'In review', 'En análisis'),
     issued: L('Emitida', 'Issued', 'Emitida'),
     active: L('Ativa', 'Active', 'Activa'),
     at_risk: L('Em risco', 'At risk', 'En riesgo'),

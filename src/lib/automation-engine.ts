@@ -231,7 +231,16 @@ async function findTargets(auto: Automation): Promise<Target[]> {
     for (const f of fuRes.data || []) {
       if (f.lead_id) targets.push({ lead_id: f.lead_id, meeting_id: f.id, meeting_source: 'follow_up' })
     }
-    return targets
+    // 🔒 A MESMA reunião pode existir em appointments E follow_ups (agendamento do
+    // site grava nas duas: agenda + timeline do lead — 18/08). Um lembrete por
+    // lead nesse horário; a ordem acima já prioriza appointment.
+    const jaTem = new Set<string>()
+    return targets.filter(t => {
+      if (!t.lead_id) return true
+      if (jaTem.has(t.lead_id)) return false
+      jaTem.add(t.lead_id)
+      return true
+    })
   }
 
   if (auto.trigger_type === 'event_before') {

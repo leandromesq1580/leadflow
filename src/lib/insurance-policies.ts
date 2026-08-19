@@ -7,15 +7,24 @@
  *
  * Buckets (prioridade decrescente):
  *  🔴 urgente        — aviso de lapse / dívida vencendo: se cair, perde cliente E comissão
+ *  💰 pagamento      — pendência de PAGAMENTO (EFT/prêmio/conta não encontrada): a National
+ *                      avisou e sem resolver a apólice cai (caso Silvia, 17/08)
  *  🟠 assinatura     — emitida mas o cliente não assinou (eDelivery, Policy Receipt, Amendment)
  *  📤 nao_processada — enviada no eApp e a seguradora ainda não processou (>5 dias)
+ *  🔬 analise        — em análise na seguradora (underwriting) — espelho do cartão
+ *                      "Novos negócios em análise" do portal NL
  *  🔵 acompanhar     — emitida sem pendência conhecida, aguardando ativar
  *  ✅ em_dia         — ativa e sem pendência
  *  ⚪ encerrada      — caducada/cancelada/recusada (recuperar)
  */
 
-export type PolicyStatus = 'submitted' | 'issued' | 'active' | 'at_risk' | 'lapsed' | 'cancelled' | 'declined'
-export type Bucket = 'urgente' | 'assinatura' | 'nao_processada' | 'acompanhar' | 'em_dia' | 'encerrada'
+export type PolicyStatus = 'submitted' | 'in_review' | 'issued' | 'active' | 'at_risk' | 'lapsed' | 'cancelled' | 'declined'
+export type Bucket = 'urgente' | 'pagamento' | 'assinatura' | 'nao_processada' | 'analise' | 'acompanhar' | 'em_dia' | 'encerrada'
+
+/** Pendência que fala de DINHEIRO (forma de pagamento, prêmio, conta bancária). */
+export function pendenciaDePagamento(req: string): boolean {
+  return /eft|premium|payment|pagamento|prêmio|bank|draft|nsf|ach|billing|debit|account/i.test(req)
+}
 
 export interface Policy {
   id: string
@@ -36,6 +45,8 @@ export interface Policy {
   effective_date: string | null
   paid_through: string | null
   requirements: string[] | null
+  /** histórico do Case Communication vindo do portal (migration 040) */
+  case_comm?: { quem: string | null; quando: string | null; texto: string }[] | null
   amount_due_cents: number | null
   due_date: string | null
   next_action: string | null
@@ -148,6 +159,11 @@ export function BUCKETS(locale: PolicyLocale = 'pt'): { key: Bucket; label: stri
         'Dinheiro parado ou apólice prestes a cair. Se cair, você perde o cliente E a comissão volta (chargeback).',
         'Money on hold or a policy about to lapse. If it lapses, you lose the client AND the commission comes back (chargeback).',
         'Dinero detenido o póliza a punto de caer. Si cae, pierdes al cliente Y la comisión se devuelve (chargeback).') },
+    { key: 'pagamento', label: L('Pendente de pagamento', 'Payment pending', 'Pago pendiente'), icon: '💰', color: '#c2410c', bg: '#fff7ed',
+      hint: L(
+        'A seguradora não conseguiu cobrar (EFT, prêmio, conta não encontrada). Resolver com o cliente antes que a apólice caia.',
+        'The carrier could not collect (EFT, premium, account not found). Sort it out with the client before the policy lapses.',
+        'La aseguradora no pudo cobrar (EFT, prima, cuenta no encontrada). Resuélvelo con el cliente antes de que caiga la póliza.') },
     { key: 'assinatura', label: L('Cobrar assinatura', 'Chase signature', 'Pedir firma'), icon: '🟠', color: '#b45309', bg: '#fffbeb',
       hint: L(
         'A apólice foi emitida, mas falta o cliente assinar (eDelivery, recibo, alteração). Sem isso a entrega não conclui.',
@@ -158,6 +174,11 @@ export function BUCKETS(locale: PolicyLocale = 'pt'): { key: Bucket; label: stri
         'Enviadas para a seguradora e ainda sem retorno. Acima de 5 dias, é hora de cobrar.',
         'Submitted to the carrier with no response yet. Past 5 days, it is time to follow up.',
         'Enviadas a la aseguradora y todavía sin respuesta. Pasados 5 días, es hora de dar seguimiento.') },
+    { key: 'analise', label: L('Em análise', 'In review', 'En análisis'), icon: '🔬', color: '#7c3aed', bg: '#f5f3ff',
+      hint: L(
+        'A seguradora está analisando o caso (underwriting) — espelho do "novos negócios em análise" do portal. Acompanhe o parecer.',
+        'The carrier is reviewing the case (underwriting) — mirrors the portal\'s "new business pending review". Watch for the decision.',
+        'La aseguradora está analizando el caso (underwriting) — espejo del "nuevos negocios en análisis" del portal. Sigue el dictamen.') },
     { key: 'acompanhar', label: L('Acompanhar', 'Follow up', 'Dar seguimiento'), icon: '🔵', color: '#0369a1', bg: '#f0f9ff',
       hint: L(
         'Emitidas aguardando ativar — confirmar 1º pagamento e vigência.',
@@ -195,7 +216,10 @@ export function bucketOf(p: Policy): Bucket {
   if (p.status === 'at_risk' || temDivida || (venceEm !== null && venceEm <= 30)) return 'urgente'
 
   const pend = (p.requirements || []).filter(Boolean)
+  // dinheiro antes de papel: pendência de pagamento tem fila própria (caso Silvia)
+  if (pend.some(pendenciaDePagamento)) return 'pagamento'
   if (p.status === 'issued' && pend.length > 0) return 'assinatura'
+  if (p.status === 'in_review') return 'analise'
   if (p.status === 'submitted') {
     const d = diasDesde(p.submitted_at)
     return d !== null && d > 5 ? 'nao_processada' : 'acompanhar'
@@ -225,11 +249,24 @@ export function acaoSugerida(p: Policy, locale: PolicyLocale = 'pt'): string {
       'Policy at risk — talk to the client today.',
       'Póliza en riesgo — habla con el cliente hoy.')
   }
+  if (b === 'pagamento') {
+    const req = (p.requirements || []).filter(pendenciaDePagamento).join(', ')
+    return L(
+      `Resolver o pagamento com o cliente${req ? ` (${req})` : ''} — a seguradora não conseguiu cobrar.`,
+       `Sort out the payment with the client${req ? ` (${req})` : ''} — the carrier could not collect.`,
+       `Resolver el pago con el cliente${req ? ` (${req})` : ''} — la aseguradora no pudo cobrar.`)
+  }
   const requirementActions = [...new Set((p.requirements || []).filter(Boolean).map(requirement => orientarPendencia(requirement, locale).action))]
   if (requirementActions.length > 0) return L(
     `Fazer agora: ${requirementActions.slice(0, 3).join(' • ')}`,
     `Do now: ${requirementActions.slice(0, 3).join(' • ')}`,
     `Hacer ahora: ${requirementActions.slice(0, 3).join(' • ')}`)
+  if (b === 'analise') {
+    return L(
+      'Em análise na seguradora — acompanhar o parecer e responder o Case Communication se pedirem algo.',
+      'Under carrier review — watch for the decision and answer the Case Communication if they ask for anything.',
+      'En análisis en la aseguradora — sigue el dictamen y responde el Case Communication si piden algo.')
+  }
   if (b === 'assinatura') {
     const req = (p.requirements || []).join(', ')
     const d = diasDesde(p.issued_at)
@@ -294,6 +331,7 @@ export function STATUS_LABEL(locale: PolicyLocale = 'pt'): Record<PolicyStatus, 
   const L = pick(locale)
   return {
     submitted: L('Enviada', 'Submitted', 'Enviada'),
+    in_review: L('Em análise', 'In review', 'En análisis'),
     issued: L('Emitida', 'Issued', 'Emitida'),
     active: L('Ativa', 'Active', 'Activa'),
     at_risk: L('Em risco', 'At risk', 'En riesgo'),
@@ -306,5 +344,7 @@ export function STATUS_LABEL(locale: PolicyLocale = 'pt'): Record<PolicyStatus, 
 export function REQUISITOS_COMUNS(locale: PolicyLocale = 'pt'): string[] {
   const L = pick(locale)
   return ['eDelivery', 'Policy Receipt', 'Amendment', 'ID Verification', 'Illustration',
-    L('Exame médico', 'Medical exam', 'Examen médico'), L('1º prêmio', '1st premium', '1er pago')]
+    L('Exame médico', 'Medical exam', 'Examen médico'), L('1º prêmio', '1st premium', '1er pago'),
+    // ✋ = pendência manual: o sync do portal preserva (o portal não sabe dela)
+    L('✋ Pagamento devolvido (EFT)', '✋ Payment returned (EFT)', '✋ Pago devuelto (EFT)')]
 }

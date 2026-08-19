@@ -45,6 +45,10 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
+  // canal do composer: WhatsApp ou SMS — nasce no canal da ÚLTIMA mensagem recebida
+  // (upgrade 18/08: "a pessoa responde por SMS e a gente respondia por WhatsApp")
+  const [canal, setCanal] = useState<'whatsapp' | 'sms'>('whatsapp')
+  const canalDefinido = useRef(false)
   const [loading, setLoading] = useState(true)
   const [showEmoji, setShowEmoji] = useState(false)
   const [recording, setRecording] = useState(false)
@@ -100,6 +104,12 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
       if (r.ok) {
         const d = await r.json()
         setMessages(d.messages || [])
+        if (!canalDefinido.current) {
+          const entradas = (d.messages || []).filter((m: any) => m.direction === 'in')
+          const ultima = entradas[entradas.length - 1]
+          if (ultima?.channel === 'sms') setCanal('sms')
+          canalDefinido.current = true
+        }
       }
     } catch (err) {
       console.error('[WaInbox] Falha ao carregar mensagens:', err)
@@ -114,7 +124,7 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
     const r = await fetch('/api/whatsapp/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lead_id: leadId, buyer_id: buyerId, body: text.trim() }),
+      body: JSON.stringify({ lead_id: leadId, buyer_id: buyerId, body: text.trim(), channel: canal }),
     })
     setSending(false)
     if (r.ok) {
@@ -417,13 +427,30 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
             </button>
           </div>
         ) : (
+          <div>
+          <div className="flex gap-1.5 mb-1.5">
+            <button onClick={() => setCanal('whatsapp')}
+              className="px-2.5 py-1 rounded-full text-[10.5px] font-bold transition-all"
+              style={canal === 'whatsapp'
+                ? { background: '#d1fae5', color: '#047857', border: '1px solid #6ee7b7' }
+                : { background: 'var(--bg)', color: 'var(--fg-muted)', border: '1px solid var(--border)' }}>
+              💬 WhatsApp
+            </button>
+            <button onClick={() => setCanal('sms')}
+              className="px-2.5 py-1 rounded-full text-[10.5px] font-bold transition-all"
+              style={canal === 'sms'
+                ? { background: '#dbeafe', color: '#1d4ed8', border: '1px solid #93c5fd' }
+                : { background: 'var(--bg)', color: 'var(--fg-muted)', border: '1px solid var(--border)' }}>
+              📱 SMS
+            </button>
+          </div>
           <div className="flex gap-1 items-end">
             <button onClick={() => setShowEmoji(v => !v)}
               className="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] hover:bg-gray-100 transition-colors"
               title="Emoji">
               😀
             </button>
-            <button onClick={() => fileRef.current?.click()} disabled={sending}
+            <button onClick={() => fileRef.current?.click()} disabled={sending || canal === 'sms'}
               className="w-9 h-9 rounded-lg flex items-center justify-center text-[16px] hover:bg-gray-100 transition-colors disabled:opacity-50"
               title={L('Anexar arquivo', 'Attach file', 'Adjuntar archivo')}>
               📎
@@ -432,7 +459,7 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
               accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
               onChange={e => e.target.files?.[0] && sendFile(e.target.files[0])}
               className="hidden" />
-            <button onClick={startRecording} disabled={sending}
+            <button onClick={startRecording} disabled={sending || canal === 'sms'}
               className="w-9 h-9 rounded-lg flex items-center justify-center text-[16px] hover:bg-red-50 transition-colors disabled:opacity-50"
               title={L('Gravar áudio', 'Record audio', 'Grabar audio')}>
               🎤
@@ -447,16 +474,19 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
                   sendText()
                 }
               }}
-              placeholder={L('Digite uma mensagem... (Enter envia)', 'Type a message... (Enter to send)', 'Escribe un mensaje... (Enter envía)')}
+              placeholder={canal === 'sms'
+                ? L('Responder por SMS... (Enter envia)', 'Reply via SMS... (Enter to send)', 'Responder por SMS... (Enter envía)')
+                : L('Digite uma mensagem... (Enter envia)', 'Type a message... (Enter to send)', 'Escribe un mensaje... (Enter envía)')}
               rows={1}
               className="flex-1 px-3 py-2 rounded-xl text-[13px] resize-none focus:outline-none"
               style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--fg)', maxHeight: 100 }}
             />
             <button onClick={sendText} disabled={!text.trim() || sending}
               className="px-4 h-9 rounded-xl text-[12px] font-bold text-white disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, #10b981, #059669)', minWidth: 44 }}>
+              style={{ background: canal === 'sms' ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' : 'linear-gradient(135deg, #10b981, #059669)', minWidth: 44 }}>
               {sending ? '...' : '➤'}
             </button>
+          </div>
           </div>
         )}
       </div>
