@@ -15,6 +15,7 @@ interface Message {
   read_at: string | null
   media_url?: string | null
   media_type?: string | null
+  wa_message_id?: string | null
   /** 'sms' = veio/foi por SMS (aparece com etiqueta; o composer continua WhatsApp) */
   channel?: string
 }
@@ -45,6 +46,7 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   // canal do composer: WhatsApp ou SMS — nasce no canal da ÚLTIMA mensagem recebida
   // (upgrade 18/08: "a pessoa responde por SMS e a gente respondia por WhatsApp")
   const [canal, setCanal] = useState<'whatsapp' | 'sms'>('whatsapp')
@@ -165,6 +167,42 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
       ))
     }
     if (fileRef.current) fileRef.current.value = ''
+  }
+
+  async function deleteMessage(message: Message) {
+    if (deletingId) return
+    const confirmed = window.confirm(L(
+      'Apagar esta mensagem para todos? Essa ação não pode ser desfeita.',
+      'Delete this message for everyone? This cannot be undone.',
+      '¿Eliminar este mensaje para todos? Esta acción no se puede deshacer.',
+    ))
+    if (!confirmed) return
+
+    setDeletingId(message.id)
+    try {
+      const response = await fetch('/api/whatsapp/messages', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message_id: message.id }),
+      })
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        alert(result.error || L('Erro ao apagar a mensagem.', 'Failed to delete the message.', 'Error al eliminar el mensaje.'))
+        return
+      }
+      setMessages(current => current.filter(item => item.id !== message.id))
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('wa-message-deleted', { detail: { leadId } }))
+      }
+    } catch {
+      alert(L(
+        'Não foi possível apagar a mensagem agora. Tente novamente.',
+        'The message could not be deleted right now. Please try again.',
+        'No se pudo eliminar el mensaje ahora. Inténtalo de nuevo.',
+      ))
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   async function startRecording() {
@@ -373,9 +411,23 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
               {m.body && (
                 <p className="text-[13px] whitespace-pre-wrap break-words" style={{ color: 'var(--fg)' }}>{m.body}</p>
               )}
-              <p className="text-[9px] mt-0.5 text-right" style={{ color: 'var(--fg-muted)' }}>
-                {fmtTime(m.sent_at)} {m.direction === 'out' && m.channel !== 'sms' && (m.status === 'read' ? '✓✓' : m.status === 'delivered' ? '✓✓' : '✓')}
-              </p>
+              <div className="flex items-center justify-end gap-2 mt-0.5">
+                {m.direction === 'out' && m.channel !== 'sms' && m.wa_message_id && (
+                  <button
+                    type="button"
+                    onClick={() => deleteMessage(m)}
+                    disabled={deletingId !== null}
+                    className="text-[9px] font-bold hover:underline disabled:opacity-50"
+                    style={{ color: '#b91c1c' }}
+                    title={L('Apagar para todos', 'Delete for everyone', 'Eliminar para todos')}
+                  >
+                    {deletingId === m.id ? L('Apagando...', 'Deleting...', 'Eliminando...') : `🗑 ${L('Apagar', 'Delete', 'Eliminar')}`}
+                  </button>
+                )}
+                <p className="text-[9px] text-right" style={{ color: 'var(--fg-muted)' }}>
+                  {fmtTime(m.sent_at)} {m.direction === 'out' && m.channel !== 'sms' && (m.status === 'read' ? '✓✓' : m.status === 'delivered' ? '✓✓' : '✓')}
+                </p>
+              </div>
             </div>
           </div>
         ))}

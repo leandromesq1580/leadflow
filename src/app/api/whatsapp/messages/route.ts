@@ -343,6 +343,102 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/** DELETE /api/whatsapp/messages — apaga uma saída para todos e remove do histórico local. */
+export async function DELETE(request: NextRequest) {
+  try {
+    const { message_id } = await request.json()
+    if (!message_id || typeof message_id !== 'string') {
+      return NextResponse.json({ error: 'Mensagem não informada.' }, { status: 400 })
+    }
+
+    const db = createAdminClient()
+    const caller = await callerBuyer(db)
+    if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { data: message, error: messageError } = await db
+      .from('whatsapp_messages')
+      .select('id, buyer_id, lead_id, direction, wa_message_id, media_url')
+      .eq('id', message_id)
+      .maybeSingle()
+
+    if (messageError) return NextResponse.json({ error: messageError.message }, { status: 500 })
+    if (!message) return NextResponse.json({ error: 'Mensagem não encontrada.' }, { status: 404 })
+    if (message.direction !== 'out') {
+      return NextResponse.json({ error: 'Só é possível apagar mensagens enviadas.' }, { status: 400 })
+    }
+    if (!canActAs(caller, message.buyer_id)) {
+      return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 })
+    }
+    if (message.lead_id && !caller.isAdmin) {
+      const own = await assertBuyerOwnsLead(db, caller.id, message.lead_id)
+      if (!own.ok) return NextResponse.json({ error: own.reason || 'Acesso negado.' }, { status: 403 })
+    }
+    if (!message.wa_message_id) {
+      return NextResponse.json({
+        error: 'Essa mensagem não possui o identificador necessário para apagá-la no WhatsApp.',
+      }, { status: 409 })
+    }
+
+    const bridge = await getBridgeForBuyer(db, message.buyer_id)
+    if (!bridge) {
+      return NextResponse.json({ error: 'WhatsApp não conectado para esta conta.' }, { status: 409 })
+    }
+
+    let bridgeResponse: Response
+    try {
+      bridgeResponse = await fetch(`${bridge.url}/delete-message`, {
+        method: 'POST',
+        headers: { apikey: bridge.key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ waMessageId: message.wa_message_id }),
+        signal: AbortSignal.timeout(35000),
+      })
+    } catch (err: any) {
+      return NextResponse.json({
+        error: `Não foi possível acessar o WhatsApp agora: ${err?.message || 'ponte indisponível'}`,
+      }, { status: 502 })
+    }
+
+    if (!bridgeResponse.ok) {
+      const detail = await bridgeResponse.json().catch(() => ({ error: '' }))
+      const raw = String(detail?.error || '')
+      const error = bridgeResponse.status === 409
+        ? 'O prazo do WhatsApp para “Apagar para todos” já terminou.'
+        : bridgeResponse.status === 404
+          ? 'A mensagem não está mais disponível nesta sessão do WhatsApp.'
+          : bridgeResponse.status === 503
+            ? 'Seu WhatsApp está desconectado. Reconecte e tente novamente.'
+            : raw || 'Não foi possível apagar a mensagem no WhatsApp.'
+      return NextResponse.json({ error }, { status: bridgeResponse.status })
+    }
+
+    const { error: deleteError } = await db.from('whatsapp_messages').delete().eq('id', message.id)
+    if (deleteError) {
+      console.error('[WA delete] Mensagem apagada no WhatsApp, mas falhou no banco:', deleteError.message)
+      return NextResponse.json({
+        error: 'A mensagem foi apagada no WhatsApp, mas o histórico local não atualizou. Recarregue a página.',
+      }, { status: 500 })
+    }
+
+    // A mídia já não deve continuar pública depois que a mensagem foi revogada.
+    if (message.media_url) {
+      try {
+        const marker = '/storage/v1/object/public/wa-media/'
+        const storagePath = message.media_url.includes(marker)
+          ? decodeURIComponent(message.media_url.split(marker)[1].split('?')[0])
+          : ''
+        if (storagePath) await db.storage.from('wa-media').remove([storagePath])
+      } catch (err: any) {
+        console.warn('[WA delete] Falha ao limpar mídia órfã:', err?.message)
+      }
+    }
+
+    return NextResponse.json({ success: true, deleted_for_everyone: true })
+  } catch (err: any) {
+    console.error('[WA delete] Exception:', err?.message)
+    return NextResponse.json({ error: err?.message || 'Falha ao apagar mensagem.' }, { status: 500 })
+  }
+}
+
 /** PATCH /api/whatsapp/messages — mark as read */
 export async function PATCH(request: NextRequest) {
   const { lead_id, buyer_id } = await request.json()

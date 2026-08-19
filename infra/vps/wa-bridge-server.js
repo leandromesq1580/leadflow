@@ -495,6 +495,58 @@ app.post("/backfill", async (req, res) => {
   res.json(result);
 });
 
+// Apaga uma mensagem ENVIADA pelo dono desta sessão para todos no WhatsApp.
+// A checagem de canRevoke é feita antes do delete: Message.delete(true) cai
+// silenciosamente em "apagar só para mim" quando o prazo do WhatsApp expirou,
+// o que faria o portal mentir que a mensagem sumiu para o destinatário.
+app.post("/delete-message", async (req, res) => {
+  if (!isReady) return res.status(503).json({ error: "Not connected" });
+
+  const waMessageId = String(req.body?.waMessageId || "").trim();
+  if (!waMessageId || waMessageId.length > 300) {
+    return res.status(400).json({ error: "waMessageId required" });
+  }
+
+  try {
+    const capability = await withTimeout(client.pupPage.evaluate(async (messageId) => {
+      const collections = window.require("WAWebCollections");
+      const message = collections.Msg.get(messageId) ||
+        (await collections.Msg.getMessagesById([messageId]))?.messages?.[0];
+      if (!message) return { found: false, fromMe: false, canRevoke: false };
+
+      const actions = window.require("WAWebMsgActionCapability");
+      return {
+        found: true,
+        fromMe: !!message.id?.fromMe,
+        canRevoke: !!actions.canSenderRevokeMsg(message),
+      };
+    }, waMessageId), 20000, "DELETE_LOOKUP");
+
+    if (!capability?.found) {
+      return res.status(404).json({ error: "Message not found in this WhatsApp session" });
+    }
+    if (!capability.fromMe) {
+      return res.status(403).json({ error: "Only sent messages can be deleted" });
+    }
+    if (!capability.canRevoke) {
+      return res.status(409).json({ error: "WhatsApp delete-for-everyone window expired" });
+    }
+
+    const message = await withTimeout(client.getMessageById(waMessageId), 20000, "DELETE_GET");
+    if (!message) return res.status(404).json({ error: "Message not found" });
+    await withTimeout(message.delete(true, true), 30000, "DELETE");
+
+    console.log(`[${INSTANCE_NAME}][DELETE] apagada para todos: ${waMessageId}`);
+    return res.json({ success: true, deletedForEveryone: true });
+  } catch (err) {
+    console.error(`[${INSTANCE_NAME}][DELETE ERR]`, err.message);
+    if (/detached Frame|Target closed|Protocol error|Execution context|Session closed|DELETE timeout/i.test(err.message || "")) {
+      recover("DELETE_FRAME_ERROR");
+    }
+    return res.status(500).json({ error: err.message || "Delete failed" });
+  }
+});
+
 // Recupera uma mídia específica que chegou sem arquivo. Evita varrer centenas de
 // conversas: abre somente o chat informado, encontra o wa_message_id e reenvia o
 // mesmo evento ao app. O webhook faz o healing idempotente da linha já existente.

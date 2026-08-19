@@ -96,6 +96,13 @@ export default function WhatsAppPage() {
     return () => clearInterval(t)
   }, [buyerId])
 
+  useEffect(() => {
+    if (!buyerId) return
+    const refresh = () => loadConversations(buyerId)
+    window.addEventListener('wa-message-deleted', refresh)
+    return () => window.removeEventListener('wa-message-deleted', refresh)
+  }, [buyerId])
+
   // Realtime: recarrega conversas quando chega nova msg
   useRealtime(
     'whatsapp_messages',
