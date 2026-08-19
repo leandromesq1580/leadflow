@@ -769,22 +769,32 @@ app.post("/send", async (req, res) => {
       let mime = mediaMimetype || mr.headers.get("content-type") || "application/octet-stream";
       let filename = mediaFilename || "file";
       let isAudio = (mime || "").startsWith("audio/");
-      // VOICE NOTE: o WhatsApp Web atual so aceita ptt em ogg/opus. O MediaRecorder
-      // do navegador grava webm/mp4 e o envio quebrava com o erro minificado "t".
-      // Converte com ffmpeg (webm/opus = remux -c:a copy, instantaneo; AAC re-encoda).
-      if (isAudio && !/ogg/i.test(mime)) {
+      // VOICE NOTE: o WhatsApp Web atual so aceita PTT em OGG/Opus com perfil de voz.
+      // Nao basta trocar o container com `-c:a copy`: o MediaRecorder pode gerar Opus
+      // em ~128 kbps e alguns celulares recebem o PTT mas nao conseguem reproduzi-lo.
+      // Sempre recodifica mono/48 kHz/32 kbps e valida o
+      // container antes de entregar ao WhatsApp.
+      if (isAudio) {
         const tmpIn = `/tmp/wa-audio-${process.pid}-${Date.now()}.in`;
         const tmpOut = tmpIn.replace(/\.in$/, ".ogg");
         try {
           fs.writeFileSync(tmpIn, buf);
-          try { execFileSync("ffmpeg", ["-y", "-i", tmpIn, "-vn", "-c:a", "copy", tmpOut], { stdio: "ignore" }); }
-          catch (e1) { execFileSync("ffmpeg", ["-y", "-i", tmpIn, "-vn", "-c:a", "libopus", "-b:a", "32k", tmpOut], { stdio: "ignore" }); }
+          execFileSync("ffmpeg", [
+            "-y", "-i", tmpIn, "-vn", "-map_metadata", "-1",
+            "-c:a", "libopus", "-application", "voip", "-vbr", "on",
+            "-compression_level", "10", "-b:a", "32k", "-ar", "48000", "-ac", "1",
+            "-fflags", "+genpts", "-avoid_negative_ts", "make_zero", tmpOut,
+          ], { stdio: "ignore" });
           buf = fs.readFileSync(tmpOut);
+          if (buf.length < 100 || buf.subarray(0, 4).toString("ascii") !== "OggS") {
+            throw new Error("OGG/Opus invalido apos conversao");
+          }
           mime = "audio/ogg; codecs=opus";
           filename = filename.replace(/\.[A-Za-z0-9]+$/, "") + ".ogg";
+          console.log(`[${INSTANCE_NAME}][SEND] audio nativo OGG/Opus pronto (${buf.length} bytes)`);
         } catch (e) {
-          console.error(`[${INSTANCE_NAME}][SEND] conversao de audio falhou (${e.message}) — enviando como arquivo`);
-          isAudio = false;
+          console.error(`[${INSTANCE_NAME}][SEND] conversao de audio nativo falhou: ${e.message}`);
+          throw new Error("Nao foi possivel preparar o audio nativo. Grave novamente e tente de novo.");
         } finally {
           try { fs.unlinkSync(tmpIn); } catch (e2) {}
           try { fs.unlinkSync(tmpOut); } catch (e3) {}
@@ -795,9 +805,10 @@ app.post("/send", async (req, res) => {
         sent = await withTimeout(client.sendMessage(chatId, media, { caption: message || undefined, sendAudioAsVoice: isAudio }), 45000, "SEND");
       } catch (e) {
         if (!isAudio) throw e;
-        // voice recusado mesmo em ogg → nao perde a mensagem: vai como arquivo comum
-        console.error(`[${INSTANCE_NAME}][SEND] voice falhou (${e.message}) — reenviando como arquivo`);
-        sent = await withTimeout(client.sendMessage(chatId, media, { caption: message || undefined }), 45000, "SEND");
+        // Nunca finge sucesso enviando como anexo: o usuario gravou uma mensagem de
+        // voz e espera que o cliente receba PTT nativo. Retorna erro para permitir retry.
+        console.error(`[${INSTANCE_NAME}][SEND] envio do audio nativo falhou: ${e.message}`);
+        throw new Error("WhatsApp recusou o audio nativo. Grave novamente e tente de novo.");
       }
     } else sent = await withTimeout(client.sendMessage(chatId, message), 45000, "SEND");
     // GRUPO (@g.us) as vezes devolve undefined no whatsapp-web.js. Isso NAO e Chrome
