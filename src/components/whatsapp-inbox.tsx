@@ -58,6 +58,8 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
   const [micError, setMicError] = useState<string | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const recordChunksRef = useRef<Blob[]>([])
+  const discardRecordingRef = useRef(false)
+  const recordStopRequestedRef = useRef(false)
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -242,15 +244,29 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
           : 'audio/webm'
       const rec = new MediaRecorder(stream, { mimeType: mime })
       recordChunksRef.current = []
+      discardRecordingRef.current = false
+      recordStopRequestedRef.current = false
       rec.ondataavailable = e => { if (e.data.size > 0) recordChunksRef.current.push(e.data) }
       rec.onstop = async () => {
+        // stop() sempre pode emitir um ultimo dataavailable antes deste callback.
+        // Por isso, esvaziar os chunks no clique de Cancelar nao impede o envio:
+        // o ultimo chunk repovoa o array. A decisao de descartar precisa sobreviver
+        // ate o onstop e ser consultada antes de criar/enviar o arquivo.
+        const discard = discardRecordingRef.current
+        discardRecordingRef.current = false
+        recordStopRequestedRef.current = false
         stream.getTracks().forEach(t => t.stop())
-        const blob = new Blob(recordChunksRef.current, { type: mime.split(';')[0] })
+        const chunks = recordChunksRef.current
+        recordChunksRef.current = []
+        if (mediaRecorderRef.current === rec) mediaRecorderRef.current = null
         const ext = mime.includes('webm') ? 'webm' : mime.includes('mp4') ? 'm4a' : 'ogg'
-        const file = new File([blob], `audio-${Date.now()}.${ext}`, { type: mime.split(';')[0] })
         setRecording(false)
         if (recordTimerRef.current) clearInterval(recordTimerRef.current)
+        recordTimerRef.current = null
         setRecordSecs(0)
+        if (discard) return
+        const blob = new Blob(chunks, { type: mime.split(';')[0] })
+        const file = new File([blob], `audio-${Date.now()}.${ext}`, { type: mime.split(';')[0] })
         if (file.size > 0) await sendFile(file)
       }
       rec.start()
@@ -285,17 +301,15 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
   }
 
   function stopRecording(cancel: boolean = false) {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      if (cancel) {
-        recordChunksRef.current = []
-        mediaRecorderRef.current.stop()
-        // onstop ainda roda mas chunks vazios => file.size = 0 => não envia
-      } else {
-        mediaRecorderRef.current.stop()
-      }
-    }
+    const recorder = mediaRecorderRef.current
+    if (!recorder || recorder.state === 'inactive' || recordStopRequestedRef.current) return
+    // O primeiro clique vence: um clique duplo Cancelar/Enviar nao pode trocar
+    // a decisao enquanto o onstop do navegador ainda esta na fila.
+    recordStopRequestedRef.current = true
+    discardRecordingRef.current = cancel
+    recorder.stop()
     if (recordTimerRef.current) clearInterval(recordTimerRef.current)
-    setRecording(false)
+    recordTimerRef.current = null
     setRecordSecs(0)
   }
 
