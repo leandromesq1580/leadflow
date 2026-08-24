@@ -90,9 +90,18 @@ export async function GET(request: NextRequest) {
   // Devedor em qualquer filtro (Hoje/7d/etc), porque saldo é estoque, não fluxo.
   const crQ = db.from('credits').select('buyer_id, total_purchased, total_used').eq('type', 'lead')
   const { data: leadCreditRows } = await crQ
+  // Funcionários/casa fora da conta geral (pedido 23/08: os 100 créditos de
+  // cortesia do Gabriel inflavam "vendidos", "devidos" e derrubavam o % entrega).
+  // Lista vive em settings.metrics_exclude_buyers — adicionar gente nova sem deploy.
+  let foraDaConta = new Set<string>()
+  try {
+    const { data: exc } = await db.from('settings').select('value').eq('key', 'metrics_exclude_buyers').maybeSingle()
+    foraDaConta = new Set(((exc?.value as any)?.buyers || []) as string[])
+  } catch { /* sem a chave, ninguém é excluído */ }
   const perBuyer = new Map<string, { purchased: number; used: number }>()
   for (const c of leadCreditRows || []) {
     if (!c.buyer_id || !(Number(c.total_purchased) > 0)) continue
+    if (foraDaConta.has(c.buyer_id)) continue
     const e = perBuyer.get(c.buyer_id) || { purchased: 0, used: 0 }
     e.purchased += Number(c.total_purchased)
     e.used += Number(c.total_used) || 0
