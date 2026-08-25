@@ -50,35 +50,42 @@ export async function POST(request: NextRequest) {
     if (team_distribution_mode !== undefined) updateData.team_distribution_mode = team_distribution_mode
 
     if (Object.keys(updateData).length > 0) {
-      await db.from('buyers').update(updateData).eq('id', resolvedBuyerId)
+      const { error } = await db.from('buyers').update(updateData).eq('id', resolvedBuyerId)
+      if (error) throw error
     }
 
     // Update states: delete all, then insert new
-    await db.from('buyer_states').delete().eq('buyer_id', resolvedBuyerId)
+    const { error: statesDeleteError } = await db.from('buyer_states').delete().eq('buyer_id', resolvedBuyerId)
+    if (statesDeleteError) throw statesDeleteError
     if (states && states.length > 0) {
-      await db.from('buyer_states').insert(
-        states.map((state_code: string) => ({ buyer_id, state_code }))
+      const { error } = await db.from('buyer_states').insert(
+        states.map((state_code: string) => ({ buyer_id: resolvedBuyerId, state_code }))
       )
+      if (error) throw error
     }
 
     // Update availability: delete all, then insert new
-    await db.from('buyer_availability').delete().eq('buyer_id', resolvedBuyerId)
+    const { error: availabilityDeleteError } = await db.from('buyer_availability').delete().eq('buyer_id', resolvedBuyerId)
+    if (availabilityDeleteError) throw availabilityDeleteError
     if (availability && availability.length > 0) {
       // `hours` = granularidade opcional de 1h. Vazio → null = período inteiro.
       // sanitizeHours descarta hora fora do período (payload adulterado).
       type AvailRow = { buyer_id: string; day_type: string; period: string; hours: number[] | null }
       const rows: AvailRow[] = availability.map((a: { day_type: string; period: string; hours?: number[] | null }) => {
         const hrs = sanitizeHours(a.period, a.hours)
-        return { buyer_id, day_type: a.day_type, period: a.period, hours: hrs.length ? hrs : null }
+        return { buyer_id: resolvedBuyerId, day_type: a.day_type, period: a.period, hours: hrs.length ? hrs : null }
       })
       const ins = await db.from('buyer_availability').insert(rows)
       // Tolerante à migration 030 não ter rodado ainda: regrava sem `hours`
       // (= período inteiro) em vez de estourar e perder a config toda.
       if (ins.error && /hours/i.test(ins.error.message || '')) {
         console.warn('[Settings] coluna `hours` ausente — rode a migration 030. Salvando período inteiro.')
-        await db.from('buyer_availability').insert(
+        const fallback = await db.from('buyer_availability').insert(
           rows.map(r => ({ buyer_id: r.buyer_id, day_type: r.day_type, period: r.period }))
         )
+        if (fallback.error) throw fallback.error
+      } else if (ins.error) {
+        throw ins.error
       }
     }
 
