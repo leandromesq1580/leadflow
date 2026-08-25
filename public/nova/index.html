@@ -81,6 +81,8 @@ header.nav{position:sticky;top:0;z-index:60;background:rgba(4,6,12,.82);backdrop
 .nav-in{display:flex;align-items:center;justify-content:space-between;height:64px}
 .logo{display:flex;align-items:center;gap:10px;font-weight:900;font-size:19px;letter-spacing:-.02em}
 .logo-ico{width:34px;height:34px;border-radius:10px;background:var(--grad);display:grid;place-items:center;box-shadow:var(--glow)}
+.nav-login{color:var(--mut,#94a3b8);font:700 12.5px/1 var(--mono);letter-spacing:.06em;text-decoration:none;white-space:nowrap;padding:8px 10px;margin-right:10px;border-radius:8px;transition:color .2s}
+.nav-login:hover{color:#c4b5fd}
 .nav-cta{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#0f172a;font-weight:800;white-space:nowrap;font-size:14px;padding:10px 20px;border-radius:999px}
 
 /* ---------- HERO ---------- */
@@ -460,6 +462,7 @@ footer{border-top:1px solid var(--line);padding:44px 0 54px;background:var(--bg)
   .eb-x{display:none}
   .nav-in{height:56px}
   .nav-cta{display:inline-flex;font-size:12.5px;padding:8px 15px}
+  .nav-login{font-size:11px;padding:6px 6px;margin-right:4px}
   /* selos 2×2 */
   .selos{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .selo{font-size:11.5px;padding:9px 10px;justify-content:flex-start}
@@ -543,6 +546,7 @@ fbq('init','2063191714573000');fbq('track','PageView');
       <a href="/nova" aria-current="true" style="padding:6px 8px;border-radius:8px;background:rgba(139,92,246,.18);color:#c4b5fd;text-decoration:none">PT</a>
       <a href="/nova/es" style="padding:6px 8px;border-radius:8px;color:var(--mut,#94a3b8);text-decoration:none">ES</a>
     </nav>
+    <a class="nav-login" href="/login">Entrar</a>
     <a class="nav-cta" href="#consultoria">Agendar<span class="m-x"> consultoria</span></a>
   </div>
 </header>
