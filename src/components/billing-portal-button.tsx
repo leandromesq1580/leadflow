@@ -2,16 +2,34 @@
 
 import { useState } from 'react'
 
-export function BillingPortalButton({ className, label = 'Gerenciar assinatura' }: { className?: string; label?: string }) {
+export function BillingPortalButton({
+  className,
+  label = 'Gerenciar assinatura',
+  returnPath = '/dashboard/credits',
+}: {
+  className?: string
+  label?: string
+  returnPath?: '/dashboard/credits' | '/dashboard/settings' | '/dashboard/planos' | '/m/creditos'
+}) {
   const [loading, setLoading] = useState(false)
 
   async function openPortal() {
     setLoading(true)
-    const r = await fetch('/api/billing/portal', { method: 'POST' })
-    const d = await r.json()
-    if (d.url) window.location.href = d.url
-    else {
+    try {
+      const r = await fetch('/api/billing/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ return_path: returnPath }),
+      })
+      const d = await r.json().catch(() => ({}))
+      if (r.ok && d.url) {
+        window.location.href = d.url
+        return
+      }
       alert(d.error || 'Erro ao abrir portal')
+    } catch {
+      alert('Não foi possível abrir o portal de assinatura agora. Tente novamente.')
+    } finally {
       setLoading(false)
     }
   }

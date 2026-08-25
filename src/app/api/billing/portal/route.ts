@@ -13,6 +13,18 @@ import { createAdminClient } from '@/lib/supabase/admin'
  */
 export async function POST(request: NextRequest) {
   try {
+    const body = await request.json().catch(() => ({}))
+    const allowedReturnPaths = new Set([
+      '/dashboard/credits',
+      '/dashboard/settings',
+      '/dashboard/planos',
+      '/m/creditos',
+    ])
+    const requestedReturnPath = typeof body?.return_path === 'string' ? body.return_path : ''
+    const returnPath = allowedReturnPaths.has(requestedReturnPath)
+      ? requestedReturnPath
+      : '/dashboard/credits'
+
     const supabase = await createServerSupabase()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -42,7 +54,10 @@ export async function POST(request: NextRequest) {
 
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: 'https://lead4producers.com/dashboard/credits',
+      return_url: new URL(
+        returnPath,
+        `${(process.env.NEXT_PUBLIC_APP_URL || 'https://lead4producers.com').replace(/\/$/, '')}/`,
+      ).toString(),
     })
 
     return NextResponse.json({ url: session.url })

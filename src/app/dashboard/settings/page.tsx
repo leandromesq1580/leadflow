@@ -2,6 +2,9 @@ import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { SettingsForm } from './settings-form'
+import { BillingPortalButton } from '@/components/billing-portal-button'
+import { getStripe } from '@/lib/stripe'
+import { getLocale } from '@/lib/locale'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,6 +15,9 @@ const US_STATES = [
 ]
 
 export default async function SettingsPage() {
+  const locale = await getLocale()
+  const L = (pt: string, en: string, es: string) => locale === 'en' ? en : locale === 'es' ? es : pt
+  const dateLocale = locale === 'en' ? 'en-US' : locale === 'es' ? 'es-US' : 'pt-BR'
   const supabase = await createServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -41,10 +47,61 @@ export default async function SettingsPage() {
     if (Array.isArray(a.hours) && a.hours.length) activeAvailabilityHours[`${a.day_type}_${a.period}`] = a.hours.map(Number)
   }
 
+  const hasStripeSubscription = !!buyer.crm_subscription_id && buyer.crm_subscription_status === 'active'
+  let cancelAtPeriodEnd = false
+  let subscriptionEndsOn: string | null = null
+  if (hasStripeSubscription) {
+    try {
+      const subscription: any = await getStripe().subscriptions.retrieve(buyer.crm_subscription_id)
+      cancelAtPeriodEnd = !!subscription.cancel_at_period_end
+      const periodEnd = subscription.current_period_end || subscription.items?.data?.[0]?.current_period_end
+      if (periodEnd) subscriptionEndsOn = new Date(periodEnd * 1000).toLocaleDateString(dateLocale)
+    } catch (error) {
+      console.error('[Settings] Não foi possível consultar a assinatura:', error)
+    }
+  }
+
   return (
     <div className="max-w-3xl">
       <h1 className="text-[24px] font-extrabold mb-1" style={{ color: 'var(--fg)' }}>Configuracoes</h1>
       <p className="text-[14px] mb-8" style={{ color: 'var(--fg-secondary)' }}>Gerencie seu perfil, licencas e disponibilidade</p>
+
+      {hasStripeSubscription && (
+        <section className="rounded-2xl p-5 mb-8" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex-1">
+              <p className="text-[11px] font-extrabold uppercase tracking-wider mb-1" style={{ color: 'var(--accent)' }}>
+                {L('Assinatura CRM Pro', 'CRM Pro subscription', 'Suscripción CRM Pro')}
+              </p>
+              <h2 className="text-[17px] font-extrabold" style={{ color: 'var(--fg)' }}>
+                {cancelAtPeriodEnd
+                  ? L('Renovação automática cancelada', 'Automatic renewal canceled', 'Renovación automática cancelada')
+                  : L('Renovação automática ativada', 'Automatic renewal enabled', 'Renovación automática activada')}
+              </h2>
+              <p className="text-[12.5px] mt-1 leading-relaxed" style={{ color: 'var(--fg-secondary)' }}>
+                {cancelAtPeriodEnd
+                  ? L(
+                      `Não haverá nova cobrança${subscriptionEndsOn ? `; seu acesso continua até ${subscriptionEndsOn}` : ''}.`,
+                      `There will be no new charge${subscriptionEndsOn ? `; your access continues until ${subscriptionEndsOn}` : ''}.`,
+                      `No habrá otro cobro${subscriptionEndsOn ? `; tu acceso continúa hasta ${subscriptionEndsOn}` : ''}.`,
+                    )
+                  : L(
+                      'Use o portal seguro da Stripe para atualizar o cartão, consultar faturas ou cancelar a próxima renovação. Ao cancelar, o acesso já pago continua até o fim do ciclo.',
+                      'Use Stripe’s secure portal to update your card, view invoices, or cancel the next renewal. After canceling, paid access continues through the end of the billing cycle.',
+                      'Usa el portal seguro de Stripe para actualizar la tarjeta, ver facturas o cancelar la próxima renovación. El acceso pagado continúa hasta el final del ciclo.',
+                    )}
+              </p>
+            </div>
+            <BillingPortalButton
+              returnPath="/dashboard/settings"
+              label={cancelAtPeriodEnd
+                ? L('Abrir portal da assinatura', 'Open subscription portal', 'Abrir portal de suscripción')
+                : L('Gerenciar ou cancelar', 'Manage or cancel', 'Gestionar o cancelar')}
+              className="shrink-0 px-4 py-2.5 rounded-xl text-[12px] font-extrabold text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50"
+            />
+          </div>
+        </section>
+      )}
 
       <SettingsForm
         buyer={buyer}

@@ -266,7 +266,7 @@ export default function MobileCreditos() {
             </div>
             {isActive
               ? <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <button onClick={() => go('/api/billing/portal')} disabled={busy} className="m-tap" style={{ width: '100%', height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--m-text)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{L('Gerenciar assinatura', 'Manage subscription', 'Gestionar')}</button>
+                <button onClick={() => go('/api/billing/portal', { return_path: '/m/creditos' })} disabled={busy} className="m-tap" style={{ width: '100%', height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--m-text)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{L('Gerenciar ou cancelar assinatura', 'Manage or cancel subscription', 'Gestionar o cancelar suscripción')}</button>
                 <p className="m-muted" style={{ fontSize: 12, margin: '6px 0 0', fontWeight: 600 }}>{L('Trocar de plano', 'Change plan', 'Cambiar de plan')}</p>
                 {CRM_PLAN_LIST.map(pl => {
                   const atual = pl.key === currentPlanKey

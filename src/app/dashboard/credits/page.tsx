@@ -131,7 +131,7 @@ export default async function CreditsPage({
               <p className="text-[20px] font-extrabold" style={{ color: '#fff' }}>CRM Pro{currentPlanLabel ? ` — ${currentPlanLabel}` : ''}</p>
               <p className="text-[12px] mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>{cancelDateStr
                 ? L(`Cancelada — acesso até ${cancelDateStr}, sem renovação`, `Cancelled — access until ${cancelDateStr}, no renewal`, `Cancelada — acceso hasta ${cancelDateStr}, sin renovación`)
-                : L('Pipeline, Time, Follow-ups, Anexos — tudo ativo', 'Pipeline, Team, Follow-ups, Attachments — all active', 'Pipeline, Equipo, Follow-ups, Archivos — todo activo')}</p>
+                : L('Renovação automática ativa · cancele a próxima cobrança quando quiser', 'Automatic renewal active · cancel the next charge anytime', 'Renovación automática activa · cancela el próximo cobro cuando quieras')}</p>
             </div>
             <div className="flex items-center gap-3">
               {cancelDateStr ? (
@@ -139,7 +139,10 @@ export default async function CreditsPage({
               ) : (
                 <span className="px-4 py-2 rounded-xl text-[12px] font-bold" style={{ background: 'rgba(16,185,129,0.2)', color: '#34d399' }}>{L('Ativo', 'Active', 'Activo')}</span>
               )}
-              <BillingPortalButton label={L('Gerenciar', 'Manage', 'Administrar')} />
+              <BillingPortalButton
+                returnPath="/dashboard/credits"
+                label={L('Gerenciar ou cancelar', 'Manage or cancel', 'Gestionar o cancelar')}
+              />
             </div>
           </div>
           {buyer.crm_subscription_id ? (
