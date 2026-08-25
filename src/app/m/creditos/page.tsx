@@ -224,6 +224,15 @@ export default function MobileCreditos() {
                   <p className="m-muted" style={{ fontSize: 12, margin: '10px 0 0', lineHeight: 1.5 }}>
                     {L('Sua assinatura está ativa. Assinaturas feitas pelo App Store são gerenciadas nos Ajustes do iPhone.', 'Your subscription is active. App Store subscriptions are managed in iPhone Settings.', 'Suscripción activa.')}
                   </p>
+                  <a
+                    href="https://apps.apple.com/account/subscriptions"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="m-tap"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: 44, marginTop: 12, borderRadius: 12, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--m-text)', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}
+                  >
+                    {L('Gerenciar assinatura no App Store', 'Manage subscription in the App Store', 'Gestionar suscripción en App Store')}
+                  </a>
                 </>
               ) : (
                 <>
