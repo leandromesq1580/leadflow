@@ -9,7 +9,7 @@ function loadTs(relative, mocks = {}) {
   const filename = path.join(__dirname, '..', relative)
   const code = ts.transpileModule(fs.readFileSync(filename, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText
   const module = { exports: {} }
-  vm.runInNewContext(code, { module, exports: module.exports, require: name => name in mocks ? mocks[name] : require(name), console, Date, Intl, URL, process: { env: {} } }, { filename })
+  vm.runInNewContext(code, { module, exports: module.exports, require: name => name in mocks ? mocks[name] : name.endsWith('/lead-language') ? loadTs('src/lib/lead-language.ts') : require(name), console, Date, Intl, URL, process: { env: {} } }, { filename })
   return module.exports
 }
 
@@ -18,7 +18,7 @@ const rules = loadTs('src/lib/admin-rule.ts')
 const state = loadTs('src/lib/admin-rule-state.ts', { './admin-rule': rules })
 const gab = { id: 'gabriel', name: 'Gabriel Stroppa', email: 'staff@example.test', is_active: true, is_admin: false, remaining: 56, leads_count: 44, credit_id: 'internal-credit', created_at: '2026-08-01' }
 const customer = { id: 'customer', name: 'Customer', email: 'customer@example.test', is_active: true, is_admin: false, remaining: 10, leads_count: 0, credit_id: 'paid-credit', created_at: '2026-08-02' }
-const lead = { id: 'test-lead', name: 'Test', state: 'FL', product_type: 'lead', meta_lead_id: 'test-meta', assigned_to: null }
+const lead = { id: 'test-lead', name: 'Test', state: 'FL', product_type: 'lead', lead_language: 'pt', meta_lead_id: 'test-meta', assigned_to: null }
 
 // In-memory query adapter: the real routing/API code runs, but cannot access a network.
 function fixture({ routing = {}, extra = {}, eligible = [gab, customer] } = {}) {
@@ -26,11 +26,11 @@ function fixture({ routing = {}, extra = {}, eligible = [gab, customer] } = {}) 
     settings: [{ key: 'staff_buyers', value: { buyers: [gab.id] } }, { key: 'lead_routing', value: routing }],
     buyers: [gab, customer, { id: 'admin', auth_user_id: 'admin-auth', is_admin: true }],
     credits: [
-      { id: gab.credit_id, buyer_id: gab.id, type: 'lead', total_purchased: 100, total_used: 44 },
-      { id: customer.credit_id, buyer_id: customer.id, type: 'lead', total_purchased: 10, total_used: 0 },
+      { id: gab.credit_id, buyer_id: gab.id, type: 'lead', lead_language: 'pt', total_purchased: 100, total_used: 44 },
+      { id: customer.credit_id, buyer_id: customer.id, type: 'lead', lead_language: 'pt', total_purchased: 10, total_used: 0 },
     ],
     buyer_states: [gab, customer].map(b => ({ buyer_id: b.id, state_code: 'FL' })),
-    buyer_availability: [], pipelines: [], payments: [], leads: [lead],
+    buyer_availability: [], pipelines: [], payments: [], leads: [{ ...lead, lead_language: 'pt' }],
     ...extra,
   }
   const writes = [], queries = [], notices = []

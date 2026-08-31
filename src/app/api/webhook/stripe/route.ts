@@ -5,6 +5,7 @@ import { CRM_PLAN_LIST } from '@/lib/crm-plans'
 import { notifyGroupPurchase } from '@/lib/notifications'
 import { grantReferralReward, cancelRewardsFor, consumeCredit } from '@/lib/referral'
 import Stripe from 'stripe'
+import { leadLanguageLabel, purchaseLeadLanguage } from '@/lib/lead-language'
 
 /**
  * POST /api/webhook/stripe
@@ -34,8 +35,10 @@ export async function POST(request: NextRequest) {
   const supabase = createAdminClient()
 
   switch (event.type) {
+    case 'checkout.session.async_payment_succeeded':
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session
+      if (session.payment_status !== 'paid' && session.payment_status !== 'no_payment_required') break
 
       // UPGRADE de plano CRM: o cliente pagou a diferença via checkout (uma NOVA assinatura do
       // novo plano foi criada e será sincronizada pelo handler customer.subscription.created).
@@ -60,6 +63,11 @@ export async function POST(request: NextRequest) {
       const productType = session.metadata?.product_type as 'lead' | 'cold_lead' | 'appointment'
       const quantity = parseInt(session.metadata?.quantity || '0', 10)
       const pricePerUnit = parseFloat(session.metadata?.price_per_unit || '0')
+      const leadLanguage = purchaseLeadLanguage(session.metadata?.lead_language)
+      if (!leadLanguage) {
+        console.error('[Stripe Webhook] Invalid lead language in session', session.id)
+        return NextResponse.json({ error: 'Invalid lead language' }, { status: 500 })
+      }
 
       if (!buyerId || !productType || !quantity) {
         console.error('[Stripe Webhook] Missing metadata:', session.metadata)
@@ -73,38 +81,23 @@ export async function POST(request: NextRequest) {
       // demais produtos seguem gerando crédito normalmente.
       const isColdLead = productType === 'cold_lead'
 
-      // Create credits for buyer (pula lead frio — entrega manual, sem crédito)
-      if (!isColdLead) {
-        const { error: creditError } = await supabase.from('credits').insert({
-          buyer_id: buyerId,
-          type: productType,
-          total_purchased: quantity,
-          total_used: 0,
-          price_per_unit: pricePerUnit,
-          stripe_payment_id: session.payment_intent as string,
-          purchased_at: new Date().toISOString(),
-        })
-
-        if (creditError) {
-          console.error('[Stripe Webhook] Failed to create credits:', creditError)
-        }
-      }
-
-      // Record payment
-      const { error: paymentError } = await supabase.from('payments').insert({
-        buyer_id: buyerId,
-        stripe_session_id: session.id,
-        stripe_payment_intent_id: session.payment_intent as string,
-        amount: (session.amount_total || 0) / 100,
-        product_type: productType,
-        quantity,
-        price_per_unit: pricePerUnit,
-        status: 'completed',
+      // The payment and the matching language balance are one idempotent transaction.
+      const { data: fulfilled, error: paymentError } = await supabase.rpc('fulfill_lead_purchase', {
+        p_buyer_id: buyerId,
+        p_session_id: session.id,
+        p_payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id || null,
+        p_product_type: productType,
+        p_language: leadLanguage,
+        p_quantity: quantity,
+        p_price_per_unit: pricePerUnit,
+        p_amount: (session.amount_total || 0) / 100,
       })
 
       if (paymentError) {
-        console.error('[Stripe Webhook] Failed to record payment:', paymentError)
+        console.error('[Stripe Webhook] Failed to fulfill purchase:', paymentError)
+        return NextResponse.json({ error: 'Failed to fulfill purchase' }, { status: 500 })
       }
+      if (!fulfilled) break
 
       // Lead frio: entrega MANUAL (planilha). NÃO auto-distribui nem debita crédito (opção B).
       if (isColdLead) {
@@ -150,7 +143,7 @@ export async function POST(request: NextRequest) {
         const labelMap: Record<string, string> = { lead: 'Leads', cold_lead: 'Leads Frios', appointment: 'Appointments' }
         await notifyGroupPurchase({
           name: pBuyer?.name || null, email: pBuyer?.email || null,
-          description: `Pacote de ${quantity} ${labelMap[productType] || productType}`,
+          description: `Pacote de ${quantity} ${labelMap[productType] || productType}${productType !== 'appointment' ? ` · ${leadLanguageLabel(leadLanguage)}` : ''}`,
           amount: (session.amount_total || 0) / 100, kind: 'pacote',
         })
       } catch (e) { console.error('[Stripe Webhook] aviso compra grupo:', (e as any)?.message) }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { distributeLeadToNextBuyer, forceAssignRoundRobin, tryAdminRule } from '@/lib/distribute'
 import { stateFromPhone } from '@/lib/us-area-codes'
+import { META_FORM_LANGUAGES } from '@/lib/lead-language'
 
 /**
  * GET /api/webhook/meta — Verification
@@ -127,6 +128,13 @@ export async function POST(request: NextRequest) {
     const finalName = leadData?.name || getField('full_name') || getField('name') || 'Lead Meta'
     const finalEmail = leadData?.email || getField('email') || ''
     const finalPhone = leadData?.phone || getField('phone') || getField('phone_number') || ''
+    const phoneDigits = finalPhone.replace(/\D/g, '')
+    // Meta must receive HTTP 200, but an incomplete contact must never enter the
+    // delivery queue, consume credit, or be silently treated as a Florida lead.
+    if (phoneDigits.length < 10 || phoneDigits.length > 15) {
+      console.error(`[Meta Webhook] Lead ${leadgenId} rejected: invalid phone`)
+      return NextResponse.json({ status: 'invalid_phone', leadgen_id: leadgenId })
+    }
     const finalCity = leadData?.city || getField('city') || ''
     // Estado: prefere o que veio do form, senao infere pelo DDD do telefone (US),
     // fallback FL. Igual ao /api/poll-leads pra manter consistencia.
@@ -146,6 +154,7 @@ export async function POST(request: NextRequest) {
         interest: finalInterest,
         campaign_name: 'Meta Lead Ads',
         form_name: value.form_id?.toString() || '',
+        lead_language: META_FORM_LANGUAGES[value.form_id?.toString()] || null,
         raw_data: body,
         type: 'hot',
         status: 'new',

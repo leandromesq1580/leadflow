@@ -1,6 +1,7 @@
 import { createAdminClient } from './supabase/admin'
 import { buyerTimezone, isAvailableNow } from './availability'
 import { readBuyerPolicy } from './buyer-policy'
+import type { LeadLanguage } from './lead-language'
 
 /**
  * POSIÇÃO NA FILA do comprador (feature 2026-07-30).
@@ -25,6 +26,7 @@ export interface QueueStateInfo {
 }
 
 export interface QueuePosition {
+  leadLanguage: LeadLanguage
   credits: number
   hasCredits: boolean
   availableNow: boolean       // dentro da janela de horário configurada
@@ -48,9 +50,10 @@ function easternDayStartISO(): string {
   return new Date(et.getTime() + offsetMs).toISOString()
 }
 
-export async function getQueuePosition(db: Db, buyerId: string): Promise<QueuePosition> {
+export async function getQueuePosition(db: Db, buyerId: string, language: LeadLanguage = 'pt'): Promise<QueuePosition> {
   const { staffIds } = await readBuyerPolicy(db)
   if (staffIds.has(buyerId)) return {
+    leadLanguage: language,
     credits: 0, hasCredits: false, availableNow: false, nextWindowHint: null,
     queueOrder: 'priority_only', receivedToday: 0, states: [], best: null,
     blockers: ['funcionario'], isStaff: true,
@@ -60,6 +63,7 @@ export async function getQueuePosition(db: Db, buyerId: string): Promise<QueuePo
   // saldo de crédito de lead
   const { data: creds } = await db.from('credits')
     .select('total_purchased, total_used, expires_at').eq('buyer_id', buyerId).eq('type', 'lead')
+    .eq('lead_language', language)
   const credits = (creds || []).reduce((s, c) => {
     const rest = (c.total_purchased || 0) - (c.total_used || 0)
     const valido = !c.expires_at || new Date(c.expires_at).getTime() > Date.now()
@@ -96,6 +100,7 @@ export async function getQueuePosition(db: Db, buyerId: string): Promise<QueuePo
   const dayStart = easternDayStartISO()
   const { count: recToday } = await db.from('leads').select('*', { count: 'exact', head: true })
     .eq('assigned_to', buyerId).not('meta_lead_id', 'is', null).gte('assigned_at', dayStart)
+    .eq('lead_language', language)
   const receivedToday = recToday || 0
 
   const since14 = new Date(Date.now() - 14 * 86400_000).toISOString()
@@ -103,7 +108,8 @@ export async function getQueuePosition(db: Db, buyerId: string): Promise<QueuePo
 
   for (const st of meStates) {
     // elegíveis DAQUELE estado (mesma RPC da distribuição)
-    const { data: elig } = await db.rpc('get_eligible_buyers', { p_product_type: 'lead', p_state: st })
+    const { data: elig, error } = await db.rpc('get_eligible_buyers_by_language', { p_product_type: 'lead', p_state: st, p_language: language })
+    if (error) throw error
     const uniq = new Map<string, { id: string; credits: number; leads_count: number }>()
     for (const e of (elig || []) as any[]) {
       if (staffIds.has(e.id)) continue
@@ -123,6 +129,7 @@ export async function getQueuePosition(db: Db, buyerId: string): Promise<QueuePo
     // piso diário: quem não recebeu hoje vem primeiro
     const { data: todayRows } = await db.from('leads').select('assigned_to')
       .in('assigned_to', pool.map(p => p.id)).not('meta_lead_id', 'is', null).gte('assigned_at', dayStart)
+      .eq('lead_language', language)
     const gotToday = new Set((todayRows || []).map((r: any) => r.assigned_to))
 
     const cmp = (modo: string, a: typeof pool[0], z: typeof pool[0]) => {
@@ -143,6 +150,7 @@ export async function getQueuePosition(db: Db, buyerId: string): Promise<QueuePo
     // volume real do estado: leads de campanha entregues nos últimos 14 dias
     const { count: vol } = await db.from('leads').select('*', { count: 'exact', head: true })
       .eq('state', st).not('meta_lead_id', 'is', null).not('assigned_to', 'is', null)
+      .eq('lead_language', language)
       .gte('created_at', since14)
     const leadsPerDay = Math.round(((vol || 0) / 14) * 10) / 10
     const etaDays = leadsPerDay > 0 ? Math.round(((idx + 1) / leadsPerDay) * 10) / 10 : null
@@ -155,6 +163,7 @@ export async function getQueuePosition(db: Db, buyerId: string): Promise<QueuePo
   const best = states[0] || null
 
   return {
+    leadLanguage: language,
     credits, hasCredits: credits > 0, availableNow,
     nextWindowHint: availableNow ? null : 'Fora do seu horário de recebimento — ajuste em Configurações se quiser receber agora.',
     queueOrder, receivedToday, states, best, blockers,

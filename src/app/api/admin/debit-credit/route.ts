@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isLeadLanguage } from '@/lib/lead-language'
 
 /**
  * POST /api/admin/debit-credit — debita N créditos de lead de um comprador (ajuste/retroativo).
@@ -21,6 +22,8 @@ export async function POST(request: NextRequest) {
   const buyer_id = body.buyer_id
   const qty = Math.max(1, Number(body.qty) || 1)
   const note = (body.note || '').toString().slice(0, 200)
+  const language = body.leadLanguage ?? 'pt' // legacy adjustments are BR, never both balances
+  if (!isLeadLanguage(language)) return NextResponse.json({ error: 'Idioma inválido.' }, { status: 400 })
   if (!buyer_id) return NextResponse.json({ error: 'Missing buyer_id' }, { status: 400 })
 
   const { data: buyer } = await db.from('buyers').select('id, name').eq('id', buyer_id).single()
@@ -28,6 +31,7 @@ export async function POST(request: NextRequest) {
 
   const { data: creds } = await db.from('credits')
     .select('id, total_purchased, total_used, expires_at').eq('buyer_id', buyer_id).eq('type', 'lead')
+    .eq('lead_language', language)
   const nowMs = Date.now()
   // só linhas vivas com saldo, ordenadas por mais saldo primeiro
   const rows = (creds || [])
@@ -50,6 +54,7 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     comprador: (buyer.name || '').trim(),
+    leadLanguage: language,
     note,
     pedido: qty,
     debitado: debited,

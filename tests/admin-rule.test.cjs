@@ -9,7 +9,7 @@ function loadTs(relative, mocks = {}) {
   const filename = path.join(__dirname, '..', relative)
   const code = ts.transpileModule(fs.readFileSync(filename, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText
   const module = { exports: {} }
-  vm.runInNewContext(code, { module, exports: module.exports, require: name => name in mocks ? mocks[name] : require(name), console, Date, Intl, process }, { filename })
+  vm.runInNewContext(code, { module, exports: module.exports, require: name => name in mocks ? mocks[name] : name.endsWith('/lead-language') ? loadTs('src/lib/lead-language.ts') : require(name), console, Date, Intl, process }, { filename })
   return module.exports
 }
 
@@ -97,7 +97,7 @@ test('queue renders a blocked cap honestly instead of announcing PRÓXIMO', () =
   const { renderToStaticMarkup } = require('react-dom/server')
   for (const blocked of [true, false]) {
     const fixture = { adminRule: { N: 2, leadsUntilAdmin: 1, isTurn: true, herTurnNow: !blocked, ruleAvailable: !blocked }, admins: [{ id: 'jen', nome: 'Jeniffer', estados: ['FL'], regraAdmin: 2, isFallback: false, receivedToday: 0, dailyMax: blocked ? 0 : null, blockedReason: blocked ? 'daily_paused' : null, isNext: !blocked }], fila: [] }
-    const values = [fixture, false, '17:00:00', false, false]
+    const values = ['pt', fixture, false, '17:00:00', false, false]
     const { DeliveryQueueCard } = loadTs('src/components/admin/delivery-queue-card.tsx', { react: { ...React, useState: () => [values.shift(), () => {}], useRef: () => ({ current: '' }), useEffect: () => {} } })
     const html = renderToStaticMarkup(React.createElement(DeliveryQueueCard))
     if (blocked) {

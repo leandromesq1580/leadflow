@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import type { AdminRuleBlock } from '@/lib/admin-rule'
+import { leadLanguageLabel, type LeadLanguage } from '@/lib/lead-language'
 
 interface Admin { id: string; nome: string; estados: string[]; regraAdmin: number | null; isFallback: boolean; receivedToday: number; dailyMax: number | null; blockedReason: AdminRuleBlock | null; isNext: boolean; isStaff?: boolean }
 interface Row { pos: number; id: string; nome: string; creditos: number; estados: string[]; recebeuHoje?: boolean }
@@ -18,6 +19,7 @@ function StateChips({ estados }: { estados: string[] }) {
 }
 
 export function DeliveryQueueCard() {
+  const [language, setLanguage] = useState<LeadLanguage>('pt')
   const [data, setData] = useState<Data | null>(null)
   const [loading, setLoading] = useState(true)
   const [updatedAt, setUpdatedAt] = useState('')
@@ -30,7 +32,7 @@ export function DeliveryQueueCard() {
     setSavingOrder(true)
     try {
       await fetch('/api/admin/queue-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order }) })
-      const d = await fetch('/api/admin/delivery-queue', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null))
+      const d = await fetch(`/api/admin/delivery-queue?language=${language}`, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null))
       if (d) setData(d)
     } catch {}
     setSavingOrder(false)
@@ -38,9 +40,12 @@ export function DeliveryQueueCard() {
 
   useEffect(() => {
     let alive = true
+    setLoading(true)
+    setData(null)
+    sigRef.current = ''
     async function load() {
       try {
-        const d = await fetch('/api/admin/delivery-queue', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null))
+        const d = await fetch(`/api/admin/delivery-queue?language=${language}`, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null))
         if (!alive || !d) { if (alive) { setData(null); setLoading(false) }; return }
         const sig = JSON.stringify([d.adminRule, d.admins, (d.fila || []).map((q: Row) => q.id + ':' + q.creditos)])
         if (sigRef.current && sigRef.current !== sig) { setFlash(true); setTimeout(() => { if (alive) setFlash(false) }, 2500) }
@@ -57,7 +62,7 @@ export function DeliveryQueueCard() {
     document.addEventListener('visibilitychange', onVis)
     window.addEventListener('focus', onVis)
     return () => { alive = false; clearInterval(t); document.removeEventListener('visibilitychange', onVis); window.removeEventListener('focus', onVis) }
-  }, [])
+  }, [language])
 
   const ar = data?.adminRule
   const adminNome = data?.admins.filter(a => a.isNext).map(a => a.nome).join(' / ') || 'Prioridade'
@@ -72,7 +77,12 @@ export function DeliveryQueueCard() {
       <div className="px-6 py-4 flex items-start justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
         <div>
           <h2 className="text-[15px] font-bold flex items-center gap-2" style={{ color: 'var(--fg)' }}>📦 Fila de Entregas {flash && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>↑ atualizada</span>}</h2>
-          <p className="text-[12px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>Ordem real: o admin intercepta pela regra; o resto, por <b>{(QUEUE_LABELS[data?.queueOrder || 'credito'] || 'Crédito').toLowerCase()}</b>.</p>
+          <p className="text-[12px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>{language === 'pt' ? 'O admin intercepta pela regra; o resto, por ' : 'Entrega somente com créditos em espanhol, por '}<b>{(QUEUE_LABELS[data?.queueOrder || 'credito'] || 'Crédito').toLowerCase()}</b>.</p>
+          <label className="flex items-center gap-2 text-[12px] mt-2">Idioma:
+            <select value={language} disabled={savingOrder} onChange={e => setLanguage(e.target.value as LeadLanguage)} className="rounded-lg border p-2" style={{ background: 'var(--bg-card)', color: 'var(--fg)', borderColor: 'var(--border)' }}>
+              <option value="pt">{leadLanguageLabel('pt')}</option><option value="es">{leadLanguageLabel('es')}</option>
+            </select>
+          </label>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <span className="inline-block w-2 h-2 rounded-full" style={{ background: data ? '#22c55e' : '#f59e0b' }} />

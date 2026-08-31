@@ -6,6 +6,7 @@ import { resolveSendBridge } from './wa-bridge'
 import { adminRuleTurn, easternDayStartISO, evaluateAdminRule, type AdminRule } from './admin-rule'
 import { readAdminRuleState } from './admin-rule-state'
 import { readBuyerPolicy, withoutStaff } from './buyer-policy'
+import { leadLanguageForLead } from './lead-language'
 
 async function assignLeadToBuyer(
   supabase: ReturnType<typeof createAdminClient>,
@@ -57,6 +58,8 @@ export async function forceAssignRoundRobin(
   emails: string[]
 ): Promise<EligibleBuyer | null> {
   if (emails.length === 0) return null
+  const language = leadLanguageForLead(lead)
+  if (!language) return null
   const supabase = createAdminClient()
 
   // Pega buyers dos emails, na ordem que veio — só ATIVOS (suspenso não recebe lead)
@@ -113,6 +116,7 @@ export async function forceAssignRoundRobin(
       .select('id, buyer_id, total_purchased, total_used, expires_at')
       .in('buyer_id', cids)
       .eq('type', 'lead')
+      .eq('lead_language', language)
     const nowMs = Date.now()
     for (const c of creds || []) {
       const remaining = (c.total_purchased || 0) - (c.total_used || 0)
@@ -136,6 +140,7 @@ export async function forceAssignRoundRobin(
     .in('assigned_to', buyerIds)
     .not('meta_lead_id', 'is', null)
     .neq('id', lead.id)
+    .eq('lead_language', language)
     .order('assigned_at', { ascending: false })
     .limit(1)
     .maybeSingle()
@@ -173,9 +178,12 @@ export async function tryAdminRule(
   rule?: AdminRule | null,
   dryRun = false
 ): Promise<EligibleBuyer | null> {
+  // A regra de prioridade gratuita existente se aplica somente ao produto BR.
+  // Leads em espanhol exigem saldo comprado especificamente em espanhol.
+  if (leadLanguageForLead(lead) !== 'pt') return null
   if (!adminRuleTurn(rule, 0).N || !rule?.admin_emails?.length) return null
   const supabase = createAdminClient()
-  const snapshot = await readAdminRuleState(supabase, rule)
+  const snapshot = await readAdminRuleState(supabase, rule, 'pt')
   const decision = evaluateAdminRule(rule, snapshot.assignedCount, snapshot.candidates, lead.state)
   const { N: everyN, position, isTurn, candidate: chosen } = decision
   if (!decision.eligible || !chosen || (!isTurn && !dryRun)) return null
@@ -188,6 +196,9 @@ export async function tryAdminRule(
 }
 
 interface Lead {
+  lead_language?: string | null
+  form_name?: string | null
+  meta_lead_id?: string | null
   id: string
   name: string
   email: string
@@ -233,6 +244,7 @@ async function assignToFallback(
   lead: Lead,
   reason: string,
 ): Promise<EligibleBuyer | null> {
+  if (leadLanguageForLead(lead) !== 'pt') return null
   const { data: setting } = await supabase.from('settings').select('value').eq('key', 'lead_routing').maybeSingle()
   const fallbackEmail = (setting?.value as any)?.fallback_email
   if (!fallbackEmail) {
@@ -264,16 +276,24 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
     return null
   }
 
+  const language = leadLanguageForLead(lead)
+  if (!language) return null
+
   const supabase = createAdminClient()
 
   // Get eligible buyers filtered by state + sorted by remaining credits (weighted)
   const { staffIds } = await readBuyerPolicy(supabase)
-  const { data: buyers, error } = await supabase.rpc('get_eligible_buyers', {
+  const { data: buyers, error } = await supabase.rpc('get_eligible_buyers_by_language', {
     p_product_type: 'lead',
     p_state: lead.state || null,
+    p_language: language,
   })
 
-  if (error || !buyers || buyers.length === 0) {
+  if (error) {
+    console.error('[Distribute] Language queue lookup failed:', error.message)
+    return null
+  }
+  if (!buyers || buyers.length === 0) {
     console.log(`[Distribute] No eligible buyers for lead ${lead.id} (state: ${lead.state})`)
     return await assignToFallback(supabase, lead, `sem comprador p/ estado ${lead.state || '?'}`)
   }
@@ -360,6 +380,7 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
     const { data: todayLeads } = await supabase
       .from('leads').select('assigned_to')
       .in('assigned_to', eligible.map(b => b.id))
+      .eq('lead_language', language)
       .not('meta_lead_id', 'is', null)
       .gte('assigned_at', dayStart)
     const gotToday = new Set((todayLeads || []).map((l: any) => l.assigned_to))
@@ -452,7 +473,7 @@ export async function redistributePendingLeads(routingEmails?: string[] | null, 
   const cutoff = new Date(Date.now() - maxAgeHours * 3600_000).toISOString()
   const { data: pending } = await supabase
     .from('leads')
-    .select('id, name, email, phone, city, state, interest, campaign_name, product_type, created_at, meta_lead_id')
+    .select('id, name, email, phone, city, state, interest, campaign_name, product_type, created_at, lead_language, form_name, meta_lead_id')
     .eq('status', 'new')
     .is('assigned_to', null)
     .eq('product_type', 'lead')

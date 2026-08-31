@@ -14,13 +14,15 @@ import { getLocale } from '@/lib/locale'
 import { buildPurchaseHistory, type PurchaseHistoryItem } from '@/lib/purchase-history'
 import { readSalesTeamPricing, purchaseUnitPrice } from '@/lib/sales-team-pricing'
 import { SalesTeamPriceNotice } from '@/components/sales-team-price-notice'
+import { leadLanguageLabel } from '@/lib/lead-language'
+import { LeadPurchaseOptions } from './lead-purchase-options'
 
 export const dynamic = 'force-dynamic'
 
 export default async function CreditsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ success?: string; cancelled?: string }>
+  searchParams: Promise<{ success?: string; cancelled?: string; package?: string }>
 }) {
   const params = await searchParams
   const locale = await getLocale()
@@ -36,11 +38,11 @@ export default async function CreditsPage({
 
   const [creditsRes, paymentsRes] = await Promise.all([
     db.from('credits')
-      .select('id, type, total_purchased, total_used, price_per_unit, purchased_at, stripe_payment_id')
+      .select('id, type, total_purchased, total_used, price_per_unit, purchased_at, stripe_payment_id, lead_language')
       .eq('buyer_id', buyer.id)
       .order('purchased_at', { ascending: false }),
     db.from('payments')
-      .select('id, amount, product_type, quantity, price_per_unit, status, created_at, stripe_session_id, stripe_payment_intent_id')
+      .select('id, amount, product_type, quantity, price_per_unit, status, created_at, stripe_session_id, stripe_payment_intent_id, lead_language')
       .eq('buyer_id', buyer.id)
       .order('created_at', { ascending: false }),
   ])
@@ -48,6 +50,7 @@ export default async function CreditsPage({
   const allCredits = creditsRes.data || []
   const purchaseHistory = buildPurchaseHistory(paymentsRes.data || [], allCredits)
   const totalLeads = allCredits.filter(c => c.type === 'lead').reduce((s, c) => s + c.total_purchased - c.total_used, 0)
+  const leadsByLanguage = (language: string) => allCredits.filter(c => c.type === 'lead' && c.lead_language === language).reduce((s, c) => s + c.total_purchased - c.total_used, 0)
   const totalAppts = allCredits.filter(c => c.type === 'appointment').reduce((s, c) => s + c.total_purchased - c.total_used, 0)
 
   const teamPricing = await readSalesTeamPricing(db, buyer.id)
@@ -111,6 +114,7 @@ export default async function CreditsPage({
     } else {
       label = `${purchase.quantity} Leads`
     }
+    if (purchase.leadLanguage) label += ` · ${leadLanguageLabel(purchase.leadLanguage, locale)}`
     if (purchase.source === 'manual_credit') return `${L('Cortesia', 'Courtesy', 'Cortesía')} · ${label}`
     if (purchase.source === 'bonus_credit') return `${L('Bônus CRM', 'CRM Bonus', 'Bono CRM')} · ${label}`
     return label
@@ -194,6 +198,10 @@ export default async function CreditsPage({
         <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Leads Disponiveis', 'Available Leads', 'Leads Disponibles')}</p>
           <p className="text-[32px] font-extrabold mt-1" style={{ color: 'var(--accent)' }}>{totalLeads}</p>
+          <div className="flex flex-wrap gap-4 mt-2 text-[13px] font-semibold" style={{ color: 'var(--fg-secondary)' }}>
+            <span>{leadLanguageLabel('pt', locale)}: {leadsByLanguage('pt')}</span>
+            <span>{leadLanguageLabel('es', locale)}: {leadsByLanguage('es')}</span>
+          </div>
         </div>
         {totalAppts > 0 && (
           <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
@@ -205,14 +213,15 @@ export default async function CreditsPage({
       </div>
 
       {/* Lead Packages */}
+      <LeadPurchaseOptions>
       <h2 className="text-[16px] font-bold mb-4" style={{ color: 'var(--fg)' }}>{L('📋 Pacotes de Leads Exclusivos', '📋 Exclusive Lead Packages', '📋 Paquetes de Leads Exclusivos')}</h2>
       {teamPricing.is_member && <SalesTeamPriceNotice cents={teamPricing.lead_unit_price_cents} locale={locale} />}
       <PolicyCheck context="checkout_lead" />
       <CouponBox />
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {leadPackages.map((pkg) => {
           return (
-            <div key={pkg.id} className="rounded-2xl p-6 relative" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <div key={pkg.id} className="rounded-2xl p-6 relative" style={{ background: 'var(--bg-card)', border: params.package === pkg.id ? '2px solid var(--accent)' : '1px solid var(--border)' }}>
               <p className="text-[13px] font-medium" style={{ color: 'var(--fg-secondary)' }}>{pkg.quantity} Leads</p>
               <p className="text-[32px] font-extrabold mt-1" style={{ color: 'var(--fg)' }}>${pkg.totalDisplay}</p>
               <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>${pkg.pricePerUnit}/lead</p>
@@ -224,8 +233,8 @@ export default async function CreditsPage({
 
       {/* Cold Lead Packages */}
       <h2 className="text-[16px] font-bold mb-4" style={{ color: 'var(--fg)' }}>{L('❄️ Leads Frios (7+ dias)', '❄️ Cold Leads (7+ days)', '❄️ Leads Fríos (7+ días)')}</h2>
-      <p className="text-[13px] mb-4" style={{ color: 'var(--fg-muted)' }}>{L('Leads que nao foram distribuidos a tempo. Preco reduzido, entrega imediata.', 'Leads that were not distributed in time. Reduced price, instant delivery.', 'Leads que no se distribuyeron a tiempo. Precio reducido, entrega inmediata.')}</p>
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <p className="text-[13px] mb-4" style={{ color: 'var(--fg-muted)' }}>{L('Preço reduzido. Entrega manual pela equipe, no idioma escolhido.', 'Reduced price. Manual delivery by our team, in the selected language.', 'Precio reducido. Entrega manual por el equipo, en el idioma seleccionado.')}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {PRODUCTS.cold_lead.packages.map((pkg) => (
           <div key={pkg.id} className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
             <p className="text-[13px] font-medium" style={{ color: 'var(--fg-secondary)' }}>{pkg.quantity} {L('Leads Frios', 'Cold Leads', 'Leads Fríos')}</p>
@@ -235,6 +244,8 @@ export default async function CreditsPage({
           </div>
         ))}
       </div>
+
+      </LeadPurchaseOptions>
 
       {/* Unified purchase history: paid packages + CRM subscriptions + credit adjustments */}
       <h2 className="text-[16px] font-bold mb-4" style={{ color: 'var(--fg)' }}>{L('Histórico de Compras e Assinaturas', 'Purchase & Subscription History', 'Historial de Compras y Suscripciones')}</h2>

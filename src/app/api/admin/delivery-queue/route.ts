@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { adminDailyBlock, adminRuleTurn, easternDayStartISO, evaluateAdminRule } from '@/lib/admin-rule'
 import { readAdminRuleState } from '@/lib/admin-rule-state'
 import { readBuyerPolicy } from '@/lib/buyer-policy'
+import { isLeadLanguage } from '@/lib/lead-language'
 
 /**
  * GET /api/admin/delivery-queue — Fila ÚNICA com integridade total.
@@ -12,7 +13,7 @@ import { readBuyerPolicy } from '@/lib/buyer-policy'
  */
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+export async function GET(request?: NextRequest) {
   const supabase = await createServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -20,18 +21,20 @@ export async function GET(request: NextRequest) {
   const { data: me } = await db.from('buyers').select('is_admin').eq('auth_user_id', user.id).single()
   if (!me?.is_admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const { staffIds } = await readBuyerPolicy(db)
+  const language = request?.nextUrl?.searchParams.get('language') || 'pt'
+  if (!isLeadLanguage(language)) return NextResponse.json({ error: 'Idioma inválido.' }, { status: 400 })
 
   const { data: rt, error: routingError } = await db.from('settings').select('value').eq('key', 'lead_routing').maybeSingle()
   if (routingError) return NextResponse.json({ error: 'Não foi possível verificar o roteamento.' }, { status: 503 })
   const routing: any = rt?.value || {}
-  const ar: any = routing.admin_rule || {}
+  const ar: any = language === 'pt' ? routing.admin_rule || {} : {}
   const adminEmails: string[] = (ar.admin_emails || []).map((e: string) => e.trim().toLowerCase()).filter(Boolean)
-  const fallbackEmail: string | null = routing.fallback_email || null
+  const fallbackEmail: string | null = language === 'pt' ? routing.fallback_email || null : null
   const queueOrder: string = routing.queue_order || 'credito'
 
   // The preview and actual delivery share the same state, license and daily-cap checks.
   let snapshot
-  try { snapshot = await readAdminRuleState(db, ar) } catch (error) {
+  try { snapshot = await readAdminRuleState(db, ar, language) } catch (error) {
     console.error('[Delivery queue] Could not read admin rule:', error)
     return NextResponse.json({ error: 'Não foi possível verificar a regra de prioridade.' }, { status: 503 })
   }
@@ -73,7 +76,8 @@ export async function GET(request: NextRequest) {
   const adminIds = new Set(admins.map(a => a.id))
 
   // FILA DE CRÉDITO (RPC) — exclui quem já está como admin pra não duplicar
-  const { data: elig } = await db.rpc('get_eligible_buyers', { p_product_type: 'lead', p_state: null })
+  const { data: elig, error } = await db.rpc('get_eligible_buyers_by_language', { p_product_type: 'lead', p_state: null, p_language: language })
+  if (error) return NextResponse.json({ error: 'Não foi possível carregar a fila.' }, { status: 500 })
   const seen = new Map<string, { id: string; name: string; credits: number; leads_count: number }>()
   for (const e of (elig || [])) {
     if (adminIds.has(e.id) || staffIds.has(e.id)) continue
@@ -87,6 +91,7 @@ export async function GET(request: NextRequest) {
   const dayStart = easternDayStartISO()
   const { data: todayLeads } = await db.from('leads').select('assigned_to')
     .in('assigned_to', queue.map(q => q.id)).not('meta_lead_id', 'is', null).gte('assigned_at', dayStart)
+    .eq('lead_language', language)
   const gotToday = new Set((todayLeads || []).map((l: any) => l.assigned_to))
   // Ordena pela regra escolhida (queue_order), dentro dos grupos do piso (nao-hoje 1o).
   const createdAt: Record<string, number> = {}
@@ -108,5 +113,5 @@ export async function GET(request: NextRequest) {
   const stMap2 = await statesOf(queue.map(q => q.id))
   const fila = queue.map((q, i) => ({ pos: i + 1, id: q.id, nome: q.name, creditos: q.credits, estados: (stMap2[q.id] || []).sort(), recebeuHoje: gotToday.has(q.id) }))
 
-  return NextResponse.json({ adminRule: { N, leadsUntilAdmin, herTurnNow, isTurn, ruleAvailable, nextCandidateIds, dailyMax: ar.daily_max ?? null }, queueOrder, admins, fila }, { headers: { 'Cache-Control': 'private, no-store' } })
+  return NextResponse.json({ leadLanguage: language, adminRule: { N, leadsUntilAdmin, herTurnNow, isTurn, ruleAvailable, nextCandidateIds, dailyMax: ar.daily_max ?? null }, queueOrder, admins, fila }, { headers: { 'Cache-Control': 'private, no-store' } })
 }

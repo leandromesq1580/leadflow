@@ -7,7 +7,7 @@ import { startCheckout } from '@/lib/checkout-client'
  * Retoma o checkout iniciado na landing. Quando o usuário clica "Comprar" num
  * pacote (BuyCheckoutCta), o id do pacote fica em localStorage `l4p_buy`. Ao
  * chegar LOGADO no dashboard (após cadastro / confirmação de email / onboarding),
- * este componente dispara o checkout do Stripe daquele pacote e limpa a marca.
+ * este componente abre a compra para confirmar o idioma do pacote e limpa a marca.
  * Roda uma única vez. Em erro (ex: Starter já comprado), manda pra /dashboard/credits.
  */
 export function ResumeCheckout() {
@@ -30,10 +30,8 @@ export function ResumeCheckout() {
     try { pkg = localStorage.getItem('l4p_buy') } catch {}
     if (!pkg) return
     try { localStorage.removeItem('l4p_buy') } catch {}
-    ;(async () => {
-      const res = await startCheckout('/api/checkout', { packageId: pkg }, { context: 'checkout_resume_lead' })
-      if (!res.ok) { alert(res.error); window.location.href = '/dashboard/credits' }
-    })()
+    // An old landing CTA has no product language. Always ask before charging.
+    window.location.href = `/dashboard/credits?package=${encodeURIComponent(pkg)}#lead-packages`
   }, [])
   return null
 }

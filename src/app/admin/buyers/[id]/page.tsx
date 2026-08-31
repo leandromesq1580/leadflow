@@ -10,6 +10,7 @@ import { buildPurchaseHistory } from '@/lib/purchase-history'
 import { readBuyerPolicy } from '@/lib/buyer-policy'
 import { readSalesTeamPricing } from '@/lib/sales-team-pricing'
 import { SalesTeamCard } from './sales-team-card'
+import { leadLanguageLabel } from '@/lib/lead-language'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,7 +32,7 @@ export default async function BuyerDetailPage({ params }: { params: Promise<{ id
   const { data: availability } = await db.from('buyer_availability').select('day_type, period').eq('buyer_id', id)
   const { data: credits } = await db.from('credits').select('*').eq('buyer_id', id).order('purchased_at', { ascending: false })
   const { data: payments } = await db.from('payments')
-    .select('id, amount, product_type, quantity, price_per_unit, status, created_at, stripe_session_id, stripe_payment_intent_id')
+    .select('id, amount, product_type, quantity, price_per_unit, status, created_at, stripe_session_id, stripe_payment_intent_id, lead_language')
     .eq('buyer_id', id)
     .order('created_at', { ascending: false })
   // Total REAL de leads recebidos (count separado — a lista abaixo é limitada só pra exibição).
@@ -198,7 +199,7 @@ export default async function BuyerDetailPage({ params }: { params: Promise<{ id
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-semibold" style={{ color: '#1a1a2e' }}>
-                      {prefix}{productLabel}
+                      {prefix}{productLabel}{purchase.leadLanguage ? ` · ${leadLanguageLabel(purchase.leadLanguage)}` : ''}
                     </p>
                     <p className="text-[11px]" style={{ color: '#94a3b8' }}>
                       {formatDate(purchase.purchasedAt)} · {statusLabel}

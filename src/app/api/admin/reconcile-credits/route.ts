@@ -24,26 +24,41 @@ export async function GET(request: NextRequest) {
 
   const apply = new URL(request.url).searchParams.get('apply') === '1'
 
-  const { data: credits } = await db.from('credits').select('id, buyer_id, total_purchased, total_used').eq('type', 'lead')
-  const { data: leads } = await db.from('leads').select('assigned_to').not('meta_lead_id', 'is', null).not('assigned_to', 'is', null).limit(100000)
+  const { data: credits } = await db.from('credits').select('id, buyer_id, total_purchased, total_used, lead_language, purchased_at').eq('type', 'lead')
+  const { data: leads } = await db.from('leads').select('assigned_to, assigned_at, lead_language').not('meta_lead_id', 'is', null).not('assigned_to', 'is', null).limit(100000)
+  // Spanish leads delivered before the first Spanish credit may have been paid
+  // from the old BR balance. Never charge those historical deliveries again.
+  const firstSpanishCredit = new Map<string, number>()
+  for (const c of credits || []) {
+    if (c.lead_language !== 'es' || !c.purchased_at) continue
+    const time = new Date(c.purchased_at).getTime()
+    firstSpanishCredit.set(c.buyer_id, Math.min(firstSpanishCredit.get(c.buyer_id) ?? Infinity, time))
+  }
   const receivedBy = new Map<string, number>()
-  for (const l of leads || []) receivedBy.set(l.assigned_to as string, (receivedBy.get(l.assigned_to as string) || 0) + 1)
+  for (const l of leads || []) {
+    if (!l.lead_language) continue
+    if (l.lead_language === 'es' && (!l.assigned_at || new Date(l.assigned_at).getTime() < (firstSpanishCredit.get(l.assigned_to as string) ?? Infinity))) continue
+    const key = `${l.assigned_to}:${l.lead_language}`
+    receivedBy.set(key, (receivedBy.get(key) || 0) + 1)
+  }
 
   const byBuyer = new Map<string, { rows: any[]; purchased: number; used: number }>()
   for (const c of credits || []) {
     if (staffIds.has(c.buyer_id)) continue
-    const g = byBuyer.get(c.buyer_id) || { rows: [], purchased: 0, used: 0 }
+    const key = `${c.buyer_id}:${c.lead_language}`
+    const g = byBuyer.get(key) || { rows: [], purchased: 0, used: 0 }
     g.rows.push(c); g.purchased += c.total_purchased || 0; g.used += c.total_used || 0
-    byBuyer.set(c.buyer_id, g)
+    byBuyer.set(key, g)
   }
 
   const plan: any[] = []
-  for (const [buyerId, g] of byBuyer) {
-    const received = receivedBy.get(buyerId) || 0
+  for (const [key, g] of byBuyer) {
+    const [buyerId, language] = key.split(':')
+    const received = receivedBy.get(key) || 0
     const targetUsed = Math.min(received, g.purchased)
     const delta = targetUsed - g.used
     if (delta <= 0) continue
-    const entry: any = { buyerId, recebidos: received, comprou: g.purchased, usado_antes: g.used, usado_depois: targetUsed, deduzir: delta, sobra_antes: g.purchased - g.used, sobra_depois: g.purchased - targetUsed }
+    const entry: any = { buyerId, leadLanguage: language, recebidos: received, comprou: g.purchased, usado_antes: g.used, usado_depois: targetUsed, deduzir: delta, sobra_antes: g.purchased - g.used, sobra_depois: g.purchased - targetUsed }
     plan.push(entry)
     if (apply) {
       let rem = delta

@@ -4,6 +4,7 @@ import { getStripe } from '@/lib/stripe'
 import { BackfillCrmButton } from '@/components/admin/backfill-crm-button'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { leadLanguageLabel, purchaseLeadLanguage } from '@/lib/lead-language'
 
 export const dynamic = 'force-dynamic'
 
@@ -234,7 +235,7 @@ export default async function RevenuePage() {
                   <p className="text-[13px] font-semibold truncate" style={{ color: '#1a1a2e' }}>{p.buyer?.name || '—'}</p>
                   <p className="text-[11px] truncate" style={{ color: '#94a3b8' }}>{p.buyer?.email}</p>
                 </div>
-                <span className="text-[12px] font-medium" style={{ color: '#64748b' }}>{p.product_type === 'crm' ? '💳 CRM Pro' : `${p.quantity}x ${p.product_type === 'lead' ? 'Lead' : p.product_type === 'appointment' ? 'Appt' : p.product_type}`}</span>
+                <span className="text-[12px] font-medium" style={{ color: '#64748b' }}>{p.product_type === 'crm' ? '💳 CRM Pro' : `${p.quantity}x ${p.product_type === 'lead' ? 'Lead' : p.product_type === 'appointment' ? 'Appt' : p.product_type}`}{['lead', 'cold_lead'].includes(p.product_type) && ` · ${leadLanguageLabel(purchaseLeadLanguage(p.lead_language) || 'pt')}`}</span>
                 <span className="text-[14px] font-bold" style={{ color: '#10b981' }}>${Number(p.amount).toFixed(0)}</span>
                 <span className="text-[11px]" style={{ color: '#94a3b8' }}>{new Date(p.created_at).toLocaleDateString('pt-BR')}</span>
               </div>

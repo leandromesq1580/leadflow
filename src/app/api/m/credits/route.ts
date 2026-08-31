@@ -25,11 +25,11 @@ export async function GET() {
 
   const [creditsRes, paymentsRes] = await Promise.all([
     db.from('credits')
-      .select('id, type, total_purchased, total_used, price_per_unit, purchased_at, stripe_payment_id')
+      .select('id, type, total_purchased, total_used, price_per_unit, purchased_at, stripe_payment_id, lead_language')
       .eq('buyer_id', buyer.id)
       .order('purchased_at', { ascending: false }),
     db.from('payments')
-      .select('id, amount, product_type, quantity, price_per_unit, status, created_at, stripe_session_id, stripe_payment_intent_id')
+      .select('id, amount, product_type, quantity, price_per_unit, status, created_at, stripe_session_id, stripe_payment_intent_id, lead_language')
       .eq('buyer_id', buyer.id)
       .order('created_at', { ascending: false }),
   ])
@@ -46,6 +46,7 @@ export async function GET() {
 
   return NextResponse.json({
     totalLeads: sum('lead'),
+    leadsByLanguage: Object.fromEntries(['pt', 'es'].map(language => [language, creditRows.filter(c => c.type === 'lead' && c.lead_language === language).reduce((s, c) => s + c.total_purchased - c.total_used, 0)])),
     totalAppts: sum('appointment'),
     crm_plan: buyer.crm_plan || 'free',
     crm_subscription_status: buyer.crm_subscription_status || null,

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { LEAD_LANGUAGES, leadLanguageLabel, type LeadLanguage } from '@/lib/lead-language'
 
 interface Props {
   buyerId: string
@@ -26,16 +27,23 @@ export function AdminActions({ buyerId, isActive, plan, buyerName }: Props) {
   const [grantType, setGrantType] = useState<'lead' | 'cold_lead' | 'appointment'>('lead')
   const [grantQty, setGrantQty] = useState(10)
   const [grantNote, setGrantNote] = useState('')
+  const [grantLanguage, setGrantLanguage] = useState<LeadLanguage>('pt')
 
   async function call(action: string, body: any) {
     setLoading(action)
-    await fetch(`/api/admin/buyers/${buyerId}/${action}`, {
+    const response = await fetch(`/api/admin/buyers/${buyerId}/${action}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
     setLoading(null)
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}))
+      alert(data.error || 'Não foi possível salvar. Tente novamente.')
+      return false
+    }
     router.refresh()
+    return true
   }
 
   async function setPlan(p: string) {
@@ -62,7 +70,8 @@ export function AdminActions({ buyerId, isActive, plan, buyerName }: Props) {
 
   async function grant() {
     if (grantQty < 1) return
-    await call('grant-credits', { type: grantType, quantity: grantQty, note: grantNote || 'cortesia admin' })
+    const saved = await call('grant-credits', { type: grantType, leadLanguage: grantLanguage, quantity: grantQty, note: grantNote || 'cortesia admin' })
+    if (!saved) return
     setShowGrant(false)
     setGrantQty(10)
     setGrantNote('')
@@ -120,6 +129,11 @@ export function AdminActions({ buyerId, isActive, plan, buyerName }: Props) {
       {showGrant && (
         <div className="rounded-xl p-4 mt-3" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
           <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: '#94a3b8' }}>Cortesia / Ajuste</p>
+          {grantType !== 'appointment' && <label className="block text-[13px] font-semibold mb-3">Idioma dos leads
+            <select value={grantLanguage} onChange={e => setGrantLanguage(e.target.value as LeadLanguage)} className="ml-3 px-3 py-2 rounded-lg border">
+              {LEAD_LANGUAGES.map(language => <option key={language} value={language}>{leadLanguageLabel(language)}</option>)}
+            </select>
+          </label>}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
             <select value={grantType} onChange={e => setGrantType(e.target.value as any)}
               className="px-3 py-2 rounded-lg text-[13px] font-semibold cursor-pointer"

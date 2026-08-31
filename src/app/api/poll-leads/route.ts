@@ -18,13 +18,11 @@ import {
 import { stateFromPhone } from '@/lib/us-area-codes'
 import { acquireMetaPollLease, fetchMetaFormLeads, releaseMetaPollLease } from '@/lib/meta-poll'
 import { randomUUID } from 'node:crypto'
+import { META_FORM_LANGUAGES } from '@/lib/lead-language'
 
 export const maxDuration = 300
 
-const FORM_IDS = [
-  '25952858404333766', // FORMULARIO SEGURO-SEM PERGUNTA (principal)
-  '1963007337624994', // FORMULARIO SEGURO-SEM PERGUNTA-ESPANHOL
-]
+const FORM_IDS = Object.keys(META_FORM_LANGUAGES)
 
 interface RoutingStep {
   email: string
@@ -185,6 +183,7 @@ export async function GET(request: Request) {
           interest: 'Seguro de vida',
           campaign_name: lead.campaign_name || 'Meta Lead Ads',
           form_name: formId,
+          lead_language: META_FORM_LANGUAGES[formId],
           raw_data: lead,
           type: 'hot',
           status: 'new',

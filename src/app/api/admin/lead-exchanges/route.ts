@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { leadLanguageForLead } from '@/lib/lead-language'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,12 +47,16 @@ export async function POST(request: NextRequest) {
   if (req.status !== 'pending') return NextResponse.json({ error: `Pedido já ${req.status}` }, { status: 409 })
 
   if (action === 'approve') {
+    const { data: lead } = await db.from('leads').select('lead_language, form_name, meta_lead_id').eq('id', req.lead_id).single()
+    const language = lead ? leadLanguageForLead(lead) : null
+    if (!language) return NextResponse.json({ error: 'Confirme o idioma do lead antes de devolver o crédito.' }, { status: 409 })
     // 1) devolve o crédito (idempotente pelo marker)
     const marker = `exchange:${req.lead_id}`
     const { data: dup } = await db.from('credits').select('id').eq('stripe_payment_id', marker).maybeSingle()
     if (!dup) {
       const { error: credErr } = await db.from('credits').insert({
         buyer_id: req.buyer_id, type: 'lead', total_purchased: 1, total_used: 0,
+        lead_language: language,
         price_per_unit: 0, stripe_payment_id: marker, purchased_at: new Date().toISOString(),
       })
       if (credErr) return NextResponse.json({ error: 'Falha ao creditar: ' + credErr.message }, { status: 500 })

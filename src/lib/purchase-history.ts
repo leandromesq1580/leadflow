@@ -1,6 +1,9 @@
+import { purchaseLeadLanguage, type LeadLanguage } from './lead-language'
+
 export type PurchaseHistorySource = 'payment' | 'manual_credit' | 'bonus_credit' | 'legacy_credit'
 
 export interface PurchaseHistoryPayment {
+  lead_language?: string | null
   id: string
   amount: number | string
   product_type: string
@@ -13,6 +16,7 @@ export interface PurchaseHistoryPayment {
 }
 
 export interface PurchaseHistoryCredit {
+  lead_language?: string | null
   id: string
   type: string
   total_purchased: number
@@ -23,6 +27,7 @@ export interface PurchaseHistoryCredit {
 }
 
 export interface PurchaseHistoryItem {
+  leadLanguage: LeadLanguage | null
   id: string
   source: PurchaseHistorySource
   productType: string
@@ -74,6 +79,7 @@ export function buildPurchaseHistory(
       id: `payment:${payment.id}`,
       source: 'payment',
       productType: payment.product_type,
+      leadLanguage: ['lead', 'cold_lead'].includes(payment.product_type) ? purchaseLeadLanguage(payment.lead_language ?? credit?.lead_language) : null,
       quantity: Number(payment.quantity || 0),
       amount: numeric(payment.amount),
       pricePerUnit: numeric(payment.price_per_unit),
@@ -97,6 +103,7 @@ export function buildPurchaseHistory(
       id: `credit:${credit.id}`,
       source: isManual ? 'manual_credit' : isBonus ? 'bonus_credit' : 'legacy_credit',
       productType: credit.type,
+      leadLanguage: ['lead', 'cold_lead'].includes(credit.type) ? purchaseLeadLanguage(credit.lead_language) : null,
       quantity: Number(credit.total_purchased || 0),
       amount: isManual || isBonus ? 0 : Number(credit.total_purchased || 0) * pricePerUnit,
       pricePerUnit,

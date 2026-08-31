@@ -15,7 +15,7 @@ function load(file, mocks = {}, env = {}) {
     {
       module,
       exports: module.exports,
-      require: (n) => (n in mocks ? mocks[n] : require(n)),
+      require: (n) => (n in mocks ? mocks[n] : n === '@/lib/lead-language' ? load('src/lib/lead-language.ts') : require(n)),
       URL,
       Request,
       Response,

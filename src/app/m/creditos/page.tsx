@@ -11,8 +11,9 @@ import { CRM_PLAN_LIST } from '@/lib/crm-plans'
 import type { PurchaseHistoryItem } from '@/lib/purchase-history'
 import { purchaseUnitPrice, NO_TEAM_PRICING, type SalesTeamPricing } from '@/lib/sales-team-pricing'
 import { SalesTeamPriceNotice } from '@/components/sales-team-price-notice'
+import { LEAD_LANGUAGES, leadLanguageLabel, type LeadLanguage } from '@/lib/lead-language'
 
-interface CreditsData { totalLeads: number; totalAppts: number; crm_plan: string; crm_subscription_status: string | null; crm_plan_key: string | null; history: PurchaseHistoryItem[]; teamPricing: SalesTeamPricing }
+interface CreditsData { totalLeads: number; totalAppts: number; leadsByLanguage: Record<LeadLanguage, number>; crm_plan: string; crm_subscription_status: string | null; crm_plan_key: string | null; history: PurchaseHistoryItem[]; teamPricing: SalesTeamPricing }
 
 export default function MobileCreditos() {
   const t = useT()
@@ -24,6 +25,7 @@ export default function MobileCreditos() {
   const [err, setErr] = useState(false)
   const [success, setSuccess] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [leadLanguage, setLeadLanguage] = useState<LeadLanguage | null>(null)
   // No app nativo (iOS/Android) a compra fica ESCONDIDA — evita rejeição da Apple
   // por In-App Purchase (Guia 3.1.1). Detecta pelo User-Agent injetado pelo Capacitor.
   const [isNativeApp, setIsNativeApp] = useState(false)
@@ -85,6 +87,7 @@ export default function MobileCreditos() {
 
   async function go(endpoint: string, body?: any) {
     if (busy) return
+    if (endpoint === '/api/checkout' && !leadLanguage) return
     setBusy(true)
     try {
       const res = await startCheckout(endpoint as '/api/checkout' | '/api/checkout/subscription', body, { context: 'checkout_mobile' })
@@ -114,6 +117,7 @@ export default function MobileCreditos() {
     } else {
       label = `${item.quantity} Leads`
     }
+    if (item.leadLanguage) label += ` · ${leadLanguageLabel(item.leadLanguage, loc)}`
     if (item.source === 'manual_credit') return `${L('Cortesia', 'Courtesy', 'Cortesía')} · ${label}`
     if (item.source === 'bonus_credit') return `${L('Bônus CRM', 'CRM bonus', 'Bono CRM')} · ${label}`
     return label
@@ -176,12 +180,13 @@ export default function MobileCreditos() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <div>
           <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{p.quantity} {type}</p>
+          {leadLanguage && <p style={{ margin: '3px 0', fontSize: 12, fontWeight: 700, color: '#c084fc' }}>{leadLanguageLabel(leadLanguage, loc)}</p>}
           <p className="m-muted" style={{ margin: '1px 0 0', fontSize: 12 }}>
             ${per}/{L('cada', 'each', 'cada')}
             {isLead && cupomInfo && <span style={{ color: '#4ade80', fontWeight: 700 }}> · {cupomInfo.code}</span>}
           </p>
         </div>
-        <button onClick={() => go('/api/checkout', { packageId: p.id, couponCode: isLead && cupomInfo ? cupomInfo.code : undefined })} disabled={busy} className="m-tap" style={{ display: 'flex', alignItems: 'center', gap: 6, height: 38, padding: '0 14px', borderRadius: 11, background: 'var(--m-grad)', border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>${total.toLocaleString('en-US')}</button>
+        <button onClick={() => go('/api/checkout', { packageId: p.id, leadLanguage, couponCode: isLead && cupomInfo ? cupomInfo.code : undefined })} disabled={busy || !leadLanguage} aria-label={`${L('Comprar', 'Buy', 'Comprar')} ${p.quantity} ${type} ${leadLanguage ? leadLanguageLabel(leadLanguage, loc) : ''} — $${total}`} className="m-tap" style={{ display: 'flex', alignItems: 'center', gap: 6, minHeight: 44, padding: '0 14px', borderRadius: 11, background: 'var(--m-grad)', border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: busy || !leadLanguage ? 0.5 : 1 }}>${total.toLocaleString('en-US')}</button>
       </div>
     )
   }
@@ -206,6 +211,7 @@ export default function MobileCreditos() {
               <div className="m-icb" style={{ marginBottom: 10 }}><MIcon name="coin" size={18} /></div>
               <p style={{ margin: 0, fontSize: 26, fontWeight: 800 }}>{d.totalLeads}</p>
               <p className="m-muted" style={{ margin: '1px 0 0', fontSize: 12 }}>{L('Leads disponíveis', 'Leads available', 'Leads')}</p>
+              {LEAD_LANGUAGES.map(language => <p key={language} className="m-muted" style={{ margin: '6px 0 0', fontSize: 12 }}>{leadLanguageLabel(language, loc)}: {d.leadsByLanguage?.[language] || 0}</p>)}
             </div>
             {d.totalAppts > 0 && (
               <div className="m-card" style={{ padding: 16 }}>
@@ -333,6 +339,15 @@ export default function MobileCreditos() {
           </div>
 
           {/* Pacotes */}
+          <fieldset className="m-card" style={{ padding: 16, margin: '0 0 14px', border: '2px solid #a78bfa' }}>
+            <legend style={{ padding: '0 6px', fontSize: 14, fontWeight: 700 }}>{L('Qual idioma de leads você quer?', 'Which lead language do you want?', '¿En qué idioma quieres tus leads?')}</legend>
+            <p className="m-muted" style={{ margin: '0 0 12px', fontSize: 12 }}>{L('Escolha antes de comprar. Entrega somente no idioma selecionado.', 'Choose before buying. Delivery only in the selected language.', 'Elige antes de comprar. Entrega solo en el idioma seleccionado.')}</p>
+            {LEAD_LANGUAGES.map(language => <label key={language} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, marginBottom: 8, border: `1px solid ${leadLanguage === language ? '#a78bfa' : 'var(--m-border)'}`, cursor: 'pointer' }}>
+              <input type="radio" name="lead-language" value={language} checked={leadLanguage === language} onChange={() => setLeadLanguage(language)} style={{ width: 20, height: 20, accentColor: '#a78bfa' }} />
+              <span style={{ fontSize: 14, fontWeight: 700 }}>{leadLanguageLabel(language, loc)}</span>
+            </label>)}
+            <p role="status" className="m-muted" style={{ fontSize: 12, margin: '8px 0 0' }}>{leadLanguage ? leadLanguageLabel(leadLanguage, loc) : L('Nenhum idioma selecionado.', 'No language selected.', 'Ningún idioma seleccionado.')}</p>
+          </fieldset>
           <div className="m-card" style={{ padding: '4px 16px', marginBottom: 14 }}>
             <p style={{ fontSize: 14, fontWeight: 700, margin: '14px 0 2px' }}>{L('Leads exclusivos', 'Exclusive leads', 'Leads exclusivos')}</p>
             {d.teamPricing?.is_member && <SalesTeamPriceNotice cents={d.teamPricing.lead_unit_price_cents} locale={loc} />}
@@ -340,6 +355,7 @@ export default function MobileCreditos() {
           </div>
           <div className="m-card" style={{ padding: '4px 16px', marginBottom: 14 }}>
             <p style={{ fontSize: 14, fontWeight: 700, margin: '14px 0 2px' }}>{L('Leads frios', 'Cold leads', 'Leads fríos')}</p>
+            <p className="m-muted" style={{ fontSize: 12 }}>{L('Entrega manual pela equipe no idioma escolhido.', 'Manual delivery by our team in the selected language.', 'Entrega manual por el equipo en el idioma seleccionado.')}</p>
             {PRODUCTS.cold_lead.packages.map(p => <PkgRow key={p.id} p={p} type={L('Frios', 'Cold', 'Fríos')} />)}
           </div>
           </>}

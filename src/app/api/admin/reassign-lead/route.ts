@@ -3,6 +3,7 @@ import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendLeadNotificationEmail } from '@/lib/notifications'
 import { migrateWhatsAppOwnership } from '@/lib/lead-ownership'
+import { leadLanguageForLead, leadLanguageLabel } from '@/lib/lead-language'
 
 /**
  * POST /api/admin/reassign-lead — repassa um lead pra outro agente (buyer).
@@ -24,6 +25,8 @@ export async function POST(request: NextRequest) {
 
   const { data: lead } = await db.from('leads').select('*').eq('id', lead_id).single()
   if (!lead) return NextResponse.json({ error: 'Lead nao encontrado' }, { status: 404 })
+  const language = leadLanguageForLead(lead)
+  if (!language) return NextResponse.json({ error: 'Confirme o idioma deste lead antes de reatribuir.' }, { status: 409 })
   if (lead.assigned_to === to_buyer_id) return NextResponse.json({ error: 'Lead ja pertence a esse agente' }, { status: 400 })
 
   // `notification_phone_2` só existe após a migration 031. Sem a coluna, o PostgREST
@@ -42,6 +45,7 @@ export async function POST(request: NextRequest) {
   if (!isAdminAgent) {
     const { data: creds } = await db.from('credits')
       .select('id, total_purchased, total_used, expires_at').eq('buyer_id', to_buyer_id).eq('type', 'lead')
+      .eq('lead_language', language)
     const nowMs = Date.now()
     for (const c of (creds || [])) {
       const rem = (Number(c.total_purchased) || 0) - (Number(c.total_used) || 0)
@@ -53,7 +57,7 @@ export async function POST(request: NextRequest) {
       }
     }
     if (!debitRow || remaining <= 0) {
-      return NextResponse.json({ error: `${(toBuyer.name || '').trim()} está sem crédito de lead — não dá pra reatribuir. Adicione crédito ou escolha outro agente.`, code: 'NO_CREDIT' }, { status: 409 })
+      return NextResponse.json({ error: `${(toBuyer.name || '').trim()} está sem crédito para ${leadLanguageLabel(language)}. Adicione crédito desse idioma ou escolha outro agente.`, code: 'NO_CREDIT' }, { status: 409 })
     }
   }
 
@@ -100,6 +104,7 @@ export async function POST(request: NextRequest) {
     if (!prevAdmin?.is_admin) {
       const { data: pc } = await db.from('credits')
         .select('id, total_used').eq('buyer_id', prevOwner).eq('type', 'lead').gt('total_used', 0)
+        .eq('lead_language', language)
         .order('total_used', { ascending: false }).limit(1)
       if (pc && pc[0]) {
         await db.from('credits').update({ total_used: Math.max(0, (Number(pc[0].total_used) || 0) - 1) }).eq('id', pc[0].id)

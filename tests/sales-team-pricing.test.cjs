@@ -89,7 +89,7 @@ function checkout(options = {}) {
     '@/lib/referral': { discountForOrder: async (_db, id, cents) => { discounts.push({ id, cents }); return 0 } },
     '@/lib/stripe': { PRODUCTS, getStripe: () => ({ checkout: { sessions: { create: async params => { sessions.push(params); return { url: 'https://checkout.invalid/mock' } } } } }) },
   })
-  return { db, sessions, discounts, invoke: body => POST({ json: async () => body }) }
+  return { db, sessions, discounts, invoke: body => POST({ json: async () => ({ leadLanguage: 'pt', ...body }) }) }
 }
 test('checkout charges trusted team price for all exclusive packages with correct payment metadata', async () => {
   for (const p of PRODUCTS.lead.packages) {

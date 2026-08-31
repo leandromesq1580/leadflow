@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n-client'
+import { leadLanguageLabel, type LeadLanguage } from '@/lib/lead-language'
 
 interface StateInfo { state: string; position: number; total: number; leadsPerDay: number; etaDays: number | null }
 interface Data {
@@ -43,6 +44,10 @@ function eta(d: StateInfo, L: LFn): string {
  * dark=true para o app mobile.
  */
 export function QueuePositionCard({ dark = false }: { dark?: boolean }) {
+  return <><LanguageQueuePositionCard dark={dark} language="pt" /><LanguageQueuePositionCard dark={dark} language="es" /></>
+}
+
+function LanguageQueuePositionCard({ dark, language }: { dark: boolean; language: LeadLanguage }) {
   const t = useT()
   const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [d, setD] = useState<Data | null>(null)
@@ -50,14 +55,14 @@ export function QueuePositionCard({ dark = false }: { dark?: boolean }) {
 
   useEffect(() => {
     let alive = true
-    const load = () => fetch('/api/queue-position', { cache: 'no-store' })
+    const load = () => fetch(`/api/queue-position?language=${language}`, { cache: 'no-store' })
       .then(r => (r.ok ? r.json() : Promise.reject()))
       .then(j => { if (alive) { setD(j); setErro(false) } })
       .catch(() => { if (alive) setErro(true) })
     load()
     const t = setInterval(load, 60000)
     return () => { alive = false; clearInterval(t) }
-  }, [])
+  }, [language])
 
   if (erro || !d) return null
   if (d.isStaff) return <div className="rounded-xl p-4 mb-4 text-sm" style={{ background: dark ? 'rgba(124,58,237,0.10)' : 'var(--bg-card)', color: dark ? 'var(--m-text, #fff)' : 'var(--fg)' }}>
@@ -84,7 +89,7 @@ export function QueuePositionCard({ dark = false }: { dark?: boolean }) {
     <div style={card}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
         <span style={{ fontSize: 17 }}>🎟️</span>
-        <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: ink }}>{L('Sua vez na fila', 'Your place in line', 'Tu turno en la fila')}</p>
+        <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: ink }}>{L('Sua vez na fila', 'Your place in line', 'Tu turno en la fila')} · {leadLanguageLabel(language, t._locale)}</p>
         <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: 'var(--accent)' }}>
           {d.credits} {d.credits === 1 ? L('crédito', 'credit', 'crédito') : L('créditos', 'credits', 'créditos')}
         </span>

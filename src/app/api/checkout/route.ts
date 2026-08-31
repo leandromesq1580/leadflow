@@ -6,10 +6,11 @@ import { resolveCoupon } from '@/lib/coupons'
 import { hasAcceptedCurrentPolicy } from '@/lib/policies'
 import { discountForOrder } from '@/lib/referral'
 import { readSalesTeamPricing, purchaseUnitPrice, NO_TEAM_PRICING } from '@/lib/sales-team-pricing'
+import { isLeadLanguage, leadLanguageLabel } from '@/lib/lead-language'
 
 export async function POST(request: NextRequest) {
   try {
-    const { packageId, couponCode } = await request.json()
+    const { packageId, couponCode, leadLanguage } = await request.json()
 
     // 🚫 Appointments não são mais vendidos (jul/2026). Bloqueia qualquer tentativa de
     // checkout de pacote de appointment mesmo que venha por request forjado/link antigo.
@@ -32,6 +33,11 @@ export async function POST(request: NextRequest) {
 
     if (!selectedPackage || !productType) {
       return NextResponse.json({ error: 'Invalid package' }, { status: 400 })
+    }
+
+    // Product language is required even if the portal itself is already in Spanish.
+    if (!isLeadLanguage(leadLanguage)) {
+      return NextResponse.json({ error: 'Escolha Leads BR (português) ou Leads em espanhol antes de comprar.', code: 'LEAD_LANGUAGE_REQUIRED' }, { status: 400 })
     }
 
     // Get user from auth
@@ -87,8 +93,8 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: `${PRODUCTS[productType].name} — ${selectedPackage.quantity}x`,
-              description: `${selectedPackage.quantity} ${productType === 'cold_lead' ? 'leads frios' : 'leads exclusivos'} · ${buyer.name || buyer.email}${quote.source === 'sales_team' ? ' · preço de equipe' : quote.couponCode ? ` · cupom ${quote.couponCode}` : ''}`,
+              name: `${PRODUCTS[productType].name} — ${leadLanguageLabel(leadLanguage)} — ${selectedPackage.quantity}x`,
+              description: `${selectedPackage.quantity} ${productType === 'cold_lead' ? 'leads frios' : 'leads exclusivos'} · ${leadLanguageLabel(leadLanguage)} · ${buyer.name || buyer.email}${quote.source === 'sales_team' ? ' · preço de equipe' : quote.couponCode ? ` · cupom ${quote.couponCode}` : ''}`,
             },
             unit_amount: unitPriceCents,
           },
@@ -100,6 +106,7 @@ export async function POST(request: NextRequest) {
         buyer_name: buyer.name || '',
         buyer_email: buyer.email || '',
         product_type: productType,
+        lead_language: leadLanguage,
         quantity: String(selectedPackage.quantity),
         price_per_unit: String(pricePerUnit),
         package_id: selectedPackage.id,
@@ -109,7 +116,8 @@ export async function POST(request: NextRequest) {
         referral_discount_cents: String(referralDiscount),
       },
       payment_intent_data: {
-        description: `${selectedPackage.quantity}x ${PRODUCTS[productType].name} — ${buyer.name || buyer.email}`,
+        description: `${selectedPackage.quantity}x ${PRODUCTS[productType].name} — ${leadLanguageLabel(leadLanguage)} — ${buyer.name || buyer.email}`,
+        metadata: { buyer_id: buyer.id, package_id: selectedPackage.id, lead_language: leadLanguage },
       },
       success_url: 'https://lead4producers.com/dashboard/credits?success=true',
       cancel_url: 'https://lead4producers.com/dashboard/credits?cancelled=true',

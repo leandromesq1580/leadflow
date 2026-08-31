@@ -1,4 +1,5 @@
 import { createAdminClient } from './supabase/admin'
+import type { LeadLanguage } from './lead-language'
 
 /**
  * Mark leads older than 7 days as cold if not assigned.
@@ -27,7 +28,7 @@ export async function markColdLeads() {
  * Distribute cold leads to a buyer who purchased cold_lead credits.
  * Assigns oldest cold leads first.
  */
-export async function distributeColdLeads(buyerId: string, quantity: number): Promise<number> {
+export async function distributeColdLeads(buyerId: string, quantity: number, language: LeadLanguage): Promise<number> {
   const db = createAdminClient()
 
   // First mark any old leads as cold
@@ -47,6 +48,8 @@ export async function distributeColdLeads(buyerId: string, quantity: number): Pr
     .select('id')
     .eq('type', 'cold')
     .eq('status', 'new')
+    .eq('lead_language', language)
+    .is('assigned_to', null)
     .order('created_at', { ascending: true })
     .limit(quantity)
 

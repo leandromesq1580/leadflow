@@ -6,8 +6,8 @@
  *  2) guarda o pacote escolhido em localStorage (`l4p_buy`),
  *  3) manda pro cadastro.
  * Depois que a pessoa loga (pós onboarding / confirmação de email), o
- * <ResumeCheckout/> montado no dashboard retoma e abre o checkout do Stripe
- * daquele pacote automaticamente.
+ * <ResumeCheckout/> abre a compra no dashboard para confirmar BR ou espanhol
+ * antes de abrir o checkout do Stripe.
  */
 interface Props {
   packageId: string
