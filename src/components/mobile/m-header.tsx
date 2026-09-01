@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useT } from '@/lib/i18n-client'
 import { getInitials } from '@/lib/utils'
+import { LocaleSwitcher } from '@/components/locale-switcher'
 
 // BrandMark — mesmo do desktop (tile escuro + raio âmbar).
 function BrandMark({ size = 28 }: { size?: number }) {
@@ -33,9 +34,12 @@ export function MHeader({ userName }: { userName?: string }) {
         <BrandMark size={28} />
         <span className="m-brand-name">Lead4Pro</span>
       </Link>
-      <Link href="/m/mais" className="m-header-av" aria-label={L('Menu', 'Menu', 'Menú')}>
-        {getInitials(userName || 'L4')}
-      </Link>
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <LocaleSwitcher current={t._locale} variant="mobile" />
+        <Link href="/m/mais" className="m-header-av" aria-label={L('Menu', 'Menu', 'Menú')}>
+          {getInitials(userName || 'L4')}
+        </Link>
+      </div>
     </header>
   )
 }

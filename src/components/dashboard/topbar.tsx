@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useT } from '@/lib/i18n-client'
+import { LocaleSwitcher } from '@/components/locale-switcher'
 
 /**
  * TOPBAR (reconcept Fase 3): contexto de onde estou + sino unificado.
@@ -111,6 +112,7 @@ export function TopBar({ buyerId }: { buyerId?: string }) {
       </p>
 
       <div className="flex items-center gap-2">
+        <LocaleSwitcher current={t._locale} variant="topbar" />
         {creditos !== null && (
           <Link href="/dashboard/credits"
             className="flex items-center gap-2 pl-3 pr-1.5 py-1.5 rounded-xl transition-transform hover:scale-[1.03]"
