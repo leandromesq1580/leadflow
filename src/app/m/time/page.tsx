@@ -104,7 +104,7 @@ export default function MobileTime() {
             <div className="m-sheet-grab" style={{ marginLeft: 'auto', marginRight: 'auto' }} />
             <p style={{ margin: '2px 0 14px', fontSize: 15, fontWeight: 700 }}>{editing.id ? L('Editar membro', 'Edit member', 'Editar') : L('Adicionar membro', 'Add member', 'Añadir')}</p>
             <input className="m-input" value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} placeholder={L('Nome *', 'Name *', 'Nombre *')} style={{ marginBottom: 11 }} />
-            <input className="m-input" value={editing.email || ''} onChange={e => setEditing({ ...editing, email: e.target.value })} placeholder="Email" style={{ marginBottom: 11 }} />
+            <input className="m-input" value={editing.email || ''} onChange={e => setEditing({ ...editing, email: e.target.value })} placeholder={L('E-mail', 'Email', 'Correo electrónico')} style={{ marginBottom: 11 }} />
             <input className="m-input" value={editing.phone || ''} onChange={e => setEditing({ ...editing, phone: e.target.value })} placeholder={L('Telefone', 'Phone', 'Teléfono')} style={{ marginBottom: 11 }} />
             <input className="m-input" value={editing.whatsapp || ''} onChange={e => setEditing({ ...editing, whatsapp: e.target.value })} placeholder="WhatsApp" style={{ marginBottom: 16 }} />
             <button onClick={save} disabled={busy || !editing.name.trim()} className="m-tap" style={{ width: '100%', height: 48, borderRadius: 14, background: 'var(--m-grad)', border: 'none', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: busy || !editing.name.trim() ? 0.5 : 1 }}>{busy ? L('Salvando…', 'Saving…', 'Guardando…') : L('Salvar', 'Save', 'Guardar')}</button>

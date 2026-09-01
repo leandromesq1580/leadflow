@@ -41,7 +41,7 @@ export default function MobileTemplates() {
   }
 
   async function del(tp: Template) {
-    if (!tp.id || !confirm(L('Excluir este template?', 'Delete this template?', '¿Eliminar?'))) return
+    if (!tp.id || !confirm(L('Excluir este modelo?', 'Delete this template?', '¿Eliminar esta plantilla?'))) return
     try { await fetch(`/api/templates/${tp.id}`, { method: 'DELETE' }); if (buyerId) reload(buyerId) } catch {}
   }
 
@@ -49,13 +49,13 @@ export default function MobileTemplates() {
     <div>
       <div className="m-pad" style={{ paddingTop: 6, display: 'flex', alignItems: 'center', gap: 12, height: 44 }}>
         <button onClick={() => router.push('/m/mais')} className="m-tap" style={{ background: 'none', border: 'none', color: 'var(--m-text)', display: 'flex', cursor: 'pointer', padding: 0 }}><MIcon name="arrowLeft" size={24} /></button>
-        <p style={{ margin: 0, flex: 1, fontSize: 20, fontWeight: 800 }}>Templates</p>
+        <p style={{ margin: 0, flex: 1, fontSize: 20, fontWeight: 800 }}>{t.sidebar.templates}</p>
         <button onClick={() => setEditing({ name: '', type: 'whatsapp', subject: '', body: '' })} className="m-tap" style={{ background: 'none', border: 'none', color: '#a5b4fc', display: 'flex', cursor: 'pointer', padding: 0 }}><MIcon name="plus" size={24} /></button>
       </div>
 
       <div className="m-pad" style={{ paddingTop: 6 }}>
         {!list && <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 60 }}><div className="m-spin" /></div>}
-        {list && list.length === 0 && <p className="m-muted" style={{ textAlign: 'center', paddingTop: 40, fontSize: 14 }}>{L('Nenhum template. Toque em + pra criar.', 'No templates. Tap + to create.', 'Sin plantillas.')}</p>}
+        {list && list.length === 0 && <p className="m-muted" style={{ textAlign: 'center', paddingTop: 40, fontSize: 14 }}>{L('Nenhum modelo. Toque em + para criar.', 'No templates. Tap + to create.', 'No hay plantillas. Toca + para crear una.')}</p>}
 
         {(list || []).map(tp => (
           <div key={tp.id} className="m-card" style={{ padding: 14, marginBottom: 11 }}>
@@ -81,7 +81,7 @@ export default function MobileTemplates() {
         <div className="m-sheet-ov" onClick={() => setEditing(null)}>
           <div className="m-sheet" onClick={e => e.stopPropagation()} style={{ padding: '8px 20px calc(env(safe-area-inset-bottom) + 18px)' }}>
             <div className="m-sheet-grab" style={{ marginLeft: 'auto', marginRight: 'auto' }} />
-            <p style={{ margin: '2px 0 12px', fontSize: 15, fontWeight: 700 }}>{editing.id ? L('Editar template', 'Edit template', 'Editar') : L('Novo template', 'New template', 'Nuevo')}</p>
+            <p style={{ margin: '2px 0 12px', fontSize: 15, fontWeight: 700 }}>{editing.id ? L('Editar modelo', 'Edit template', 'Editar plantilla') : L('Novo modelo', 'New template', 'Nueva plantilla')}</p>
             <input className="m-input" value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} placeholder={L('Nome', 'Name', 'Nombre')} style={{ marginBottom: 12 }} />
             <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
               <span className={`m-chip m-tap${editing.type === 'whatsapp' ? ' on' : ''}`} onClick={() => setEditing({ ...editing, type: 'whatsapp' })}>WhatsApp</span>

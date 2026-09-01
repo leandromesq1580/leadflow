@@ -31,7 +31,7 @@ const TRIGGER_LABELS = (L: LFn): Record<string, string> => ({
 })
 
 const ACTION_LABELS = (L: LFn): Record<string, string> => ({
-  send_template: L('Enviar template', 'Send template', 'Enviar template'),
+  send_template: L('Enviar modelo', 'Send template', 'Enviar plantilla'),
   move_stage: L('Mover para outro estágio', 'Move to another stage', 'Mover a otra etapa'),
   notify_agent: L('Notificar agente', 'Notify agent', 'Notificar al agente'),
 })
@@ -145,7 +145,7 @@ export default function AutomationsPage() {
           <p className="text-[40px] mb-3">⚡</p>
           <p className="text-[16px] font-bold mb-2" style={{ color: 'var(--fg)' }}>{L('Ainda sem automações', 'No automations yet', 'Aún sin automatizaciones')}</p>
           <p className="text-[13px] mb-4" style={{ color: 'var(--fg-secondary)' }}>
-            {L('Exemplos: enviar follow-up 24h após lead entrar, alertar quando parado 48h, mover para "perdido" após 7 dias sem resposta.', 'Examples: send a follow-up 24h after a lead enters, alert when stuck for 48h, move to "lost" after 7 days without a response.', 'Ejemplos: enviar un follow-up 24h después de que entre el lead, alertar cuando lleve 48h parado, mover a "perdido" tras 7 días sin respuesta.')}
+            {L('Exemplos: enviar acompanhamento 24h após o lead entrar, alertar quando estiver parado por 48h e mover para "perdido" após 7 dias sem resposta.', 'Examples: send a follow-up 24h after a lead enters, alert when stuck for 48h, move to "lost" after 7 days without a response.', 'Ejemplos: enviar un seguimiento 24 h después de que entre el prospecto, alertar cuando lleve 48 h detenido y moverlo a "perdido" tras 7 días sin respuesta.')}
           </p>
         </div>
       )}
@@ -244,7 +244,7 @@ function AutomationForm({ buyerId, templates, stages, pipelines, editing, onClos
 
         <label className="block mb-3">
           <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Nome', 'Name', 'Nombre')}</span>
-          <input value={name} onChange={e => setName(e.target.value)} placeholder={L('Ex: Follow-up 24h', 'E.g.: Follow-up 24h', 'Ej: Follow-up 24h')}
+          <input value={name} onChange={e => setName(e.target.value)} placeholder={L('Ex.: Acompanhamento de 24h', 'E.g. 24-hour follow-up', 'Ej.: Seguimiento de 24 h')}
             className="w-full mt-1 px-3 py-2 rounded-lg text-[13px]"
             style={{ background: 'var(--bg)', border: '1px solid var(--border)' }} />
         </label>
@@ -284,7 +284,7 @@ function AutomationForm({ buyerId, templates, stages, pipelines, editing, onClos
           <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: '#10b981' }}>{L('Então (ação)', 'Then (action)', 'Entonces (acción)')}</p>
           <select value={actionType} onChange={e => setActionType(e.target.value as any)}
             className="w-full mb-2 px-3 py-2 rounded-lg text-[13px]" style={{ background: 'var(--bg-card)', border: '1px solid #a7f3d0' }}>
-            <option value="send_template">{L('Enviar template (WhatsApp/Email)', 'Send template (WhatsApp/Email)', 'Enviar template (WhatsApp/Email)')}</option>
+            <option value="send_template">{L('Enviar modelo (WhatsApp/E-mail)', 'Send template (WhatsApp/Email)', 'Enviar plantilla (WhatsApp/correo)')}</option>
             <option value="move_stage">{L('Mover para outro estágio', 'Move to another stage', 'Mover a otra etapa')}</option>
             <option value="notify_agent">{L('Notificar agente por email', 'Notify agent by email', 'Notificar al agente por email')}</option>
           </select>
@@ -292,7 +292,7 @@ function AutomationForm({ buyerId, templates, stages, pipelines, editing, onClos
           {actionType === 'send_template' && (
             <select value={actionTemplateId} onChange={e => setActionTemplateId(e.target.value)}
               className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ background: 'var(--bg-card)', border: '1px solid #a7f3d0' }}>
-              <option value="">{L('Escolha o template...', 'Choose the template...', 'Elige el template...')}</option>
+              <option value="">{L('Escolha o modelo...', 'Choose the template...', 'Elige la plantilla...')}</option>
               {templates.map(t => <option key={t.id} value={t.id}>{t.type === 'whatsapp' ? '💬' : '📧'} {t.name}</option>)}
             </select>
           )}

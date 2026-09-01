@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getLocale } from '@/lib/locale'
+import { localizePipeline } from '@/lib/pipeline-i18n'
 
 /**
  * GET /api/team/member-pipeline?member_id=X
@@ -17,6 +19,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
  *     agencia). Banner 'sem conta' aparece.
  */
 export async function GET(request: NextRequest) {
+  const locale = await getLocale()
   const memberId = new URL(request.url).searchParams.get('member_id')
   if (!memberId) return NextResponse.json({ error: 'Missing member_id' }, { status: 400 })
 
@@ -179,11 +182,14 @@ export async function GET(request: NextRequest) {
         last_follow_up: pl.lead?.id ? latestByLead[pl.lead.id] || null : null,
       }))
 
-      return NextResponse.json({
-        member: { id: member.id, name: member.name, email: member.email, has_own_pipeline: true },
-        pipeline,
-        leads,
-      })
+      return NextResponse.json(
+        {
+          member: { id: member.id, name: member.name, email: member.email, has_own_pipeline: true },
+          pipeline: localizePipeline(pipeline, locale),
+          leads,
+        },
+        { headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie' } },
+      )
     }
   }
 
@@ -219,9 +225,9 @@ export async function GET(request: NextRequest) {
   const pseudoStageId = `pseudo-${memberId}`
   const pseudoPipeline = {
     id: `pseudo-pipe-${memberId}`,
-    name: 'Leads atribuidos',
+    name: locale === 'en' ? 'Assigned leads' : locale === 'es' ? 'Prospectos asignados' : 'Leads atribuídos',
     is_default: false,
-    stages: [{ id: pseudoStageId, name: 'Atribuidos', color: '#6366f1', position: 0 }],
+    stages: [{ id: pseudoStageId, name: locale === 'en' ? 'Assigned' : locale === 'es' ? 'Asignados' : 'Atribuídos', color: '#6366f1', position: 0 }],
   }
   const leads = (leadsRaw || []).map((L: any, i: number) => ({
     id: `pseudo-pl-${L.id}`,
@@ -234,9 +240,12 @@ export async function GET(request: NextRequest) {
 
   // Se o membro TEM conta (memberBuyerId existe) mas ainda nao tem pipeline,
   // nao mostra o banner "sem conta" — ele tem conta, so nao configurou pipeline.
-  return NextResponse.json({
-    member: { id: member.id, name: member.name, email: member.email, has_own_pipeline: !!memberBuyerId },
-    pipeline: pseudoPipeline,
-    leads,
-  })
+  return NextResponse.json(
+    {
+      member: { id: member.id, name: member.name, email: member.email, has_own_pipeline: !!memberBuyerId },
+      pipeline: pseudoPipeline,
+      leads,
+    },
+    { headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie' } },
+  )
 }

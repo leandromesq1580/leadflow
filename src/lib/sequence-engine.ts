@@ -3,6 +3,8 @@ import { renderTemplate } from '@/lib/template-render'
 import { resolveSendBridge } from '@/lib/wa-bridge'
 import { checkSendRate } from '@/lib/send-guard'
 import { Resend } from 'resend'
+import { localeDoBuyer, trad } from '@/lib/buyer-locale'
+import { localizeSystemTemplate } from '@/lib/system-template-i18n'
 
 /**
  * Enrolla o lead em todas as sequences ativas cujo trigger_stage_id bate com o stage
@@ -284,11 +286,17 @@ async function executeStep(step: any, enr: any): Promise<void> {
     const resendKey = (process.env.RESEND_API_KEY || '').trim()
     if (!agent?.email || !resendKey) return
     const resend = new Resend(resendKey)
+    const loc = await localeDoBuyer(db, enr.buyer_id)
+    const T = trad(loc)
     await resend.emails.send({
       from: 'Lead4Producers <noreply@resend.dev>',
       to: agent.email,
-      subject: `🔔 Sequence lembrou: ${lead?.name || enr.lead_id}`,
-      html: `<p>Hora de ligar pra <b>${lead?.name}</b> (${lead?.phone || lead?.email}).</p><p><a href="https://lead4producers.com/dashboard/pipeline">Abrir pipeline →</a></p>`,
+      subject: `🔔 ${T('Sequência lembrou', 'Sequence reminder', 'Recordatorio de secuencia')}: ${lead?.name || enr.lead_id}`,
+      html: T(
+        `<p>Hora de ligar para <b>${lead?.name}</b> (${lead?.phone || lead?.email}).</p><p><a href="https://lead4producers.com/dashboard/pipeline">Abrir pipeline →</a></p>`,
+        `<p>Time to call <b>${lead?.name}</b> (${lead?.phone || lead?.email}).</p><p><a href="https://lead4producers.com/dashboard/pipeline">Open pipeline →</a></p>`,
+        `<p>Es hora de llamar a <b>${lead?.name}</b> (${lead?.phone || lead?.email}).</p><p><a href="https://lead4producers.com/dashboard/pipeline">Abrir flujo de ventas →</a></p>`,
+      ),
     })
     return
   }
@@ -297,6 +305,7 @@ async function executeStep(step: any, enr: any): Promise<void> {
   const { data: lead } = await db.from('leads').select('*').eq('id', enr.lead_id).single()
   const { data: agent } = await db.from('buyers').select('name, email, phone, is_active').eq('id', enr.buyer_id).single()
   if (!lead || !agent) throw new Error('Lead or agent missing')
+  const loc = await localeDoBuyer(db, enr.buyer_id)
   // Comprador suspenso: não dispara mensagem (sequência fica parada até reativar)
   if (agent.is_active === false) { console.log(`[Sequence] buyer ${enr.buyer_id} suspenso — skip`); return }
 
@@ -307,9 +316,10 @@ async function executeStep(step: any, enr: any): Promise<void> {
   if (step.template_id) {
     const { data: tpl } = await db.from('templates').select('*').eq('id', step.template_id).single()
     if (!tpl) throw new Error('Template not found')
-    body = renderTemplate(tpl.body, lead, agent)
-    type = tpl.type
-    subject = tpl.subject ? renderTemplate(tpl.subject, lead, agent) : null
+    const localizedTemplate = localizeSystemTemplate(tpl, loc)
+    body = renderTemplate(localizedTemplate.body, lead, agent)
+    type = localizedTemplate.type
+    subject = localizedTemplate.subject ? renderTemplate(localizedTemplate.subject, lead, agent) : null
   } else if (step.custom_body) {
     body = renderTemplate(step.custom_body, lead, agent)
   } else {
@@ -349,7 +359,9 @@ async function executeStep(step: any, enr: any): Promise<void> {
     await resend.emails.send({
       from: `${agent.name} <onboarding@resend.dev>`,
       to: lead.email,
-      subject: subject || `Mensagem de ${agent.name}`,
+      subject: subject || (loc === 'en'
+        ? `Message from ${agent.name}`
+        : loc === 'es' ? `Mensaje de ${agent.name}` : `Mensagem de ${agent.name}`),
       html: body.replace(/\n/g, '<br/>'),
     })
   }
@@ -358,7 +370,7 @@ async function executeStep(step: any, enr: any): Promise<void> {
     lead_id: enr.lead_id,
     buyer_id: enr.buyer_id,
     type,
-    description: `[Sequence] passo ${step.step_order + 1}`,
+    description: `${loc === 'pt' ? '[Sequência] passo' : loc === 'es' ? '[Secuencia] paso' : '[Sequence] step'} ${step.step_order + 1}`,
     completed_at: new Date().toISOString(),
   })
 }

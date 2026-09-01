@@ -318,14 +318,14 @@ export default function PipelinePage() {
             style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)' }}>
             <span className="text-[36px]">📋</span>
           </div>
-          <h1 className="text-[24px] font-extrabold mb-2" style={{ color: 'var(--fg)' }}>{L('Pipeline de Vendas', 'Sales Pipeline', 'Pipeline de Ventas')}</h1>
+          <h1 className="text-[24px] font-extrabold mb-2" style={{ color: 'var(--fg)' }}>{L('Funil de vendas', 'Sales pipeline', 'Flujo de ventas')}</h1>
           <p className="text-[14px] mb-8 leading-relaxed" style={{ color: 'var(--fg-muted)' }}>
             {L('Gerencie seus leads visualmente com Kanban.', 'Manage your leads visually with Kanban.', 'Gestiona tus leads visualmente con Kanban.')}<br/>{L('Arraste entre estagios conforme avanca a venda.', 'Drag between stages as the sale moves forward.', 'Arrastra entre etapas a medida que avanza la venta.')}
           </p>
           <button onClick={createPipeline} disabled={creating}
             className="px-8 py-3.5 rounded-xl text-[14px] font-bold text-white disabled:opacity-50 transition-all hover:shadow-lg"
             style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)', boxShadow: '0 4px 14px rgba(124,58,237,0.3)' }}>
-            {creating ? L('Criando...', 'Creating...', 'Creando...') : L('Criar Meu Pipeline', 'Create My Pipeline', 'Crear Mi Pipeline')}
+            {creating ? L('Criando...', 'Creating...', 'Creando...') : L('Criar meu funil', 'Create my pipeline', 'Crear mi flujo de ventas')}
           </button>
         </div>
       </div>
@@ -349,7 +349,7 @@ export default function PipelinePage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>Pipeline</h1>
+            <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{t.sidebar.pipeline}</h1>
             {pipelines.length > 1 && (
               <select value={activePipeline?.id || ''} onChange={e => {
                 const p = pipelines.find(pp => pp.id === e.target.value)
@@ -461,15 +461,15 @@ export default function PipelinePage() {
             <div className="rounded-xl py-16 text-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
               <p className="text-[32px] mb-2">👥</p>
               <p className="text-[14px] font-bold" style={{ color: 'var(--fg)' }}>{L('Selecione um membro do time', 'Select a team member', 'Selecciona un miembro del equipo')}</p>
-              <p className="text-[12px] mt-1" style={{ color: 'var(--fg-muted)' }}>{L('Você verá o pipeline completo dele — mesmas colunas, mesmos leads.', "You'll see their full pipeline — same columns, same leads.", 'Verás su pipeline completo — mismas columnas, mismos leads.')}</p>
+              <p className="text-[12px] mt-1" style={{ color: 'var(--fg-muted)' }}>{L('Você verá o funil completo dele — mesmas colunas e mesmos leads.', "You'll see their full pipeline — same columns, same leads.", 'Verás su flujo de ventas completo: las mismas columnas y los mismos prospectos.')}</p>
             </div>
           ) : loadingMember ? (
             <div className="rounded-xl py-16 text-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-              <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{L('Carregando pipeline...', 'Loading pipeline...', 'Cargando pipeline...')}</p>
+              <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{L('Carregando funil...', 'Loading pipeline...', 'Cargando flujo de ventas...')}</p>
             </div>
           ) : !memberPipeline ? (
             <div className="rounded-xl py-16 text-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-              <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{L('Esse membro ainda não tem pipeline.', "This member doesn't have a pipeline yet.", 'Este miembro aún no tiene pipeline.')}</p>
+              <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{L('Esse membro ainda não tem um funil.', "This member doesn't have a pipeline yet.", 'Este miembro aún no tiene un flujo de ventas.')}</p>
             </div>
           ) : (
             <>
@@ -482,7 +482,7 @@ export default function PipelinePage() {
                       "This member doesn't have their own account yet — you're seeing the leads assigned to them. Once they sign up at lead4producers.com with the email ",
                       'Este miembro aún no tiene cuenta propia — estás viendo los leads asignados a él. Cuando se registre en lead4producers.com con el email ')}
                     <strong>{teamMembers.find(m => m.id === selectedMemberId)?.email}</strong>
-                    {L(', o pipeline dele aparecerá aqui.', ', their pipeline will show up here.', ', su pipeline aparecerá aquí.')}
+                    {L(', o funil dele aparecerá aqui.', ', their pipeline will show up here.', ', su flujo de ventas aparecerá aquí.')}
                   </p>
                 </div>
               )}

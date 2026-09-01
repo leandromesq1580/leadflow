@@ -27,9 +27,9 @@ interface Prefs {
 
 const INTERVAL_OPTIONS = [5, 10, 15, 30, 45, 60, 90, 120, 240]
 const soundOptions = (L: (pt: string, en: string, es: string) => string): { id: Prefs['sound_file']; label: string; description: string }[] => [
-  { id: 'chime', label: 'Chime', description: L('Três tons subindo, agradável', 'Three rising tones, pleasant', 'Tres tonos ascendentes, agradable') },
-  { id: 'alarm', label: 'Alarm', description: L('Beep agudo, mais urgente', 'Sharp beep, more urgent', 'Bip agudo, más urgente') },
-  { id: 'bell', label: 'Bell', description: L('Sino, decay longo', 'Bell, long decay', 'Campana, sonido prolongado') },
+  { id: 'chime', label: L('Carrilhão', 'Chime', 'Melodía'), description: L('Três tons ascendentes e agradáveis', 'Three rising tones, pleasant', 'Tres tonos ascendentes y agradables') },
+  { id: 'alarm', label: L('Alarme', 'Alarm', 'Alarma'), description: L('Bipe agudo e mais urgente', 'Sharp beep, more urgent', 'Pitido agudo y más urgente') },
+  { id: 'bell', label: L('Sino', 'Bell', 'Campana'), description: L('Sino com som prolongado', 'Bell, long decay', 'Campana con sonido prolongado') },
 ]
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -257,7 +257,7 @@ export function NotificationsForm({ buyer, initialPrefs }: Props) {
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <p className="text-[12px] font-bold" style={{ color: 'var(--fg)' }}>Volume</p>
+                  <p className="text-[12px] font-bold" style={{ color: 'var(--fg)' }}>{L('Volume', 'Volume', 'Volumen')}</p>
                   <span className="text-[11px] tabular-nums" style={{ color: 'var(--fg-secondary)' }}>{prefs.sound_volume}%</span>
                 </div>
                 <input

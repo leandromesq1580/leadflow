@@ -69,7 +69,7 @@ export default function TemplatesPage() {
   }
 
   async function remove(id: string) {
-    if (!confirm(L('Deletar esse template?', 'Delete this template?', '¿Eliminar este template?'))) return
+    if (!confirm(L('Excluir este modelo?', 'Delete this template?', '¿Eliminar esta plantilla?'))) return
     await fetch(`/api/templates/${id}`, { method: 'DELETE' })
     load(buyerId)
   }
@@ -80,13 +80,13 @@ export default function TemplatesPage() {
     <div className="max-w-[900px]">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>Templates</h1>
+          <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{t.sidebar.templates}</h1>
           <p className="text-[14px] mt-1" style={{ color: 'var(--fg-secondary)' }}>{L('Mensagens prontas pra WhatsApp e Email', 'Ready-made messages for WhatsApp and Email', 'Mensajes listos para WhatsApp y Email')}</p>
         </div>
         <button onClick={() => { setEditing(null); setShowNew(true) }}
           className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-white"
           style={{ background: 'var(--accent)' }}>
-          + {L('Novo Template', 'New Template', 'Nuevo Template')}
+          + {L('Novo modelo', 'New template', 'Nueva plantilla')}
         </button>
       </div>
 
@@ -167,7 +167,7 @@ function TemplateForm({ template, onCancel, onSave, saving }: {
 
   return (
     <div className="rounded-2xl p-6 mb-6" style={{ background: 'var(--bg-card)', border: '2px solid var(--accent)' }}>
-      <h3 className="text-[16px] font-bold mb-4" style={{ color: 'var(--fg)' }}>{template ? L('Editar Template', 'Edit Template', 'Editar Template') : L('Novo Template', 'New Template', 'Nuevo Template')}</h3>
+      <h3 className="text-[16px] font-bold mb-4" style={{ color: 'var(--fg)' }}>{template ? L('Editar modelo', 'Edit template', 'Editar plantilla') : L('Novo modelo', 'New template', 'Nueva plantilla')}</h3>
 
       <div className="grid grid-cols-2 gap-3 mb-3">
         <div>

@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getLocale } from '@/lib/locale'
+import { localizeSystemTemplates } from '@/lib/system-template-i18n'
 
 /** GET /api/templates?buyer_id=X — lists buyer's + system templates */
 export async function GET(request: NextRequest) {
   const buyerId = new URL(request.url).searchParams.get('buyer_id')
+  const locale = await getLocale()
   const db = createAdminClient()
   let query = db.from('templates').select('*').order('is_system', { ascending: false }).order('created_at')
   if (buyerId) query = query.or(`buyer_id.eq.${buyerId},is_system.eq.true`)
   else query = query.eq('is_system', true)
   const { data } = await query
-  return NextResponse.json({ templates: data || [] })
+  return NextResponse.json(
+    { templates: localizeSystemTemplates(data || [], locale) },
+    { headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie' } },
+  )
 }
 
 /** POST /api/templates — create new template */

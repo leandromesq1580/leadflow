@@ -85,7 +85,7 @@ export default function SequencesPage() {
   }
 
   async function remove(id: string) {
-    if (!confirm(L('Deletar sequence? Enrollments ativos serão cancelados.', 'Delete sequence? Active enrollments will be canceled.', '¿Eliminar la sequence? Las inscripciones activas serán canceladas.'))) return
+    if (!confirm(L('Excluir sequência? As inscrições ativas serão canceladas.', 'Delete sequence? Active enrollments will be canceled.', '¿Eliminar la secuencia? Las inscripciones activas se cancelarán.'))) return
     await fetch(`/api/sequences/${id}`, { method: 'DELETE' })
     await reload(buyerId)
   }
@@ -96,20 +96,20 @@ export default function SequencesPage() {
     <div className="max-w-[1040px]">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>Sequences</h1>
+          <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{t.sidebar.sequences}</h1>
           <p className="text-[14px]" style={{ color: 'var(--fg-secondary)' }}>{L('Campanhas de drip com múltiplos passos automatizados', 'Drip campaigns with multiple automated steps', 'Campañas de drip con múltiples pasos automatizados')}</p>
         </div>
         <button onClick={() => { setEditing(null); setShowNew(true) }}
           className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-white"
           style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)' }}>
-          + {L('Nova sequence', 'New sequence', 'Nueva sequence')}
+          + {L('Nova sequência', 'New sequence', 'Nueva secuencia')}
         </button>
       </div>
 
       {sequences.length === 0 && !showNew && (
         <div className="rounded-2xl p-8 text-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <p className="text-[40px] mb-3">🔁</p>
-          <p className="text-[16px] font-bold mb-2" style={{ color: 'var(--fg)' }}>{L('Ainda sem sequences', 'No sequences yet', 'Aún sin sequences')}</p>
+          <p className="text-[16px] font-bold mb-2" style={{ color: 'var(--fg)' }}>{L('Ainda sem sequências', 'No sequences yet', 'Aún no hay secuencias')}</p>
           <p className="text-[13px]" style={{ color: 'var(--fg-secondary)' }}>
             {L('Exemplo: Dia 1 WhatsApp → Dia 3 Email → Dia 7 WhatsApp final. Leads enrollados recebem automaticamente.', 'Example: Day 1 WhatsApp → Day 3 Email → Day 7 final WhatsApp. Enrolled leads receive it automatically.', 'Ejemplo: Día 1 WhatsApp → Día 3 Email → Día 7 WhatsApp final. Los leads inscritos lo reciben automáticamente.')}
           </p>
@@ -204,7 +204,7 @@ function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved
   return (
     <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm overflow-y-auto p-6" onClick={onClose}>
       <div className="mx-auto max-w-[680px] rounded-2xl p-6" style={{ background: 'var(--bg-card)' }} onClick={e => e.stopPropagation()}>
-        <h2 className="text-[18px] font-extrabold mb-4" style={{ color: 'var(--fg)' }}>{editing ? L('Editar sequence', 'Edit sequence', 'Editar sequence') : L('Nova sequence', 'New sequence', 'Nueva sequence')}</h2>
+        <h2 className="text-[18px] font-extrabold mb-4" style={{ color: 'var(--fg)' }}>{editing ? L('Editar sequência', 'Edit sequence', 'Editar secuencia') : L('Nova sequência', 'New sequence', 'Nueva secuencia')}</h2>
 
         <div className="space-y-3 mb-5">
           <input value={name} onChange={e => setName(e.target.value)} placeholder={L('Nome (ex: Onboarding 14 dias)', 'Name (e.g. 14-day onboarding)', 'Nombre (ej: Onboarding 14 días)')}
@@ -214,7 +214,7 @@ function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved
 
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--fg-muted)' }}>
-              {L('Estágio gatilho', 'Trigger stage', 'Etapa disparadora')} <span style={{ color: '#c0c8d4', fontWeight: 400 }}>{L('(enrolla lead automaticamente ao entrar nesse stage)', '(auto-enrolls the lead when it enters this stage)', '(inscribe al lead automáticamente al entrar a esta etapa)')}</span>
+              {L('Estágio gatilho', 'Trigger stage', 'Etapa disparadora')} <span style={{ color: '#c0c8d4', fontWeight: 400 }}>{L('(inscreve o lead automaticamente ao entrar nesse estágio)', '(auto-enrolls the lead when it enters this stage)', '(inscribe al prospecto automáticamente al entrar a esta etapa)')}</span>
             </label>
             <select value={triggerStageId} onChange={e => setTriggerStageId(e.target.value)}
               className="w-full px-3 py-2 rounded-lg text-[13px] cursor-pointer"
@@ -290,14 +290,14 @@ function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved
                   <label className="text-[10px] font-bold uppercase" style={{ color: 'var(--fg-muted)' }}>{L('Tipo', 'Type', 'Tipo')}</label>
                   <select value={step.step_type} onChange={e => updateStep(i, { step_type: e.target.value as any })}
                     className="w-full mt-1 px-2 py-1 rounded text-[12px]" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-                    <option value="send_template">{L('Enviar template', 'Send template', 'Enviar template')}</option>
+                    <option value="send_template">{L('Enviar modelo', 'Send template', 'Enviar plantilla')}</option>
                     <option value="wait">{L('Esperar', 'Wait', 'Esperar')}</option>
                     <option value="notify_agent">{L('Notificar agente', 'Notify agent', 'Notificar al agente')}</option>
                   </select>
                 </div>
                 {step.step_type === 'send_template' && (
                   <div>
-                    <label className="text-[10px] font-bold uppercase" style={{ color: 'var(--fg-muted)' }}>Template</label>
+                    <label className="text-[10px] font-bold uppercase" style={{ color: 'var(--fg-muted)' }}>{L('Modelo', 'Template', 'Plantilla')}</label>
                     <select value={step.template_id || ''} onChange={e => updateStep(i, { template_id: e.target.value || null })}
                       className="w-full mt-1 px-2 py-1 rounded text-[12px]" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
                       <option value="">{L('Escolha...', 'Choose...', 'Elige...')}</option>

@@ -190,7 +190,7 @@ export default function TeamPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
             <input type="text" placeholder={L('Nome *', 'Name *', 'Nombre *')} value={newName} onChange={e => setNewName(e.target.value)}
               className="px-4 py-3 rounded-xl text-[13px]" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }} />
-            <input type="email" placeholder="Email" value={newEmail} onChange={e => setNewEmail(e.target.value)}
+            <input type="email" placeholder={L('E-mail', 'Email', 'Correo electrónico')} value={newEmail} onChange={e => setNewEmail(e.target.value)}
               className="px-4 py-3 rounded-xl text-[13px]" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }} />
             <input type="tel" placeholder="WhatsApp" value={newPhone} onChange={e => setNewPhone(e.target.value)}
               className="px-4 py-3 rounded-xl text-[13px]" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }} />
@@ -225,7 +225,7 @@ export default function TeamPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                     <input type="text" value={editName} onChange={e => setEditName(e.target.value)} placeholder={L('Nome *', 'Name *', 'Nombre *')}
                       className="px-3 py-2.5 rounded-lg text-[13px] font-medium" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }} />
-                    <input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="Email"
+                    <input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder={L('E-mail', 'Email', 'Correo electrónico')}
                       className="px-3 py-2.5 rounded-lg text-[13px] font-medium" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }} />
                     <input type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="WhatsApp"
                       className="px-3 py-2.5 rounded-lg text-[13px] font-medium" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }} />

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { atorDaSessao, podeOperarQuadro } from '@/lib/pipeline-guard'
+import { getLocale } from '@/lib/locale'
+import { localizePipelines } from '@/lib/pipeline-i18n'
 
 const DEFAULT_STAGES = [
   { name: 'Novo Lead', color: '#3b82f6', position: 0 },
@@ -17,6 +19,7 @@ export async function GET(request: NextRequest) {
   const buyerId = new URL(request.url).searchParams.get('buyer_id')
   if (!buyerId) return NextResponse.json({ error: 'Missing buyer_id' }, { status: 400 })
 
+  const locale = await getLocale()
   const db = createAdminClient()
   const { data } = await db
     .from('pipelines')
@@ -34,7 +37,10 @@ export async function GET(request: NextRequest) {
     }))
     .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
 
-  return NextResponse.json({ pipelines })
+  return NextResponse.json(
+    { pipelines: localizePipelines(pipelines, locale) },
+    { headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie' } },
+  )
 }
 
 /** POST /api/pipelines — create pipeline with default stages */

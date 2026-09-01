@@ -68,7 +68,7 @@ export default function MobileAppointments() {
     <div>
       <div className="m-pad" style={{ paddingTop: 6, display: 'flex', alignItems: 'center', gap: 12, height: 44 }}>
         <button onClick={() => router.push('/m')} className="m-tap" style={{ background: 'none', border: 'none', color: 'var(--m-text)', display: 'flex', cursor: 'pointer', padding: 0 }}><MIcon name="arrowLeft" size={24} /></button>
-        <p style={{ margin: 0, flex: 1, fontSize: 20, fontWeight: 800 }}>Appointments</p>
+        <p style={{ margin: 0, flex: 1, fontSize: 20, fontWeight: 800 }}>{t.sidebar.appointments}</p>
         <button onClick={() => setCreating({ title: '', date: '', time: '', color: '#10b981' })} className="m-tap" style={{ background: 'none', border: 'none', color: '#a5b4fc', display: 'flex', cursor: 'pointer', padding: 0 }}><MIcon name="plus" size={24} /></button>
       </div>
 

@@ -156,7 +156,7 @@ export function RoteiroClient() {
       ) : (
         <div className="rounded-2xl p-5 mb-5 flex items-center gap-4 flex-wrap" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <div className="flex-1 min-w-[260px]">
-            <p className="text-[14px] font-bold" style={{ color: 'var(--fg)' }}>🤖 {L('IA na Ligação', 'AI on the Call', 'IA en la Llamada')} <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>{L('ADD-ON', 'ADD-ON', 'ADD-ON')}</span></p>
+            <p className="text-[14px] font-bold" style={{ color: 'var(--fg)' }}>🤖 {L('IA na Ligação', 'AI on the Call', 'IA en la Llamada')} <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>{L('COMPLEMENTO', 'ADD-ON', 'COMPLEMENTO')}</span></p>
             <p className="text-[12px] mt-0.5" style={{ color: 'var(--fg-secondary)' }}>
               {L('A IA escuta sua ligação AO VIVO e sugere a resposta do seu script na hora — inclusive o contorno da objeção que o cliente acabou de levantar. Inclui 600 min de escuta/mês.',
                  'The AI listens to your call LIVE and suggests your script’s answer on the spot — including the rebuttal to the objection the client just raised. Includes 600 min of listening/mo.',

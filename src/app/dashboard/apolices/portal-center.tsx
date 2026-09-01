@@ -12,17 +12,17 @@ import { useT } from '@/lib/i18n-client'
 type PortalView = 'new_business' | 'client_intelligence'
 type NbFilter = 'all' | 'pending' | 'at_risk' | 'requirements' | 'edelivery'
 
-const CI_LABELS: Record<string, { label: string; icon: string; color: string }> = {
-  all: { label: 'Todos', icon: '📋', color: '#0369a1' },
-  commission_impact: { label: 'Impacto na comissão', icon: '💸', color: '#b91c1c' },
-  conservation: { label: 'Conservação', icon: '🤲', color: '#c2410c' },
-  claims: { label: 'Sinistros', icon: '🛡️', color: '#64748b' },
-  client_service: { label: 'Atendimento ao cliente', icon: '⚙️', color: '#b45309' },
-  disbursements: { label: 'Desembolsos', icon: '🧾', color: '#64748b' },
-  life_event: { label: 'Eventos de vida', icon: '📅', color: '#4d7c0f' },
-  new_business: { label: 'New Business', icon: '📄', color: '#64748b' },
-  payments: { label: 'Pagamentos', icon: '💲', color: '#1e3a5f' },
-}
+const ciLabels = (L: (pt: string, en: string, es: string) => string): Record<string, { label: string; icon: string; color: string }> => ({
+  all: { label: L('Todos', 'All', 'Todos'), icon: '📋', color: '#0369a1' },
+  commission_impact: { label: L('Impacto na comissão', 'Commission impact', 'Impacto en la comisión'), icon: '💸', color: '#b91c1c' },
+  conservation: { label: L('Conservação', 'Conservation', 'Conservación'), icon: '🤲', color: '#c2410c' },
+  claims: { label: L('Sinistros', 'Claims', 'Reclamos'), icon: '🛡️', color: '#64748b' },
+  client_service: { label: L('Atendimento ao cliente', 'Client service', 'Atención al cliente'), icon: '⚙️', color: '#b45309' },
+  disbursements: { label: L('Desembolsos', 'Disbursements', 'Desembolsos'), icon: '🧾', color: '#64748b' },
+  life_event: { label: L('Eventos de vida', 'Life events', 'Eventos de vida'), icon: '📅', color: '#4d7c0f' },
+  new_business: { label: L('Novos negócios', 'New business', 'Nuevos negocios'), icon: '📄', color: '#64748b' },
+  payments: { label: L('Pagamentos', 'Payments', 'Pagos'), icon: '💲', color: '#1e3a5f' },
+})
 
 function csvCell(value: unknown) {
   return `"${String(value ?? '').replace(/"/g, '""')}"`
@@ -114,7 +114,7 @@ function NewBusinessPanel({
   }, [filter, search, snapshot.new_business.cases])
 
   const exportCases = () => downloadCsv('lead4pro-new-business.csv', [
-    ['Cliente', 'Apólice', 'Status', 'Produto', 'Prêmio anual', 'Prêmio modal', 'Entrega', 'Case manager', 'Pendências'],
+    [L('Cliente', 'Client', 'Cliente'), L('Apólice', 'Policy', 'Póliza'), L('Status', 'Status', 'Estado'), L('Produto', 'Product', 'Producto'), L('Prêmio anual', 'Annual premium', 'Prima anual'), L('Prêmio modal', 'Modal premium', 'Prima modal'), L('Entrega', 'Delivery', 'Entrega'), L('Gerente do caso', 'Case manager', 'Gerente del caso'), L('Pendências', 'Requirements', 'Pendientes')],
     ...cases.map(item => [item.client_name, item.policy_number || '', item.portal_status || '', item.product || '', item.annual_premium_cents ? money(item.annual_premium_cents) : '', item.modal_premium_cents ? money(item.modal_premium_cents) : '', item.delivery_status || '', item.case_manager || '', item.requirements.map(req => req.name).join('; ')]),
   ])
 
@@ -122,7 +122,7 @@ function NewBusinessPanel({
     <div>
       <div className="flex items-start justify-between gap-3 mb-3 flex-wrap">
         <div>
-          <h2 className="text-[19px] font-extrabold" style={{ color: 'var(--fg)' }}>New Business</h2>
+          <h2 className="text-[19px] font-extrabold" style={{ color: 'var(--fg)' }}>{L('Novos negócios', 'New business', 'Nuevos negocios')}</h2>
           <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{L('Casos, entrega, underwriting e comunicações importados da National Life.', 'Cases, delivery, underwriting and communications imported from National Life.', 'Casos, entrega, underwriting y comunicaciones importados de National Life.')}</p>
         </div>
         <div className="flex gap-2">
@@ -183,7 +183,7 @@ function NewBusinessCaseCard({ item, policy, open, onOpen, onEdit, onToggleDone 
             {item.portal_status && <span className="px-2 py-0.5 rounded-md text-[10px] font-bold" style={{ background: urgent ? '#fff7ed' : '#eff6ff', color: urgent ? '#c2410c' : '#1d4ed8' }}>{item.portal_status}</span>}
             {item.at_risk_chargeback && <span className="px-2 py-0.5 rounded-md text-[10px] font-bold" style={{ background: '#fef2f2', color: '#b91c1c' }}>⚠️ Chargeback</span>}
           </div>
-          <p className="text-[11.5px] mt-1" style={{ color: 'var(--fg-muted)' }}>{[item.policy_number, item.product, item.modal_premium_cents ? `${money(item.modal_premium_cents)}/mês` : null, item.case_manager ? `Case manager: ${item.case_manager}` : null].filter(Boolean).join(' · ')}</p>
+          <p className="text-[11.5px] mt-1" style={{ color: 'var(--fg-muted)' }}>{[item.policy_number, item.product, item.modal_premium_cents ? `${money(item.modal_premium_cents)}${L('/mês', '/month', '/mes')}` : null, item.case_manager ? `${L('Gerente do caso', 'Case manager', 'Gerente del caso')}: ${item.case_manager}` : null].filter(Boolean).join(' · ')}</p>
           <div className="space-y-1.5 mt-2">
             {item.requirements.map(requirement => {
               const guide = orientarPendencia(requirement.name, locale)
@@ -250,14 +250,14 @@ function ClientIntelligencePanel({ snapshot, policyById, search, onEdit }: {
   }, [category, ci.events, search])
 
   const exportEvents = () => downloadCsv('lead4pro-client-intelligence.csv', [
-    ['Categoria', 'Cliente', 'Apólice', ...visibleColumns],
+    [L('Categoria', 'Category', 'Categoría'), L('Cliente', 'Client', 'Cliente'), L('Apólice', 'Policy', 'Póliza'), ...visibleColumns],
     ...events.map(event => [[event.category, ...(event.flags || [])].join(' | '), event.client_name || '', event.policy_number || '', ...visibleColumns.map(column => event.columns[column] || '')]),
   ])
 
   return (
     <div>
       <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
-        <div><h2 className="text-[19px] font-extrabold" style={{ color: 'var(--fg)' }}>Client Intelligence</h2><p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{L('Eventos de comissão, conservação, atendimento, vida e pagamentos.', 'Commission, conservation, service, life and payment events.', 'Eventos de comisión, conservación, atención, vida y pagos.')}</p></div>
+        <div><h2 className="text-[19px] font-extrabold" style={{ color: 'var(--fg)' }}>{L('Inteligência do cliente', 'Client intelligence', 'Inteligencia del cliente')}</h2><p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{L('Eventos de comissão, conservação, atendimento, vida e pagamentos.', 'Commission, conservation, service, life and payment events.', 'Eventos de comisión, conservación, atención, vida y pagos.')}</p></div>
         <div className="flex gap-2 relative">
           <button onClick={exportEvents} disabled={!events.length} className="px-3 py-2 rounded-lg text-[12px] font-bold disabled:opacity-40" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: '#0f766e' }}>⬇️ {L('Download', 'Download', 'Descargar')}</button>
           <button onClick={() => setShowColumns(value => !value)} className="px-3 py-2 rounded-lg text-[12px] font-bold" style={{ background: 'var(--bg-soft)', color: 'var(--fg-secondary)' }}>▥ {L('Colunas', 'Columns', 'Columnas')}</button>
@@ -270,7 +270,7 @@ function ClientIntelligencePanel({ snapshot, policyById, search, onEdit }: {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-5">
         {Object.entries(ci.metrics).map(([key, value]) => {
-          const meta = CI_LABELS[key] || { label: key.replace(/_/g, ' '), icon: '📌', color: '#475569' }
+          const meta = ciLabels(L)[key] || { label: key.replace(/_/g, ' '), icon: '📌', color: '#475569' }
           const active = category === key
           return <button key={key} onClick={() => setCategory(key)} className="rounded-xl p-4 text-left" style={{ background: active ? '#ecfeff' : 'var(--bg-card)', border: `1px solid ${active ? '#67e8f9' : 'var(--border)'}` }}><div className="flex items-center justify-between"><span className="text-[12px] font-semibold" style={{ color: 'var(--fg-secondary)' }}>{meta.icon} {meta.label}</span><strong className="text-[24px]" style={{ color: meta.color }}>{value}</strong></div></button>
         })}
@@ -282,6 +282,8 @@ function ClientIntelligencePanel({ snapshot, policyById, search, onEdit }: {
 }
 
 function ClientEventRow({ event, policy, columns, onEdit }: { event: PortalClientIntelligenceEvent; policy?: Policy; columns: string[]; onEdit: (policy: Policy) => void }) {
-  const meta = CI_LABELS[event.category] || { label: event.category.replace(/_/g, ' '), icon: '📌', color: '#475569' }
-  return <tr style={{ borderTop: '1px solid var(--border)' }}><td className="p-3 text-[11px] font-bold whitespace-nowrap" style={{ color: meta.color }}>{meta.icon} {meta.label}{event.flags?.includes('commission_impact') && <span className="block mt-1 text-[9px]" style={{ color: '#dc2626' }}>💲 Impacto na comissão</span>}</td><td className="p-3"><p className="text-[12px] font-bold" style={{ color: 'var(--fg)' }}>{event.client_name || '—'}</p><p className="text-[10.5px]" style={{ color: 'var(--fg-muted)' }}>{event.policy_number || '—'}</p></td>{columns.map(column => <td key={column} className="p-3 text-[11px] min-w-36" style={{ color: 'var(--fg-secondary)' }}>{event.columns[column] || '—'}</td>)}<td className="p-3 whitespace-nowrap">{policy && <button onClick={() => onEdit(policy)} className="px-2.5 py-1.5 rounded-lg text-[10.5px] font-bold" style={{ background: 'var(--bg-soft)', color: 'var(--fg-secondary)' }}>✏️ Ação</button>}</td></tr>
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
+  const meta = ciLabels(L)[event.category] || { label: event.category.replace(/_/g, ' '), icon: '📌', color: '#475569' }
+  return <tr style={{ borderTop: '1px solid var(--border)' }}><td className="p-3 text-[11px] font-bold whitespace-nowrap" style={{ color: meta.color }}>{meta.icon} {meta.label}{event.flags?.includes('commission_impact') && <span className="block mt-1 text-[9px]" style={{ color: '#dc2626' }}>💲 {L('Impacto na comissão', 'Commission impact', 'Impacto en la comisión')}</span>}</td><td className="p-3"><p className="text-[12px] font-bold" style={{ color: 'var(--fg)' }}>{event.client_name || '—'}</p><p className="text-[10.5px]" style={{ color: 'var(--fg-muted)' }}>{event.policy_number || '—'}</p></td>{columns.map(column => <td key={column} className="p-3 text-[11px] min-w-36" style={{ color: 'var(--fg-secondary)' }}>{event.columns[column] || '—'}</td>)}<td className="p-3 whitespace-nowrap">{policy && <button onClick={() => onEdit(policy)} className="px-2.5 py-1.5 rounded-lg text-[10.5px] font-bold" style={{ background: 'var(--bg-soft)', color: 'var(--fg-secondary)' }}>✏️ {L('Ação', 'Action', 'Acción')}</button>}</td></tr>
 }

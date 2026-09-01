@@ -367,7 +367,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   }
 
   async function deleteFollowUp(fuId: string) {
-    if (!confirm(L('Deletar este follow-up?', 'Delete this follow-up?', '¿Eliminar este seguimiento?'))) return
+    if (!confirm(L('Excluir este acompanhamento?', 'Delete this follow-up?', '¿Eliminar este seguimiento?'))) return
     await fetch(`/api/follow-ups/${fuId}`, { method: 'DELETE' })
     loadFollowUps()
   }
@@ -464,9 +464,9 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
             {[
               { key: 'details', label: L('Detalhes', 'Details', 'Detalles'), icon: '📋' },
               { key: 'inbox', label: L('Conversa', 'Chat', 'Conversación'), icon: '💬' },
-              { key: 'followups', label: L('Follow-ups', 'Follow-ups', 'Seguimientos'), icon: '📌', count: followUps.length },
+              { key: 'followups', label: L('Acompanhamentos', 'Follow-ups', 'Seguimientos'), icon: '📌', count: followUps.length },
               { key: 'attachments', label: L('Anexos', 'Attachments', 'Adjuntos'), icon: '📎', count: attachments.length },
-              { key: 'forms', label: 'Forms', icon: '📝' },
+              { key: 'forms', label: L('Formulários', 'Forms', 'Formularios'), icon: '📝' },
             ].map(t => (
               <button key={t.key} onClick={() => setTab(t.key as any)}
                 className="flex-1 whitespace-nowrap py-2.5 px-2 rounded-lg text-[11px] font-bold transition-all"
@@ -563,11 +563,11 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               {pipelineLead && (
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--fg-muted)' }}>
-                    📋 {L('Estágio no Pipeline', 'Stage in Pipeline', 'Etapa en el Pipeline')}
+                    📋 {L('Estágio no funil de vendas', 'Stage in pipeline', 'Etapa del flujo de ventas')}
                   </label>
                   <div className="rounded-xl p-3" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-[10px] font-bold uppercase" style={{ color: 'var(--fg-muted)' }}>{L('Pipeline atual:', 'Current pipeline:', 'Pipeline actual:')}</span>
+                      <span className="text-[10px] font-bold uppercase" style={{ color: 'var(--fg-muted)' }}>{L('Funil atual:', 'Current pipeline:', 'Flujo de ventas actual:')}</span>
                       <span className="text-[12px] font-bold" style={{ color: 'var(--fg)' }}>
                         {pipelineLead.pipeline?.name || 'Default'}
                       </span>
@@ -587,7 +587,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
 
                     {pipelines.length > 1 && (
                       <div className="mb-2">
-                        <label className="block text-[10px] font-bold uppercase mb-1" style={{ color: 'var(--fg-muted)' }}>{L('Mover para pipeline:', 'Move to pipeline:', 'Mover a pipeline:')}</label>
+                        <label className="block text-[10px] font-bold uppercase mb-1" style={{ color: 'var(--fg-muted)' }}>{L('Mover para outro funil:', 'Move to pipeline:', 'Mover al flujo de ventas:')}</label>
                         <select
                           value={pendingPipelineId || pipelineLead.pipeline?.id || ''}
                           onChange={e => {
@@ -705,7 +705,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               <button onClick={() => setShowNewFU(true)}
                 className="w-full py-3 rounded-xl text-[13px] font-bold mb-5 transition-all hover:shadow-sm"
                 style={{ background: '#f0f4ff', color: 'var(--accent)', border: '1px dashed rgba(139,92,246,0.35)' }}>
-                + {L('Novo Follow-up', 'New Follow-up', 'Nuevo Seguimiento')}
+                + {L('Novo acompanhamento', 'New follow-up', 'Nuevo seguimiento')}
               </button>
 
               {/* New follow-up form */}
@@ -767,7 +767,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                     </div>
                     {fuType === 'meeting' && (!fuDate || !fuTime) && (
                       <p className="text-[10px] mt-1.5" style={{ color: '#92400e' }}>
-                        ⚠️ {L('Reunião precisa de data + hora pra ser criada como appointment no calendário.', 'A meeting needs a date + time to be created as an appointment on the calendar.', 'La reunión necesita fecha + hora para crearse como cita en el calendario.')}
+                        ⚠️ {L('A reunião precisa de data e hora para ser criada como agendamento no calendário.', 'A meeting needs a date and time to be created as an appointment on the calendar.', 'La reunión necesita fecha y hora para crearse como cita en el calendario.')}
                       </p>
                     )}
 
@@ -812,7 +812,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               {followUps.length === 0 ? (
                 <div className="text-center py-12">
                   <span className="text-[32px] block mb-2">📌</span>
-                  <p className="text-[13px] font-semibold" style={{ color: 'var(--fg-muted)' }}>{L('Nenhum follow-up registrado', 'No follow-ups yet', 'Ningún seguimiento registrado')}</p>
+                  <p className="text-[13px] font-semibold" style={{ color: 'var(--fg-muted)' }}>{L('Nenhum acompanhamento registrado', 'No follow-ups yet', 'Ningún seguimiento registrado')}</p>
                   <p className="text-[11px] mt-1" style={{ color: '#c0c8d4' }}>{L('Registre ligacoes, notas e reunioes', 'Log calls, notes and meetings', 'Registra llamadas, notas y reuniones')}</p>
                 </div>
               ) : (

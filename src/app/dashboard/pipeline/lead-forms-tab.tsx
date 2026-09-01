@@ -21,7 +21,7 @@ interface Field { k: string; label: string; type?: FieldType; options?: string[]
 
 // Formulário genérico de aplicação/cadastro de cliente (seguro de vida) — agnóstico de seguradora.
 const FIELDS = (L: Lfn): Field[] => [
-  { k: 'email', label: '01 · Email', type: 'email', req: true },
+  { k: 'email', label: L('01 · E-mail', '01 · Email', '01 · Correo electrónico'), type: 'email', req: true },
   { k: 'nome_completo', label: L('02 · Nome completo', '02 · Full name', '02 · Nombre completo'), req: true },
   { k: 'data_nascimento', label: L('03 · Data de nascimento', '03 · Date of birth', '03 · Fecha de nacimiento'), type: 'date', req: true },
   { k: 'endereco', label: L('04 · Endereço', '04 · Address', '04 · Dirección'), req: true },
@@ -31,8 +31,8 @@ const FIELDS = (L: Lfn): Field[] => [
   { k: 'beneficiarios', label: L('08 · Beneficiários (nome completo | data nascimento | % da apólice)', '08 · Beneficiaries (full name | date of birth | % of policy)', '08 · Beneficiarios (nombre completo | fecha de nacimiento | % de la póliza)'), type: 'area', req: true },
   { k: 'peso_altura', label: L('09 · Peso e altura', '09 · Weight and height', '09 · Peso y estatura'), req: true },
   { k: 'nome_banco', label: L('10 · Nome do banco', '10 · Bank name', '10 · Nombre del banco'), req: true },
-  { k: 'routing_number', label: L('11 · Routing number', '11 · Routing number', '11 · Número de ruta (routing)'), req: true },
-  { k: 'account_number', label: L('12 · Account number', '12 · Account number', '12 · Número de cuenta'), req: true },
+  { k: 'routing_number', label: L('11 · Número de roteamento bancário', '11 · Routing number', '11 · Número de ruta bancaria'), req: true },
+  { k: 'account_number', label: L('12 · Número da conta', '12 · Account number', '12 · Número de cuenta'), req: true },
   { k: 'problemas_saude', label: L('13 · Já teve algum desses problemas?', '13 · Have you ever had any of these conditions?', '13 · ¿Ha tenido alguno de estos problemas?'), type: 'checks', options: HEALTH(L), req: true },
   { k: 'profissao_salario', label: L('14 · Profissão e média de salário anual', '14 · Occupation and average annual income', '14 · Profesión y salario anual promedio'), req: true },
   { k: 'pais_info', label: L('15 · Pais (são vivos? que idade têm — ou que idade faleceram?)', '15 · Parents (are they living? how old are they — or at what age did they pass away?)', '15 · Padres (¿viven? ¿qué edad tienen — o a qué edad fallecieron?)'), req: true },
@@ -407,7 +407,7 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
                     })}
                     <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
                       {data.driver_license?.path && (
-                        <button onClick={() => download(data.driver_license.path)} style={{ fontSize: 11, fontWeight: 700, padding: '7px 12px', borderRadius: 9, background: 'var(--accent-light)', color: 'var(--accent)', border: 'none', cursor: 'pointer' }}>⬇ Driver's License / ID</button>
+                        <button onClick={() => download(data.driver_license.path)} style={{ fontSize: 11, fontWeight: 700, padding: '7px 12px', borderRadius: 9, background: 'var(--accent-light)', color: 'var(--accent)', border: 'none', cursor: 'pointer' }}>⬇ {L('Carteira de motorista / documento', "Driver's license / ID", 'Licencia de conducir / identificación')}</button>
                       )}
                       {data.passport?.path && (
                         <button onClick={() => download(data.passport.path)} style={{ fontSize: 11, fontWeight: 700, padding: '7px 12px', borderRadius: 9, background: 'var(--accent-light)', color: 'var(--accent)', border: 'none', cursor: 'pointer' }}>⬇ {L('Passaporte', 'Passport', 'Pasaporte')}</button>

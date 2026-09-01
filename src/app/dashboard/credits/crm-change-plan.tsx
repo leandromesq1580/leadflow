@@ -76,7 +76,7 @@ export function CrmChangePlan({ currentPlan }: { currentPlan: string | null }) {
             <ul className="mt-4 space-y-2.5 flex-1">
               <li className="flex items-start gap-2 text-[12.5px]" style={{ color: '#334155' }}>
                 <span className="font-bold" style={{ color: '#10b981' }}>✓</span>
-                <span>{L('Acesso CRM Pro completo (pipeline, time, follow-ups)', 'Full CRM Pro access (pipeline, team, follow-ups)', 'Acceso completo al CRM Pro (pipeline, equipo, follow-ups)')}</span>
+                <span>{L('Acesso completo ao CRM Pro (funil, equipe e acompanhamentos)', 'Full CRM Pro access (pipeline, team, follow-ups)', 'Acceso completo al CRM Pro (flujo de ventas, equipo y seguimientos)')}</span>
               </li>
             </ul>
             <button onClick={() => change(plan)} disabled={isCurrent || !!loading}

@@ -93,7 +93,7 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
           {/* Template picker */}
           {!selectedId && !editing && (
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--fg-muted)' }}>{L('Escolha um template', 'Choose a template', 'Elige una plantilla')}</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--fg-muted)' }}>{L('Escolha um modelo', 'Choose a template', 'Elige una plantilla')}</p>
               <div className="space-y-2 mb-4">
                 {templates.map(t => (
                   <button key={t.id} onClick={() => setSelectedId(t.id)}
@@ -134,7 +134,7 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
                   )}
                 </div>
                 <button onClick={() => { setSelectedId(null); setEditing(false); setCustomBody('') }}
-                  className="text-[11px] font-bold" style={{ color: 'var(--fg-muted)' }}>← {L('Trocar template', 'Change template', 'Cambiar plantilla')}</button>
+                  className="text-[11px] font-bold" style={{ color: 'var(--fg-muted)' }}>← {L('Trocar modelo', 'Change template', 'Cambiar plantilla')}</button>
               </div>
 
               {editing && !selected && (

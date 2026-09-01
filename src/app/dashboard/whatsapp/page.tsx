@@ -17,15 +17,15 @@ interface Conversation {
   unread: number
 }
 
-function timeAgoShort(iso: string): string {
+function timeAgoShort(iso: string, locale: string): string {
   const ms = Date.now() - new Date(iso).getTime()
   const mins = Math.floor(ms / 60000)
-  if (mins < 1) return 'agora'
+  if (mins < 1) return locale === 'en' ? 'now' : locale === 'es' ? 'ahora' : 'agora'
   if (mins < 60) return `${mins}m`
   const hours = Math.floor(mins / 60)
   if (hours < 24) return `${hours}h`
   const days = Math.floor(hours / 24)
-  if (days === 1) return 'ontem'
+  if (days === 1) return locale === 'en' ? 'yesterday' : locale === 'es' ? 'ayer' : 'ontem'
   if (days < 7) return `${days}d`
   const d = new Date(iso)
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
@@ -183,7 +183,7 @@ export default function WhatsAppPage() {
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-[13px] font-bold truncate" style={{ color: 'var(--fg)' }}>{c.lead_name}</p>
                         <span className="text-[10px] font-medium flex-shrink-0" style={{ color: 'var(--fg-muted)' }}>
-                          {timeAgoShort(c.last_sent_at)}
+                          {timeAgoShort(c.last_sent_at, t._locale)}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 mt-0.5">

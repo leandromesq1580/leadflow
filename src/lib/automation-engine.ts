@@ -4,6 +4,7 @@ import { renderTemplate } from '@/lib/template-render'
 import { resolveSendBridge } from '@/lib/wa-bridge'
 import { checkSendRate } from '@/lib/send-guard'
 import { Resend } from 'resend'
+import { localizeSystemTemplate, systemTemplateNames } from '@/lib/system-template-i18n'
 
 interface Automation {
   id: string
@@ -59,10 +60,12 @@ export async function runAutomations(buyerIds?: string[]): Promise<{ ran: number
             .eq('id', auto.action_config.template_id).maybeSingle()
           if (tpl?.name) {
             const desde = new Date(Date.now() - 7 * 86400_000).toISOString()
-            const { data: jaEnviou } = await db.from('follow_ups')
+            const nomes = systemTemplateNames(tpl as any)
+            const filtros = nomes.map(nome => `description.like.%${nome.replace(/[,%()]/g, '')}%`).join(',')
+            const jaQuery = db.from('follow_ups')
               .select('id').eq('lead_id', target.lead_id)
-              .like('description', `[Automação]%${tpl.name}`)
-              .gte('created_at', desde).limit(1).maybeSingle()
+              .gte('created_at', desde)
+            const { data: jaEnviou } = await (filtros ? jaQuery.or(filtros) : jaQuery).limit(1).maybeSingle()
             if (jaEnviou) {
               console.log(`[automation] pulando ${target.lead_id}: já recebeu "${tpl.name}" por automação nos últimos 7 dias`)
               continue
@@ -291,7 +294,9 @@ async function executeAction(auto: Automation, target: Target): Promise<void> {
     // Comprador suspenso: não dispara automação
     if (agent.is_active === false) { console.log(`[Automation] buyer ${auto.buyer_id} suspenso — skip`); return }
 
-    const body = renderTemplate(template.body, lead, agent)
+    const loc = await localeDoBuyer(db, auto.buyer_id)
+    const localizedTemplate = localizeSystemTemplate(template, loc)
+    const body = renderTemplate(localizedTemplate.body, lead, agent)
 
     if (template.type === 'whatsapp') {
       if (!lead.phone) throw new Error('Lead sem telefone')
@@ -325,7 +330,9 @@ async function executeAction(auto: Automation, target: Target): Promise<void> {
       const resendKey = (process.env.RESEND_API_KEY || '').trim()
       if (!resendKey) throw new Error('Resend not configured')
       const resend = new Resend(resendKey)
-      const subject = template.subject ? renderTemplate(template.subject, lead, agent) : `Mensagem de ${agent.name}`
+      const subject = localizedTemplate.subject
+        ? renderTemplate(localizedTemplate.subject, lead, agent)
+        : loc === 'en' ? `Message from ${agent.name}` : loc === 'es' ? `Mensaje de ${agent.name}` : `Mensagem de ${agent.name}`
       await resend.emails.send({
         from: `${agent.name} <onboarding@resend.dev>`,
         to: lead.email,
@@ -338,7 +345,7 @@ async function executeAction(auto: Automation, target: Target): Promise<void> {
       lead_id: target.lead_id,
       buyer_id: auto.buyer_id,
       type: template.type,
-      description: `[Automação] ${auto.name} → ${template.name}`,
+      description: `${loc === 'en' ? '[Automation]' : loc === 'es' ? '[Automatización]' : '[Automação]'} ${auto.name} → ${localizedTemplate.name}`,
       completed_at: new Date().toISOString(),
     })
     return

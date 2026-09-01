@@ -99,7 +99,7 @@ export default async function CreditsPage({
       const planLabel = plan ? localizedPlanLabel(plan.key) : null
       label = `CRM Pro${planLabel ? ` — ${planLabel}` : ''}`
     } else if (purchase.productType === 'appointment') {
-      label = `${purchase.quantity} ${L('Appointments', 'Appointments', 'Appointments')}`
+      label = `${purchase.quantity} ${L('agendamentos', 'appointments', 'citas')}`
     } else if (purchase.productType === 'cold_lead') {
       label = `${purchase.quantity} ${L('Leads Frios', 'Cold Leads', 'Leads Fríos')}`
     } else {
@@ -168,9 +168,9 @@ export default async function CreditsPage({
           <h2 className="text-[16px] font-bold mb-1" style={{ color: 'var(--fg)' }}>{L('⚡ Assine o CRM Pro', '⚡ Subscribe to CRM Pro', '⚡ Suscríbete al CRM Pro')}</h2>
           <p className="text-[13px] mb-4" style={{ color: 'var(--fg-secondary)' }}>
             {L(
-              'Pipeline, Time, Follow-ups e Anexos. Quanto maior o compromisso, menor o $/mês.',
+              'Funil de vendas, equipe, acompanhamentos e anexos. Quanto maior o compromisso, menor o valor mensal.',
               'Pipeline, Team, Follow-ups and Attachments. The longer the commitment, the lower the $/mo.',
-              'Pipeline, Equipo, Follow-ups y Archivos. Mientras más largo el compromiso, menor el $/mes.'
+              'Flujo de ventas, equipo, seguimientos y archivos. Cuanto más largo sea el compromiso, menor será el precio mensual.'
             )}
           </p>
           <CrmPlansGrid />
@@ -191,7 +191,7 @@ export default async function CreditsPage({
         </div>
         {totalAppts > 0 && (
           <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Appointments Disponiveis', 'Available Appointments', 'Appointments Disponibles')}</p>
+            <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Agendamentos disponíveis', 'Available appointments', 'Citas disponibles')}</p>
             <p className="text-[32px] font-extrabold mt-1" style={{ color: '#f59e0b' }}>{totalAppts}</p>
             <p className="text-[11px] mt-1" style={{ color: 'var(--fg-muted)' }}>{L('Saldo já pago — será entregue normalmente.', 'Already paid — will be delivered as usual.', 'Saldo ya pagado — se entregará normalmente.')}</p>
           </div>

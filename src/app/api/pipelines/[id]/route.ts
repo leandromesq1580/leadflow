@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getLocale } from '@/lib/locale'
+import { localizePipeline } from '@/lib/pipeline-i18n'
 
 /**
  * GET /api/pipelines/[id] — retorna 1 pipeline com stages (pra cross-buyer access:
@@ -7,6 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
  */
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const locale = await getLocale()
   const db = createAdminClient()
   const { data } = await db
     .from('pipelines')
@@ -18,7 +21,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     ...data,
     stages: (data.stages || []).sort((a: any, b: any) => a.position - b.position),
   }
-  return NextResponse.json({ pipeline })
+  return NextResponse.json(
+    { pipeline: localizePipeline(pipeline, locale) },
+    { headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie' } },
+  )
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

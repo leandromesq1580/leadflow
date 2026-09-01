@@ -2,6 +2,7 @@
 
 import { useState, useRef, useLayoutEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useT } from '@/lib/i18n-client'
 
 interface Props {
   leadId: string
@@ -10,6 +11,8 @@ interface Props {
 }
 
 export function AssignButton({ leadId, members, currentMember }: Props) {
+  const t = useT()
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [open, setOpen] = useState(false)
   const [assigning, setAssigning] = useState(false)
   const [direction, setDirection] = useState<'up' | 'down'>('down')
@@ -58,7 +61,7 @@ export function AssignButton({ leadId, members, currentMember }: Props) {
           background: currentMember ? 'var(--accent-light)' : 'var(--warn-line)',
           color: currentMember ? 'var(--accent)' : '#92400e',
         }}>
-        {currentMember || 'Atribuir'}
+        {currentMember || L('Atribuir', 'Assign', 'Asignar')}
       </button>
 
       {open && (
@@ -67,7 +70,7 @@ export function AssignButton({ leadId, members, currentMember }: Props) {
           <div className={`absolute right-0 ${positionClass} z-50 rounded-xl p-2 min-w-[180px]`}
             style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: shadowDir }}>
             <p className="text-[10px] font-bold px-2 py-1 mb-1" style={{ color: 'var(--fg-muted)' }}>
-              {currentMember ? 'Transferir pra:' : 'Enviar pra:'}
+              {currentMember ? L('Transferir para:', 'Transfer to:', 'Transferir a:') : L('Enviar para:', 'Assign to:', 'Asignar a:')}
             </p>
 
             {currentMember && (
@@ -75,7 +78,7 @@ export function AssignButton({ leadId, members, currentMember }: Props) {
                 disabled={assigning}
                 className="w-full text-left px-3 py-2 rounded-lg text-[12px] font-semibold hover:bg-amber-50 disabled:opacity-50 mb-1"
                 style={{ color: '#b45309', borderBottom: '1px solid var(--bg-soft)' }}>
-                Voltar pra mim
+                {L('Voltar para mim', 'Assign back to me', 'Volver a asignarme')}
               </button>
             )}
 
@@ -91,7 +94,7 @@ export function AssignButton({ leadId, members, currentMember }: Props) {
             <button onClick={(e) => { e.preventDefault(); setOpen(false) }}
               className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] mt-1"
               style={{ color: 'var(--fg-muted)' }}>
-              Cancelar
+              {L('Cancelar', 'Cancel', 'Cancelar')}
             </button>
           </div>
         </>

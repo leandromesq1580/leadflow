@@ -48,7 +48,7 @@ export function FollowupSheet({
     <div className="m-sheet-ov" onClick={onClose}>
       <div className="m-sheet" onClick={e => e.stopPropagation()} style={{ padding: '8px 20px calc(env(safe-area-inset-bottom) + 18px)' }}>
         <div className="m-sheet-grab" style={{ marginLeft: 'auto', marginRight: 'auto' }} />
-        <p style={{ margin: '2px 0 12px', fontSize: 15, fontWeight: 700 }}>{L('Agendar follow-up', 'Schedule follow-up', 'Agendar seguimiento')}</p>
+        <p style={{ margin: '2px 0 12px', fontSize: 15, fontWeight: 700 }}>{L('Agendar acompanhamento', 'Schedule follow-up', 'Agendar seguimiento')}</p>
 
         <p className="m-muted" style={{ fontSize: 12, fontWeight: 600, margin: '0 0 8px' }}>{L('Tipo', 'Type', 'Tipo')}</p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>

@@ -2,10 +2,13 @@ import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { NotificationsForm } from './notifications-form'
+import { getLocale } from '@/lib/locale'
 
 export const dynamic = 'force-dynamic'
 
 export default async function NotificationsSettingsPage() {
+  const locale = await getLocale()
+  const L = (pt: string, en: string, es: string) => locale === 'en' ? en : locale === 'es' ? es : pt
   const supabase = await createServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -31,9 +34,9 @@ export default async function NotificationsSettingsPage() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-[24px] font-extrabold mb-1" style={{ color: 'var(--fg)' }}>🔔 Gestão de Avisos</h1>
+      <h1 className="text-[24px] font-extrabold mb-1" style={{ color: 'var(--fg)' }}>🔔 {L('Gestão de avisos', 'Reminder settings', 'Gestión de recordatorios')}</h1>
       <p className="text-[14px] mb-8" style={{ color: 'var(--fg-secondary)' }}>
-        Configure como e quando receber lembretes de reuniões. Ninguém perde um appointment.
+        {L('Configure como e quando receber lembretes de reuniões. Ninguém perde um compromisso.', 'Choose how and when to receive meeting reminders. Never miss an appointment.', 'Elige cómo y cuándo recibir recordatorios de reuniones. No vuelvas a perder una cita.')}
       </p>
 
       <NotificationsForm buyer={buyer} initialPrefs={prefs as any} />

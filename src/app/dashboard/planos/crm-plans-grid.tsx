@@ -47,7 +47,7 @@ export function CrmPlansGrid({ landing = false }: { landing?: boolean }) {
         // Bônus de leads (2026-07-23) e landing page exclusiva (2026-07-24) DESCONTINUADOS
         // pra assinatura nova — não anunciar nenhum dos dois.
         const benefits = [
-          L('Acesso CRM Pro completo (pipeline, time, follow-ups)', 'Full CRM Pro access (pipeline, team, follow-ups)', 'Acceso completo al CRM Pro (pipeline, equipo, follow-ups)'),
+          L('Acesso completo ao CRM Pro (funil, equipe e acompanhamentos)', 'Full CRM Pro access (pipeline, team, follow-ups)', 'Acceso completo al CRM Pro (flujo de ventas, equipo y seguimientos)'),
         ]
         return (
           <div key={plan.key} className="relative rounded-2xl p-6 flex flex-col"

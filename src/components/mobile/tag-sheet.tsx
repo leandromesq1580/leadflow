@@ -62,10 +62,10 @@ export function TagSheet({
     <div className="m-sheet-ov" onClick={onClose}>
       <div className="m-sheet" onClick={e => e.stopPropagation()} style={{ padding: '8px 20px calc(env(safe-area-inset-bottom) + 18px)' }}>
         <div className="m-sheet-grab" style={{ marginLeft: 'auto', marginRight: 'auto' }} />
-        <p style={{ margin: '2px 0 12px', fontSize: 15, fontWeight: 700 }}>Tags</p>
+        <p style={{ margin: '2px 0 12px', fontSize: 15, fontWeight: 700 }}>{L('Etiquetas', 'Tags', 'Etiquetas')}</p>
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-          {catalog.length === 0 && <p className="m-muted" style={{ fontSize: 13 }}>{L('Nenhuma tag ainda. Crie a primeira abaixo.', 'No tags yet. Create one below.', 'Sin tags. Crea una abajo.')}</p>}
+          {catalog.length === 0 && <p className="m-muted" style={{ fontSize: 13 }}>{L('Nenhuma etiqueta ainda. Crie a primeira abaixo.', 'No tags yet. Create one below.', 'Aún no hay etiquetas. Crea la primera abajo.')}</p>}
           {catalog.map(tg => {
             const on = attached.has(tg.id)
             return (
@@ -80,7 +80,7 @@ export function TagSheet({
 
         <p className="m-muted" style={{ fontSize: 12, fontWeight: 600, margin: '0 0 8px' }}>{L('Criar nova', 'Create new', 'Crear nueva')}</p>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
-          <input value={newName} onChange={e => setNewName(e.target.value)} placeholder={L('Nome da tag', 'Tag name', 'Nombre')} className="m-input" style={{ flex: 1, height: 44 }} />
+          <input value={newName} onChange={e => setNewName(e.target.value)} placeholder={L('Nome da etiqueta', 'Tag name', 'Nombre de la etiqueta')} className="m-input" style={{ flex: 1, height: 44 }} />
           <button onClick={create} disabled={busy || !newName.trim()} className="m-tap" style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--m-grad)', border: 'none', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, opacity: busy || !newName.trim() ? 0.5 : 1 }}><MIcon name="plus" size={18} /></button>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>

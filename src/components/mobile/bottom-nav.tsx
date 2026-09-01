@@ -37,8 +37,8 @@ export function MobileBottomNav({ buyerId, crmPlan }: { buyerId?: string; crmPla
 
   const items = [
     { href: '/m', label: loc === 'en' ? 'Home' : loc === 'es' ? 'Inicio' : 'Início', icon: 'home', active: pathname === '/m' },
-    { href: '/m/leads', label: 'Leads', icon: 'target', active: pathname.startsWith('/m/leads') },
-    { href: '/m/pipeline', label: 'Pipeline', icon: 'columns', active: pathname.startsWith('/m/pipeline') },
+    { href: '/m/leads', label: t.sidebar.leads, icon: 'target', active: pathname.startsWith('/m/leads') },
+    { href: '/m/pipeline', label: t.sidebar.pipeline, icon: 'columns', active: pathname.startsWith('/m/pipeline') },
     { href: '/m/whatsapp', label: 'WhatsApp', icon: 'whatsapp', active: pathname.startsWith('/m/whatsapp'), badge: wa },
     { href: '/m/mais', label: loc === 'en' ? 'More' : loc === 'es' ? 'Más' : 'Mais', icon: 'dots', active: pathname.startsWith('/m/mais') || pathname.startsWith('/m/em-breve') },
   ]

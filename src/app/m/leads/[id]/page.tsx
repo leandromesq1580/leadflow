@@ -62,12 +62,12 @@ export default function MobileLeadDetail() {
     <div>
       <div className="m-pad" style={{ paddingTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 44 }}>
         <button onClick={() => router.back()} className="m-tap" style={{ background: 'none', border: 'none', color: 'var(--m-text)', display: 'flex', cursor: 'pointer', padding: 0 }}><MIcon name="arrowLeft" size={24} /></button>
-        <span className="m-muted" style={{ fontSize: 13, fontWeight: 600 }}>Lead</span>
+        <span className="m-muted" style={{ fontSize: 13, fontWeight: 600 }}>{L('Contato', 'Lead', 'Prospecto')}</span>
         <span style={{ width: 24 }} />
       </div>
 
       {!lead && !err && <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 100 }}><div className="m-spin" /></div>}
-      {err && <p className="m-muted" style={{ textAlign: 'center', paddingTop: 80 }}>{L('Lead não encontrado.', 'Lead not found.', 'Lead no encontrado.')}</p>}
+      {err && <p className="m-muted" style={{ textAlign: 'center', paddingTop: 80 }}>{L('Contato não encontrado.', 'Lead not found.', 'Prospecto no encontrado.')}</p>}
 
       {lead && (
         <div className="m-pad">
@@ -102,7 +102,7 @@ export default function MobileLeadDetail() {
               <span style={{ color: '#a5b4fc', display: 'flex' }}><MIcon name="check" size={17} /></span>{L('Registrar contato', 'Log contact', 'Registrar')}
             </button>
             <button onClick={() => setSheet('followup')} className="m-tap" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--m-text)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-              <span style={{ color: '#a5b4fc', display: 'flex' }}><MIcon name="calendar" size={17} /></span>Follow-up
+              <span style={{ color: '#a5b4fc', display: 'flex' }}><MIcon name="calendar" size={17} /></span>{L('Acompanhamento', 'Follow-up', 'Seguimiento')}
             </button>
           </div>
 
@@ -119,14 +119,14 @@ export default function MobileLeadDetail() {
           {/* Tags */}
           <div style={{ marginBottom: 18 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span className="m-muted" style={{ fontSize: 12, fontWeight: 700, marginRight: 2 }}>Tags</span>
+              <span className="m-muted" style={{ fontSize: 12, fontWeight: 700, marginRight: 2 }}>{L('Etiquetas', 'Tags', 'Etiquetas')}</span>
               {tags.map(tg => (
                 <span key={tg.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, padding: '6px 11px', borderRadius: 999, background: `${tg.color}22`, color: tg.color, border: `1px solid ${tg.color}55` }}>
                   <span style={{ width: 7, height: 7, borderRadius: '50%', background: tg.color }} />{tg.name}
                 </span>
               ))}
               <button onClick={() => setSheet('tag')} className="m-tap" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, padding: '6px 11px', borderRadius: 999, background: 'rgba(255,255,255,0.04)', color: 'var(--m-muted)', border: '1px dashed rgba(255,255,255,0.18)', cursor: 'pointer' }}>
-                <MIcon name="plus" size={13} />{tags.length === 0 ? L('Adicionar tag', 'Add tag', 'Añadir tag') : ''}
+                <MIcon name="plus" size={13} />{tags.length === 0 ? L('Adicionar etiqueta', 'Add tag', 'Añadir etiqueta') : ''}
               </button>
             </div>
           </div>
@@ -151,7 +151,7 @@ export default function MobileLeadDetail() {
           {/* Follow-ups */}
           {followups.length > 0 && (
             <>
-              <p className="m-muted" style={{ fontSize: 13, fontWeight: 700, margin: '0 0 11px' }}>Follow-ups</p>
+              <p className="m-muted" style={{ fontSize: 13, fontWeight: 700, margin: '0 0 11px' }}>{L('Acompanhamentos', 'Follow-ups', 'Seguimientos')}</p>
               {followups.slice(0, 6).map(f => (
                 <div key={f.id} className="m-card" style={{ padding: 13, marginBottom: 9, display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div className="m-icb"><MIcon name={f.type === 'meeting' ? 'calendar' : f.type === 'call' ? 'phone' : f.type === 'whatsapp' ? 'whatsapp' : f.type === 'email' ? 'message' : 'notes'} size={16} /></div>

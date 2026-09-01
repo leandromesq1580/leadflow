@@ -76,7 +76,7 @@ export default function PerformancePage() {
     <div className="max-w-[1040px]">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>Performance</h1>
+          <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{t.sidebar.performance}</h1>
           <p className="text-[14px]" style={{ color: 'var(--fg-secondary)' }}>{L('KPIs, ROI por fonte e funil de conversão', 'KPIs, ROI by source and conversion funnel', 'KPIs, ROI por fuente y embudo de conversión')}</p>
         </div>
         <div className="flex rounded-lg p-1" style={{ background: 'var(--bg-soft)' }}>
@@ -129,9 +129,9 @@ export default function PerformancePage() {
       {/* Funnel + By Source */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <p className="text-[13px] font-bold mb-3" style={{ color: 'var(--fg)' }}>{L('Funil (pipeline atual)', 'Funnel (current pipeline)', 'Embudo (pipeline actual)')}</p>
+          <p className="text-[13px] font-bold mb-3" style={{ color: 'var(--fg)' }}>{L('Funil de vendas atual', 'Funnel (current pipeline)', 'Embudo del flujo de ventas actual')}</p>
           {data.funnel.length === 0 ? (
-            <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{L('Nenhum lead no pipeline', 'No leads in the pipeline', 'Ningún lead en el pipeline')}</p>
+            <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{L('Nenhum lead no funil de vendas', 'No leads in the pipeline', 'No hay prospectos en el flujo de ventas')}</p>
           ) : data.funnel.map(f => (
             <div key={f.stage} className="mb-2">
               <div className="flex justify-between text-[11px] mb-1">

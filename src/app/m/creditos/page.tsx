@@ -106,7 +106,7 @@ export default function MobileCreditos() {
         : null
       label = `CRM Pro${planLabel ? ` · ${planLabel}` : ''}`
     } else if (item.productType === 'appointment') {
-      label = `${item.quantity} Appointments`
+      label = `${item.quantity} ${L('agendamentos', 'appointments', 'citas')}`
     } else if (item.productType === 'cold_lead') {
       label = `${item.quantity} ${L('Leads frios', 'Cold leads', 'Leads fríos')}`
     } else {
@@ -207,7 +207,7 @@ export default function MobileCreditos() {
               <div className="m-card" style={{ padding: 16 }}>
                 <div className="m-icb" style={{ marginBottom: 10, background: 'linear-gradient(135deg,rgba(245,158,11,0.25),rgba(236,72,153,0.2))', color: '#fbbf24' }}><MIcon name="calendar" size={18} /></div>
                 <p style={{ margin: 0, fontSize: 26, fontWeight: 800 }}>{d.totalAppts}</p>
-                <p className="m-muted" style={{ margin: '1px 0 0', fontSize: 12 }}>Appointments</p>
+                <p className="m-muted" style={{ margin: '1px 0 0', fontSize: 12 }}>{t.sidebar.appointments}</p>
               </div>
             )}
           </div>
@@ -244,7 +244,7 @@ export default function MobileCreditos() {
                   </div>
                   <p style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 800 }}>{aplPrice || '$99.99'}<span className="m-muted" style={{ fontSize: 13, fontWeight: 600 }}>/{L('mês', 'month', 'mes')}</span></p>
                   <p className="m-muted" style={{ fontSize: 12, margin: '0 0 12px', lineHeight: 1.5 }}>
-                    {L('Pipeline, time, sequências e automações. Renovação automática mensal; cancele quando quiser nos Ajustes.', 'Pipeline, team, sequences and automations. Auto-renews monthly; cancel anytime in Settings.', 'Pipeline, equipo, secuencias y automatizaciones. Renovación mensual.')}
+                    {L('Funil de vendas, equipe, sequências e automações. Renovação automática mensal; cancele quando quiser nos Ajustes.', 'Pipeline, team, sequences and automations. Auto-renews monthly; cancel anytime in Settings.', 'Flujo de ventas, equipo, secuencias y automatizaciones. Renovación mensual automática; puedes cancelar en Configuración.')}
                   </p>
                   <button onClick={appleSubscribe} disabled={aplBusy} className="m-tap" style={{ width: '100%', height: 48, borderRadius: 13, background: 'var(--m-grad)', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: aplBusy ? 0.6 : 1 }}>
                     {aplBusy ? L('Abrindo…', 'Opening…', 'Abriendo…') : L('Assinar pelo App Store', 'Subscribe via App Store', 'Suscribir por App Store')}

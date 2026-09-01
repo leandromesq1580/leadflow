@@ -16,10 +16,10 @@ export function MobileNav(props: { userName?: string; isAgency?: boolean; buyerI
   return (
     <>
       {!open && (
-        <button onClick={() => setOpen(true)} aria-label="Menu"
+        <button onClick={() => setOpen(true)} aria-label={L('Menu', 'Menu', 'Menú')}
           className="md:hidden flex items-center gap-2 px-5 py-3 rounded-full text-[14px] font-bold"
           style={{ position: 'fixed', left: 20, bottom: 24, zIndex: 69, background: '#0f172a', color: '#fff', boxShadow: '0 8px 24px rgba(15,23,42,0.35)', border: 'none', cursor: 'pointer' }}>
-          ☰ Menu
+          ☰ {L('Menu', 'Menu', 'Menú')}
         </button>
       )}
       {open && (

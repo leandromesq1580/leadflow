@@ -153,11 +153,11 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, podeVerApo
       itens: [
         { href: '/dashboard', label: t.sidebar.overview, icon: '📊' },
         { href: '/dashboard/performance', label: t.sidebar.performance, icon: '📈' },
-        { href: '/dashboard/calculadora', label: t._locale === 'en' ? 'Calculator' : 'Calculadora', icon: '🧮' },
+        { href: '/dashboard/calculadora', label: L3('Calculadora', 'Calculator', 'Calculadora'), icon: '🧮' },
         { href: '/dashboard/leads', label: t.sidebar.leads, icon: '🎯' },
         { href: '/dashboard/pipeline', label: t.sidebar.pipeline, icon: '📋' },
         // add-on vendável ($39/mês): todo mundo vê; sem assinatura cai na página de venda
-        { href: '/dashboard/apolices', label: t._locale === 'en' ? 'Policy Management' : t._locale === 'es' ? 'Gestión de Pólizas' : 'Gestão de Apólices', icon: '🛡️' },
+        { href: '/dashboard/apolices', label: L3('Gestão de Apólices', 'Policy Management', 'Gestión de Pólizas'), icon: '🛡️' },
         { href: '/dashboard/appointments', label: t.sidebar.appointments, icon: '📅' },
       ],
     },
@@ -166,20 +166,20 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, podeVerApo
       itens: [
         { href: '/dashboard/whatsapp', label: t.sidebar.whatsapp, icon: '💬' },
         // Roteiro + IA na ligação (add-on $49): apoio em si é opt-in
-        { href: '/dashboard/roteiro', label: t._locale === 'en' ? 'Call Script' : t._locale === 'es' ? 'Guion' : 'Roteiro', icon: '📜' },
-        { href: '/dashboard/ai-consult', label: t._locale === 'en' ? 'AI Specialist' : t._locale === 'es' ? 'Especialista IA' : 'Especialista AI', icon: '🤖' },
+        { href: '/dashboard/roteiro', label: L3('Roteiro', 'Call Script', 'Guion'), icon: '📜' },
+        { href: '/dashboard/ai-consult', label: L3('Especialista de IA', 'AI Specialist', 'Especialista de IA'), icon: '🤖' },
         { href: '/dashboard/templates', label: t.sidebar.templates, icon: '📝' },
         { href: '/dashboard/automations', label: t.sidebar.automations, icon: '⚡' },
         { href: '/dashboard/sequences', label: t.sidebar.sequences, icon: '🔁' },
-        { href: '/dashboard/settings/notifications', label: t._locale === 'en' ? 'Reminders' : t._locale === 'es' ? 'Avisos' : 'Avisos', icon: '🔔' },
-        { href: '/dashboard/notas', label: t._locale === 'en' ? 'Notes' : 'Notas', icon: '🗒️' },
+        { href: '/dashboard/settings/notifications', label: L3('Avisos', 'Reminders', 'Recordatorios'), icon: '🔔' },
+        { href: '/dashboard/notas', label: L3('Notas', 'Notes', 'Notas'), icon: '🗒️' },
       ],
     },
     {
       titulo: L3('Crescimento', 'Growth', 'Crecimiento'),
       itens: [
-        { href: '/dashboard/community', label: t._locale === 'en' ? 'Community' : t._locale === 'es' ? 'Comunidad' : 'Comunidade', icon: '🤝' },
-        { href: '/dashboard/treinamento', label: t._locale === 'en' ? 'Training' : t._locale === 'es' ? 'Entrenamiento' : 'Treinamento', icon: '🎓' },
+        { href: '/dashboard/community', label: L3('Comunidade', 'Community', 'Comunidad'), icon: '🤝' },
+        { href: '/dashboard/treinamento', label: L3('Treinamento', 'Training', 'Capacitación'), icon: '🎓' },
         { href: '/dashboard/referral', label: t.sidebar.referral, icon: '🎁' },
       ],
     },

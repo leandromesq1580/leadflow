@@ -27,7 +27,7 @@ export default function MobileSequences() {
   const { pipelines } = useStages(buyerId)
 
   const delayLabel = (h: number) => (h === 0 ? L('imediato', 'now', 'inmediato') : h < 24 ? `${h}h` : `${h / 24}d`)
-  const stepTypeLabel = (s: Step) => s.step_type === 'wait' ? L('Esperar', 'Wait', 'Esperar') : s.step_type === 'notify_agent' ? L('Notificar', 'Notify', 'Notificar') : (templates.find(t => t.id === s.template_id)?.name || L('Template', 'Template', 'Plantilla'))
+  const stepTypeLabel = (s: Step) => s.step_type === 'wait' ? L('Esperar', 'Wait', 'Esperar') : s.step_type === 'notify_agent' ? L('Notificar', 'Notify', 'Notificar') : (templates.find(t => t.id === s.template_id)?.name || L('Modelo', 'Template', 'Plantilla'))
 
   const reload = (bid: string) => fetch(`/api/sequences?buyer_id=${bid}`, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d) setList(d.sequences || []) }).catch(() => {})
 
@@ -72,7 +72,7 @@ export default function MobileSequences() {
     <div>
       <div className="m-pad" style={{ paddingTop: 6, display: 'flex', alignItems: 'center', gap: 12, height: 44 }}>
         <button onClick={() => router.push('/m/mais')} className="m-tap" style={{ background: 'none', border: 'none', color: 'var(--m-text)', display: 'flex', cursor: 'pointer', padding: 0 }}><MIcon name="arrowLeft" size={24} /></button>
-        <p style={{ margin: 0, flex: 1, fontSize: 20, fontWeight: 800 }}>Sequences</p>
+        <p style={{ margin: 0, flex: 1, fontSize: 20, fontWeight: 800 }}>{t.sidebar.sequences}</p>
         <button onClick={() => setEditing(newSeq())} className="m-tap" style={{ background: 'none', border: 'none', color: '#a5b4fc', display: 'flex', cursor: 'pointer', padding: 0 }}><MIcon name="plus" size={24} /></button>
       </div>
 
@@ -106,7 +106,7 @@ export default function MobileSequences() {
         <div className="m-sheet-ov" onClick={() => setEditing(null)}>
           <div className="m-sheet" onClick={e => e.stopPropagation()} style={{ padding: '8px 20px calc(env(safe-area-inset-bottom) + 18px)' }}>
             <div className="m-sheet-grab" style={{ marginLeft: 'auto', marginRight: 'auto' }} />
-            <p style={{ margin: '2px 0 12px', fontSize: 15, fontWeight: 700 }}>{editing.id ? L('Editar sequência', 'Edit sequence', 'Editar') : L('Nova sequência', 'New sequence', 'Nueva')}</p>
+            <p style={{ margin: '2px 0 12px', fontSize: 15, fontWeight: 700 }}>{editing.id ? L('Editar sequência', 'Edit sequence', 'Editar secuencia') : L('Nova sequência', 'New sequence', 'Nueva secuencia')}</p>
             <input className="m-input" value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} placeholder={L('Nome', 'Name', 'Nombre')} style={{ marginBottom: 12 }} />
             <input className="m-input" value={editing.description || ''} onChange={e => setEditing({ ...editing, description: e.target.value })} placeholder={L('Descrição (opcional)', 'Description (optional)', 'Descripción')} style={{ marginBottom: 12 }} />
             <p className="m-muted" style={{ fontSize: 12, fontWeight: 600, margin: '0 0 6px' }}>{L('Gatilho (estágio)', 'Trigger (stage)', 'Disparador')}</p>
@@ -130,7 +130,7 @@ export default function MobileSequences() {
                   <div style={{ flex: 1.3 }}>
                     <p className="m-faint" style={{ fontSize: 11, margin: '0 0 4px' }}>{L('Tipo', 'Type', 'Tipo')}</p>
                     <select value={st.step_type} onChange={e => setStep(i, { step_type: e.target.value as any })} style={selStyle}>
-                      <option value="send_template">{L('Enviar template', 'Send template', 'Enviar plantilla')}</option>
+                      <option value="send_template">{L('Enviar modelo', 'Send template', 'Enviar plantilla')}</option>
                       <option value="wait">{L('Esperar', 'Wait', 'Esperar')}</option>
                       <option value="notify_agent">{L('Notificar agente', 'Notify agent', 'Notificar')}</option>
                     </select>
@@ -141,7 +141,7 @@ export default function MobileSequences() {
                 </div>
                 {st.step_type === 'send_template' && (
                   <select value={st.template_id || ''} onChange={e => setStep(i, { template_id: e.target.value })} style={selStyle}>
-                    <option value="">{L('Selecione o template', 'Select template', 'Selecciona')}</option>{templates.map(tp => <option key={tp.id} value={tp.id}>{tp.name}</option>)}
+                    <option value="">{L('Selecione o modelo', 'Select template', 'Selecciona una plantilla')}</option>{templates.map(tp => <option key={tp.id} value={tp.id}>{tp.name}</option>)}
                   </select>
                 )}
               </div>

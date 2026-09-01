@@ -63,8 +63,8 @@ export default async function SettingsPage() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-[24px] font-extrabold mb-1" style={{ color: 'var(--fg)' }}>Configuracoes</h1>
-      <p className="text-[14px] mb-8" style={{ color: 'var(--fg-secondary)' }}>Gerencie seu perfil, licencas e disponibilidade</p>
+      <h1 className="text-[24px] font-extrabold mb-1" style={{ color: 'var(--fg)' }}>{L('Configurações', 'Settings', 'Configuración')}</h1>
+      <p className="text-[14px] mb-8" style={{ color: 'var(--fg-secondary)' }}>{L('Gerencie seu perfil, licenças e disponibilidade', 'Manage your profile, licenses, and availability', 'Gestiona tu perfil, licencias y disponibilidad')}</p>
 
       {hasStripeSubscription && (
         <section className="rounded-2xl p-5 mb-8" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>

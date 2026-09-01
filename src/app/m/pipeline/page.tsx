@@ -96,7 +96,7 @@ export default function MobilePipeline() {
   return (
     <div>
       <div className="m-pad" style={{ paddingTop: 8 }}>
-        <p style={{ margin: '0 0 14px', fontSize: 20, fontWeight: 800 }}>Pipeline</p>
+        <p style={{ margin: '0 0 14px', fontSize: 20, fontWeight: 800 }}>{t.sidebar.pipeline}</p>
       </div>
 
       {/* empty state */}

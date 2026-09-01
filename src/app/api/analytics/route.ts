@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { fetchStageByLead, isWonStage, isContacted } from '@/lib/lead-stage'
+import { getLocale } from '@/lib/locale'
+import { localizeStageName } from '@/lib/pipeline-i18n'
 
 /**
  * GET /api/analytics?buyer_id=X&days=30
  * Returns KPIs, ROI by source, leads-per-day, funnel stats.
  */
 export async function GET(request: NextRequest) {
+  const locale = await getLocale()
   const url = new URL(request.url)
   const buyerId = url.searchParams.get('buyer_id')
   const days = Math.min(365, Math.max(1, parseInt(url.searchParams.get('days') || '30', 10)))
@@ -110,25 +113,28 @@ export async function GET(request: NextRequest) {
   Object.values(stageCounts).sort((a, b) => a.position - b.position).forEach(s => {
     // rótulo = variante mais comum (ex: "Não Atendeu", não "nao atendeu ")
     const name = Object.entries(s.variants).sort((a, b) => b[1] - a[1])[0][0]
-    funnel.push({ stage: name, count: s.count, position: s.position })
+    funnel.push({ stage: localizeStageName(name, locale), count: s.count, position: s.position })
   })
 
-  return NextResponse.json({
-    days,
-    kpis: {
-      total_received: totalReceived,
-      total_converted: totalConverted,
-      total_contacted: totalContacted,
-      total_lost: totalLost,
-      conversion_rate: Number(conversionRate.toFixed(1)),
-      contact_rate: Number(contactRate.toFixed(1)),
-      total_revenue: Number(totalRevenue.toFixed(2)),
-      total_spent: 0,
-      cost_per_conversion: 0,
+  return NextResponse.json(
+    {
+      days,
+      kpis: {
+        total_received: totalReceived,
+        total_converted: totalConverted,
+        total_contacted: totalContacted,
+        total_lost: totalLost,
+        conversion_rate: Number(conversionRate.toFixed(1)),
+        contact_rate: Number(contactRate.toFixed(1)),
+        total_revenue: Number(totalRevenue.toFixed(2)),
+        total_spent: 0,
+        cost_per_conversion: 0,
+      },
+      daily: { labels: dailyLabels, values: dailyValues },
+      by_source: bySource,
+      by_interest: byInterest,
+      funnel,
     },
-    daily: { labels: dailyLabels, values: dailyValues },
-    by_source: bySource,
-    by_interest: byInterest,
-    funnel,
-  })
+    { headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie' } },
+  )
 }

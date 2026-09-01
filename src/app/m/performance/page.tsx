@@ -56,7 +56,7 @@ export default function MobilePerformance() {
     <div>
       <div className="m-pad" style={{ paddingTop: 6, display: 'flex', alignItems: 'center', gap: 12, height: 44 }}>
         <button onClick={() => router.push('/m/mais')} className="m-tap" style={{ background: 'none', border: 'none', color: 'var(--m-text)', display: 'flex', cursor: 'pointer', padding: 0 }}><MIcon name="arrowLeft" size={24} /></button>
-        <p style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>Performance</p>
+        <p style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>{t.sidebar.performance}</p>
       </div>
 
       <div className="m-pad" style={{ display: 'flex', gap: 8, paddingTop: 6, paddingBottom: 14 }}>
@@ -96,8 +96,8 @@ export default function MobilePerformance() {
 
           {/* Funil */}
           <div className="m-card" style={{ padding: 16, marginBottom: 16 }}>
-            <p style={{ fontSize: 14, fontWeight: 700, margin: '0 0 14px' }}>{L('Funil (pipeline atual)', 'Funnel (current pipeline)', 'Embudo (pipeline actual)')}</p>
-            {data.funnel.length === 0 ? <p className="m-muted" style={{ fontSize: 13, margin: 0 }}>{L('Nenhum lead no pipeline.', 'No leads in pipeline.', 'Sin leads.')}</p>
+            <p style={{ fontSize: 14, fontWeight: 700, margin: '0 0 14px' }}>{L('Funil de vendas atual', 'Funnel (current pipeline)', 'Embudo del flujo de ventas actual')}</p>
+            {data.funnel.length === 0 ? <p className="m-muted" style={{ fontSize: 13, margin: 0 }}>{L('Nenhum lead no funil.', 'No leads in pipeline.', 'No hay prospectos.')}</p>
               : data.funnel.map((f, i) => (
                 <div key={i} style={{ marginBottom: 10 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span style={{ fontSize: 13 }}>{f.stage}</span><span className="m-muted" style={{ fontSize: 13, fontWeight: 600 }}>{f.count}</span></div>

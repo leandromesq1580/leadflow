@@ -53,9 +53,9 @@ export function LocaleSwitcher({ current, variant = 'compact' }: { current: Loca
         aria-haspopup="menu"
       >
         {prominent && <span aria-hidden="true">🌐</span>}
-        {variant !== 'mobile' && <span>{meta.flag}</span>}
-        {prominent && <span>{languageLabel}</span>}
-        <span style={{ color: prominent ? 'var(--accent)' : 'inherit' }}>{variant === 'topbar' ? meta.name : meta.short}</span>
+        {!prominent && <span>{meta.flag}</span>}
+        {prominent && <span>{languageLabel}:</span>}
+        <span style={{ color: prominent ? 'var(--accent)' : 'inherit' }}>{meta.short}</span>
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M6 9l6 6 6-6" /></svg>
       </button>
 

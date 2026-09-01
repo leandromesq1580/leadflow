@@ -32,7 +32,7 @@ export default function MobileAutomacoes() {
     { v: 'event_before', l: L('Antes de um evento da agenda', 'Before a calendar event', 'Antes de un evento de agenda') },
   ]
   const ACTIONS = [
-    { v: 'send_template', l: L('Enviar template', 'Send template', 'Enviar plantilla') },
+    { v: 'send_template', l: L('Enviar modelo', 'Send template', 'Enviar plantilla') },
     { v: 'move_stage', l: L('Mover de estágio', 'Move stage', 'Mover etapa') },
     { v: 'notify_agent', l: L('Notificar agente', 'Notify agent', 'Notificar agente') },
   ]
@@ -134,7 +134,7 @@ export default function MobileAutomacoes() {
             <select value={editing.action_type} onChange={e => setEditing({ ...editing, action_type: e.target.value, action_config: {} })} style={selStyle}>{ACTIONS.map(x => <option key={x.v} value={x.v}>{x.l}</option>)}</select>
             {editing.action_type === 'send_template' && (
               <select value={editing.action_config.template_id || ''} onChange={e => setEditing({ ...editing, action_config: { template_id: e.target.value } })} style={selStyle}>
-                <option value="">{L('Selecione o template', 'Select template', 'Selecciona plantilla')}</option>{templates.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
+                <option value="">{L('Selecione o modelo', 'Select template', 'Selecciona una plantilla')}</option>{templates.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
               </select>
             )}
             {editing.action_type === 'move_stage' && (

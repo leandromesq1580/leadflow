@@ -75,15 +75,15 @@ export function ApolicesOnboard({ addonAtivo: addonInicial }: { addonAtivo: bool
       {!addonAtivo ? (
         <div className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <p className="text-[16px] font-bold" style={{ color: 'var(--fg)' }}>
-            {L('Seu book inteiro, vigiado todos os dias — direto do portal da National Life',
+            {L('Sua carteira inteira, monitorada todos os dias — direto do portal da National Life',
                'Your entire book, watched every day — straight from the National Life portal',
-               'Todo tu book, vigilado todos los días — directo del portal de National Life')}
+               'Toda tu cartera, supervisada todos los días, directamente desde el portal de National Life')}
           </p>
           <ul className="mt-4 space-y-2 text-[14px]" style={{ color: 'var(--fg-secondary)' }}>
             <li>🤖 {L('O robô entra no SEU portal todo dia e traz 100% das apólices', 'The robot logs into YOUR portal daily and brings 100% of your policies', 'El robot entra a TU portal cada día y trae el 100% de tus pólizas')}</li>
             <li>🔴 {L('Apólice caducando aparece com dívida, prazo e telefone do cliente — antes do chargeback', 'A lapsing policy shows up with debt, deadline and client phone — before the chargeback', 'La póliza por caducar aparece con deuda, plazo y teléfono del cliente — antes del chargeback')}</li>
             <li>📋 {L('Pendências organizadas: o que é sua ação, o que é do cliente, o que é da seguradora', 'Pending items organized: your action, the client’s, the carrier’s', 'Pendientes organizados: tu acción, la del cliente, la de la aseguradora')}</li>
-            <li>💰 {L('Um único chargeback evitado paga anos do add-on', 'A single avoided chargeback pays for years of the add-on', 'Un solo chargeback evitado paga años del add-on')}</li>
+            <li>💰 {L('Um único estorno evitado paga anos do complemento', 'A single avoided chargeback pays for years of the add-on', 'Un solo contracargo evitado paga años del complemento')}</li>
           </ul>
           <div className="flex items-center gap-4 mt-6 flex-wrap">
             <button onClick={assinar} disabled={carregando}
@@ -99,7 +99,7 @@ export function ApolicesOnboard({ addonAtivo: addonInicial }: { addonAtivo: bool
       ) : (
         <div className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <p className="text-[15px] font-bold" style={{ color: '#059669' }}>
-            ✅ {L('Add-on ativo! Agora conecte seu portal da National Life:', 'Add-on active! Now connect your National Life portal:', '¡Add-on activo! Ahora conecta tu portal de National Life:')}
+            ✅ {L('Complemento ativo! Agora conecte seu portal da National Life:', 'Add-on active! Now connect your National Life portal:', '¡Complemento activo! Ahora conecta tu portal de National Life:')}
           </p>
           <label style={lbl}>{L('Usuário do portal (nationallife.com)', 'Portal username (nationallife.com)', 'Usuario del portal (nationallife.com)')}</label>
           <input style={inStyle} value={usuario} onChange={e => setUsuario(e.target.value)} autoComplete="off" />

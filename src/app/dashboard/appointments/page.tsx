@@ -145,7 +145,7 @@ export default function AppointmentsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <div>
           <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>📅 {L('Agenda', 'Calendar', 'Agenda')}</h1>
-          <p className="text-[13px]" style={{ color: 'var(--fg-secondary)' }}>{L('Eventos, tarefas, reuniões e appointments unificados', 'Events, tasks, meetings and appointments in one place', 'Eventos, tareas, reuniones y appointments en un solo lugar')}</p>
+          <p className="text-[13px]" style={{ color: 'var(--fg-secondary)' }}>{L('Eventos, tarefas, reuniões e agendamentos em um só lugar', 'Events, tasks, meetings and appointments in one place', 'Eventos, tareas, reuniones y citas en un solo lugar')}</p>
         </div>
         <div className="flex items-center gap-2">
           {/* Create menu */}
@@ -211,8 +211,8 @@ export default function AppointmentsPage() {
         <LegendItem color="var(--accent)" kind="appointment" label="Appointment" />
         <LegendItem color="#10b981" kind="event" label={L('Evento', 'Event', 'Evento')} />
         <LegendItem color="#0ea5e9" kind="task" label={L('Tarefa', 'Task', 'Tarea')} />
-        <LegendItem color="#8b5cf6" kind="followup" label={L('Reunião (follow-up)', 'Meeting (follow-up)', 'Reunión (follow-up)')} />
-        <LegendItem color="#f59e0b" kind="followup" label={L('Ligação (follow-up)', 'Call (follow-up)', 'Llamada (follow-up)')} />
+        <LegendItem color="#8b5cf6" kind="followup" label={L('Reunião (acompanhamento)', 'Meeting (follow-up)', 'Reunión (seguimiento)')} />
+        <LegendItem color="#f59e0b" kind="followup" label={L('Ligação (acompanhamento)', 'Call (follow-up)', 'Llamada (seguimiento)')} />
         <LegendItem color="#ef4444" kind="followup" label={L('Não compareceu', 'No-show', 'No se presentó')} />
       </div>
 
@@ -677,7 +677,7 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
             <a href={`/dashboard/pipeline?lead=${event.lead_id}`}
               className="block w-full text-center py-3 rounded-xl text-[13px] font-bold text-white"
               style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)' }}>
-              {L('Abrir lead no Pipeline →', 'Open lead in Pipeline →', 'Abrir lead en Pipeline →')}
+              {L('Abrir lead no funil de vendas →', 'Open lead in pipeline →', 'Abrir prospecto en el flujo de ventas →')}
             </a>
           )}
 

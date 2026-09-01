@@ -4,12 +4,16 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { renderTemplate } from '@/lib/template-render'
 import { resolveSendBridge } from '@/lib/wa-bridge'
 import { Resend } from 'resend'
+import { getLocale } from '@/lib/locale'
+import { localizeSystemTemplate } from '@/lib/system-template-i18n'
 
 /** POST /api/templates/send — render template and send via WhatsApp or Email */
 export async function POST(request: NextRequest) {
+  const locale = await getLocale()
+  const L = (pt: string, en: string, es: string) => locale === 'en' ? en : locale === 'es' ? es : pt
   const { template_id, lead_id, buyer_id, override_body } = await request.json()
   if ((!template_id && !override_body) || !lead_id || !buyer_id) {
-    return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+    return NextResponse.json({ error: L('Campos obrigatórios ausentes', 'Required fields are missing', 'Faltan campos obligatorios') }, { status: 400 })
   }
 
   const db = createAdminClient()
@@ -20,18 +24,18 @@ export async function POST(request: NextRequest) {
     db.from('buyers').select('name, email, phone').eq('id', buyer_id).single(),
   ])
 
-  const template = templateRes.data
+  const template = templateRes.data ? localizeSystemTemplate(templateRes.data, locale) : null
   const lead = leadRes.data
   const agent = buyerRes.data
 
-  if (!lead || !agent) return NextResponse.json({ error: 'Lead or buyer not found' }, { status: 404 })
+  if (!lead || !agent) return NextResponse.json({ error: L('Lead ou corretor não encontrado', 'Lead or producer not found', 'No se encontró el prospecto o el productor') }, { status: 404 })
 
   const type = template?.type || 'whatsapp'
   const body = override_body || renderTemplate(template.body, lead, agent)
   const subject = template?.subject ? renderTemplate(template.subject, lead, agent) : null
 
   if (type === 'whatsapp') {
-    if (!lead.phone) return NextResponse.json({ error: 'Lead sem telefone' }, { status: 400 })
+    if (!lead.phone) return NextResponse.json({ error: L('Lead sem telefone', 'Lead has no phone number', 'El prospecto no tiene teléfono') }, { status: 400 })
 
     // 🛑 LIMITADOR (incidente 2026-07-31): teto de envios por conta — mata rajada
     // de máquina antes de virar spam nos leads e queda da sessão do WhatsApp.
@@ -80,9 +84,9 @@ export async function POST(request: NextRequest) {
         try { await db.from('buyers').update({ wa_bridge_status: 'disconnected' }).eq('id', buyer_id) } catch {}
       }
       const friendly = /No LID|nao tem WhatsApp/i.test(lastErr)
-        ? `Este número não tem WhatsApp ativo (${cleanPhone}). Confirme o número com o lead.`
+        ? L(`Este número não tem WhatsApp ativo (${cleanPhone}). Confirme o número com o lead.`, `This number does not have active WhatsApp (${cleanPhone}). Confirm the number with the lead.`, `Este número no tiene WhatsApp activo (${cleanPhone}). Confirma el número con el prospecto.`)
         : desconectada
-          ? 'Seu WhatsApp desconectou. Vá em Configurações → Conectar WhatsApp e escaneie o QR code — depois é só reenviar (sua mensagem continua salva aqui).'
+          ? L('Seu WhatsApp desconectou. Vá em Configurações → Conectar WhatsApp e escaneie o código QR. Depois, reenvie; sua mensagem continua salva.', 'Your WhatsApp disconnected. Go to Settings → Connect WhatsApp and scan the QR code. Then resend; your message is still saved.', 'Tu WhatsApp se desconectó. Ve a Configuración → Conectar WhatsApp y escanea el código QR. Luego vuelve a enviar; tu mensaje sigue guardado.')
           : lastErr
       return NextResponse.json({ error: friendly }, { status: lastStatus })
     }
@@ -99,7 +103,7 @@ export async function POST(request: NextRequest) {
       status: 'sent',
     })
   } else if (type === 'email') {
-    if (!lead.email) return NextResponse.json({ error: 'Lead sem email' }, { status: 400 })
+    if (!lead.email) return NextResponse.json({ error: L('Lead sem e-mail', 'Lead has no email address', 'El prospecto no tiene correo electrónico') }, { status: 400 })
     const resendKey = (process.env.RESEND_API_KEY || '').trim()
     if (!resendKey) return NextResponse.json({ error: 'Resend not configured' }, { status: 500 })
 
@@ -107,7 +111,7 @@ export async function POST(request: NextRequest) {
     await resend.emails.send({
       from: `${agent.name} <onboarding@resend.dev>`,
       to: lead.email,
-      subject: subject || `Mensagem de ${agent.name}`,
+      subject: subject || (locale === 'en' ? `Message from ${agent.name}` : locale === 'es' ? `Mensaje de ${agent.name}` : `Mensagem de ${agent.name}`),
       html: body.replace(/\n/g, '<br/>'),
     })
   }
@@ -116,7 +120,9 @@ export async function POST(request: NextRequest) {
   await db.from('follow_ups').insert({
     lead_id, buyer_id,
     type: type === 'whatsapp' ? 'whatsapp' : 'email',
-    description: template?.name ? `Template: ${template.name}` : 'Mensagem customizada',
+    description: template?.name
+      ? `${locale === 'es' ? 'Plantilla' : 'Template'}: ${template.name}`
+      : locale === 'en' ? 'Custom message' : locale === 'es' ? 'Mensaje personalizado' : 'Mensagem customizada',
     completed_at: new Date().toISOString(),
   })
 

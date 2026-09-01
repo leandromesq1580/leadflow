@@ -56,7 +56,7 @@ export default function ArchivedLeadsPage() {
   useEffect(() => { load() }, [])
 
   async function reactivate(leadId: string) {
-    if (!confirm(L('Reativar este lead? Ele voltará para a primeira etapa do pipeline.', 'Reactivate this lead? It will go back to the first stage of the pipeline.', '¿Reactivar este lead? Volverá a la primera etapa del pipeline.'))) return
+    if (!confirm(L('Reativar este lead? Ele voltará para a primeira etapa do funil.', 'Reactivate this lead? It will go back to the first stage of the pipeline.', '¿Reactivar este prospecto? Volverá a la primera etapa del flujo de ventas.'))) return
     setReactivating(leadId)
     try {
       const r = await fetch(`/api/leads/${leadId}/unarchive`, { method: 'POST' })
@@ -120,7 +120,7 @@ export default function ArchivedLeadsPage() {
               <path d="M19 12H5" />
               <path d="m12 19-7-7 7-7" />
             </svg>
-            {L('Voltar ao pipeline', 'Back to pipeline', 'Volver al pipeline')}
+            {L('Voltar ao funil', 'Back to pipeline', 'Volver al flujo de ventas')}
           </Link>
           <h1 className="text-[22px] font-extrabold tracking-tight" style={{ color: 'var(--fg)' }}>
             {L('Leads arquivados', 'Archived leads', 'Leads archivados')}

@@ -49,7 +49,7 @@ export default function MobileHome() {
       ? { icon: 'target', label: loc === 'en' ? 'New leads' : loc === 'es' ? 'Leads nuevos' : 'Leads novos', value: d.new_leads, href: '/m/leads' }
       : { icon: 'coin', label: loc === 'en' ? 'Credits' : loc === 'es' ? 'Créditos' : 'Créditos', value: d.remaining_credits, href: '/m/creditos' },
     { icon: 'trend', label: loc === 'en' ? 'Conversion' : loc === 'es' ? 'Conversión' : 'Conversão', value: `${d.conversion_rate}%` },
-    { icon: 'calendar', label: 'Appointments', value: d.appointments_today, href: '/m/appointments' },
+    { icon: 'calendar', label: t.sidebar.appointments, value: d.appointments_today, href: '/m/appointments' },
   ]
 
   return (

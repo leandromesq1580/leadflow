@@ -359,8 +359,8 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
       <div className="flex gap-2 mb-5 p-1 rounded-xl w-fit max-w-full overflow-x-auto" style={{ background: 'var(--bg-soft)', border: '1px solid var(--border)' }}>
         {([
           ['central', L('🎯 Central de ações', '🎯 Action center', '🎯 Centro de acciones')],
-          ['new_business', '📋 New Business'],
-          ['client_intelligence', '🧠 Client Intelligence'],
+          ['new_business', `📋 ${L('Novos negócios', 'New business', 'Nuevos negocios')}`],
+          ['client_intelligence', `🧠 ${L('Inteligência do cliente', 'Client intelligence', 'Inteligencia del cliente')}`],
         ] as const).map(([key, label]) => (
           <button key={key} onClick={() => setVisao(key)}
             className="px-4 py-2 rounded-lg text-[12px] font-bold whitespace-nowrap"
@@ -376,7 +376,7 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
       {/* KPIs */}
       {kpis && (
         <div className="grid grid-cols-4 gap-4 mb-6">
-          <K label={L('No book', 'In the book', 'En el book')} valor={kpis.total}
+          <K label={L('Na carteira', 'In the book', 'En la cartera')} valor={kpis.total}
             sub={L(`${money(kpis.coberturaCents)} de cobertura ativa`, `${money(kpis.coberturaCents)} in active coverage`, `${money(kpis.coberturaCents)} de cobertura activa`)} />
           <K label={L('Ativas e em dia', 'Active, in good standing', 'Activas y al día')} valor={kpis.ativas} cor="#059669"
             sub={L(`${money(kpis.premioMensalCents)}/mês em prêmio`, `${money(kpis.premioMensalCents)}/mo in premium`, `${money(kpis.premioMensalCents)}/mes en prima`)} />

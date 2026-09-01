@@ -73,11 +73,11 @@ export default function PipelineSettingsPage() {
   }
 
   async function deletePipeline(id: string) {
-    if (!confirm(L('Deletar este pipeline?', 'Delete this pipeline?', '¿Eliminar este pipeline?'))) return
+    if (!confirm(L('Excluir este funil?', 'Delete this pipeline?', '¿Eliminar este flujo de ventas?'))) return
     const r = await fetch(`/api/pipelines/${id}`, { method: 'DELETE' })
     if (!r.ok) {
       const d = await r.json()
-      alert(d.error || L('Erro ao deletar pipeline', 'Error deleting pipeline', 'Error al eliminar el pipeline'))
+      alert(d.error || L('Erro ao excluir o funil', 'Error deleting pipeline', 'Error al eliminar el flujo de ventas'))
       return
     }
     setSelected(null)
@@ -185,11 +185,11 @@ export default function PipelineSettingsPage() {
 
       {/* Create new pipeline */}
       <div className="rounded-xl p-4 mb-6 flex gap-3" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
-        <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder={L('Nome do pipeline...', 'Pipeline name...', 'Nombre del pipeline...')}
+        <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder={L('Nome do funil...', 'Pipeline name...', 'Nombre del flujo de ventas...')}
           className="flex-1 px-3 py-2 rounded-lg text-[13px]" style={{ border: '1px solid var(--border)' }}
           onKeyDown={e => e.key === 'Enter' && createPipeline()} />
         <button onClick={createPipeline} className="px-4 py-2 rounded-lg text-[13px] font-bold text-white" style={{ background: 'var(--accent)' }}>
-          {L('Criar Pipeline', 'Create Pipeline', 'Crear Pipeline')}
+          {L('Criar funil', 'Create pipeline', 'Crear flujo de ventas')}
         </button>
       </div>
 
@@ -244,7 +244,7 @@ export default function PipelineSettingsPage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[16px] font-bold" style={{ color: 'var(--fg)' }}>{L('Estagios:', 'Stages:', 'Etapas:')} {selected.name}</h2>
             <button onClick={() => deletePipeline(selected.id)} className="text-[11px] font-bold px-3 py-1 rounded-lg" style={{ color: '#ef4444', background: 'var(--err-soft)' }}>
-              {L('Deletar Pipeline', 'Delete Pipeline', 'Eliminar Pipeline')}
+              {L('Excluir funil', 'Delete pipeline', 'Eliminar flujo de ventas')}
             </button>
           </div>
 
