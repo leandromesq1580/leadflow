@@ -17,6 +17,7 @@ const rules = loadTs('src/lib/admin-rule.ts')
 const { evaluateAdminRule, adminRuleTurn, easternDayStartISO } = rules
 const jen = { id: 'jen', name: 'Jeniffer', email: 'jen@example.com', is_active: true, states: ['FL', 'CT', 'MA'], receivedToday: 0 }
 const base = { admin_emails: [jen.email], one_in: 2, daily_max: null }
+const noStaff = { readBuyerPolicy: async () => ({ staffIds: new Set(), metricsExcludedIds: new Set() }) }
 
 test('regression: zero daily cap blocks even when the next position is the priority turn', () => {
   const result = evaluateAdminRule({ ...base, daily_max: 0 }, 1181, [jen], 'FL')
@@ -81,6 +82,7 @@ test('delivery dry-run uses the same cap and license checks and never writes', a
   const fakeDb = { from() { throw Error('Unexpected write or query outside snapshot') } }
   const { tryAdminRule } = loadTs('src/lib/distribute.ts', {
     './admin-rule': rules,
+    './buyer-policy': noStaff,
     './admin-rule-state': { readAdminRuleState: async () => ({ assignedCount: 1181, candidates: [candidate] }) },
     './supabase/admin': { createAdminClient: () => fakeDb },
     './notifications': {}, './availability': {}, './place-member-lead': {}, './wa-bridge': {},
@@ -123,6 +125,7 @@ test('delivery writes the selected owner and notifies only on an eligible priori
   } }
   const { tryAdminRule } = loadTs('src/lib/distribute.ts', {
     './admin-rule': rules,
+    './buyer-policy': noStaff,
     './admin-rule-state': { readAdminRuleState: async () => ({ assignedCount: prior, candidates: [jen] }) },
     './supabase/admin': { createAdminClient: () => fakeDb },
     './notifications': { sendLeadNotificationEmail: async (buyer, lead) => notices.push([buyer.id, lead.id]) },
@@ -164,6 +167,7 @@ test('queue API does not announce capped/inactive/unlicensed accounts and report
     } }
     const { GET } = loadTs('src/app/api/admin/delivery-queue/route.ts', {
       '@/lib/admin-rule': rules,
+      '@/lib/buyer-policy': noStaff,
       '@/lib/admin-rule-state': { readAdminRuleState: async () => ({ assignedCount: 1181, candidates: [candidate] }) },
       '@/lib/supabase/admin': { createAdminClient: () => db },
       '@/lib/supabase/server': { createServerSupabase: async () => ({ auth: { getUser: async () => ({ data: { user: { id: 'test-admin' } } }) } }) },

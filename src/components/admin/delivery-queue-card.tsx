@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import type { AdminRuleBlock } from '@/lib/admin-rule'
 
-interface Admin { id: string; nome: string; estados: string[]; regraAdmin: number | null; isFallback: boolean; receivedToday: number; dailyMax: number | null; blockedReason: AdminRuleBlock | null; isNext: boolean }
+interface Admin { id: string; nome: string; estados: string[]; regraAdmin: number | null; isFallback: boolean; receivedToday: number; dailyMax: number | null; blockedReason: AdminRuleBlock | null; isNext: boolean; isStaff?: boolean }
 interface Row { pos: number; id: string; nome: string; creditos: number; estados: string[]; recebeuHoje?: boolean }
 interface Data { adminRule: { N: number; leadsUntilAdmin: number | null; herTurnNow: boolean; ruleAvailable: boolean; isTurn: boolean }; queueOrder?: string; admins: Admin[]; fila: Row[] }
 
@@ -103,6 +103,7 @@ export function DeliveryQueueCard() {
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-semibold flex items-center gap-2 flex-wrap" style={{ color: 'var(--fg)' }}>
                   <span className="truncate">{a.nome}</span>
+                  {a.isStaff && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#eef2ff', color: '#4338ca' }}>Funcionário · sem débito de crédito</span>}
                   <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: '#ede9fe', color: '#6d28d9' }}>{a.regraAdmin ? 'prioridade' : 'reserva'}</span>
                   {a.regraAdmin ? <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#ede9fe', color: '#6d28d9' }}>1 a cada {a.regraAdmin}</span> : null}
                   {a.isFallback ? <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-soft)', color: 'var(--fg-secondary)' }}>fallback</span> : null}

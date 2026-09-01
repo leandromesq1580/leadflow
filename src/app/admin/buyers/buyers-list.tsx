@@ -5,7 +5,7 @@ import Link from 'next/link'
 
 interface Buyer {
   id: string; name: string; email: string; phone: string
-  is_active: boolean; is_admin: boolean; crm_plan: string; is_agency: boolean
+  is_active: boolean; is_admin: boolean; crm_plan: string; is_agency: boolean; is_staff?: boolean
   tier: 'paying' | 'trial' | 'free'; subStatus: string | null; crmPaying: boolean
   initials: string; avatarHue: number; states: string[]
   leadCredits: number; apptCredits: number; leadsReceived: number
@@ -13,6 +13,7 @@ interface Buyer {
 
 const FILTERS = [
   { key: 'all', label: 'Todos' },
+  { key: 'staff', label: 'Funcionários' },
   { key: 'paying', label: '💚 Pagantes' },
   { key: 'trial', label: '🟡 Trial' },
   { key: 'pro', label: 'CRM Pro' },
@@ -60,6 +61,7 @@ export function BuyersList({ buyers: initial }: { buyers: Buyer[] }) {
       const q = search.toLowerCase()
       if (!b.name.toLowerCase().includes(q) && !b.email.toLowerCase().includes(q) && !b.phone?.includes(q)) return false
     }
+    if (filter === 'staff' && !b.is_staff) return false
     if (filter === 'paying' && b.tier !== 'paying') return false
     if (filter === 'trial' && b.tier !== 'trial') return false
     if (filter === 'pro' && b.crm_plan !== 'pro') return false
@@ -129,6 +131,7 @@ export function BuyersList({ buyers: initial }: { buyers: Buyer[] }) {
                   <div className="flex items-center gap-2">
                     <p className="text-[14px] font-semibold truncate group-hover:text-indigo-600" style={{ color: '#1a1a2e' }}>{b.name}</p>
                     {b.is_admin && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: '#fef2f2', color: '#dc2626' }}>Admin</span>}
+                    {b.is_staff && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#eef2ff', color: '#4338ca' }} title="Fora da fila normal. Recebe apenas pela prioridade explícita do administrador.">Funcionário</span>}
                     {b.crm_plan === 'pro' && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: 'linear-gradient(135deg, #a78bfa, #6366f1)', color: '#fff' }}>Pro</span>}
                     {b.is_agency && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: '#fef3c7', color: '#92400e' }}>Agency</span>}
                   </div>
@@ -144,7 +147,7 @@ export function BuyersList({ buyers: initial }: { buyers: Buyer[] }) {
                 </div>
 
                 <div className="text-right hidden sm:block">
-                  <p className="text-[13px] font-bold" style={{ color: b.leadCredits > 0 ? '#10b981' : '#94a3b8' }}>{b.leadCredits} leads</p>
+                  <p className="text-[13px] font-bold" style={{ color: b.leadCredits > 0 ? '#10b981' : '#94a3b8' }}>{b.leadCredits} {b.is_staff ? 'créditos internos' : 'leads'}</p>
                   <p className="text-[10px]" style={{ color: '#94a3b8' }}>{b.apptCredits} appts</p>
                 </div>
 

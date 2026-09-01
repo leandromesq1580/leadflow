@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { readBuyerPolicy } from '@/lib/buyer-policy'
 
 /**
  * GET /api/admin/buyer-debt — Saldo devedor dos compradores PAGOS.
@@ -15,6 +16,7 @@ export async function GET(request: NextRequest) {
   const db = createAdminClient()
   const { data: me } = await db.from('buyers').select('is_admin').eq('auth_user_id', user.id).single()
   if (!me?.is_admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const { metricsExcludedIds } = await readBuyerPolicy(db)
 
   // Quem pagou de verdade: payment concluído OU assinatura ativa
   const { data: pays } = await db.from('payments').select('buyer_id').eq('status', 'completed')
@@ -27,6 +29,7 @@ export async function GET(request: NextRequest) {
   const { data: credits } = await db.from('credits').select('buyer_id, total_purchased, total_used').eq('type', 'lead')
   const agg = new Map<string, { comprou: number; recebeu: number }>()
   for (const c of credits || []) {
+    if (metricsExcludedIds.has(c.buyer_id)) continue
     const g = agg.get(c.buyer_id) || { comprou: 0, recebeu: 0 }
     g.comprou += c.total_purchased || 0; g.recebeu += c.total_used || 0
     agg.set(c.buyer_id, g)

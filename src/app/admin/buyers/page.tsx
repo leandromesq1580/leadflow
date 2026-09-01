@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials } from '@/lib/utils'
 import { redirect } from 'next/navigation'
 import { BuyersList } from './buyers-list'
+import { readBuyerPolicy } from '@/lib/buyer-policy'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,6 +13,7 @@ export default async function BuyersPage() {
   if (!user) redirect('/login')
 
   const db = createAdminClient()
+  const { staffIds } = await readBuyerPolicy(db)
 
   const { data: buyers } = await db
     .from('buyers')
@@ -49,6 +51,7 @@ export default async function BuyersPage() {
       created_at: b.created_at,
       is_active: b.is_active,
       is_admin: b.is_admin,
+      is_staff: staffIds.has(b.id),
       crm_plan: b.crm_plan || 'free',
       is_agency: b.is_agency || false,
       tier,

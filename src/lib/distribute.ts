@@ -5,6 +5,7 @@ import { placeLeadInMemberPipeline } from './place-member-lead'
 import { resolveSendBridge } from './wa-bridge'
 import { adminRuleTurn, easternDayStartISO, evaluateAdminRule, type AdminRule } from './admin-rule'
 import { readAdminRuleState } from './admin-rule-state'
+import { readBuyerPolicy, withoutStaff } from './buyer-policy'
 
 async function assignLeadToBuyer(
   supabase: ReturnType<typeof createAdminClient>,
@@ -74,6 +75,9 @@ export async function forceAssignRoundRobin(
   let ordered = emails
     .map(e => buyers.find(b => b.email.toLowerCase() === e.toLowerCase().trim()))
     .filter((b): b is NonNullable<typeof b> => !!b)
+  // Employees can receive through the explicit admin priority rule, not a paid pool.
+  const { staffIds } = await readBuyerPolicy(supabase)
+  ordered = withoutStaff(ordered, staffIds)
 
   if (ordered.length === 0) {
     console.error(`[Distribute] ROUND_ROBIN: emails nao casaram com buyers`)
@@ -245,6 +249,11 @@ async function assignToFallback(
     console.log(`[Distribute] lead ${lead.id} pendente (${reason}) — fallback ${fallbackEmail} inativo/inexistente`)
     return null
   }
+  const { staffIds } = await readBuyerPolicy(supabase)
+  if (staffIds.has(fb.id)) {
+    console.log(`[Distribute] lead ${lead.id} pendente — funcionário só recebe por prioridade explícita`)
+    return null
+  }
   console.log(`[Distribute] FALLBACK → ${fb.name} | lead ${lead.id} (${lead.state}) | motivo: ${reason}`)
   return await assignLeadToBuyer(supabase, lead, fb as any)
 }
@@ -258,6 +267,7 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
   const supabase = createAdminClient()
 
   // Get eligible buyers filtered by state + sorted by remaining credits (weighted)
+  const { staffIds } = await readBuyerPolicy(supabase)
   const { data: buyers, error } = await supabase.rpc('get_eligible_buyers', {
     p_product_type: 'lead',
     p_state: lead.state || null,
@@ -270,7 +280,7 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
 
   // Guard defensivo: remove buyers SUSPENSOS (is_active=false) que o RPC possa
   // ter deixado passar. Suspenso nunca recebe lead.
-  let eligible = buyers as EligibleBuyer[]
+  let eligible = withoutStaff(buyers as EligibleBuyer[], staffIds)
   const ids = eligible.map(b => b.id)
   if (ids.length > 0) {
     const { data: actives } = await supabase.from('buyers').select('id').in('id', ids).eq('is_active', true)
@@ -278,8 +288,8 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
     eligible = eligible.filter(b => activeSet.has(b.id))
   }
   if (eligible.length === 0) {
-    console.log(`[Distribute] Eligible buyers all suspended for lead ${lead.id}`)
-    return await assignToFallback(supabase, lead, 'todos os compradores suspensos')
+    console.log(`[Distribute] Nenhum cliente ativo elegível para lead ${lead.id} (funcionários fora da fila)`)
+    return await assignToFallback(supabase, lead, 'sem cliente ativo elegível')
   }
 
   // Filtro de DISPONIBILIDADE (horário): só recebe quem está dentro da janela

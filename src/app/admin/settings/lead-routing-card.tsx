@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-interface Buyer { id: string; name: string; email: string }
+interface Buyer { id: string; name: string; email: string; is_staff?: boolean }
 interface Step { email: string; limit: number; delivered: number }
 interface Routing {
   mode: 'normal' | 'exclusive' | 'random' | 'roundrobin' | 'sequential'
@@ -29,6 +29,7 @@ export function LeadRoutingCard() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  const customerBuyers = buyers.filter(b => !b.is_staff)
 
   useEffect(() => { load() }, [])
 
@@ -91,7 +92,7 @@ export function LeadRoutingCard() {
     set({ admin_rule: { ...(routing.admin_rule || { admin_emails: [] }), daily_max } })
   }
   function addStep() {
-    set({ steps: [...(routing.steps || []), { email: buyers[0]?.email || '', limit: 10, delivered: 0 }] })
+    set({ steps: [...(routing.steps || []), { email: customerBuyers[0]?.email || '', limit: 10, delivered: 0 }] })
   }
   function updateStep(i: number, patch: Partial<Step>) {
     const steps = [...(routing.steps || [])]
@@ -108,6 +109,7 @@ export function LeadRoutingCard() {
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
       <h2 className="font-bold text-gray-900 mb-1">🧭 Roteamento de Leads</h2>
       <p className="text-xs text-gray-400 mb-4">Para onde vão os próximos leads que chegarem do Meta</p>
+      <p className="text-xs text-indigo-700 bg-indigo-50 rounded-lg p-3 mb-4">Funcionários ficam fora da fila e dos roteamentos por crédito. Para direcionar leads a um funcionário, selecione-o explicitamente na Regra do Administrador abaixo; essa entrega não consome créditos.</p>
 
       {/* Seletor de modo */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5">
@@ -136,7 +138,7 @@ export function LeadRoutingCard() {
           <label className="block text-sm font-semibold text-gray-700 mb-1">Agente que recebe tudo</label>
           <select value={routing.exclusive_email || ''} onChange={e => set({ exclusive_email: e.target.value })} className={`w-full ${inputCls}`}>
             <option value="">— escolha —</option>
-            {buyers.map(b => <option key={b.id} value={b.email}>{b.name} ({b.email})</option>)}
+            {customerBuyers.map(b => <option key={b.id} value={b.email}>{b.name} ({b.email})</option>)}
           </select>
         </div>
       )}
@@ -145,7 +147,7 @@ export function LeadRoutingCard() {
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">Agentes no rodízio</label>
           <div className="space-y-1.5 max-h-56 overflow-auto">
-            {buyers.map(b => (
+            {customerBuyers.map(b => (
               <label key={b.id} className="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50">
                 <input type="checkbox" checked={(routing.pool_emails || []).includes(b.email)} onChange={() => togglePool(b.email)}
                   className="w-4 h-4 accent-indigo-500" />
@@ -166,7 +168,7 @@ export function LeadRoutingCard() {
               <div key={i} className="flex items-center gap-2 p-3 rounded-xl" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
                 <span className="text-xs font-bold text-gray-400 w-5">{i + 1}</span>
                 <select value={s.email} onChange={e => updateStep(i, { email: e.target.value })} className={inputCls} style={{ flex: 1 }}>
-                  {buyers.map(b => <option key={b.id} value={b.email}>{b.name}</option>)}
+                  {customerBuyers.map(b => <option key={b.id} value={b.email}>{b.name}</option>)}
                 </select>
                 <input type="number" min={1} value={s.limit} onChange={e => updateStep(i, { limit: parseInt(e.target.value) || 0 })}
                   className={inputCls} style={{ width: 70 }} title="quantos leads" />
@@ -191,7 +193,7 @@ export function LeadRoutingCard() {
               {routing.fallback_mode === 'exclusive' && (
                 <select value={routing.fallback_email || ''} onChange={e => set({ fallback_email: e.target.value })} className={inputCls} style={{ flex: 1 }}>
                   <option value="">— escolha —</option>
-                  {buyers.map(b => <option key={b.id} value={b.email}>{b.name}</option>)}
+                  {customerBuyers.map(b => <option key={b.id} value={b.email}>{b.name}</option>)}
                 </select>
               )}
             </div>
@@ -223,13 +225,14 @@ export function LeadRoutingCard() {
             <button type="button" onClick={() => setDailyMax('')} className="block mt-2 font-bold underline">Remover limite diário</button>
           </div>
         )}
-        <label className="block text-[12px] font-semibold text-gray-600 mb-1">Administradores no rodízio</label>
+        <label className="block text-[12px] font-semibold text-gray-600 mb-1">Destinatários da prioridade (inclui funcionários)</label>
         <div className="space-y-1.5 max-h-44 overflow-auto">
           {buyers.map(b => (
             <label key={b.id} className="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50">
               <input type="checkbox" checked={(routing.admin_rule?.admin_emails || []).includes(b.email)} onChange={() => toggleAdmin(b.email)}
                 className="w-4 h-4 accent-indigo-500" />
               <span className="text-sm text-gray-800">{b.name}</span>
+              {b.is_staff && <span className="text-[10px] font-semibold text-indigo-700">Funcionário · só por prioridade</span>}
               <span className="text-[11px] text-gray-400">{b.email}</span>
             </label>
           ))}

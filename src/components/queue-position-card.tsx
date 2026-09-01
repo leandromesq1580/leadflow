@@ -7,6 +7,7 @@ interface StateInfo { state: string; position: number; total: number; leadsPerDa
 interface Data {
   credits: number; hasCredits: boolean; availableNow: boolean; nextWindowHint: string | null
   queueOrder: string; receivedToday: number; states: StateInfo[]; best: StateInfo | null; blockers: string[]
+  isStaff?: boolean
 }
 
 type LFn = (pt: string, en: string, es: string) => string
@@ -59,6 +60,9 @@ export function QueuePositionCard({ dark = false }: { dark?: boolean }) {
   }, [])
 
   if (erro || !d) return null
+  if (d.isStaff) return <div className="rounded-xl p-4 mb-4 text-sm" style={{ background: dark ? 'rgba(124,58,237,0.10)' : 'var(--bg-card)', color: dark ? 'var(--m-text, #fff)' : 'var(--fg)' }}>
+    {L('Conta de funcionário: fora da fila de clientes. Leads somente por prioridade definida pelo administrador.', 'Staff account: excluded from the customer queue. Leads are assigned only through explicit administrator priority.', 'Cuenta de empleado: fuera de la cola de clientes. Los leads se asignan solo por prioridad explícita del administrador.')}
+  </div>
   if (!d.hasCredits) return null // sem crédito o card não faz sentido (a tela de compra cuida disso)
 
   const ink = dark ? 'var(--m-text, #fff)' : '#1a1a2e'

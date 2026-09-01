@@ -1,5 +1,6 @@
 import { createAdminClient } from './supabase/admin'
 import { buyerTimezone, isAvailableNow } from './availability'
+import { readBuyerPolicy } from './buyer-policy'
 
 /**
  * POSIÇÃO NA FILA do comprador (feature 2026-07-30).
@@ -33,6 +34,7 @@ export interface QueuePosition {
   states: QueueStateInfo[]
   best: QueueStateInfo | null
   blockers: string[]          // motivos que impedem receber AGORA
+  isStaff?: boolean
 }
 
 type Db = ReturnType<typeof createAdminClient>
@@ -47,6 +49,12 @@ function easternDayStartISO(): string {
 }
 
 export async function getQueuePosition(db: Db, buyerId: string): Promise<QueuePosition> {
+  const { staffIds } = await readBuyerPolicy(db)
+  if (staffIds.has(buyerId)) return {
+    credits: 0, hasCredits: false, availableNow: false, nextWindowHint: null,
+    queueOrder: 'priority_only', receivedToday: 0, states: [], best: null,
+    blockers: ['funcionario'], isStaff: true,
+  }
   const blockers: string[] = []
 
   // saldo de crédito de lead
@@ -98,6 +106,7 @@ export async function getQueuePosition(db: Db, buyerId: string): Promise<QueuePo
     const { data: elig } = await db.rpc('get_eligible_buyers', { p_product_type: 'lead', p_state: st })
     const uniq = new Map<string, { id: string; credits: number; leads_count: number }>()
     for (const e of (elig || []) as any[]) {
+      if (staffIds.has(e.id)) continue
       const cur = uniq.get(e.id)
       if (cur) { cur.credits += Number(e.remaining) || 0; continue }
       uniq.set(e.id, { id: e.id, credits: Number(e.remaining) || 0, leads_count: Number(e.leads_count) || 0 })

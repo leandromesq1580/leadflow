@@ -3,6 +3,7 @@ import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { adminDailyBlock, adminRuleTurn, easternDayStartISO, evaluateAdminRule } from '@/lib/admin-rule'
 import { readAdminRuleState } from '@/lib/admin-rule-state'
+import { readBuyerPolicy } from '@/lib/buyer-policy'
 
 /**
  * GET /api/admin/delivery-queue — Fila ÚNICA com integridade total.
@@ -18,6 +19,7 @@ export async function GET(request: NextRequest) {
   const db = createAdminClient()
   const { data: me } = await db.from('buyers').select('is_admin').eq('auth_user_id', user.id).single()
   if (!me?.is_admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const { staffIds } = await readBuyerPolicy(db)
 
   const { data: rt, error: routingError } = await db.from('settings').select('value').eq('key', 'lead_routing').maybeSingle()
   if (routingError) return NextResponse.json({ error: 'Não foi possível verificar o roteamento.' }, { status: 503 })
@@ -55,16 +57,17 @@ export async function GET(request: NextRequest) {
   if (allAdminEmails.length) {
     const { data: ab } = await db.from('buyers').select('id, name, email, is_active').in('email', allAdminEmails)
     const stMap = await statesOf((ab || []).map((b: any) => b.id))
-    for (const b of (ab || [])) admins.push({
+    for (const b of (ab || []).filter(b => !staffIds.has(b.id) || adminEmails.includes(b.email.toLowerCase()))) admins.push({
       id: b.id, nome: (b.name || '').trim(), email: b.email,
       estados: (stMap[b.id] || []).sort(),
       regraAdmin: adminEmails.includes(b.email.toLowerCase()) ? N : null,
-      isFallback: b.email === fallbackEmail,
+      isFallback: !staffIds.has(b.id) && b.email === fallbackEmail,
       receivedToday: snapshot.candidates.find(c => c.id === b.id)?.receivedToday || 0,
       dailyMax: ar.daily_max ?? null,
       blockedReason: !b.is_active ? 'inactive' : !(stMap[b.id] || []).length ? 'no_license'
         : adminEmails.includes(b.email.toLowerCase()) ? adminDailyBlock(ar, snapshot.candidates.find(c => c.id === b.id)?.receivedToday || 0) : null,
       isNext: nextCandidateIds.includes(b.id),
+      isStaff: staffIds.has(b.id),
     })
   }
   const adminIds = new Set(admins.map(a => a.id))
@@ -73,7 +76,7 @@ export async function GET(request: NextRequest) {
   const { data: elig } = await db.rpc('get_eligible_buyers', { p_product_type: 'lead', p_state: null })
   const seen = new Map<string, { id: string; name: string; credits: number; leads_count: number }>()
   for (const e of (elig || [])) {
-    if (adminIds.has(e.id)) continue
+    if (adminIds.has(e.id) || staffIds.has(e.id)) continue
     const cur = seen.get(e.id)
     if (cur) { cur.credits += Number(e.remaining) || 0; continue }
     seen.set(e.id, { id: e.id, name: (e.name || '').trim(), credits: Number(e.remaining) || 0, leads_count: Number(e.leads_count) || 0 })

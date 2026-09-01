@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { readBuyerPolicy } from '@/lib/buyer-policy'
 
 /**
  * GET /api/admin/reconcile-credits  — DRY-RUN (mostra o plano, não grava)
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest) {
   const db = createAdminClient()
   const { data: me } = await db.from('buyers').select('is_admin').eq('auth_user_id', user.id).single()
   if (!me?.is_admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const { staffIds } = await readBuyerPolicy(db)
 
   const apply = new URL(request.url).searchParams.get('apply') === '1'
 
@@ -29,6 +31,7 @@ export async function GET(request: NextRequest) {
 
   const byBuyer = new Map<string, { rows: any[]; purchased: number; used: number }>()
   for (const c of credits || []) {
+    if (staffIds.has(c.buyer_id)) continue
     const g = byBuyer.get(c.buyer_id) || { rows: [], purchased: 0, used: 0 }
     g.rows.push(c); g.purchased += c.total_purchased || 0; g.used += c.total_used || 0
     byBuyer.set(c.buyer_id, g)

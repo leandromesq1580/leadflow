@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { readBuyerPolicy } from '@/lib/buyer-policy'
 
 /**
  * GET /api/admin/agents — lista agentes (buyers) ativos pro admin.
@@ -15,6 +16,7 @@ export async function GET() {
   const db = createAdminClient()
   const { data: me } = await db.from('buyers').select('is_admin').eq('auth_user_id', user.id).single()
   if (!me?.is_admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const { staffIds } = await readBuyerPolicy(db)
 
   const { data } = await db
     .from('buyers')
@@ -22,5 +24,5 @@ export async function GET() {
     .eq('is_active', true)
     .order('name')
 
-  return NextResponse.json({ agents: data || [] })
+  return NextResponse.json({ agents: (data || []).map(b => ({ ...b, is_staff: staffIds.has(b.id) })) })
 }

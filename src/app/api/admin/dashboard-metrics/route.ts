@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { readBuyerPolicy } from '@/lib/buyer-policy'
 
 export const dynamic = 'force-dynamic'
 
@@ -92,12 +93,8 @@ export async function GET(request: NextRequest) {
   const { data: leadCreditRows } = await crQ
   // Funcionários/casa fora da conta geral (pedido 23/08: os 100 créditos de
   // cortesia do Gabriel inflavam "vendidos", "devidos" e derrubavam o % entrega).
-  // Lista vive em settings.metrics_exclude_buyers — adicionar gente nova sem deploy.
-  let foraDaConta = new Set<string>()
-  try {
-    const { data: exc } = await db.from('settings').select('value').eq('key', 'metrics_exclude_buyers').maybeSingle()
-    foraDaConta = new Set(((exc?.value as any)?.buyers || []) as string[])
-  } catch { /* sem a chave, ninguém é excluído */ }
+  // Preserva metrics_exclude_buyers e inclui automaticamente os staff_buyers.
+  const { metricsExcludedIds: foraDaConta } = await readBuyerPolicy(db)
   const perBuyer = new Map<string, { purchased: number; used: number }>()
   for (const c of leadCreditRows || []) {
     if (!c.buyer_id || !(Number(c.total_purchased) > 0)) continue

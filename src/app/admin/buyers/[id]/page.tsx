@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation'
 import { AdminActions } from './admin-actions'
 import { CRM_PLAN_LIST } from '@/lib/crm-plans'
 import { buildPurchaseHistory } from '@/lib/purchase-history'
+import { readBuyerPolicy } from '@/lib/buyer-policy'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +21,8 @@ export default async function BuyerDetailPage({ params }: { params: Promise<{ id
 
   const { data: buyer } = await db.from('buyers').select('*').eq('id', id).single()
   if (!buyer) return <p>Comprador nao encontrado</p>
+  const { staffIds } = await readBuyerPolicy(db)
+  const isStaff = staffIds.has(id)
 
   const { data: states } = await db.from('buyer_states').select('state_code').eq('buyer_id', id)
   const { data: availability } = await db.from('buyer_availability').select('day_type, period').eq('buyer_id', id)
@@ -61,6 +64,7 @@ export default async function BuyerDetailPage({ params }: { params: Promise<{ id
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <h1 className="text-[22px] font-extrabold" style={{ color: '#1a1a2e' }}>{buyer.name}</h1>
+            {isStaff && <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ background: '#eef2ff', color: '#4338ca' }}>Funcionário</span>}
             {buyer.crm_plan === 'pro' && <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase" style={{ background: 'linear-gradient(135deg, #a78bfa, #6366f1)', color: '#fff' }}>CRM Pro</span>}
             {buyer.is_agency && <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase" style={{ background: '#fef3c7', color: '#92400e' }}>Agency</span>}
             {buyer.is_admin && <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase" style={{ background: '#fef2f2', color: '#dc2626' }}>Admin</span>}
@@ -78,9 +82,12 @@ export default async function BuyerDetailPage({ params }: { params: Promise<{ id
       <AdminActions buyerId={buyer.id} isActive={!!buyer.is_active} plan={buyer.crm_plan || 'free'} buyerName={buyer.name} />
 
       {/* Credits */}
+      {isStaff && <div className="rounded-xl p-4 mb-4 text-[13px]" style={{ background: '#eef2ff', color: '#4338ca' }}>
+        <b>Conta de funcionário — fora da fila normal.</b> Recebe leads somente quando selecionado na regra de prioridade do administrador. Os créditos abaixo são internos: não entram nos totais de créditos vendidos ou de leads devidos aos clientes. O histórico foi preservado.
+      </div>}
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #e8ecf4' }}>
-          <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>Creditos Lead</p>
+          <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{isStaff ? 'Créditos internos de lead' : 'Creditos Lead'}</p>
           <p className="text-[28px] font-extrabold mt-1" style={{ color: '#1a1a2e' }}>
             {totalLeadCredits - usedLeadCredits} <span className="text-[14px] font-normal" style={{ color: '#94a3b8' }}>/ {totalLeadCredits}</span>
           </p>
