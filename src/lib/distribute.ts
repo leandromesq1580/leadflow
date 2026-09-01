@@ -3,18 +3,8 @@ import { sendLeadNotificationEmail, sendTeamMemberNotification } from './notific
 import { buyerTimezone, isAvailableNow } from './availability'
 import { placeLeadInMemberPipeline } from './place-member-lead'
 import { resolveSendBridge } from './wa-bridge'
-
-// Inicio do dia (meia-noite) no fuso America/New_York, em ISO UTC. Robusto p/ EDT/EST.
-function easternDayStartISO(): string {
-  const now = new Date()
-  const p = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(now)
-  const g = (t: string) => (p.find(x => x.type === t) as any).value
-  const hh = g('hour') === '24' ? '00' : g('hour')
-  const wallNow = `${g('year')}-${g('month')}-${g('day')}T${hh}:${g('minute')}:${g('second')}`
-  const offsetMs = now.getTime() - new Date(wallNow + 'Z').getTime()
-  const wallMidnight = `${g('year')}-${g('month')}-${g('day')}T00:00:00`
-  return new Date(new Date(wallMidnight + 'Z').getTime() + offsetMs).toISOString()
-}
+import { adminRuleTurn, easternDayStartISO, evaluateAdminRule, type AdminRule } from './admin-rule'
+import { readAdminRuleState } from './admin-rule-state'
 
 async function assignLeadToBuyer(
   supabase: ReturnType<typeof createAdminClient>,
@@ -166,8 +156,6 @@ export async function forceAssignRoundRobin(
   return assigned
 }
 
-interface AdminRule { admin_emails?: string[]; one_in?: number; daily_quota?: number; daily_max?: number | null }
-
 /**
  * REGRA DO ADMINISTRADOR (proporcional, "1 a cada N"): a cada N leads do SISTEMA,
  * 1 vai pro(s) admin(s) selecionado(s) (ex: Regiane), em rodízio entre eles e ANTES
@@ -181,63 +169,12 @@ export async function tryAdminRule(
   rule?: AdminRule | null,
   dryRun = false
 ): Promise<EligibleBuyer | null> {
-  const everyN = rule?.one_in ?? rule?.daily_quota ?? 0   // back-compat: lê o campo antigo se o novo não existir
-  const emails = (rule?.admin_emails || []).filter(Boolean)
-  if (everyN <= 0 || emails.length === 0) return null
+  if (!adminRuleTurn(rule, 0).N || !rule?.admin_emails?.length) return null
   const supabase = createAdminClient()
-
-  const { data: admins } = await supabase
-    .from('buyers')
-    .select('id, name, email, phone, notification_email, notification_sms')
-    .in('email', emails)
-    .eq('is_active', true)
-  if (!admins || admins.length === 0) return null
-
-  // Só admins licenciados no estado do lead
-  let pool = admins
-  if (lead.state) {
-    const { data: stRows } = await supabase.from('buyer_states').select('buyer_id, state_code').in('buyer_id', admins.map(a => a.id))
-    const licensed = new Set((stRows || []).filter(s => s.state_code === lead.state).map(s => s.buyer_id))
-    pool = admins.filter(a => licensed.has(a.id))
-  }
-  if (pool.length === 0) return null
-
-  // Posição deste lead na sequência de leads do SISTEMA já distribuídos (assigned_to set).
-  // A cada N posições é a vez do admin → proporcional ao volume (não teto diário).
-  const { count: prior } = await supabase
-    .from('leads')
-    .select('*', { count: 'exact', head: true })
-    .not('meta_lead_id', 'is', null)
-    .not('assigned_to', 'is', null)
-  const position = (prior || 0) + 1
-  const isTurn = position % everyN === 0
-
-  if (!isTurn && !dryRun) return null   // não é a vez → segue o fluxo normal
-
-  // Rodízio entre os admins licenciados: alterna a cada vez do admin.
-  const turn = Math.floor(position / everyN)
-  const chosen = pool[(Math.max(turn, 1) - 1) % pool.length]
-
-  // TETO DIÁRIO (2026-07-23): quantos leads o admin pode receber POR DIA via regra.
-  // daily_max ausente/null = sem limite (comportamento antigo). 0 = nenhum hoje.
-  // Conta TODO lead de sistema já atribuído ao admin escolhido no dia (Eastern),
-  // inclusive os que caíram por fallback. Teto batido → a vez é PULADA e o lead
-  // segue pro roteamento normal. O FALLBACK (último recurso, sem comprador apto)
-  // NÃO respeita o teto de propósito — senão o lead ficaria órfão.
-  const dailyMax = rule?.daily_max
-  if (dailyMax !== undefined && dailyMax !== null) {
-    if (dailyMax <= 0) return null
-    const { count: adminToday } = await supabase
-      .from('leads')
-      .select('*', { count: 'exact', head: true })
-      .eq('assigned_to', chosen.id)
-      .not('meta_lead_id', 'is', null)
-      .gte('assigned_at', easternDayStartISO())
-    if ((adminToday || 0) >= dailyMax) {
-      if (!dryRun) console.log(`[Distribute] REGRA ADMIN: teto diário ${dailyMax} batido p/ ${chosen.name} (${adminToday} hoje) — vez pulada`)
-      return null
-    }
-  }
+  const snapshot = await readAdminRuleState(supabase, rule)
+  const decision = evaluateAdminRule(rule, snapshot.assignedCount, snapshot.candidates, lead.state)
+  const { N: everyN, position, isTurn, candidate: chosen } = decision
+  if (!decision.eligible || !chosen || (!isTurn && !dryRun)) return null
 
   // Dry-run (preview/teste): retorna quem PEGARIA sem atribuir nem notificar.
   if (dryRun) return { ...(chosen as any), _everyN: everyN, _position: position, _isTurn: isTurn } as EligibleBuyer
@@ -505,7 +442,7 @@ export async function redistributePendingLeads(routingEmails?: string[] | null, 
   const cutoff = new Date(Date.now() - maxAgeHours * 3600_000).toISOString()
   const { data: pending } = await supabase
     .from('leads')
-    .select('id, name, email, phone, city, state, interest, campaign_name, product_type, created_at')
+    .select('id, name, email, phone, city, state, interest, campaign_name, product_type, created_at, meta_lead_id')
     .eq('status', 'new')
     .is('assigned_to', null)
     .eq('product_type', 'lead')
@@ -517,13 +454,16 @@ export async function redistributePendingLeads(routingEmails?: string[] | null, 
   // os pendentes vão pro alvo (igual leads novos), não pela distribuição normal.
   // Sem alvo (modo normal) = distribuição por estado/crédito/horário.
   const hasRouting = !!routingEmails && routingEmails.length > 0
+  const { data: routing, error: routingError } = await supabase.from('settings').select('value').eq('key', 'lead_routing').maybeSingle()
+  if (routingError) throw routingError
+  const adminRule = (routing?.value as any)?.admin_rule as AdminRule | undefined
 
   let assigned = 0
   for (const lead of pending || []) {
     try {
-      const buyer = hasRouting
-        ? await forceAssignRoundRobin(lead as Lead, routingEmails!)
-        : await distributeLeadToNextBuyer(lead as Lead)
+      let buyer = lead.meta_lead_id ? await tryAdminRule(lead as Lead, adminRule) : null
+      if (!buyer && hasRouting) buyer = await forceAssignRoundRobin(lead as Lead, routingEmails!)
+      if (!buyer) buyer = await distributeLeadToNextBuyer(lead as Lead)
       if (buyer) { assigned++; console.log(`[Redistribute] Lead pendente ${lead.id} → ${buyer.name}`) }
     } catch (e) {
       console.error(`[Redistribute] erro no lead ${lead.id}:`, (e as any)?.message)

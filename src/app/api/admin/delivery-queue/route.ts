@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { adminDailyBlock, adminRuleTurn, easternDayStartISO, evaluateAdminRule } from '@/lib/admin-rule'
+import { readAdminRuleState } from '@/lib/admin-rule-state'
 
 /**
  * GET /api/admin/delivery-queue — Fila ÚNICA com integridade total.
@@ -8,18 +10,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
  * + a fila de crédito (pagantes) + indica de quem é o PRÓXIMO lead.
  */
 export const dynamic = 'force-dynamic'
-
-// Inicio do dia (meia-noite) no fuso America/New_York, em ISO UTC. Robusto p/ EDT/EST.
-function easternDayStartISO(): string {
-  const now = new Date()
-  const p = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(now)
-  const g = (t: string) => (p.find(x => x.type === t) as any).value
-  const hh = g('hour') === '24' ? '00' : g('hour')
-  const wallNow = `${g('year')}-${g('month')}-${g('day')}T${hh}:${g('minute')}:${g('second')}`
-  const offsetMs = now.getTime() - new Date(wallNow + 'Z').getTime()
-  const wallMidnight = `${g('year')}-${g('month')}-${g('day')}T00:00:00`
-  return new Date(new Date(wallMidnight + 'Z').getTime() + offsetMs).toISOString()
-}
 
 export async function GET(request: NextRequest) {
   const supabase = await createServerSupabase()
@@ -29,23 +19,28 @@ export async function GET(request: NextRequest) {
   const { data: me } = await db.from('buyers').select('is_admin').eq('auth_user_id', user.id).single()
   if (!me?.is_admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const { data: rt } = await db.from('settings').select('value').eq('key', 'lead_routing').maybeSingle()
+  const { data: rt, error: routingError } = await db.from('settings').select('value').eq('key', 'lead_routing').maybeSingle()
+  if (routingError) return NextResponse.json({ error: 'Não foi possível verificar o roteamento.' }, { status: 503 })
   const routing: any = rt?.value || {}
   const ar: any = routing.admin_rule || {}
-  const N = Number(ar.one_in ?? ar.daily_quota ?? 0)
-  const adminEmails: string[] = (ar.admin_emails || []).filter(Boolean)
+  const adminEmails: string[] = (ar.admin_emails || []).map((e: string) => e.trim().toLowerCase()).filter(Boolean)
   const fallbackEmail: string | null = routing.fallback_email || null
   const queueOrder: string = routing.queue_order || 'credito'
 
-  // Vez do admin: posição = leads do sistema já distribuídos; admin pega quando (pos % N == 0)
-  let leadsUntilAdmin: number | null = null, herTurnNow = false
-  if (N > 0 && adminEmails.length) {
-    const { count } = await db.from('leads').select('*', { count: 'exact', head: true }).not('meta_lead_id', 'is', null).not('assigned_to', 'is', null)
-    const pos = count || 0
-    const nextAdminPos = Math.ceil((pos + 1) / N) * N
-    leadsUntilAdmin = nextAdminPos - pos
-    herTurnNow = leadsUntilAdmin === 1
+  // The preview and actual delivery share the same state, license and daily-cap checks.
+  let snapshot
+  try { snapshot = await readAdminRuleState(db, ar) } catch (error) {
+    console.error('[Delivery queue] Could not read admin rule:', error)
+    return NextResponse.json({ error: 'Não foi possível verificar a regra de prioridade.' }, { status: 503 })
   }
+  const { N, leadsUntilAdmin, isTurn } = adminRuleTurn(ar, snapshot.assignedCount)
+  const coveredStates = [...new Set(snapshot.candidates.flatMap(c => c.states))]
+  const nextCandidateIds = [...new Set(coveredStates.flatMap(state => {
+    const d = evaluateAdminRule(ar, snapshot.assignedCount, snapshot.candidates, state)
+    return d.isTurn && d.eligible && d.candidate ? [d.candidate.id] : []
+  }))]
+  const herTurnNow = nextCandidateIds.length > 0
+  const ruleAvailable = snapshot.candidates.some(c => c.is_active && c.states.length && !adminDailyBlock(ar, c.receivedToday))
 
   // estados de um conjunto de buyer ids
   async function statesOf(ids: string[]) {
@@ -58,13 +53,18 @@ export async function GET(request: NextRequest) {
   const allAdminEmails = [...new Set([...adminEmails, ...(fallbackEmail ? [fallbackEmail] : [])])]
   const admins: any[] = []
   if (allAdminEmails.length) {
-    const { data: ab } = await db.from('buyers').select('id, name, email').in('email', allAdminEmails).eq('is_active', true)
+    const { data: ab } = await db.from('buyers').select('id, name, email, is_active').in('email', allAdminEmails)
     const stMap = await statesOf((ab || []).map((b: any) => b.id))
     for (const b of (ab || [])) admins.push({
       id: b.id, nome: (b.name || '').trim(), email: b.email,
       estados: (stMap[b.id] || []).sort(),
-      regraAdmin: adminEmails.includes(b.email) ? N : null,
+      regraAdmin: adminEmails.includes(b.email.toLowerCase()) ? N : null,
       isFallback: b.email === fallbackEmail,
+      receivedToday: snapshot.candidates.find(c => c.id === b.id)?.receivedToday || 0,
+      dailyMax: ar.daily_max ?? null,
+      blockedReason: !b.is_active ? 'inactive' : !(stMap[b.id] || []).length ? 'no_license'
+        : adminEmails.includes(b.email.toLowerCase()) ? adminDailyBlock(ar, snapshot.candidates.find(c => c.id === b.id)?.receivedToday || 0) : null,
+      isNext: nextCandidateIds.includes(b.id),
     })
   }
   const adminIds = new Set(admins.map(a => a.id))
@@ -105,5 +105,5 @@ export async function GET(request: NextRequest) {
   const stMap2 = await statesOf(queue.map(q => q.id))
   const fila = queue.map((q, i) => ({ pos: i + 1, id: q.id, nome: q.name, creditos: q.credits, estados: (stMap2[q.id] || []).sort(), recebeuHoje: gotToday.has(q.id) }))
 
-  return NextResponse.json({ adminRule: { N, leadsUntilAdmin, herTurnNow }, queueOrder, admins, fila })
+  return NextResponse.json({ adminRule: { N, leadsUntilAdmin, herTurnNow, isTurn, ruleAvailable, nextCandidateIds, dailyMax: ar.daily_max ?? null }, queueOrder, admins, fila }, { headers: { 'Cache-Control': 'private, no-store' } })
 }

@@ -46,6 +46,9 @@ export function LeadRoutingCard() {
   }
 
   async function save() {
+    if ((routing.admin_rule?.one_in ?? routing.admin_rule?.daily_quota ?? 0) > 0 && routing.admin_rule?.daily_max === 0 && routing.admin_rule?.admin_emails?.length) {
+      if (!confirm('O limite diário está em ZERO. Isso bloqueia TODOS os leads pela regra de prioridade, mesmo com agentes selecionados. Deseja salvar esse bloqueio? Para permitir entregas sem teto diário, clique em Cancelar e depois em “Remover limite diário”.')) return
+    }
     setSaving(true)
     const sb = createClient()
     // Protege contra lost-update: o poll pode ter incrementado o "delivered" enquanto
@@ -212,8 +215,14 @@ export function LeadRoutingCard() {
           <label className="text-sm text-gray-700">Máximo de</label>
           <input type="number" min={0} placeholder="∞" value={routing.admin_rule?.daily_max ?? ''}
             onChange={e => setDailyMax(e.target.value)} className={inputCls} style={{ width: 70 }} />
-          <label className="text-sm text-gray-700">leads pro admin <b>por dia</b> (vazio = sem limite · <b>0</b> = nenhum hoje)</label>
+          <label className="text-sm text-gray-700">leads pro admin <b>por dia</b> (vazio = sem limite · <b>0</b> = bloqueado até alterar)</label>
         </div>
+        {routing.admin_rule?.daily_max === 0 && (
+          <div role="alert" className="p-3 mb-3 rounded-xl border border-red-200 bg-red-50 text-red-800 text-sm">
+            <b>Prioridade bloqueada: limite diário em zero.</b> Os agentes selecionados não receberão nenhum lead por esta regra, nem nos próximos dias, até alterar esse limite.
+            <button type="button" onClick={() => setDailyMax('')} className="block mt-2 font-bold underline">Remover limite diário</button>
+          </div>
+        )}
         <label className="block text-[12px] font-semibold text-gray-600 mb-1">Administradores no rodízio</label>
         <div className="space-y-1.5 max-h-44 overflow-auto">
           {buyers.map(b => (

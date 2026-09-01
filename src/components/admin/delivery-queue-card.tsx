@@ -1,10 +1,13 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
+import type { AdminRuleBlock } from '@/lib/admin-rule'
 
-interface Admin { id: string; nome: string; estados: string[]; regraAdmin: number | null; isFallback: boolean }
+interface Admin { id: string; nome: string; estados: string[]; regraAdmin: number | null; isFallback: boolean; receivedToday: number; dailyMax: number | null; blockedReason: AdminRuleBlock | null; isNext: boolean }
 interface Row { pos: number; id: string; nome: string; creditos: number; estados: string[]; recebeuHoje?: boolean }
-interface Data { adminRule: { N: number; leadsUntilAdmin: number | null; herTurnNow: boolean }; queueOrder?: string; admins: Admin[]; fila: Row[] }
+interface Data { adminRule: { N: number; leadsUntilAdmin: number | null; herTurnNow: boolean; ruleAvailable: boolean; isTurn: boolean }; queueOrder?: string; admins: Admin[]; fila: Row[] }
+
+const BLOCK_LABELS: Record<AdminRuleBlock, string> = { disabled: 'Regra desligada', inactive: 'Conta inativa', no_license: 'Sem estado licenciado', daily_paused: 'Bloqueado: limite diário = 0', daily_limit: 'Limite diário atingido' }
 
 const QUEUE_LABELS: Record<string, string> = { credito: 'Crédito', antiguidade: 'Antiguidade', hibrido: 'Híbrido', rodizio: 'Rodízio' }
 
@@ -38,12 +41,12 @@ export function DeliveryQueueCard() {
     async function load() {
       try {
         const d = await fetch('/api/admin/delivery-queue', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null))
-        if (!alive || !d) { if (alive) setLoading(false); return }
-        const sig = JSON.stringify([d.adminRule?.herTurnNow, d.adminRule?.leadsUntilAdmin, (d.fila || []).map((q: Row) => q.id + ':' + q.creditos)])
+        if (!alive || !d) { if (alive) { setData(null); setLoading(false) }; return }
+        const sig = JSON.stringify([d.adminRule, d.admins, (d.fila || []).map((q: Row) => q.id + ':' + q.creditos)])
         if (sigRef.current && sigRef.current !== sig) { setFlash(true); setTimeout(() => { if (alive) setFlash(false) }, 2500) }
         sigRef.current = sig
         setData(d); setUpdatedAt(new Date().toLocaleTimeString('pt-BR'))
-      } catch {}
+      } catch { if (alive) setData(null) }
       if (alive) setLoading(false)
     }
     load()
@@ -57,11 +60,11 @@ export function DeliveryQueueCard() {
   }, [])
 
   const ar = data?.adminRule
-  const adminNome = data?.admins.find(a => a.regraAdmin)?.nome || 'Admin'
+  const adminNome = data?.admins.filter(a => a.isNext).map(a => a.nome).join(' / ') || 'Prioridade'
   const proximoTxt = ar
     ? (ar.herTurnNow
-      ? `👑 ${adminNome} — regra do admin (1 a cada ${ar.N})`
-      : `1º apto da fila no estado do lead${ar.N > 0 && ar.leadsUntilAdmin ? ` · regra do admin entra daqui a ${ar.leadsUntilAdmin} lead${ar.leadsUntilAdmin > 1 ? 's' : ''}` : ''}`)
+      ? `👑 ${adminNome} — 1 a cada ${ar.N}, conforme o estado do lead`
+      : `1º apto da fila no estado do lead${ar.N > 0 && !ar.ruleAvailable ? ' · prioridade bloqueada (veja o motivo abaixo)' : ar.N > 0 && ar.isTurn ? ' · prioridade sem destinatário apto nesta vez' : ar.N > 0 && ar.leadsUntilAdmin ? ` · vez da prioridade em ${ar.leadsUntilAdmin} leads, conforme estado e limite diário` : ''}`)
     : ''
 
   return (
@@ -72,8 +75,8 @@ export function DeliveryQueueCard() {
           <p className="text-[12px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>Ordem real: o admin intercepta pela regra; o resto, por <b>{(QUEUE_LABELS[data?.queueOrder || 'credito'] || 'Crédito').toLowerCase()}</b>.</p>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ background: '#22c55e' }} />
-          <span className="text-[11px] font-semibold" style={{ color: '#15803d' }}>ao vivo</span>
+          <span className="inline-block w-2 h-2 rounded-full" style={{ background: data ? '#22c55e' : '#f59e0b' }} />
+          <span className="text-[11px] font-semibold" style={{ color: data ? '#15803d' : '#b45309' }}>{data ? 'ao vivo' : 'sem atualização'}</span>
           {updatedAt && <span className="text-[10px]" style={{ color: '#cbd5e1' }}>· {updatedAt}</span>}
         </div>
       </div>
@@ -90,27 +93,29 @@ export function DeliveryQueueCard() {
       {loading ? <div className="px-6 py-8 text-center text-[13px]" style={{ color: 'var(--fg-muted)' }}>Carregando…</div> : !data ? <div className="px-6 py-8 text-center text-[13px]" style={{ color: 'var(--fg-muted)' }}>Erro ao carregar.</div> : (
         <div>
           <div className="px-6 py-3" style={{ background: '#f8f9ff', borderBottom: '1px solid #eef2ff' }}>
-            <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>🎯 Próximo lead vai para</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>🎯 Previsão do próximo lead</p>
             <p className="text-[13px] font-semibold mt-0.5" style={{ color: 'var(--fg)' }}>{proximoTxt}</p>
           </div>
 
           {data.admins.map(a => (
-            <div key={a.id} className="flex items-center gap-4 px-6 py-3" style={{ borderBottom: '1px solid #f8fafc', background: ar?.herTurnNow && a.regraAdmin ? '#f5f3ff' : 'var(--bg-card)' }}>
+            <div key={a.id} className="flex items-center gap-4 px-6 py-3" style={{ borderBottom: '1px solid #f8fafc', background: a.isNext ? '#f5f3ff' : 'var(--bg-card)' }}>
               <div className="w-9 h-9 rounded-lg flex items-center justify-center text-[15px] flex-shrink-0" style={{ background: '#3b1d7a' }}>👑</div>
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-semibold flex items-center gap-2 flex-wrap" style={{ color: 'var(--fg)' }}>
                   <span className="truncate">{a.nome}</span>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: '#ede9fe', color: '#6d28d9' }}>admin</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: '#ede9fe', color: '#6d28d9' }}>{a.regraAdmin ? 'prioridade' : 'reserva'}</span>
                   {a.regraAdmin ? <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#ede9fe', color: '#6d28d9' }}>1 a cada {a.regraAdmin}</span> : null}
                   {a.isFallback ? <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-soft)', color: 'var(--fg-secondary)' }}>fallback</span> : null}
                 </p>
                 <div className="flex gap-1 flex-wrap mt-1"><StateChips estados={a.estados} /></div>
+                {!!a.regraAdmin && <p className="text-[10px] mt-1" style={{ color: 'var(--fg-muted)' }}>{a.receivedToday} recebidos hoje · {a.dailyMax == null ? 'sem limite diário' : `limite diário: ${a.dailyMax}`}</p>}
+                {a.blockedReason && <p className="text-[11px] font-bold mt-1" style={{ color: '#dc2626' }}>⚠️ {BLOCK_LABELS[a.blockedReason]}</p>}
               </div>
               <div className="text-right flex-shrink-0">
                 {a.regraAdmin ? (
                   <>
-                    <p className="text-[13px] font-extrabold" style={{ color: ar?.herTurnNow ? '#6d28d9' : 'var(--fg-muted)' }}>{ar?.herTurnNow ? 'PRÓXIMO' : `em ${ar?.leadsUntilAdmin}`}</p>
-                    <p className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>{ar?.herTurnNow ? 'a vez dela' : 'leads p/ a vez'}</p>
+                    <p className="text-[13px] font-extrabold" style={{ color: a.blockedReason ? '#dc2626' : a.isNext ? '#6d28d9' : 'var(--fg-muted)' }}>{a.blockedReason ? 'BLOQUEADO' : a.isNext ? 'PRÓXIMO' : 'AGUARDANDO'}</p>
+                    <p className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>{a.blockedReason ? 'não recebe pela prioridade' : a.isNext ? 'se licenciado no estado' : 'conforme rodízio e estado'}</p>
                   </>
                 ) : <p className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>só fallback</p>}
               </div>

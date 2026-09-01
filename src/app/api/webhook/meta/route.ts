@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { distributeLeadToNextBuyer, forceAssignRoundRobin } from '@/lib/distribute'
+import { distributeLeadToNextBuyer, forceAssignRoundRobin, tryAdminRule } from '@/lib/distribute'
 import { stateFromPhone } from '@/lib/us-area-codes'
 
 /**
@@ -170,7 +170,11 @@ export async function POST(request: NextRequest) {
       .split(',').map(e => e.trim()).filter(Boolean)
 
     let buyer = null
-    if (forceEmails.length > 0) {
+    // A prioridade configurada vale também na chegada por webhook, antes do pool.
+    const { data: routing, error: routingError } = await supabase.from('settings').select('value').eq('key', 'lead_routing').maybeSingle()
+    if (routingError) throw routingError
+    buyer = await tryAdminRule(newLead, (routing?.value as any)?.admin_rule)
+    if (!buyer && forceEmails.length > 0) {
       buyer = await forceAssignRoundRobin(newLead, forceEmails)
     }
     if (!buyer) {
