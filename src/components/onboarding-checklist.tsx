@@ -1,10 +1,13 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getLocale } from '@/lib/locale'
 import Link from 'next/link'
 import { DismissButton } from './dismiss-button'
 
 interface Props { buyerId: string }
 
 export async function OnboardingChecklist({ buyerId }: Props) {
+  const locale = await getLocale()
+  const L = (pt: string, en: string, es: string) => locale === 'en' ? en : locale === 'es' ? es : pt
   const db = createAdminClient()
 
   const { data: buyer } = await db.from('buyers')
@@ -25,11 +28,36 @@ export async function OnboardingChecklist({ buyerId }: Props) {
   const hasCrm = buyer.crm_plan === 'pro'
 
   const items = [
-    { done: true, label: 'Conta criada', desc: 'Welcome aboard!', href: null },
-    { done: hasStates, label: 'Configure seus estados', desc: 'Pra receber leads dos estados onde tem licenca', href: '/dashboard/settings' },
-    { done: hasCredits, label: 'Compre seu primeiro pacote', desc: 'Comece com 10 leads exclusivos por $280', href: '/dashboard/credits' },
-    { done: hasCrm, label: 'Ative o CRM Pro', desc: 'Pipeline + Time + Follow-ups por $99/mes', href: '/dashboard/credits' },
-    { done: hasTeam, label: 'Monte seu time (opcional)', desc: 'Adicione agentes e distribua leads automaticamente', href: '/dashboard/team' },
+    {
+      done: true,
+      label: L('Conta criada', 'Account created', 'Cuenta creada'),
+      desc: L('Boas-vindas!', 'Welcome aboard!', '¡Te damos la bienvenida!'),
+      href: null,
+    },
+    {
+      done: hasStates,
+      label: L('Configure seus estados', 'Configure your states', 'Configura tus estados'),
+      desc: L('Para receber leads dos estados onde tem licença', 'Receive leads from states where you are licensed', 'Recibe prospectos de los estados donde tienes licencia'),
+      href: '/dashboard/settings',
+    },
+    {
+      done: hasCredits,
+      label: L('Compre seu primeiro pacote', 'Buy your first package', 'Compra tu primer paquete'),
+      desc: L('Comece com 10 leads exclusivos por $280', 'Start with 10 exclusive leads for $280', 'Comienza con 10 prospectos exclusivos por $280'),
+      href: '/dashboard/credits',
+    },
+    {
+      done: hasCrm,
+      label: L('Ative o CRM Pro', 'Activate CRM Pro', 'Activa CRM Pro'),
+      desc: L('Funil de vendas + Equipe + Acompanhamentos por $99/mês', 'Sales pipeline + Team + Follow-ups for $99/month', 'Flujo de ventas + Equipo + Seguimientos por $99/mes'),
+      href: '/dashboard/credits',
+    },
+    {
+      done: hasTeam,
+      label: L('Monte seu time (opcional)', 'Build your team (optional)', 'Configura tu equipo (opcional)'),
+      desc: L('Adicione agentes e distribua leads automaticamente', 'Add agents and distribute leads automatically', 'Agrega agentes y distribuye prospectos automáticamente'),
+      href: '/dashboard/team',
+    },
   ]
 
   const completed = items.filter(i => i.done).length
@@ -44,8 +72,10 @@ export async function OnboardingChecklist({ buyerId }: Props) {
     <div className="rounded-2xl mb-6 overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff, #f8f9fc)', border: '1px solid var(--border)', boxShadow: '0 4px 14px rgba(124,58,237,0.06)' }}>
       <div className="px-6 pt-5 pb-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--bg-soft)' }}>
         <div>
-          <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>Progresso da configuracao</p>
-          <p className="text-[16px] font-extrabold mt-0.5" style={{ color: 'var(--fg)' }}>{completed} de {total} completos</p>
+          <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>{L('Progresso da configuração', 'Setup progress', 'Progreso de configuración')}</p>
+          <p className="text-[16px] font-extrabold mt-0.5" style={{ color: 'var(--fg)' }}>
+            {L(`${completed} de ${total} concluídos`, `${completed} of ${total} completed`, `${completed} de ${total} completados`)}
+          </p>
         </div>
         <DismissButton />
       </div>
@@ -70,7 +100,7 @@ export async function OnboardingChecklist({ buyerId }: Props) {
                   <p className="text-[13px] font-bold" style={{ color: 'var(--fg)' }}>{item.label}</p>
                   <p className="text-[11px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>{item.desc}</p>
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-1 rounded-md" style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>Fazer</span>
+                <span className="text-[11px] font-bold px-2.5 py-1 rounded-md" style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>{L('Fazer', 'Start', 'Comenzar')}</span>
               </Link>
             ) : (
               <div className="flex items-center gap-3 py-2.5 px-3 rounded-xl" style={{ opacity: item.done ? 0.6 : 1 }}>
