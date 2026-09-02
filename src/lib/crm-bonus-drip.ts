@@ -1,8 +1,8 @@
 import { createAdminClient } from './supabase/admin'
-import { CRM_PLAN_LIST, LEADS_PER_MONTH } from './crm-plans'
+import { CRM_PLAN_LIST, isLegacyCrmBonusCycle, LEGACY_CRM_LEADS_PER_MONTH } from './crm-plans'
 
 /**
- * DRIP dos leads de bônus do CRM: 5 a cada 30 dias, até o total do plano por ciclo.
+ * Encerramento dos ciclos legados do CRM. NÃO inicia benefício e NÃO renova.
  *
  * O webhook (invoice.payment_succeeded) credita o MÊS 1 (5 leads) na cobrança, com
  * marker `crm-bonus:<invoice>:m1`. Este job pinga os meses seguintes (m2, m3...) a
@@ -21,7 +21,7 @@ import { CRM_PLAN_LIST, LEADS_PER_MONTH } from './crm-plans'
 // Eles entram aqui naturalmente porque têm marker 'crm-bonus:%' casado com o payment.
 // Benefício segue EXTINTO pra qualquer outro assinante (gate no webhook). Não estender
 // sem decisão do dono.
-export async function dripCrmBonusLeads(): Promise<number> {
+export async function dripLegacyCrmBonusLeads(): Promise<number> {
   const supabase = createAdminClient()
   let granted = 0
 
@@ -41,6 +41,8 @@ export async function dripCrmBonusLeads(): Promise<number> {
         .eq('buyer_id', b.id).eq('product_type', 'crm').eq('status', 'completed')
         .order('created_at', { ascending: false }).limit(1).maybeSingle()
       if (!pay?.stripe_session_id) continue
+      // A existência de bônus antigo não dá direito a uma renovação nova.
+      if (!isLegacyCrmBonusCycle(pay.created_at)) continue
 
       const plan = CRM_PLAN_LIST.find(p => p.amountCents === Math.round((pay.amount || 0) * 100))
       if (!plan || plan.months <= 1) continue // mensal não tem drip
@@ -80,18 +82,18 @@ export async function dripCrmBonusLeads(): Promise<number> {
       if (dup) continue
 
       const { error } = await supabase.from('credits').insert({
-        buyer_id: b.id, type: 'lead', total_purchased: LEADS_PER_MONTH, total_used: 0,
+        buyer_id: b.id, type: 'lead', total_purchased: LEGACY_CRM_LEADS_PER_MONTH, total_used: 0,
         price_per_unit: 0, stripe_payment_id: marker, purchased_at: new Date().toISOString(),
       })
       if (!error) {
         granted++
-        console.log(`[CRM drip] +${LEADS_PER_MONTH} leads (${marker}, m${nextMonth}/${plan.months}) -> ${b.name}`)
+        console.log(`[CRM legacy drip] +${LEGACY_CRM_LEADS_PER_MONTH} leads (${marker}, m${nextMonth}/${plan.months}) -> ${b.name}`)
       }
     } catch (e) {
       console.error('[CRM drip] erro buyer', b.id, (e as any)?.message)
     }
   }
 
-  if (granted > 0) console.log(`[CRM drip] ${granted} grant(s) de ${LEADS_PER_MONTH} leads`)
+  if (granted > 0) console.log(`[CRM legacy drip] ${granted} ciclo(s) pré-corte concluído(s)`)
   return granted
 }

@@ -26,9 +26,10 @@ export async function GET(request: NextRequest) {
   for (const b of subs || []) if (b.crm_subscription_id && SUB_OK.includes(b.crm_subscription_status)) paid.add(b.id)
 
   // Créditos de lead por comprador
-  const { data: credits } = await db.from('credits').select('buyer_id, total_purchased, total_used').eq('type', 'lead')
+  const { data: credits } = await db.from('credits').select('buyer_id, total_purchased, total_used, stripe_payment_id').eq('type', 'lead')
   const agg = new Map<string, { comprou: number; recebeu: number }>()
   for (const c of credits || []) {
+    if (/^(crm-bonus:|crm-bonus-cycle:|crm-drip:)/.test(c.stripe_payment_id || '')) continue
     if (metricsExcludedIds.has(c.buyer_id)) continue
     const g = agg.get(c.buyer_id) || { comprou: 0, recebeu: 0 }
     g.comprou += c.total_purchased || 0; g.recebeu += c.total_used || 0

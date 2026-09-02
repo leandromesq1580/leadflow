@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { distributeLeadToNextBuyer, forceAssignRoundRobin, redistributePendingLeads, tryAdminRule } from '@/lib/distribute'
 import { dispatchScheduledSms } from '@/lib/sms-auto'
 import { releasePendingRewards } from '@/lib/referral'
-import { dripCrmBonusLeads } from '@/lib/crm-bonus-drip'
+import { dripLegacyCrmBonusLeads } from '@/lib/crm-bonus-drip'
 import { notifyGroupLeadPending, sendLeadNotificationEmail, checkBridgeHealthAndAlert, checkAllBridgesAndAlert } from '@/lib/notifications'
 import { stateFromPhone } from '@/lib/us-area-codes'
 
@@ -189,9 +189,10 @@ export async function GET(request: Request) {
     redistributed = await redistributePendingLeads(pendTarget?.emails || null)
   } catch (e) { console.error('[Poll] redistribute err:', (e as any)?.message) }
 
-  // DRIP dos leads de bonus CRM: +5 a cada 30 dias nos planos multi-mes (trimestral/semestral/anual).
+  // Somente encerra ciclos pagos antes de 01/08/2026. Compra nova,
+  // re-assinatura e renovação nunca iniciam nem continuam bônus.
   let crmDripped = 0
-  try { crmDripped = await dripCrmBonusLeads() } catch (e) { console.error('[Poll] crm drip err:', (e as any)?.message) }
+  try { crmDripped = await dripLegacyCrmBonusLeads() } catch (e) { console.error('[Poll] legacy CRM drip err:', (e as any)?.message) }
     // Fila de SMS automático (agendados fora da janela TCPA) — despacha no horário permitido
     try { await dispatchScheduledSms() } catch (e) { console.error('[Poll] sms fila err:', (e as any)?.message) }
     // Indicação: libera recompensas cuja carência de 14 dias venceu

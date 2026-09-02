@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { LEADS_PER_MONTH, CRM_PLAN_LIST } from '@/lib/crm-plans'
+import { CRM_PLAN_LIST } from '@/lib/crm-plans'
 import { notifyGroupPurchase } from '@/lib/notifications'
 import { grantReferralReward, cancelRewardsFor, consumeCredit } from '@/lib/referral'
 import Stripe from 'stripe'
@@ -307,37 +307,14 @@ export async function POST(request: NextRequest) {
         if (crmPayErr) console.error('[Stripe Webhook] falha ao gravar payment CRM:', crmPayErr)
         else console.log(`[Stripe Webhook] CRM payment $${amount} -> buyer ${subBuyer.id} (invoice ${invoice.id})`)
 
-        // 🎁 BONUS DE LEADS do plano CRM: 5/mes * meses do ciclo, creditado a CADA cobranca
-        // (inicial + renovacoes). Idempotente por invoice. Meses = recurring da linha da invoice.
+        // Identifica o plano somente para o aviso financeiro. Assinatura CRM não
+        // cria crédito de lead: nem compra nova, nem re-assinatura, nem renovação.
         const bonusLine = invoice.lines?.data?.[0]
         const rec = bonusLine?.price?.recurring || bonusLine?.plan || null
         const recMonths = rec ? (rec.interval === 'year' ? 12 * (rec.interval_count || 1) : (rec.interval_count || 1)) : 0
         // Plano pelo VALOR cobrado (robusto: a linha da fatura as vezes vem sem recurring/interval_count → caia em 0/Mensal e bônus errado).
         const crmPlan = CRM_PLAN_LIST.find(p => p.amountCents === Math.round(amount * 100)) || null
         const monthsInCycle = crmPlan ? crmPlan.months : recMonths
-        // DRIP: credita SÓ o mês 1 (5 leads) aqui; o cron dripCrmBonusLeads pinga +5 a cada 30 dias até o total do plano (trimestral/semestral/anual).
-        // 🛑 BÔNUS DESCONTINUADO pra assinatura NOVA (decisão 2026-07-23): só continua
-        // recebendo quem JÁ tem histórico de bônus (assinante antigo = direito adquirido,
-        // renovações incluídas). Assinante novo nunca ganha o m1 → o drip pula sozinho
-        // (exige m1 do ciclo). A oferta saiu das telas de venda no mesmo commit.
-        const { data: grandfathered } = await supabase
-          .from('credits').select('id')
-          .eq('buyer_id', subBuyer.id).like('stripe_payment_id', 'crm-bonus:%')
-          .limit(1).maybeSingle()
-        const bonusLeads = grandfathered ? LEADS_PER_MONTH : 0
-        if (bonusLeads > 0) {
-          const leadMarker = `crm-bonus:${invoice.id}:m1`
-          const { data: dupLead } = await supabase.from('credits').select('id').eq('stripe_payment_id', leadMarker).maybeSingle()
-          if (!dupLead) {
-            const { error: bonusErr } = await supabase.from('credits').insert({
-              buyer_id: subBuyer.id, type: 'lead', total_purchased: bonusLeads, total_used: 0,
-              price_per_unit: 0, stripe_payment_id: leadMarker, purchased_at: new Date().toISOString(),
-            })
-            if (bonusErr) console.error('[Stripe Webhook] falha bonus leads CRM:', bonusErr)
-            else console.log(`[Stripe Webhook] CRM bonus ${bonusLeads} leads (${monthsInCycle}m) -> buyer ${subBuyer.id}`)
-          }
-        }
-
         // 🎁 INDICAÇÃO: só na PRIMEIRA cobrança do indicado (renovação não paga de novo)
         if (invoice.billing_reason !== 'subscription_cycle') {
           try { await grantReferralReward(supabase, subBuyer.id, 'crm', Math.round(amount * 100)) }

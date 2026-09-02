@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
   // MANUAL como entrega de lead pago) -> bate 1:1 com /api/admin/buyer-debt.
   // Saldo devedor é SEMPRE o atual (NÃO filtra por período) — bate com o card Saldo
   // Devedor em qualquer filtro (Hoje/7d/etc), porque saldo é estoque, não fluxo.
-  const crQ = db.from('credits').select('buyer_id, total_purchased, total_used').eq('type', 'lead')
+  const crQ = db.from('credits').select('buyer_id, total_purchased, total_used, stripe_payment_id').eq('type', 'lead')
   const { data: leadCreditRows } = await crQ
   // Funcionários/casa fora da conta geral (pedido 23/08: os 100 créditos de
   // cortesia do Gabriel inflavam "vendidos", "devidos" e derrubavam o % entrega).
@@ -97,6 +97,7 @@ export async function GET(request: NextRequest) {
   const { metricsExcludedIds: foraDaConta } = await readBuyerPolicy(db)
   const perBuyer = new Map<string, { purchased: number; used: number }>()
   for (const c of leadCreditRows || []) {
+    if (/^(crm-bonus:|crm-bonus-cycle:|crm-drip:)/.test(c.stripe_payment_id || '')) continue
     if (!c.buyer_id || !(Number(c.total_purchased) > 0)) continue
     if (foraDaConta.has(c.buyer_id)) continue
     const e = perBuyer.get(c.buyer_id) || { purchased: 0, used: 0 }
