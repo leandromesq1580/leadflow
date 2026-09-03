@@ -3,6 +3,7 @@
 import { useState, useRef, useLayoutEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n-client'
+import { reclaimError } from '@/lib/team-reclaim'
 
 interface Props {
   leadId: string
@@ -15,6 +16,7 @@ export function AssignButton({ leadId, members, currentMember }: Props) {
   const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [open, setOpen] = useState(false)
   const [assigning, setAssigning] = useState(false)
+  const [error, setError] = useState('')
   const [direction, setDirection] = useState<'up' | 'down'>('down')
   const buttonRef = useRef<HTMLButtonElement>(null)
   const router = useRouter()
@@ -32,22 +34,21 @@ export function AssignButton({ leadId, members, currentMember }: Props) {
 
   async function assign(memberId: string | null) {
     setAssigning(true)
-    if (memberId) {
-      await fetch('/api/team/assign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lead_id: leadId, member_id: memberId }),
+    setError('')
+    try {
+      const response = await fetch(memberId ? '/api/team/assign' : '/api/team/reclaim', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lead_id: leadId, member_id: memberId || null }),
       })
-    } else {
-      await fetch(`/api/leads/${leadId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assigned_to_member: null }),
-      })
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok) { setError(reclaimError(result.code, t._locale)); return }
+      setOpen(false)
+      router.refresh()
+    } catch {
+      setError(reclaimError(undefined, t._locale))
+    } finally {
+      setAssigning(false)
     }
-    setAssigning(false)
-    setOpen(false)
-    router.refresh()
   }
 
   const positionClass = direction === 'up' ? 'bottom-full mb-1' : 'top-full mt-1'
@@ -81,6 +82,7 @@ export function AssignButton({ leadId, members, currentMember }: Props) {
                 {L('Voltar para mim', 'Assign back to me', 'Volver a asignarme')}
               </button>
             )}
+            {error && <p role="alert" className="text-[11px] px-2 py-2 text-red-600 max-w-[240px]">{error}</p>}
 
             {members.map(m => (
               <button key={m.id} onClick={(e) => { e.preventDefault(); assign(m.id) }}

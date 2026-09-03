@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getLocale } from '@/lib/locale'
 import { localizePipeline } from '@/lib/pipeline-i18n'
+import { callerBuyer } from '@/lib/api-auth'
+import { canReclaimTeamLead } from '@/lib/team-reclaim'
 
 /**
  * GET /api/team/member-pipeline?member_id=X
@@ -24,6 +26,8 @@ export async function GET(request: NextRequest) {
   if (!memberId) return NextResponse.json({ error: 'Missing member_id' }, { status: 400 })
 
   const db = createAdminClient()
+  const caller = await callerBuyer(db)
+  if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: member } = await db
     .from('team_members')
@@ -32,6 +36,9 @@ export async function GET(request: NextRequest) {
     .single()
 
   if (!member) return NextResponse.json({ error: 'Member not found' }, { status: 404 })
+  if (member.buyer_id !== caller.id && !caller.isAdmin) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   // 1) Resolve buyer do membro (conta propria)
   //    a) auth_user_id → buyers.auth_user_id
@@ -179,6 +186,7 @@ export async function GET(request: NextRequest) {
 
       const leads = (plRaw || []).map((pl: any) => ({
         ...pl,
+        lead: { ...pl.lead, can_reclaim: canReclaimTeamLead(caller, pl.lead, member, memberBuyerId) },
         last_follow_up: pl.lead?.id ? latestByLead[pl.lead.id] || null : null,
       }))
 
@@ -196,7 +204,7 @@ export async function GET(request: NextRequest) {
   // 2) Fallback: membro sem conta propria — pseudo-pipeline com so "Atribuidos"
   const { data: leadsRaw } = await db
     .from('leads')
-    .select('id, name, email, phone, city, state, interest, type, status, created_at, contract_closed, policy_value, assigned_to_member')
+    .select('id, name, email, phone, city, state, interest, type, status, created_at, contract_closed, policy_value, assigned_to, assigned_to_member')
     .eq('assigned_to_member', memberId)
     .order('created_at', { ascending: false })
     .limit(500)
@@ -234,7 +242,7 @@ export async function GET(request: NextRequest) {
     stage_id: pseudoStageId,
     position: i,
     moved_at: L.created_at,
-    lead: L,
+    lead: { ...L, can_reclaim: canReclaimTeamLead(caller, L, member, memberBuyerId) },
     last_follow_up: latestPseudo[L.id] || null,
   }))
 

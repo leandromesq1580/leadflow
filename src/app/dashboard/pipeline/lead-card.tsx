@@ -11,6 +11,7 @@ interface Lead {
   id: string; name: string; phone: string; state: string; interest: string
   type: string; created_at: string; contract_closed: boolean
   assigned_to_member?: string | null
+  can_reclaim?: boolean
 }
 
 interface TeamMember { id: string; name: string }
@@ -32,6 +33,7 @@ interface Props {
   teamMembers?: TeamMember[]
   onAssigned?: () => void
   onArchived?: () => void
+  viewedMemberId?: string | null
 }
 
 function timeAgo(date: string) {
@@ -85,7 +87,7 @@ function formatFuDate(iso: string, locale: string): string {
   return `${dateStr} ${timeStr}`
 }
 
-export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, unreadCount = 0, lastFollowUp, teamMembers, onAssigned, onArchived }: Props) {
+export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, unreadCount = 0, lastFollowUp, teamMembers, onAssigned, onArchived, viewedMemberId }: Props) {
   const t = useT()
   const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const privacy = usePrivacy()
@@ -156,6 +158,8 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
           leadId={lead.id}
           members={teamMembers || []}
           currentMemberId={lead.assigned_to_member}
+          canReclaim={lead.can_reclaim}
+          viewedMemberId={viewedMemberId}
           onAssigned={onAssigned}
           onArchived={onArchived}
         />

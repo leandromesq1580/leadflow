@@ -2,6 +2,7 @@
 
 import { useState, useRef, useLayoutEffect } from 'react'
 import { useT } from '@/lib/i18n-client'
+import { reclaimError } from '@/lib/team-reclaim'
 
 interface Member {
   id: string
@@ -12,6 +13,8 @@ interface Props {
   leadId: string
   members: Member[]
   currentMemberId?: string | null
+  canReclaim?: boolean
+  viewedMemberId?: string | null
   onAssigned?: () => void
   onArchived?: () => void
 }
@@ -21,12 +24,14 @@ interface Props {
  * Abre dropdown com lista de team members e botão "voltar pra mim".
  * Usa o mesmo endpoint e padrão visual do AssignButton de /dashboard/leads.
  */
-export function CardAssignMenu({ leadId, members, currentMemberId, onAssigned, onArchived }: Props) {
+export function CardAssignMenu({ leadId, members, currentMemberId, canReclaim, viewedMemberId, onAssigned, onArchived }: Props) {
   const t = useT()
   const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [open, setOpen] = useState(false)
   const [assigning, setAssigning] = useState(false)
   const [archiving, setArchiving] = useState(false)
+  const [error, setError] = useState('')
+  const showReclaim = canReclaim ?? !!currentMemberId
   const [direction, setDirection] = useState<'up' | 'down'>('down')
   const buttonRef = useRef<HTMLButtonElement>(null)
 
@@ -35,11 +40,11 @@ export function CardAssignMenu({ leadId, members, currentMemberId, onAssigned, o
     const rect = buttonRef.current.getBoundingClientRect()
     const viewportH = window.innerHeight
     // height: header(26) + back(40 if member) + members*36 + separator(8) + archive(36) + cancel(30) + padding(16)
-    const dropdownHeight = 120 + members.length * 36 + (currentMemberId ? 40 : 0)
+    const dropdownHeight = 120 + members.length * 36 + (showReclaim ? 40 : 0)
     const spaceBelow = viewportH - rect.bottom
     const spaceAbove = rect.top
     setDirection(spaceBelow < dropdownHeight && spaceAbove > spaceBelow ? 'up' : 'down')
-  }, [open, members.length, currentMemberId])
+  }, [open, members.length, showReclaim])
 
   async function archive() {
     setArchiving(true)
@@ -54,24 +59,24 @@ export function CardAssignMenu({ leadId, members, currentMemberId, onAssigned, o
 
   async function assign(memberId: string | null) {
     setAssigning(true)
+    setError('')
     try {
-      if (memberId) {
-        await fetch('/api/team/assign', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lead_id: leadId, member_id: memberId }),
-        })
-      } else {
-        await fetch(`/api/leads/${leadId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ assigned_to_member: null }),
-        })
+      const response = await fetch(memberId ? '/api/team/assign' : '/api/team/reclaim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lead_id: leadId, member_id: memberId || viewedMemberId || currentMemberId || null }),
+      })
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        setError(reclaimError(result.code, t._locale))
+        return
       }
-    } finally {
-      setAssigning(false)
       setOpen(false)
       onAssigned?.()
+    } catch {
+      setError(reclaimError(undefined, t._locale))
+    } finally {
+      setAssigning(false)
     }
   }
 
@@ -103,14 +108,16 @@ export function CardAssignMenu({ leadId, members, currentMemberId, onAssigned, o
               {currentMemberId ? L('Transferir pra:', 'Transfer to:', 'Transferir a:') : L('Atribuir pra:', 'Assign to:', 'Asignar a:')}
             </p>
 
-            {currentMemberId && (
+            {showReclaim && (
               <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); assign(null) }}
                 disabled={assigning}
                 className="w-full text-left px-3 py-2 rounded-lg text-[12px] font-semibold hover:bg-amber-50 disabled:opacity-50 mb-1"
                 style={{ color: '#b45309', borderBottom: '1px solid var(--bg-soft)' }}>
-                {L('← Voltar pra mim', '← Back to me', '← Devolver a mí')}
+                {assigning ? L('Aguarde...', 'Please wait...', 'Espera...') : L('← Voltar pra mim', '← Back to me', '← Devolver a mí')}
               </button>
             )}
+
+            {error && <p role="alert" className="text-[11px] px-2 py-2 text-red-600 max-w-[240px]">{error}</p>}
 
             {members.length === 0 && (
               <p className="text-[11px] px-3 py-2" style={{ color: 'var(--fg-muted)' }}>{L('Nenhum membro no time', 'No team members', 'Ningún miembro en el equipo')}</p>

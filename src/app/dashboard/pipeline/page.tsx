@@ -496,7 +496,12 @@ export default function PipelinePage() {
                       onLeadClick={(item) => setSelectedLead(item as any)}
                       unreadCounts={unreadCounts}
                       teamMembers={isAgency ? teamMembers : undefined}
-                      onAssigned={() => selectedMemberId && loadMemberPipeline(selectedMemberId)}
+                      viewedMemberId={selectedMemberId}
+                      onAssigned={() => {
+                        if (selectedMemberId) loadMemberPipeline(selectedMemberId)
+                        if (activePipeline) loadLeads(activePipeline.id)
+                        loadTeamData(buyerId)
+                      }}
                       onArchived={() => selectedMemberId && loadMemberPipeline(selectedMemberId)}
                     />
                   ))}
