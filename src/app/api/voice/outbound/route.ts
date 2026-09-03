@@ -13,7 +13,7 @@ function twiml(xml: string): Response {
 
 /**
  * POST /api/voice/outbound — TwiML que a TwiML App invoca quando o softphone
- * do navegador inicia uma chamada. Escolhe o caller ID LOCAL (mesmo DDD do lead)
+ * do navegador inicia uma chamada. Escolhe o caller ID do estado do lead
  * e disca. Áudio flui pelo navegador (WebRTC).
  */
 export async function POST(request: NextRequest) {
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   }
 
   const db = createAdminClient()
-  const callerId = await pickCallerId(db, target)
+  const callerId = await pickCallerId(db, target, params.leadId)
 
   // TRANSCRIÇÃO AO VIVO — liga quando o buyer tem o ADD-ON "IA na Ligação" ativo
   // (settings.ia_ligacao_addon, gravado pelo webhook do Stripe) OU está na lista de

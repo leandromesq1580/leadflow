@@ -1,5 +1,6 @@
 import crypto from 'crypto'
 import { toE164 } from '@/lib/twilio'
+import { AREA_CODE_TO_STATE, stateFromPhone } from '@/lib/us-area-codes'
 import type { createAdminClient } from '@/lib/supabase/admin'
 
 type Db = ReturnType<typeof createAdminClient>
@@ -8,8 +9,8 @@ type Db = ReturnType<typeof createAdminClient>
  * Twilio Programmable Voice — softphone no navegador (Voice SDK) + local presence.
  *
  * Modelo: UMA conta Twilio, usuários ilimitados logados ligam pelo browser.
- * Sem seat: paga-se por minuto + números. O caller ID casa com o DDD do lead
- * (local presence) escolhendo do pool `voice_numbers`; sem match → cai no
+ * Sem seat: paga-se por minuto + números. O caller ID usa o estado do lead,
+ * preferindo o mesmo DDD dentro do pool `voice_numbers`; sem match → cai no
  * TWILIO_FROM_NUMBER (o número 850 que já existe na conta).
  *
  * Env (Vercel + .env.local):
@@ -46,18 +47,52 @@ export function areaCodeOf(phone: string | null | undefined): string | null {
   return ten ? ten.slice(0, 3) : null
 }
 
-/**
- * Escolhe o caller ID local pro lead: número do pool com o MESMO DDD; se não
- * houver (pool ainda vazio ou DDD sem número), cai no TWILIO_FROM_NUMBER.
- * Tolerante à tabela `voice_numbers` não existir ainda (retorna o fallback).
- */
-export async function pickCallerId(db: Db, leadPhone: string | null | undefined): Promise<string> {
-  const fallback = env('TWILIO_FROM_NUMBER')
+type VoiceNumber = { phone_number: string; area_code: string; state: string | null }
+const US_STATE_CODES = new Set(Object.values(AREA_CODE_TO_STATE))
+
+function stateCode(value: string | null | undefined): string | null {
+  const code = (value || '').trim().toUpperCase()
+  return US_STATE_CODES.has(code) ? code : null
+}
+
+/** Pure selection: saved lead state wins over a phone's original area code. */
+export function selectVoiceCallerId(
+  numbers: VoiceNumber[],
+  leadPhone: string | null | undefined,
+  leadState: string | null | undefined,
+  fallback: string,
+): string {
   const ac = areaCodeOf(leadPhone)
   if (!ac) return fallback
+  const state = stateCode(leadState) || stateFromPhone(leadPhone)
+  // Never turn an invalid pool value into an outbound caller ID.
+  const valid = numbers.filter(n => /^\+1[2-9]\d{9}$/.test(n.phone_number))
+  const candidates = state
+    ? valid.filter(n => (stateCode(n.state) || stateFromPhone(n.phone_number)) === state)
+    : valid.filter(n => n.area_code === ac)
+  return candidates.find(n => n.area_code === ac)?.phone_number
+    || candidates[0]?.phone_number || fallback
+}
+
+/**
+ * Use the saved state only when the lead ID refers to the number being dialed.
+ * Otherwise infer the state from the phone. Empty/unavailable pool keeps the
+ * existing default number; database failures must not interrupt calls.
+ */
+export async function pickCallerId(db: Db, leadPhone: string | null | undefined, leadId?: string): Promise<string> {
+  const fallback = env('TWILIO_FROM_NUMBER')
+  if (!areaCodeOf(leadPhone)) return fallback
+  let leadState: string | null = null
+  if (leadId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(leadId)) {
+    try {
+      const { data, error } = await db.from('leads').select('state, phone').eq('id', leadId).maybeSingle()
+      if (!error && data && toE164(data.phone) === toE164(leadPhone)) leadState = data.state
+    } catch { /* missing lead context: infer state from phone */ }
+  }
   try {
-    const { data } = await db.from('voice_numbers').select('phone_number').eq('area_code', ac).limit(1).maybeSingle()
-    if (data?.phone_number) return data.phone_number
+    const { data, error } = await db.from('voice_numbers')
+      .select('phone_number, area_code, state').order('created_at', { ascending: true })
+    if (!error && data) return selectVoiceCallerId(data, leadPhone, leadState, fallback)
   } catch {
     // tabela ainda não migrada → usa fallback
   }
