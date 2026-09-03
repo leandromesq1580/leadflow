@@ -6,6 +6,7 @@ import Link from 'next/link'
 interface Buyer {
   id: string; name: string; email: string; phone: string
   is_active: boolean; is_admin: boolean; crm_plan: string; is_agency: boolean; is_staff?: boolean
+  is_sales_team?: boolean; team_lead_price?: number | null
   tier: 'paying' | 'trial' | 'free'; subStatus: string | null; crmPaying: boolean
   initials: string; avatarHue: number; states: string[]
   leadCredits: number; apptCredits: number; leadsReceived: number
@@ -14,6 +15,7 @@ interface Buyer {
 const FILTERS = [
   { key: 'all', label: 'Todos' },
   { key: 'staff', label: 'Funcionários' },
+  { key: 'sales_team', label: 'Equipe de vendas' },
   { key: 'paying', label: '💚 Pagantes' },
   { key: 'trial', label: '🟡 Trial' },
   { key: 'pro', label: 'CRM Pro' },
@@ -62,6 +64,7 @@ export function BuyersList({ buyers: initial }: { buyers: Buyer[] }) {
       if (!b.name.toLowerCase().includes(q) && !b.email.toLowerCase().includes(q) && !b.phone?.includes(q)) return false
     }
     if (filter === 'staff' && !b.is_staff) return false
+    if (filter === 'sales_team' && !b.is_sales_team) return false
     if (filter === 'paying' && b.tier !== 'paying') return false
     if (filter === 'trial' && b.tier !== 'trial') return false
     if (filter === 'pro' && b.crm_plan !== 'pro') return false
@@ -132,6 +135,7 @@ export function BuyersList({ buyers: initial }: { buyers: Buyer[] }) {
                     <p className="text-[14px] font-semibold truncate group-hover:text-indigo-600" style={{ color: '#1a1a2e' }}>{b.name}</p>
                     {b.is_admin && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: '#fef2f2', color: '#dc2626' }}>Admin</span>}
                     {b.is_staff && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#eef2ff', color: '#4338ca' }} title="Fora da fila normal. Recebe apenas pela prioridade explícita do administrador.">Funcionário</span>}
+                    {b.is_sales_team && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700">Equipe de vendas · ${b.team_lead_price?.toFixed(2)}/lead</span>}
                     {b.crm_plan === 'pro' && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: 'linear-gradient(135deg, #a78bfa, #6366f1)', color: '#fff' }}>Pro</span>}
                     {b.is_agency && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: '#fef3c7', color: '#92400e' }}>Agency</span>}
                   </div>

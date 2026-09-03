@@ -3,6 +3,7 @@ import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getStripe } from '@/lib/stripe'
 import { buildPurchaseHistory } from '@/lib/purchase-history'
+import { readSalesTeamPricing } from '@/lib/sales-team-pricing'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,6 +19,9 @@ export async function GET() {
   const db = createAdminClient()
   const { data: buyer } = await db.from('buyers').select('id, crm_plan, crm_subscription_status, crm_subscription_id').eq('auth_user_id', user.id).single()
   if (!buyer) return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
+  let teamPricing
+  try { teamPricing = await readSalesTeamPricing(db, buyer.id) }
+  catch { return NextResponse.json({ error: 'Pricing unavailable' }, { status: 503 }) }
 
   const [creditsRes, paymentsRes] = await Promise.all([
     db.from('credits')
@@ -47,5 +51,6 @@ export async function GET() {
     crm_subscription_status: buyer.crm_subscription_status || null,
     crm_plan_key,
     history,
-  })
+    teamPricing,
+  }, { headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie' } })
 }

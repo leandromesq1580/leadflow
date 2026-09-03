@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveCoupon } from '@/lib/coupons'
 import { hasAcceptedCurrentPolicy } from '@/lib/policies'
 import { discountForOrder } from '@/lib/referral'
+import { readSalesTeamPricing, purchaseUnitPrice, NO_TEAM_PRICING } from '@/lib/sales-team-pricing'
 
 export async function POST(request: NextRequest) {
   try {
@@ -66,8 +67,10 @@ export async function POST(request: NextRequest) {
     // comprador; força o preço por lead no unit_amount. Cupom inválido/de outra conta
     // é simplesmente ignorado (compra segue no preço de tabela).
     const coupon = productType === 'lead' ? resolveCoupon(couponCode, buyer.email) : null
-    const unitPriceCents = coupon ? coupon.unitPriceCents : selectedPackage.unitPriceCents
-    const pricePerUnit = coupon ? coupon.unitPriceCents / 100 : selectedPackage.pricePerUnit
+    const teamPricing = productType === 'lead' ? await readSalesTeamPricing(db, buyer.id) : NO_TEAM_PRICING
+    const quote = purchaseUnitPrice(productType, selectedPackage.unitPriceCents, teamPricing, coupon)
+    const unitPriceCents = quote.unitPriceCents
+    const pricePerUnit = unitPriceCents / 100
 
     // 🎁 CRÉDITO DE INDICAÇÃO como desconto (regra 2026-07-30): cobre até 50% do pedido
     // de LEADS. Vai como coupon one-time (o cliente vê o desconto no checkout) e o
@@ -85,7 +88,7 @@ export async function POST(request: NextRequest) {
             currency: 'usd',
             product_data: {
               name: `${PRODUCTS[productType].name} — ${selectedPackage.quantity}x`,
-              description: `${selectedPackage.quantity} ${productType === 'cold_lead' ? 'leads frios' : 'leads exclusivos'} · ${buyer.name || buyer.email}${coupon ? ` · cupom ${coupon.code}` : ''}`,
+              description: `${selectedPackage.quantity} ${productType === 'cold_lead' ? 'leads frios' : 'leads exclusivos'} · ${buyer.name || buyer.email}${quote.source === 'sales_team' ? ' · preço de equipe' : quote.couponCode ? ` · cupom ${quote.couponCode}` : ''}`,
             },
             unit_amount: unitPriceCents,
           },
@@ -100,7 +103,9 @@ export async function POST(request: NextRequest) {
         quantity: String(selectedPackage.quantity),
         price_per_unit: String(pricePerUnit),
         package_id: selectedPackage.id,
-        coupon: coupon?.code || '',
+        coupon: quote.couponCode,
+        price_source: quote.source,
+        sales_team_member: String(teamPricing.is_member),
         referral_discount_cents: String(referralDiscount),
       },
       payment_intent_data: {

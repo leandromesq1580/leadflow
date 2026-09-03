@@ -9,6 +9,7 @@ interface CouponInfo {
   code: string
   label: string
   unitPrice: number
+  priceSource?: string
   packages: { id: string; quantity: number; total: number }[]
 }
 
@@ -64,7 +65,9 @@ export function CouponBox() {
       <div className="rounded-xl p-4 mb-4" style={{ background: '#ecfdf5', border: '1px solid #a7f3d0' }}>
         <div className="flex items-center justify-between">
           <p className="text-[13px] font-bold" style={{ color: '#047857' }}>
-            {L(`✅ Cupom ${applied.code} aplicado — $${applied.unitPrice}/lead`, `✅ Coupon ${applied.code} applied — $${applied.unitPrice}/lead`, `✅ Cupón ${applied.code} aplicado — $${applied.unitPrice}/lead`)}
+            {applied.priceSource === 'sales_team'
+              ? L(`✅ Mantido o menor preço da equipe — $${applied.unitPrice}/lead`, `✅ Keeping the lower team price — $${applied.unitPrice}/lead`, `✅ Se mantiene el menor precio del equipo — $${applied.unitPrice}/lead`)
+              : L(`✅ Cupom ${applied.code} aplicado — $${applied.unitPrice}/lead`, `✅ Coupon ${applied.code} applied — $${applied.unitPrice}/lead`, `✅ Cupón ${applied.code} aplicado — $${applied.unitPrice}/lead`)}
           </p>
           <button onClick={remove} className="text-[12px] font-semibold underline" style={{ color: '#047857' }}>
             {L('Remover', 'Remove', 'Quitar')}

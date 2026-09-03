@@ -8,6 +8,8 @@ import { AdminActions } from './admin-actions'
 import { CRM_PLAN_LIST } from '@/lib/crm-plans'
 import { buildPurchaseHistory } from '@/lib/purchase-history'
 import { readBuyerPolicy } from '@/lib/buyer-policy'
+import { readSalesTeamPricing } from '@/lib/sales-team-pricing'
+import { SalesTeamCard } from './sales-team-card'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,6 +25,7 @@ export default async function BuyerDetailPage({ params }: { params: Promise<{ id
   if (!buyer) return <p>Comprador nao encontrado</p>
   const { staffIds } = await readBuyerPolicy(db)
   const isStaff = staffIds.has(id)
+  const salesTeamPricing = await readSalesTeamPricing(db, id)
 
   const { data: states } = await db.from('buyer_states').select('state_code').eq('buyer_id', id)
   const { data: availability } = await db.from('buyer_availability').select('day_type, period').eq('buyer_id', id)
@@ -80,6 +83,7 @@ export default async function BuyerDetailPage({ params }: { params: Promise<{ id
 
       {/* Admin Actions */}
       <AdminActions buyerId={buyer.id} isActive={!!buyer.is_active} plan={buyer.crm_plan || 'free'} buyerName={buyer.name} />
+      <SalesTeamCard buyerId={buyer.id} initial={salesTeamPricing} />
 
       {/* Credits */}
       {isStaff && <div className="rounded-xl p-4 mb-4 text-[13px]" style={{ background: '#eef2ff', color: '#4338ca' }}>

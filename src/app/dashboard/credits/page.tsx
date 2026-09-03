@@ -12,6 +12,8 @@ import { getCrmPlan, CRM_PLAN_LIST } from '@/lib/crm-plans'
 import { BillingPortalButton } from '@/components/billing-portal-button'
 import { getLocale } from '@/lib/locale'
 import { buildPurchaseHistory, type PurchaseHistoryItem } from '@/lib/purchase-history'
+import { readSalesTeamPricing, purchaseUnitPrice } from '@/lib/sales-team-pricing'
+import { SalesTeamPriceNotice } from '@/components/sales-team-price-notice'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,7 +50,11 @@ export default async function CreditsPage({
   const totalLeads = allCredits.filter(c => c.type === 'lead').reduce((s, c) => s + c.total_purchased - c.total_used, 0)
   const totalAppts = allCredits.filter(c => c.type === 'appointment').reduce((s, c) => s + c.total_purchased - c.total_used, 0)
 
-  const leadPackages = PRODUCTS.lead.packages
+  const teamPricing = await readSalesTeamPricing(db, buyer.id)
+  const leadPackages = PRODUCTS.lead.packages.map(pkg => {
+    const quote = purchaseUnitPrice('lead', pkg.unitPriceCents, teamPricing)
+    return { ...pkg, pricePerUnit: quote.unitPriceCents / 100, totalDisplay: quote.unitPriceCents * pkg.quantity / 100 }
+  })
 
   // Plano exato do assinante (mensal/trimestral/… só existe no metadata da assinatura Stripe)
   const isActiveSub = buyer.crm_subscription_status === 'active'
@@ -200,6 +206,7 @@ export default async function CreditsPage({
 
       {/* Lead Packages */}
       <h2 className="text-[16px] font-bold mb-4" style={{ color: 'var(--fg)' }}>{L('📋 Pacotes de Leads Exclusivos', '📋 Exclusive Lead Packages', '📋 Paquetes de Leads Exclusivos')}</h2>
+      {teamPricing.is_member && <SalesTeamPriceNotice cents={teamPricing.lead_unit_price_cents} locale={locale} />}
       <PolicyCheck context="checkout_lead" />
       <CouponBox />
       <div className="grid grid-cols-3 gap-4 mb-8">

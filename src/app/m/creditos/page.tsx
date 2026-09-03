@@ -9,8 +9,10 @@ import { PRODUCTS } from '@/lib/stripe'
 import { PolicyCheck } from '@/components/policy-check'
 import { CRM_PLAN_LIST } from '@/lib/crm-plans'
 import type { PurchaseHistoryItem } from '@/lib/purchase-history'
+import { purchaseUnitPrice, NO_TEAM_PRICING, type SalesTeamPricing } from '@/lib/sales-team-pricing'
+import { SalesTeamPriceNotice } from '@/components/sales-team-price-notice'
 
-interface CreditsData { totalLeads: number; totalAppts: number; crm_plan: string; crm_subscription_status: string | null; crm_plan_key: string | null; history: PurchaseHistoryItem[] }
+interface CreditsData { totalLeads: number; totalAppts: number; crm_plan: string; crm_subscription_status: string | null; crm_plan_key: string | null; history: PurchaseHistoryItem[]; teamPricing: SalesTeamPricing }
 
 export default function MobileCreditos() {
   const t = useT()
@@ -166,8 +168,10 @@ export default function MobileCreditos() {
 
   function PkgRow({ p, type, isLead }: { p: { id: string; quantity: number; totalDisplay: number; pricePerUnit: number }; type: string; isLead?: boolean }) {
     // Cupom aplicado só mexe nos pacotes de LEAD (o servidor revalida no checkout)
-    const per = isLead && cupomInfo ? cupomInfo.unitPrice : p.pricePerUnit
-    const total = isLead && cupomInfo ? p.quantity * cupomInfo.unitPrice : p.totalDisplay
+    const quote = purchaseUnitPrice(isLead ? 'lead' : 'cold_lead', Math.round(p.pricePerUnit * 100), d?.teamPricing || NO_TEAM_PRICING,
+      cupomInfo ? { code: cupomInfo.code, unitPriceCents: Math.round(cupomInfo.unitPrice * 100) } : null)
+    const per = quote.unitPriceCents / 100
+    const total = p.quantity * per
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <div>
@@ -331,6 +335,7 @@ export default function MobileCreditos() {
           {/* Pacotes */}
           <div className="m-card" style={{ padding: '4px 16px', marginBottom: 14 }}>
             <p style={{ fontSize: 14, fontWeight: 700, margin: '14px 0 2px' }}>{L('Leads exclusivos', 'Exclusive leads', 'Leads exclusivos')}</p>
+            {d.teamPricing?.is_member && <SalesTeamPriceNotice cents={d.teamPricing.lead_unit_price_cents} locale={loc} />}
             {leadPkgs.map(p => <PkgRow key={p.id} p={p} type="Leads" isLead />)}
           </div>
           <div className="m-card" style={{ padding: '4px 16px', marginBottom: 14 }}>

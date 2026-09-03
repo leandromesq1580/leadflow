@@ -14,6 +14,10 @@ export default async function BuyersPage() {
 
   const db = createAdminClient()
   const { staffIds } = await readBuyerPolicy(db)
+  const { data: teamPrices, error: teamPriceError } = await db.from('sales_team_pricing')
+    .select('buyer_id, is_member, lead_unit_price_cents').eq('is_member', true)
+  if (teamPriceError) throw new Error('Não foi possível consultar a equipe de vendas.')
+  const teamPricing = new Map((teamPrices || []).map(p => [p.buyer_id, p.lead_unit_price_cents]))
 
   const { data: buyers } = await db
     .from('buyers')
@@ -52,6 +56,8 @@ export default async function BuyersPage() {
       is_active: b.is_active,
       is_admin: b.is_admin,
       is_staff: staffIds.has(b.id),
+      is_sales_team: teamPricing.has(b.id),
+      team_lead_price: teamPricing.has(b.id) ? teamPricing.get(b.id)! / 100 : null,
       crm_plan: b.crm_plan || 'free',
       is_agency: b.is_agency || false,
       tier,
