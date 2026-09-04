@@ -68,6 +68,7 @@ function distribution(f) {
     './availability': { buyerTimezone: () => 'America/New_York', isAvailableNow: () => true },
     './notifications': { sendLeadNotificationEmail: async buyer => f.notices.push(buyer.id) },
     './place-member-lead': {}, './wa-bridge': {},
+    './automation-engine': { runAutomations: async () => ({ ran: 0, failed: 0 }) },
   })
 }
 

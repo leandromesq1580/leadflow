@@ -7,6 +7,21 @@ import { adminRuleTurn, easternDayStartISO, evaluateAdminRule, type AdminRule } 
 import { readAdminRuleState } from './admin-rule-state'
 import { readBuyerPolicy, withoutStaff } from './buyer-policy'
 import { leadLanguageForLead } from './lead-language'
+import { runAutomations } from './automation-engine'
+
+async function runBuyerAutomations(buyerId: string): Promise<void> {
+  try {
+    const result = await runAutomations([buyerId])
+    if (result.ran || result.failed) {
+      console.log(`[Distribute] automations buyer=${buyerId}: ran=${result.ran} failed=${result.failed}`)
+    }
+  } catch (error) {
+    // A entrega do lead já foi concluída. Uma falha de automação precisa ficar
+    // visível no log, mas nunca pode desfazer a atribuição nem cobrar duas vezes.
+    const message = error instanceof Error ? error.message : String(error)
+    console.error(`[Distribute] automation trigger failed for buyer=${buyerId}:`, message)
+  }
+}
 
 async function assignLeadToBuyer(
   supabase: ReturnType<typeof createAdminClient>,
@@ -33,13 +48,19 @@ async function assignLeadToBuyer(
 
   if (pipe?.stages?.length) {
     const firstStage = (pipe.stages as any[]).sort((a: any, b: any) => a.position - b.position)[0]
-    await supabase.from('pipeline_leads').upsert({
+    const { error: pipelineError } = await supabase.from('pipeline_leads').upsert({
       lead_id: lead.id,
       pipeline_id: pipe.id,
       stage_id: firstStage.id,
       position: 0,
       moved_at: new Date().toISOString(),
     }, { onConflict: 'lead_id,pipeline_id' })
+    if (pipelineError) {
+      console.error(`[Distribute] failed to place lead=${lead.id} in pipeline:`, pipelineError.message)
+    } else {
+      // Dispara no ingresso, sem depender do cron periódico.
+      await runBuyerAutomations(buyer.id)
+    }
   }
 
   return buyer as unknown as EligibleBuyer
@@ -437,13 +458,19 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
 
   if (defaultPipeline?.stages?.length) {
     const firstStage = (defaultPipeline.stages as any[]).sort((a: any, b: any) => a.position - b.position)[0]
-    await supabase.from('pipeline_leads').upsert({
+    const { error: pipelineError } = await supabase.from('pipeline_leads').upsert({
       lead_id: lead.id,
       pipeline_id: defaultPipeline.id,
       stage_id: firstStage.id,
       position: 0,
       moved_at: new Date().toISOString(),
     }, { onConflict: 'lead_id,pipeline_id' })
+    if (pipelineError) {
+      console.error(`[Distribute] failed to place lead=${lead.id} in pipeline:`, pipelineError.message)
+    } else {
+      // A automação de "entrou no estágio" passa a acontecer na própria entrega.
+      await runBuyerAutomations(selectedBuyer.id)
+    }
   }
 
   // Agency mode: sub-distribute to team member

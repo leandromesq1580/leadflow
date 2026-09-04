@@ -86,6 +86,7 @@ test('delivery dry-run uses the same cap and license checks and never writes', a
     './admin-rule-state': { readAdminRuleState: async () => ({ assignedCount: 1181, candidates: [candidate] }) },
     './supabase/admin': { createAdminClient: () => fakeDb },
     './notifications': {}, './availability': {}, './place-member-lead': {}, './wa-bridge': {},
+    './automation-engine': { runAutomations: async () => ({ ran: 0, failed: 0 }) },
   })
   assert.equal(await tryAdminRule({ state: 'FL' }, { ...base, daily_max: 0 }, true), null)
   assert.equal(await tryAdminRule({ state: 'CA' }, base, true), null)
@@ -130,6 +131,7 @@ test('delivery writes the selected owner and notifies only on an eligible priori
     './supabase/admin': { createAdminClient: () => fakeDb },
     './notifications': { sendLeadNotificationEmail: async (buyer, lead) => notices.push([buyer.id, lead.id]) },
     './availability': {}, './place-member-lead': {}, './wa-bridge': {},
+    './automation-engine': { runAutomations: async () => ({ ran: 0, failed: 0 }) },
   })
   const lead = { id: 'fake-test-lead', state: 'FL' }
   await tryAdminRule(lead, { ...base, daily_max: 0 })

@@ -1,5 +1,6 @@
 {
   "crons": [
-    { "path": "/api/poll-leads", "schedule": "*/2 * * * *" }
+    { "path": "/api/poll-leads", "schedule": "*/2 * * * *" },
+    { "path": "/api/cron/run-all", "schedule": "*/5 * * * *" }
   ]
 }

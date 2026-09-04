@@ -30,6 +30,7 @@ function distribution(db: any, notifications: any[]) {
     './admin-rule': { adminRuleTurn: () => ({ N: 0 }), easternDayStartISO: () => '2026-01-01T00:00:00Z', evaluateAdminRule: () => ({}) },
     './admin-rule-state': { readAdminRuleState: async () => ({ assignedCount: 0, candidates: [] }) },
     './buyer-policy': { readBuyerPolicy: async () => ({ staffIds: new Set() }), withoutStaff: (rows: any[]) => rows },
+    './automation-engine': { runAutomations: async () => ({ ran: 0, failed: 0 }) },
   }
   const js = transpileModule(readFileSync(new URL('../src/lib/distribute.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ModuleKind.CommonJS } }).outputText
   const module = { exports: {} as any }

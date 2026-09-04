@@ -4,13 +4,13 @@ import { runAutomations } from '@/lib/automation-engine'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { importarPortaisPendentes } from '@/lib/nl-sync'
 
-export const maxDuration = 60
+export const maxDuration = 300
 
 /**
  * GET /api/cron/run-all?secret=X
  *
- * Orquestrador unico que dispara sequences + automations + reminders.
- * Existe pra caber em 1 slot de cron do Vercel Hobby (limite: 2 crons).
+ * Segundo slot de cron: dispara sequences + automations + reminders.
+ * O primeiro slot permanece dedicado à captura dos leads do Meta.
  * Sem dependencia externa (cron-job.org etc).
  *
  * NAO modifica os 3 cron endpoints existentes — eles continuam funcionando
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url)
   const secret = url.searchParams.get('secret')
   const headerSecret = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
-  const expected = (process.env.POLL_SECRET || 'leadflow-poll-2026').trim()
+  const expected = (process.env.POLL_SECRET || 'lead4producers-poll-2026').trim()
   const cronSecret = (process.env.CRON_SECRET || '').trim()
   const isVercelCron = request.headers.get('user-agent')?.includes('vercel-cron') ?? false
 

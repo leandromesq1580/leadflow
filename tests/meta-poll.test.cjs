@@ -296,7 +296,10 @@ test('failed Meta read or priority decision is not silently bypassed', async () 
 })
 test('cron schedule is versioned and reconciliation uses assignment time for recovered old leads', () => {
   const conf = JSON.parse(fs.readFileSync(path.join(__dirname, '../vercel.json')))
-  assert.deepEqual(conf.crons, [{ path: '/api/poll-leads', schedule: '*/2 * * * *' }])
+  assert.deepEqual(conf.crons, [
+    { path: '/api/poll-leads', schedule: '*/2 * * * *' },
+    { path: '/api/cron/run-all', schedule: '*/5 * * * *' },
+  ])
   const src = fs.readFileSync(path.join(__dirname, '../src/app/api/poll-leads/route.ts'), 'utf8')
   assert.match(src, /\.gte\('assigned_at', cutoff\)/)
   assert.doesNotMatch(src, /limit=20/)
