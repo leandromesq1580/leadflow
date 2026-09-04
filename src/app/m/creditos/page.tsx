@@ -339,18 +339,18 @@ export default function MobileCreditos() {
           </div>
 
           {/* Pacotes */}
-          <fieldset className="m-card" style={{ padding: 16, margin: '0 0 14px', border: '2px solid #a78bfa' }}>
-            <legend style={{ padding: '0 6px', fontSize: 14, fontWeight: 700 }}>{L('Qual idioma de leads você quer?', 'Which lead language do you want?', '¿En qué idioma quieres tus leads?')}</legend>
-            <p className="m-muted" style={{ margin: '0 0 12px', fontSize: 12 }}>{L('Escolha antes de comprar. Entrega somente no idioma selecionado.', 'Choose before buying. Delivery only in the selected language.', 'Elige antes de comprar. Entrega solo en el idioma seleccionado.')}</p>
-            {LEAD_LANGUAGES.map(language => <label key={language} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, marginBottom: 8, border: `1px solid ${leadLanguage === language ? '#a78bfa' : 'var(--m-border)'}`, cursor: 'pointer' }}>
-              <input type="radio" name="lead-language" value={language} checked={leadLanguage === language} onChange={() => setLeadLanguage(language)} style={{ width: 20, height: 20, accentColor: '#a78bfa' }} />
-              <span style={{ fontSize: 14, fontWeight: 700 }}>{leadLanguageLabel(language, loc)}</span>
-            </label>)}
-            <p role="status" className="m-muted" style={{ fontSize: 12, margin: '8px 0 0' }}>{leadLanguage ? leadLanguageLabel(leadLanguage, loc) : L('Nenhum idioma selecionado.', 'No language selected.', 'Ningún idioma seleccionado.')}</p>
-          </fieldset>
           <div className="m-card" style={{ padding: '4px 16px', marginBottom: 14 }}>
             <p style={{ fontSize: 14, fontWeight: 700, margin: '14px 0 2px' }}>{L('Leads exclusivos', 'Exclusive leads', 'Leads exclusivos')}</p>
             {d.teamPricing?.is_member && <SalesTeamPriceNotice cents={d.teamPricing.lead_unit_price_cents} locale={loc} />}
+            <fieldset style={{ padding: 12, margin: '12px 0 4px', borderRadius: 12, border: '2px solid #a78bfa' }}>
+              <legend style={{ padding: '0 6px', fontSize: 14, fontWeight: 700 }}>{L('Qual idioma de leads você quer?', 'Which lead language do you want?', '¿En qué idioma quieres tus leads?')}</legend>
+              <p className="m-muted" style={{ margin: '0 0 12px', fontSize: 12 }}>{L('Escolha antes de comprar. Entrega somente no idioma selecionado.', 'Choose before buying. Delivery only in the selected language.', 'Elige antes de comprar. Entrega solo en el idioma seleccionado.')}</p>
+              {LEAD_LANGUAGES.map(language => <label key={language} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, marginBottom: 8, border: `1px solid ${leadLanguage === language ? '#a78bfa' : 'var(--m-border)'}`, cursor: 'pointer' }}>
+                <input type="radio" name="lead-language" value={language} checked={leadLanguage === language} onChange={() => setLeadLanguage(language)} style={{ width: 20, height: 20, accentColor: '#a78bfa' }} />
+                <span style={{ fontSize: 14, fontWeight: 700 }}>{leadLanguageLabel(language, loc)}</span>
+              </label>)}
+              <p role="status" className="m-muted" style={{ fontSize: 12, margin: '8px 0 0' }}>{leadLanguage ? leadLanguageLabel(leadLanguage, loc) : L('Nenhum idioma selecionado.', 'No language selected.', 'Ningún idioma seleccionado.')}</p>
+            </fieldset>
             {leadPkgs.map(p => <PkgRow key={p.id} p={p} type="Leads" isLead />)}
           </div>
           <div className="m-card" style={{ padding: '4px 16px', marginBottom: 14 }}>

@@ -15,7 +15,7 @@ import { buildPurchaseHistory, type PurchaseHistoryItem } from '@/lib/purchase-h
 import { readSalesTeamPricing, purchaseUnitPrice } from '@/lib/sales-team-pricing'
 import { SalesTeamPriceNotice } from '@/components/sales-team-price-notice'
 import { leadLanguageLabel } from '@/lib/lead-language'
-import { LeadPurchaseOptions } from './lead-purchase-options'
+import { LeadPurchaseLanguageSelector, LeadPurchaseOptions } from './lead-purchase-options'
 
 export const dynamic = 'force-dynamic'
 
@@ -218,6 +218,7 @@ export default async function CreditsPage({
       {teamPricing.is_member && <SalesTeamPriceNotice cents={teamPricing.lead_unit_price_cents} locale={locale} />}
       <PolicyCheck context="checkout_lead" />
       <CouponBox />
+      <LeadPurchaseLanguageSelector />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {leadPackages.map((pkg) => {
           return (

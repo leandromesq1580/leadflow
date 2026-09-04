@@ -1,21 +1,37 @@
 'use client'
 
-import { createContext, useContext, useId, useState, type ReactNode } from 'react'
+import { createContext, useContext, useId, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react'
 import { LEAD_LANGUAGES, leadLanguageLabel, type LeadLanguage } from '@/lib/lead-language'
 import { useT } from '@/lib/i18n-client'
 
-const PurchaseLanguage = createContext<LeadLanguage | null>(null)
-export const usePurchaseLanguage = () => useContext(PurchaseLanguage)
+type PurchaseLanguageContext = {
+  language: LeadLanguage | null
+  setLanguage: Dispatch<SetStateAction<LeadLanguage | null>>
+}
+
+const PurchaseLanguage = createContext<PurchaseLanguageContext | null>(null)
+export const usePurchaseLanguage = () => useContext(PurchaseLanguage)?.language || null
 
 export function LeadPurchaseOptions({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<LeadLanguage | null>(null)
+
+  return (
+    <PurchaseLanguage.Provider value={{ language, setLanguage }}>
+      {children}
+    </PurchaseLanguage.Provider>
+  )
+}
+
+export function LeadPurchaseLanguageSelector() {
+  const purchaseLanguage = useContext(PurchaseLanguage)
   const name = useId()
   const t = useT()
   const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
+  if (!purchaseLanguage) return null
+  const { language, setLanguage } = purchaseLanguage
 
   return (
-    <PurchaseLanguage.Provider value={language}>
-      <fieldset id="lead-packages" className="rounded-2xl p-5 mb-6 scroll-mt-6" style={{ background: 'var(--bg-card)', border: '2px solid var(--accent)' }}>
+      <fieldset id="lead-packages" className="rounded-2xl p-5 mt-4 mb-4 scroll-mt-6" style={{ background: 'var(--bg-card)', border: '2px solid var(--accent)' }}>
         <legend className="px-2 text-[16px] font-bold" style={{ color: 'var(--fg)' }}>
           {L('1. Qual idioma de leads você quer comprar?', '1. Which lead language do you want to buy?', '1. ¿En qué idioma quieres comprar leads?')}
         </legend>
@@ -39,7 +55,5 @@ export function LeadPurchaseOptions({ children }: { children: ReactNode }) {
           {language ? L(`Selecionado: ${leadLanguageLabel(language)}. Agora escolha seu pacote.`, `Selected: ${leadLanguageLabel(language, 'en')}. Now choose your package.`, `Seleccionado: ${leadLanguageLabel(language, 'es')}. Ahora elige tu paquete.`) : L('Nenhum idioma selecionado.', 'No language selected.', 'Ningún idioma seleccionado.')}
         </p>
       </fieldset>
-      {children}
-    </PurchaseLanguage.Provider>
   )
 }

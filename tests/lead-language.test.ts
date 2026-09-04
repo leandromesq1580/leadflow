@@ -37,6 +37,20 @@ test('purchase history keeps BR/Spanish and CRM separate, without duplicate cred
   assert.equal(history[3].leadLanguage, 'pt')
 })
 
+test('language selection stays beside the package quantity choices on desktop and mobile', () => {
+  const desktop = readFileSync(new URL('../src/app/dashboard/credits/page.tsx', import.meta.url), 'utf8')
+  const desktopSelector = desktop.indexOf('<LeadPurchaseLanguageSelector />')
+  const desktopPackages = desktop.indexOf('leadPackages.map', desktopSelector)
+  assert.ok(desktopSelector > desktop.indexOf('<CouponBox />'))
+  assert.ok(desktopPackages > desktopSelector)
+
+  const mobile = readFileSync(new URL('../src/app/m/creditos/page.tsx', import.meta.url), 'utf8')
+  const mobileSelector = mobile.indexOf('<fieldset style={{ padding: 12')
+  const mobilePackages = mobile.indexOf('leadPkgs.map', mobileSelector)
+  assert.ok(mobileSelector > mobile.indexOf("L('Leads exclusivos'"))
+  assert.ok(mobilePackages > mobileSelector)
+})
+
 // Execute the real route with in-memory service doubles. No Stripe/Supabase
 // credentials, live checkouts, emails, or WhatsApp sends are used by these tests.
 function route(path: string, dependencies: Record<string, unknown>): { POST: (req: Request) => Promise<Response> } {
