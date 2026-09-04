@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n-client'
 import { MIcon } from '@/components/mobile/icons'
 import { getInitials } from '@/lib/utils'
+import { removeTeamMember, teamRemovalError } from '@/lib/team-removal-client'
 
 interface Member { id?: string; name: string; email?: string | null; phone?: string | null; whatsapp?: string | null; is_active?: boolean; leads_count?: number }
 
@@ -23,6 +24,8 @@ export default function MobileTime() {
   const [list, setList] = useState<Member[] | null>(null)
   const [editing, setEditing] = useState<Member | null>(null)
   const [busy, setBusy] = useState(false)
+  const [removingId, setRemovingId] = useState<string | null>(null)
+  const [removalFeedback, setRemovalFeedback] = useState<{ error: boolean; text: string } | null>(null)
 
   const reload = (bid: string) => fetch(`/api/team/members?buyer_id=${bid}`, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d) setList(d.members || []) }).catch(() => {})
 
@@ -49,8 +52,17 @@ export default function MobileTime() {
   }
 
   async function remove(m: Member) {
-    if (!m.id || !buyerId || !confirm(L('Remover este membro?', 'Remove this member?', '¿Quitar?'))) return
-    try { await fetch(`/api/team/members/${m.id}`, { method: 'DELETE' }); reload(buyerId) } catch {}
+    if (!m.id || !buyerId || removingId) return
+    if (!confirm(L(`Remover ${m.name.trim()} do time? Os leads permanecem com o responsável pelo time. Leads arquivados continuam arquivados. A conta do agente não será excluída.`, `Remove ${m.name.trim()} from the team? Leads stay with the team owner. Archived leads remain archived. The agent's account will not be deleted.`, `¿Eliminar a ${m.name.trim()} del equipo? Los leads quedan con el responsable del equipo. Los archivados siguen archivados. La cuenta del agente no se eliminará.`))) return
+    setRemovingId(m.id)
+    setRemovalFeedback(null)
+    try {
+      await removeTeamMember(m.id)
+      setList(previous => (previous || []).filter(member => member.id !== m.id))
+      setRemovalFeedback({ error: false, text: L('Agente removido do time. Leads e histórico preservados.', 'Agent removed from the team. Leads and history preserved.', 'Agente eliminado del equipo. Leads e historial conservados.') })
+    } catch (error) {
+      setRemovalFeedback({ error: true, text: teamRemovalError(error instanceof Error ? error.message : 'REMOVE_FAILED', loc) })
+    } finally { setRemovingId(null) }
   }
 
   const total = list?.length || 0
@@ -66,6 +78,7 @@ export default function MobileTime() {
       </div>
 
       <div className="m-pad" style={{ paddingTop: 6 }}>
+        {removalFeedback && <p role={removalFeedback.error ? 'alert' : 'status'} className="m-card" style={{ padding: 12, color: removalFeedback.error ? '#f87171' : '#34d399', fontSize: 13 }}>{removalFeedback.text}</p>}
         {!list && <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 60 }}><div className="m-spin" /></div>}
 
         {list && (
@@ -90,7 +103,7 @@ export default function MobileTime() {
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => setEditing(m)} className="m-tap" style={{ flex: 1, height: 36, borderRadius: 10, background: 'rgba(99,102,241,0.14)', border: '1px solid rgba(99,102,241,0.25)', color: '#a5b4fc', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{L('Editar', 'Edit', 'Editar')}</button>
                   <button onClick={() => toggleActive(m)} className="m-tap" style={{ flex: 1, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--m-text)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{m.is_active ? L('Pausar', 'Pause', 'Pausar') : L('Ativar', 'Activate', 'Activar')}</button>
-                  <button onClick={() => remove(m)} className="m-tap" style={{ width: 42, height: 36, borderRadius: 10, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.22)', color: '#f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><MIcon name="x" size={15} /></button>
+                  <button onClick={() => remove(m)} disabled={removingId !== null} aria-busy={removingId === m.id} aria-label={L('Remover', 'Remove', 'Eliminar')} className="m-tap" style={{ width: 42, height: 36, borderRadius: 10, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.22)', color: '#f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', opacity: removingId ? 0.5 : 1 }}>{removingId === m.id ? '…' : <MIcon name="x" size={15} />}</button>
                 </div>
               </div>
             ))}

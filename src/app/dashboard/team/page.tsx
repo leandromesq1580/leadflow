@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useT } from '@/lib/i18n-client'
+import { removeTeamMember, teamRemovalError } from '@/lib/team-removal-client'
 
 interface Member {
   id: string
@@ -31,6 +32,8 @@ export default function TeamPage() {
   const [editEmail, setEditEmail] = useState('')
   const [editPhone, setEditPhone] = useState('')
   const [authUserId, setAuthUserId] = useState('')
+  const [removingId, setRemovingId] = useState<string | null>(null)
+  const [removalFeedback, setRemovalFeedback] = useState<{ error: boolean; text: string } | null>(null)
 
   useEffect(() => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -105,10 +108,20 @@ export default function TeamPage() {
     loadData(authUserId)
   }
 
-  async function removeMember(id: string) {
-    if (!confirm(L('Remover este membro do time?', 'Remove this member from the team?', '¿Eliminar a este miembro del equipo?'))) return
-    await fetch(`/api/team/members/${id}`, { method: 'DELETE' })
-    loadData(authUserId)
+  async function removeMember(member: Member) {
+    if (removingId) return
+    if (!confirm(L(`Remover ${member.name.trim()} do time? Os leads permanecem com o responsável pelo time. Leads arquivados continuam arquivados. A conta do agente não será excluída.`, `Remove ${member.name.trim()} from the team? Leads stay with the team owner. Archived leads remain archived. The agent's account will not be deleted.`, `¿Eliminar a ${member.name.trim()} del equipo? Los leads quedan con el responsable del equipo. Los archivados siguen archivados. La cuenta del agente no se eliminará.`))) return
+    setRemovingId(member.id)
+    setRemovalFeedback(null)
+    try {
+      await removeTeamMember(member.id)
+      setMembers(previous => previous.filter(m => m.id !== member.id))
+      setRemovalFeedback({ error: false, text: L('Agente removido do time. Leads e histórico preservados.', 'Agent removed from the team. Leads and history preserved.', 'Agente eliminado del equipo. Leads e historial conservados.') })
+    } catch (error) {
+      setRemovalFeedback({ error: true, text: teamRemovalError(error instanceof Error ? error.message : 'REMOVE_FAILED', t._locale) })
+    } finally {
+      setRemovingId(null)
+    }
   }
 
   async function updateMode(newMode: 'manual' | 'auto_roundrobin') {
@@ -138,6 +151,7 @@ export default function TeamPage() {
       </div>
 
       {/* Distribution Mode Toggle */}
+      {removalFeedback && <p role={removalFeedback.error ? 'alert' : 'status'} className="rounded-xl px-4 py-3 mb-4 text-[13px]" style={{ background: removalFeedback.error ? 'var(--err-soft)' : 'var(--ok-line)', color: removalFeedback.error ? '#dc2626' : '#166534' }}>{removalFeedback.text}</p>}
       <div className="rounded-2xl p-5 mb-6" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
         <p className="text-[13px] font-bold mb-3" style={{ color: 'var(--fg)' }}>{L('Modo de Distribuicao', 'Distribution Mode', 'Modo de Distribución')}</p>
         <div className="flex gap-3">
@@ -270,10 +284,10 @@ export default function TeamPage() {
                       }}>
                       {m.is_active ? L('Pausar', 'Pause', 'Pausar') : L('Ativar', 'Activate', 'Activar')}
                     </button>
-                    <button onClick={() => removeMember(m.id)}
-                      className="px-3 py-1.5 rounded-lg text-[11px] font-bold"
+                    <button onClick={() => removeMember(m)} disabled={removingId !== null} aria-busy={removingId === m.id}
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-bold disabled:opacity-50"
                       style={{ background: 'var(--err-soft)', color: '#ef4444' }}>
-                      {L('Remover', 'Remove', 'Eliminar')}
+                      {removingId === m.id ? L('Removendo...', 'Removing...', 'Eliminando...') : L('Remover', 'Remove', 'Eliminar')}
                     </button>
                   </div>
                 </div>
