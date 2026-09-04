@@ -1,5 +1,13 @@
 # Lead4Producers — Documentação Completa do Sistema
 
+> **Atualização operacional — 04/09/2026:** as referências abaixo ao VPS
+> `31.220.97.186` e ao plano Hobby são históricas, não instruções de produção.
+> A captura Meta agora é executada pelo Vercel Cron (Pro), a cada 2 minutos,
+> com `CRON_SECRET`, paginação e checkpoint. Consulte
+> [o runbook atual](docs/META_CAPTURE_RECOVERY.md) antes de mexer na captura.
+> A bridge global atual está no VPS `62.146.229.13:3457`; sua restauração está em
+> [infra/vps/README-RESTORE.md](infra/vps/README-RESTORE.md).
+
 **Versão:** 1.0
 **Data:** 2026-04-16
 **Ambiente:** Produção
