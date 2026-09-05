@@ -1,6 +1,7 @@
 import { createAdminClient } from './supabase/admin'
 import { sendSms, toE164 } from './twilio'
 import { buyerTimezone } from './availability'
+import { localeDoBuyer, type BuyerLocale } from './buyer-locale'
 
 /**
  * SMS AUTOMÁTICO pós-ligação sem contato — regras e fila.
@@ -55,9 +56,22 @@ export function localDay(tz: string, at: Date = new Date()): string {
   return localParts(tz, at).day
 }
 
-export function buildSmsBody(leadName?: string | null, buyerName?: string | null): string {
+export function buildSmsBody(
+  leadName?: string | null,
+  buyerName?: string | null,
+  locale: BuyerLocale = 'pt',
+): string {
   const first = String(leadName || '').trim().split(/\s+/)[0]
-  const who = (buyerName || '').trim() || 'seu corretor'
+  const configuredName = (buyerName || '').trim()
+  if (locale === 'es') {
+    const who = configuredName || 'tu agente'
+    return `¡Hola${first ? ' ' + first : ''}! Soy ${who}. Intenté llamarte sobre tu cotización de seguro de vida, pero no pude comunicarme contigo. ¿Puedes responderme por aquí?`
+  }
+  if (locale === 'en') {
+    const who = configuredName || 'your agent'
+    return `Hi${first ? ' ' + first : ''}! This is ${who}. I tried to call you about your life insurance quote, but I couldn't reach you. Can you reply here?`
+  }
+  const who = configuredName || 'seu corretor'
   return `Oi${first ? ' ' + first : ''}! Aqui é ${who}. Tentei te ligar sobre sua cotação de seguro de vida, mas não consegui falar com você. Pode me retornar por aqui?`
 }
 
@@ -94,7 +108,7 @@ export async function sendOrScheduleAutoSms(
   db: Db, leadId: string, buyerId: string | null
 ): Promise<'sent' | 'scheduled' | 'skipped'> {
   const { data: lead } = await db.from('leads')
-    .select('name, phone, state, sms_opted_out').eq('id', leadId).maybeSingle()
+    .select('name, phone, state, sms_opted_out, lead_language').eq('id', leadId).maybeSingle()
   const e164 = toE164(lead?.phone)
   if (!lead || lead.sms_opted_out || !e164) return 'skipped'
 
@@ -110,11 +124,16 @@ export async function sendOrScheduleAutoSms(
   } catch { /* coluna/migration ausente → segue */ }
 
   let buyerName = ''
+  let locale: BuyerLocale = lead.lead_language === 'es' ? 'es' : 'pt'
   if (buyerId) {
     const { data: b } = await db.from('buyers').select('name').eq('id', buyerId).maybeSingle()
     buyerName = b?.name || ''
+    const buyerLocale = await localeDoBuyer(db, buyerId)
+    // Um lead comprado em espanhol nunca recebe o SMS automático em português,
+    // mesmo se a sincronização do seletor de idioma ainda estiver chegando ao banco.
+    locale = lead.lead_language === 'es' ? 'es' : buyerLocale
   }
-  const body = buildSmsBody(lead.name, buyerName)
+  const body = buildSmsBody(lead.name, buyerName, locale)
 
   if (isWithinSmsWindow(tz)) {
     const res = await sendSms(e164, body)
