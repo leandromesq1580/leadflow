@@ -29,6 +29,20 @@ export const PERIOD_HOURS: Record<Period, number[]> = {
   evening: [18, 19, 20],
 }
 
+/** Rótulo de hora no padrão americano: 8 → "8 AM", 12 → "12 PM", 20 → "8 PM". */
+export function hourLabel(h: number): string {
+  const n = ((h % 24) + 24) % 24
+  const suffix = n < 12 ? 'AM' : 'PM'
+  const h12 = n % 12 === 0 ? 12 : n % 12
+  return `${h12} ${suffix}`
+}
+
+/** Faixa do período no padrão americano: "8 AM–12 PM". */
+export function periodRangeLabel(p: Period): string {
+  const hs = PERIOD_HOURS[p]
+  return `${hourLabel(hs[0])}–${hourLabel(hs[hs.length - 1] + 1)}`
+}
+
 /** Mantém só horas válidas do período (defesa contra payload adulterado). */
 export function sanitizeHours(period: string, hours: unknown): number[] {
   const allowed = PERIOD_HOURS[period as Period]
@@ -95,10 +109,10 @@ export function currentWindow(tz: string, now: Date = new Date()): { day_type: D
   } catch { /* tz inválido → usa defaults */ }
 
   const day_type: DayType = weekday === 'Sat' ? 'saturday' : weekday === 'Sun' ? 'sunday' : 'weekday'
+  // O período vem de PERIOD_HOURS (as MESMAS horas que a tela oferece). Hora fora
+  // delas (madrugada, 6-7h, 21h-23h) = nenhum período → comprador indisponível.
   const period: Period | null =
-    hour >= 6 && hour < 12 ? 'morning' :
-    hour >= 12 && hour < 18 ? 'afternoon' :
-    hour >= 18 && hour < 24 ? 'evening' : null // 0–5h = madrugada
+    (Object.keys(PERIOD_HOURS) as Period[]).find(p => PERIOD_HOURS[p].includes(hour)) ?? null
 
   return { day_type, period, hour }
 }

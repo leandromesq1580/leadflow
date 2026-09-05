@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { WaConnectCard } from '@/components/wa-connect-card'
 import { useT } from '@/lib/i18n-client'
-import { PERIOD_HOURS } from '@/lib/availability'
+import { PERIOD_HOURS, hourLabel } from '@/lib/availability'
 
 interface Buyer {
   id: string
@@ -334,7 +334,7 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
                       <p className="text-[11px] mb-1.5" style={{ color: 'var(--fg-muted)' }}>
                         {pLabel} · {hrs.length === 0
                           ? <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{L('período todo', 'entire period', 'todo el período')}</span>
-                          : <span style={{ color: '#6d28d9', fontWeight: 600 }}>{hrs.length}h {L(hrs.length > 1 ? 'escolhidas' : 'escolhida', 'selected', hrs.length > 1 ? 'elegidas' : 'elegida')}</span>}
+                          : <span style={{ color: '#6d28d9', fontWeight: 600 }}>{hrs.length} {L(hrs.length > 1 ? 'horários escolhidos' : 'horário escolhido', hrs.length > 1 ? 'hours selected' : 'hour selected', hrs.length > 1 ? 'horas elegidas' : 'hora elegida')}</span>}
                       </p>
                       <div className="flex flex-wrap items-center gap-1.5">
                         {PERIOD_HOURS[pk].map(h => {
@@ -347,7 +347,7 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
                                 color: on ? '#fff' : 'var(--fg-secondary)',
                                 border: `1px solid ${on ? '#6d28d9' : 'var(--border)'}`,
                               }}>
-                              {h}h
+                              {hourLabel(h)}
                             </button>
                           )
                         })}

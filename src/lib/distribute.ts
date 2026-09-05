@@ -349,8 +349,10 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
     : availRes0
   const statesByBuyer: Record<string, string[]> = {}
   for (const r of statesRes.data || []) (statesByBuyer[r.buyer_id] ||= []).push(r.state_code)
-  const availByBuyer: Record<string, { day_type: string; period: string }[]> = {}
-  for (const r of availRes.data || []) (availByBuyer[r.buyer_id] ||= []).push({ day_type: r.day_type, period: r.period })
+  // `hours` (granularidade de 1h) TEM que chegar em isAvailableNow: sem ela o comprador
+  // que escolheu horas era tratado como período inteiro e recebia fora da janela dele.
+  const availByBuyer: Record<string, { day_type: string; period: string; hours?: number[] | null }[]> = {}
+  for (const r of availRes.data || []) (availByBuyer[r.buyer_id] ||= []).push({ day_type: r.day_type, period: r.period, hours: (r as { hours?: number[] | null }).hours ?? null })
 
   const availableNow = eligible.filter(b => {
     const tz = buyerTimezone(statesByBuyer[b.id])
