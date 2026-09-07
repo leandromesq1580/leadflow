@@ -18,7 +18,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const { data, error } = await db
     .from('pipeline_leads')
-    .select('id, stage_id, position, moved_at, lead:leads!inner(id, name, email, phone, city, state, interest, type, status, created_at, contract_closed, policy_value, assigned_to_member, archived)')
+    .select('id, stage_id, position, moved_at, lead:leads!inner(id, name, email, phone, city, state, interest, type, status, created_at, contract_closed, policy_value, assigned_to_member, archived, lead_language, form_name, meta_lead_id)')
     .eq('pipeline_id', pipelineId)
     // Hide archived leads from the active Kanban — use !inner above so this WHERE
     // applies to the embedded lead; archived leads are managed in the "Arquivados" view.

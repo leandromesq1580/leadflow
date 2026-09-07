@@ -15,7 +15,7 @@ interface Agent {
   phone?: string | null
 }
 
-export function renderTemplate(body: string, lead: Lead, agent: Agent): string {
+export function renderTemplate(body: string, lead: Lead, agent: Agent, locale: 'pt' | 'es' | 'en' = 'pt'): string {
   const firstName = (lead.name || '').split(' ')[0] || ''
   const vars: Record<string, string> = {
     nome: lead.name || '',
@@ -24,7 +24,9 @@ export function renderTemplate(body: string, lead: Lead, agent: Agent): string {
     email: lead.email || '',
     estado: lead.state || '',
     cidade: lead.city || '',
-    interesse: lead.interest || 'seguro de vida',
+    interesse: !lead.interest || /^(seguro de vida|life insurance)$/i.test(lead.interest.trim())
+      ? locale === 'en' ? 'life insurance' : 'seguro de vida'
+      : lead.interest,
     agente: agent.name || '',
     agente_primeiro_nome: (agent.name || '').split(' ')[0] || '',
     agente_email: agent.email || '',

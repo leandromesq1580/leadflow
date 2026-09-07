@@ -6,8 +6,10 @@ import { useT } from '@/lib/i18n-client'
 import { MIcon } from '@/components/mobile/icons'
 import { AssignSheet } from '@/components/mobile/assign-sheet'
 import { timeAgo, getInitials, statusLabel } from '@/lib/utils'
+import { LeadLanguageBadge } from '@/components/lead-language-badge'
+import type { LeadLanguageFields } from '@/lib/lead-message-locale'
 
-interface Lead { id: string; name: string; phone: string; city: string; state: string; status: string; interest: string; type: string; created_at: string; assigned_to_member?: string | null }
+interface Lead extends LeadLanguageFields { id: string; name: string; phone: string; city: string; state: string; status: string; interest: string; type: string; created_at: string; assigned_to_member?: string | null }
 interface Member { id: string; name: string }
 
 function avatarBg(name: string) {
@@ -92,6 +94,7 @@ export default function MobileLeads() {
                 <div className="m-av" style={{ width: 44, height: 44, fontSize: 14, background: avatarBg(l.name) }}>{getInitials(l.name)}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ margin: 0, fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.name}</p>
+                  <div style={{ marginTop: 5 }}><LeadLanguageBadge lead={l} /></div>
                   <p className="m-muted" style={{ margin: '2px 0 0', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {[[l.city, l.state].filter(Boolean).join(', '), statusLabel(l.status, loc), timeAgo(l.created_at, loc)].filter(Boolean).join(' · ')}
                   </p>

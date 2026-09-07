@@ -3,12 +3,15 @@
 import { useState, useEffect } from 'react'
 import { renderTemplate } from '@/lib/template-render'
 import { useT } from '@/lib/i18n-client'
+import { LeadLanguageBadge } from '@/components/lead-language-badge'
+import { leadMessageLocale, type LeadLanguageFields } from '@/lib/lead-message-locale'
+import { localizeSystemTemplates } from '@/lib/system-template-i18n'
 
 interface Template {
   id: string; name: string; type: 'whatsapp' | 'email'; subject: string | null; body: string; is_system: boolean
 }
 
-interface Lead {
+interface Lead extends LeadLanguageFields {
   id: string; name?: string | null; phone?: string | null; email?: string | null
   state?: string | null; interest?: string | null; city?: string | null
 }
@@ -33,6 +36,9 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
   const [customType, setCustomType] = useState<'whatsapp' | 'email'>('whatsapp')
   const [sending, setSending] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [localizedPreview, setLocalizedPreview] = useState('')
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [previewError, setPreviewError] = useState('')
   const [agent, setAgent] = useState<Agent>(initialAgent)
 
   useEffect(() => {
@@ -47,8 +53,28 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
     }
   }, [initialAgent.id, initialAgent.name])
 
-  const selected = templates.find(t => t.id === selectedId)
-  const preview = selected ? renderTemplate(editing ? customBody : selected.body, lead, agent) : customBody
+  const contactLocale = leadMessageLocale(lead)
+  const recipientTemplates = contactLocale ? localizeSystemTemplates(templates, contactLocale) : templates
+  const selected = recipientTemplates.find(t => t.id === selectedId)
+  useEffect(() => {
+    if (!selectedId || editing) return
+    const controller = new AbortController()
+    setPreviewLoading(true)
+    setPreviewError('')
+    setLocalizedPreview('')
+    fetch('/api/templates/send', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
+      body: JSON.stringify({ template_id: selectedId, lead_id: lead.id, buyer_id: agent.id, preview: true }),
+    }).then(async response => {
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Preview unavailable')
+      setLocalizedPreview(data.sent_body)
+    }).catch(error => { if (!controller.signal.aborted) setPreviewError(error.message) })
+      .finally(() => { if (!controller.signal.aborted) setPreviewLoading(false) })
+    return () => controller.abort()
+  }, [selectedId, editing, lead.id, agent.id])
+
+  const preview = editing ? renderTemplate(customBody, lead, agent, leadMessageLocale(lead) || 'pt') : selected ? localizedPreview : customBody
   const activeType = selected?.type || customType
   const canSend = activeType === 'whatsapp' ? !!lead.phone : !!lead.email
 
@@ -62,6 +88,7 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
         override_body: editing || !selectedId ? preview : null,
         lead_id: lead.id,
         buyer_id: agent.id,
+        channel: activeType,
       }),
     })
     setSending(false)
@@ -85,6 +112,7 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
           <div>
             <h2 className="text-[16px] font-extrabold text-white">{L('Enviar mensagem pra', 'Send a message to', 'Enviar mensaje a')} {lead.name}</h2>
             <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.7)' }}>{lead.phone} · {lead.email}</p>
+            <div className="mt-2"><LeadLanguageBadge lead={lead} /></div>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10" style={{ color: '#fff' }}>✕</button>
         </div>
@@ -95,7 +123,7 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
             <div>
               <p className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--fg-muted)' }}>{L('Escolha um modelo', 'Choose a template', 'Elige una plantilla')}</p>
               <div className="space-y-2 mb-4">
-                {templates.map(t => (
+                {recipientTemplates.map(t => (
                   <button key={t.id} onClick={() => setSelectedId(t.id)}
                     className="w-full text-left p-3 rounded-xl flex items-center gap-3 transition-colors hover:bg-indigo-50/50"
                     style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
@@ -127,7 +155,7 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
                     {editing ? L('Customizada', 'Custom', 'Personalizado') : selected?.name}
                   </p>
                   {!editing && (
-                    <button onClick={() => { setEditing(true); setCustomBody(selected?.body || '') }}
+                    <button disabled={previewLoading || !!previewError} onClick={() => { setEditing(true); setCustomBody(localizedPreview) }}
                       className="text-[11px] font-bold" style={{ color: 'var(--accent)' }}>
                       ✎ {L('Editar antes de enviar', 'Edit before sending', 'Editar antes de enviar')}
                     </button>
@@ -162,7 +190,7 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
                   style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--fg)' }} />
               ) : (
                 <div className="rounded-xl p-4 mb-2" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
-                  <p className="text-[13px] whitespace-pre-wrap" style={{ color: 'var(--fg)' }}>{preview}</p>
+                  <p className="text-[13px] whitespace-pre-wrap" style={{ color: 'var(--fg)' }}>{previewLoading ? L('Preparando no idioma do lead…', 'Preparing in the lead’s language…', 'Preparando en el idioma del lead…') : previewError || preview}</p>
                 </div>
               )}
 
@@ -188,7 +216,7 @@ export function SendMessageModal({ lead, agent: initialAgent, onClose, onSent }:
         {(selected || editing) && (
           <div className="px-6 py-4 flex justify-end gap-3" style={{ borderTop: '1px solid var(--bg-soft)' }}>
             <button onClick={onClose} className="px-4 py-2 text-[13px] font-semibold" style={{ color: 'var(--fg-secondary)' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
-            <button onClick={send} disabled={sending || !canSend || !preview.trim()}
+            <button onClick={send} disabled={sending || !canSend || !preview.trim() || (!editing && (previewLoading || !!previewError))}
               className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50"
               style={{ background: activeType === 'whatsapp' ? '#10b981' : 'var(--accent)', boxShadow: '0 4px 14px rgba(124,58,237,0.3)' }}>
               {sending

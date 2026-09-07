@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { renderTemplate } from '@/lib/template-render'
+import { localizeLeadTemplate } from '@/lib/lead-message-template'
+import { requireLeadMessageLocale } from '@/lib/lead-message-locale'
 
 /**
  * POST /api/admin/force-sequence-step?secret=X&enrollment_id=Y
@@ -46,17 +48,20 @@ export async function POST(request: NextRequest) {
     }
 
     // send_template
+    const locale = requireLeadMessageLocale(lead)
     let body = ''
     let type: 'whatsapp' | 'email' = 'whatsapp'
     let subject: string | null = null
     if (step.template_id) {
       const { data: tpl } = await db.from('templates').select('*').eq('id', step.template_id).single()
       if (!tpl) return NextResponse.json({ error: 'Template not found', template_id: step.template_id })
-      body = renderTemplate(tpl.body, lead, agent)
+      const translated = await localizeLeadTemplate(db, tpl, lead)
+      body = renderTemplate(translated.body, lead, agent, locale)
       type = tpl.type
-      subject = tpl.subject ? renderTemplate(tpl.subject, lead, agent) : null
+      subject = translated.subject ? renderTemplate(translated.subject, lead, agent, locale) : null
     } else if (step.custom_body) {
-      body = renderTemplate(step.custom_body, lead, agent)
+      const translated = await localizeLeadTemplate(db, { name: '', body: step.custom_body }, lead)
+      body = renderTemplate(translated.body, lead, agent, locale)
     }
 
     if (type === 'whatsapp') {

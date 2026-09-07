@@ -6,8 +6,10 @@ import { getStaleness } from '@/lib/stale-leads'
 import { CardAssignMenu } from './card-assign-menu'
 import { useT } from '@/lib/i18n-client'
 import { usePrivacy } from '@/lib/privacy-mode'
+import { LeadLanguageBadge } from '@/components/lead-language-badge'
+import type { LeadLanguageFields } from '@/lib/lead-message-locale'
 
-interface Lead {
+interface Lead extends LeadLanguageFields {
   id: string; name: string; phone: string; state: string; interest: string
   type: string; created_at: string; contract_closed: boolean
   assigned_to_member?: string | null
@@ -164,6 +166,8 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
           onArchived={onArchived}
         />
       </div>
+
+      <div className="mb-2.5 ml-[42px]"><LeadLanguageBadge lead={lead} /></div>
 
       {/* Phone */}
       {lead.phone && (

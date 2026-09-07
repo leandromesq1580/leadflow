@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   const db = createAdminClient()
   const { data } = await db
     .from('leads')
-    .select('id, name, phone, state, interest, type, status, created_at, contract_closed, assigned_to_member, member:team_members!assigned_to_member(id, name)')
+    .select('id, name, phone, state, interest, type, status, created_at, contract_closed, assigned_to_member, lead_language, form_name, meta_lead_id, member:team_members!assigned_to_member(id, name)')
     .eq('assigned_to', buyerId)
     .not('assigned_to_member', 'is', null)
     .order('created_at', { ascending: false })

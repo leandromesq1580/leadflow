@@ -5,6 +5,7 @@ import { getInitials } from '@/lib/utils'
 import { getLocale } from '@/lib/locale'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { LeadLanguageBadge } from '@/components/lead-language-badge'
 
 export const dynamic = 'force-dynamic'
 
@@ -58,6 +59,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           </div>
           <div>
             <h1 className="text-[22px] font-extrabold" style={{ color: 'var(--fg)' }}>{lead.name}</h1>
+            <div className="my-1"><LeadLanguageBadge lead={lead} /></div>
             <p className="text-[14px]" style={{ color: 'var(--fg-secondary)' }}>{lead.city}{lead.state ? `, ${lead.state}` : ''} — {lead.interest}</p>
           </div>
         </div>

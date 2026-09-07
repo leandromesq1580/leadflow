@@ -9,8 +9,10 @@ import { StatusSheet } from '@/components/mobile/status-sheet'
 import { FollowupSheet } from '@/components/mobile/followup-sheet'
 import { TagSheet } from '@/components/mobile/tag-sheet'
 import { getInitials, statusLabel, timeAgo } from '@/lib/utils'
+import { LeadLanguageBadge } from '@/components/lead-language-badge'
+import type { LeadLanguageFields } from '@/lib/lead-message-locale'
 
-interface Lead {
+interface Lead extends LeadLanguageFields {
   id: string; name: string; email: string; phone: string; city: string; state: string
   status: string; interest: string; type: string; campaign_name: string; created_at: string
   assigned_to_member?: string | null
@@ -75,6 +77,7 @@ export default function MobileLeadDetail() {
           <div style={{ textAlign: 'center', marginBottom: 20 }}>
             <div className="m-av" style={{ width: 74, height: 74, fontSize: 24, margin: '0 auto 12px', background: avatarBg(lead.name), boxShadow: '0 14px 34px -12px rgba(99,102,241,0.7)' }}>{getInitials(lead.name)}</div>
             <p style={{ margin: 0, fontSize: 19, fontWeight: 700 }}>{lead.name}</p>
+            <div style={{ marginTop: 8 }}><LeadLanguageBadge lead={lead} /></div>
             <p className="m-muted" style={{ margin: '4px 0 0', fontSize: 13 }}>{lead.phone || lead.email || '—'}</p>
             <div style={{ display: 'flex', gap: 7, justifyContent: 'center', marginTop: 13, flexWrap: 'wrap' }}>
               {lead.state && <span className="m-chip">{lead.state}</span>}

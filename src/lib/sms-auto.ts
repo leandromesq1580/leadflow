@@ -1,7 +1,8 @@
 import { createAdminClient } from './supabase/admin'
 import { sendSms, toE164 } from './twilio'
 import { buyerTimezone } from './availability'
-import { localeDoBuyer, type BuyerLocale } from './buyer-locale'
+import { requireLeadMessageLocale, type LeadMessageLocale } from './lead-message-locale'
+import { translateLeadCopy } from './lead-message-template'
 
 /**
  * SMS AUTOMÁTICO pós-ligação sem contato — regras e fila.
@@ -59,7 +60,7 @@ export function localDay(tz: string, at: Date = new Date()): string {
 export function buildSmsBody(
   leadName?: string | null,
   buyerName?: string | null,
-  locale: BuyerLocale = 'pt',
+  locale: LeadMessageLocale = 'pt',
 ): string {
   const first = String(leadName || '').trim().split(/\s+/)[0]
   const configuredName = (buyerName || '').trim()
@@ -108,7 +109,7 @@ export async function sendOrScheduleAutoSms(
   db: Db, leadId: string, buyerId: string | null
 ): Promise<'sent' | 'scheduled' | 'skipped'> {
   const { data: lead } = await db.from('leads')
-    .select('name, phone, state, sms_opted_out, lead_language').eq('id', leadId).maybeSingle()
+    .select('name, phone, state, sms_opted_out, lead_language, form_name, meta_lead_id').eq('id', leadId).maybeSingle()
   const e164 = toE164(lead?.phone)
   if (!lead || lead.sms_opted_out || !e164) return 'skipped'
 
@@ -124,14 +125,10 @@ export async function sendOrScheduleAutoSms(
   } catch { /* coluna/migration ausente → segue */ }
 
   let buyerName = ''
-  let locale: BuyerLocale = lead.lead_language === 'es' ? 'es' : 'pt'
+  const locale = requireLeadMessageLocale(lead)
   if (buyerId) {
     const { data: b } = await db.from('buyers').select('name').eq('id', buyerId).maybeSingle()
     buyerName = b?.name || ''
-    const buyerLocale = await localeDoBuyer(db, buyerId)
-    // Um lead comprado em espanhol nunca recebe o SMS automático em português,
-    // mesmo se a sincronização do seletor de idioma ainda estiver chegando ao banco.
-    locale = lead.lead_language === 'es' ? 'es' : buyerLocale
   }
   const body = buildSmsBody(lead.name, buyerName, locale)
 
@@ -186,7 +183,7 @@ export async function dispatchScheduledSms(): Promise<number> {
   for (const row of rows) {
     try {
       const { data: lead } = await db.from('leads')
-        .select('name, state, sms_opted_out, assigned_to').eq('id', row.lead_id).maybeSingle()
+        .select('name, state, sms_opted_out, assigned_to, lead_language, form_name, meta_lead_id').eq('id', row.lead_id).maybeSingle()
       if (!lead) { await db.from('sms_messages').update({ status: 'failed', error: 'lead removido' }).eq('id', row.id); continue }
 
       const tz = leadTimezone(lead.state)
@@ -203,12 +200,16 @@ export async function dispatchScheduledSms(): Promise<number> {
         await db.from('sms_messages').update({ status: 'canceled', error: 'limite diário/total' }).eq('id', row.id); continue
       }
 
-      const res = await sendSms(`+${String(row.to_phone).replace(/\D/g, '')}`, row.body)
+      // Resolve again at dispatch: even messages queued before this fix must use
+      // the lead's current language. Never fall back to the previously queued text.
+      const locale = requireLeadMessageLocale(lead)
+      const copy = await translateLeadCopy(db, { body: row.body, subject: null }, locale)
+      const res = await sendSms(`+${String(row.to_phone).replace(/\D/g, '')}`, copy.body)
       if (!res.ok) {
         await db.from('sms_messages').update({ status: 'failed', error: (res.error || '').slice(0, 200) }).eq('id', row.id)
         continue
       }
-      await db.from('sms_messages').update({ status: 'sent', twilio_sid: res.sid || null, error: null }).eq('id', row.id)
+      await db.from('sms_messages').update({ status: 'sent', body: copy.body, twilio_sid: res.sid || null, error: null }).eq('id', row.id)
       await db.from('follow_ups').insert({
         lead_id: row.lead_id, buyer_id: lead.assigned_to || null, type: 'note',
         description: `📱 SMS auto (${total + 1}/${SMS_MAX_TOTAL}) — tentativa de ligação sem contato`,
@@ -217,6 +218,7 @@ export async function dispatchScheduledSms(): Promise<number> {
       sent++
       console.log(`[sms-auto] agendado despachado -> lead ${row.lead_id}`)
     } catch (e: any) {
+      await db.from('sms_messages').update({ error: String(e?.message || 'dispatch failed').slice(0, 300) }).eq('id', row.id)
       console.error('[sms-auto] erro no despacho', row.id, e?.message)
     }
   }

@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n-client'
 import { MIcon } from '@/components/mobile/icons'
 import { getInitials } from '@/lib/utils'
+import { LeadLanguageBadge } from '@/components/lead-language-badge'
+import type { LeadLanguageFields } from '@/lib/lead-message-locale'
 
 interface Msg { id: string; direction: 'in' | 'out'; body: string | null; sent_at: string; status?: string; media_url?: string | null; media_type?: string | null; wa_message_id?: string | null; channel?: string }
 
@@ -25,7 +27,7 @@ export default function MobileThread() {
   const leadId = params?.leadId as string
 
   const [buyerId, setBuyerId] = useState<string | null>(null)
-  const [lead, setLead] = useState<{ name: string; phone: string } | null>(null)
+  const [lead, setLead] = useState<(LeadLanguageFields & { name: string; phone: string }) | null>(null)
   const [msgs, setMsgs] = useState<Msg[] | null>(null)
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
@@ -36,7 +38,7 @@ export default function MobileThread() {
   useEffect(() => {
     if (!leadId) return
     fetch('/api/m/team-context', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d?.buyer_id) setBuyerId(d.buyer_id) }).catch(() => {})
-    fetch(`/api/leads/${leadId}`, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d?.lead) setLead({ name: d.lead.name, phone: d.lead.phone }) }).catch(() => {})
+    fetch(`/api/leads/${leadId}`, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d?.lead) setLead(d.lead) }).catch(() => {})
     const load = () => fetch(`/api/whatsapp/messages?lead_id=${leadId}`, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d) setMsgs(d.messages || []) }).catch(() => {})
     load()
     fetch('/api/whatsapp/messages', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lead_id: leadId }) }).catch(() => {})
@@ -98,6 +100,7 @@ export default function MobileThread() {
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ margin: 0, fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lead?.name || '…'}</p>
           <p className="m-faint" style={{ margin: 0, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lead?.phone || ''}</p>
+          {lead && <LeadLanguageBadge lead={lead} />}
         </div>
         {lead?.phone && <a href={`tel:${lead.phone.replace(/\D/g, '')}`} className="m-tap" style={{ color: '#a5b4fc', display: 'flex' }} aria-label={L('Ligar', 'Call', 'Llamar')}><MIcon name="phone" size={20} /></a>}
       </div>

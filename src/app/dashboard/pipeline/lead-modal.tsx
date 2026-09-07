@@ -11,6 +11,8 @@ import { TimePicker } from '@/components/time-picker'
 import { usePrivacy } from '@/lib/privacy-mode'
 import { LeadFormsTab } from './lead-forms-tab'
 import { useT } from '@/lib/i18n-client'
+import { LeadLanguageBadge } from '@/components/lead-language-badge'
+import { leadMessageLocale } from '@/lib/lead-message-locale'
 
 interface Props {
   leadId: string
@@ -88,16 +90,19 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   useEffect(() => {
     if (fuType !== 'meeting' || !fuSendConfirm || fuConfirmEdited) return
     if (!fuDate || !fuTime) { setFuConfirmMsg(''); return }
-    const first = (lead?.name || '').trim().split(' ')[0] || L('tudo bem', 'there', 'qué tal')
+    const locale = leadMessageLocale(lead)
+    if (!locale) { setFuConfirmMsg(''); return }
+    const message = (pt: string, en: string, es: string) => locale === 'es' ? es : locale === 'en' ? en : pt
+    const first = (lead?.name || '').trim().split(' ')[0] || message('tudo bem', 'there', 'qué tal')
     const [y, m, d] = fuDate.split('-')
     const [hh, mm] = fuTime.split(':').map(Number)
     const horaFmt = `${hh % 12 || 12}:${String(mm).padStart(2, '0')} ${hh >= 12 ? 'PM' : 'AM'}`
-    setFuConfirmMsg(L(
+    setFuConfirmMsg(message(
       `Oi ${first}! 👋 como combinado deixamos nossa conversa para o dia ${d}/${m}/${y} às ${horaFmt}. Até lá!\nQualquer imprevisto, é só me avisar por aqui. 🙂`,
       `Hi ${first}! 👋 as agreed, our conversation is set for ${m}/${d}/${y} at ${horaFmt}. Talk to you then!\nIf anything comes up, just let me know here. 🙂`,
       `¡Hola ${first}! 👋 como quedamos, dejamos nuestra conversación para el día ${d}/${m}/${y} a las ${horaFmt}. ¡Hasta entonces!\nCualquier imprevisto, avísame por aquí. 🙂`
     ))
-  }, [fuType, fuSendConfirm, fuConfirmEdited, fuDate, fuTime, lead?.name])
+  }, [fuType, fuSendConfirm, fuConfirmEdited, fuDate, fuTime, lead?.name, lead?.lead_language, lead?.form_name])
 
   async function loadPipelineInfo() {
     if (!buyerId) return
@@ -334,8 +339,8 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
         const r = await fetch('/api/templates/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ override_body: confirmBody, lead_id: leadId, buyer_id: buyerId }),
-          signal: AbortSignal.timeout(20000),
+          body: JSON.stringify({ override_body: confirmBody, lead_id: leadId, buyer_id: buyerId, automated: true }),
+          signal: AbortSignal.timeout(60000),
         })
         if (!r.ok) {
           const e = await r.json().catch(() => ({}))
@@ -427,6 +432,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-[20px] font-extrabold truncate" style={{ color: 'var(--fg)' }}>{lead.name}</h2>
+              <div className="my-1"><LeadLanguageBadge lead={lead} /></div>
               <p className="text-[12px] font-medium" style={{ color: 'var(--fg-muted)' }}>
                 {privacy.mask(lead.phone, 'phone')} {lead.state && `· ${lead.state}`}
               </p>
@@ -965,7 +971,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
 
       {showSendMsg && lead && (
         <SendMessageModal
-          lead={{ id: leadId, name: lead.name, phone: lead.phone, email: lead.email, state: lead.state, city: lead.city, interest: lead.interest }}
+          lead={{ ...lead, id: leadId }}
           agent={{ id: buyerId }}
           onClose={() => setShowSendMsg(false)}
           onSent={() => loadFollowUps()}

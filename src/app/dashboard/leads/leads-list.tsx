@@ -7,8 +7,10 @@ import { getInitials } from '@/lib/utils'
 import { AssignButton } from './assign-button'
 import { usePrivacy } from '@/lib/privacy-mode'
 import { useT } from '@/lib/i18n-client'
+import { LeadLanguageBadge } from '@/components/lead-language-badge'
+import type { LeadLanguageFields } from '@/lib/lead-message-locale'
 
-interface Lead {
+interface Lead extends LeadLanguageFields {
   id: string
   name: string
   phone?: string | null
@@ -119,6 +121,7 @@ export function LeadsList({ leads, isAgency, teamMembers }: Props) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[14px] font-semibold group-hover:text-indigo-600" style={{ color: 'var(--fg)' }}>{lead.name}</p>
+                      <div className="my-1"><LeadLanguageBadge lead={lead} /></div>
                       <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{lead.city}{lead.state ? `, ${lead.state}` : ''} · {lead.interest}</p>
                     </div>
                     <div className="hidden sm:block">
