@@ -47,7 +47,8 @@ export async function GET(request?: NextRequest) {
     return d.isTurn && d.eligible && d.candidate ? [d.candidate.id] : []
   }))]
   const herTurnNow = nextCandidateIds.length > 0
-  const ruleAvailable = snapshot.candidates.some(c => c.is_active && c.states.length && !adminDailyBlock(ar, c.receivedToday))
+  const ruleAvailable = snapshot.candidates.some(c => c.is_active && c.states.length
+    && (c.isStaff || c.priorityCredits > 0) && !adminDailyBlock(ar, c.receivedToday))
 
   // estados de um conjunto de buyer ids
   async function statesOf(ids: string[]) {
@@ -62,18 +63,23 @@ export async function GET(request?: NextRequest) {
   if (allAdminEmails.length) {
     const { data: ab } = await db.from('buyers').select('id, name, email, is_active').in('email', allAdminEmails)
     const stMap = await statesOf((ab || []).map((b: any) => b.id))
-    for (const b of (ab || []).filter(b => !staffIds.has(b.id) || adminEmails.includes(b.email.toLowerCase()))) admins.push({
+    for (const b of (ab || []).filter(b => !staffIds.has(b.id) || adminEmails.includes(b.email.toLowerCase()))) {
+      const priority = snapshot.candidates.find(c => c.id === b.id)
+      admins.push({
       id: b.id, nome: (b.name || '').trim(), email: b.email,
       estados: (stMap[b.id] || []).sort(),
       regraAdmin: adminEmails.includes(b.email.toLowerCase()) ? N : null,
       isFallback: !staffIds.has(b.id) && b.email === fallbackEmail,
-      receivedToday: snapshot.candidates.find(c => c.id === b.id)?.receivedToday || 0,
+      receivedToday: priority?.receivedToday || 0,
       dailyMax: ar.daily_max ?? null,
+      priorityCredits: priority?.priorityCredits || 0,
       blockedReason: !b.is_active ? 'inactive' : !(stMap[b.id] || []).length ? 'no_license'
-        : adminEmails.includes(b.email.toLowerCase()) ? adminDailyBlock(ar, snapshot.candidates.find(c => c.id === b.id)?.receivedToday || 0) : null,
+        : adminEmails.includes(b.email.toLowerCase()) && !staffIds.has(b.id) && (priority?.priorityCredits || 0) <= 0 ? 'no_credit'
+        : adminEmails.includes(b.email.toLowerCase()) ? adminDailyBlock(ar, priority?.receivedToday || 0) : null,
       isNext: nextCandidateIds.includes(b.id),
       isStaff: staffIds.has(b.id),
-    })
+      })
+    }
   }
   const adminIds = new Set(admins.map(a => a.id))
 

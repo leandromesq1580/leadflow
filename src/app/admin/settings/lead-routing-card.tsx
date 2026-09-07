@@ -205,7 +205,7 @@ export function LeadRoutingCard() {
       <div className="pt-4 mt-4 border-t border-gray-100">
         <label className="block text-sm font-semibold text-gray-700 mb-1">👤 Regra do Administrador</label>
         <p className="text-[11px] text-gray-400 mb-3">
-          A cada <b>N leads do sistema</b>, 1 vai pro(s) admin(s) (em rodízio entre eles), com PRIORIDADE sobre o roteamento abaixo e respeitando a licença de estado. É <b>proporcional ao volume</b>. Ex.: <b>3</b> = a cada 2 leads pros outros, o 3º vai pro admin. 0 = desligado. Dá pra combinar com um <b>teto por dia</b> abaixo: batido o teto, a vez do admin é pulada e o lead segue pros compradores. <i>O fallback (lead sem nenhum comprador apto) não respeita o teto — é o último recurso.</i>
+          A cada <b>N leads do sistema</b>, 1 vai pro(s) destinatário(s) (em rodízio), com PRIORIDADE sobre o roteamento abaixo e respeitando a licença de estado. <b>Cliente paga 1 crédito por entrega e para automaticamente quando o saldo líquido chega a zero ou fica negativo.</b> Somente funcionário explicitamente marcado recebe por esta regra sem débito. Ex.: <b>3</b> = a cada 2 leads pros outros, o 3º vai para a prioridade. 0 = desligado. Dá pra combinar com um <b>teto por dia</b>; batido o teto, a vez é pulada. <i>O fallback não respeita o teto — é o último recurso.</i>
         </p>
         <div className="flex items-center gap-2 mb-3">
           <label className="text-sm text-gray-700">A cada</label>

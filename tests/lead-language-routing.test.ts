@@ -74,32 +74,31 @@ test('normal distribution uses language queue, language daily floor, and only th
       if (q.table === 'settings' || q.table === 'pipelines') return { data: null }
       return { data: [], error: null }
     }, async (name, args) => {
-      assert.equal(name, 'get_eligible_buyers_by_language')
       assert.equal(args.p_language, language)
-      return { data: [buyer], error: null }
+      if (name === 'get_eligible_buyers_by_language') return { data: [buyer], error: null }
+      assert.equal(name, 'assign_paid_lead_with_credit')
+      assert.equal(args.p_buyer_id, buyer.id)
+      return { data: buyer.credit_id, error: null }
     })
     const notices: any[] = []
     assert.equal((await distribution(db, notices).distributeLeadToNextBuyer({ ...lead, lead_language: language })).id, buyer.id)
     const credits = db.queries.filter(q => q.table === 'credits')
-    assert.equal(credits.length, 2)
-    assert.ok(credits.every(q => filtered(q, 'id', buyer.credit_id)))
+    assert.equal(credits.length, 0)
     assert.ok(db.queries.some(q => q.table === 'leads' && filtered(q, 'lead_language', language)))
     assert.equal(notices.length, 1)
   }
 })
 
 test('forced routing cannot spend BR credits for a Spanish lead', async () => {
+  const rpcCalls: any[] = []
   const db = database(q => {
     if (q.table === 'buyers') return { data: [{ id: 'br-buyer', email: 'br@example.invalid' }] }
     if (q.table === 'buyer_states') return { data: [{ buyer_id: 'br-buyer', state_code: 'FL' }] }
-    if (q.table === 'credits') {
-      assert.ok(filtered(q, 'lead_language', 'es'))
-      return { data: [] }
-    }
     throw new Error('Unexpected write or notification')
-  }, async () => { throw new Error('Unexpected RPC') })
+  }, async (name, args) => { rpcCalls.push([name, args]); return { data: [], error: null } })
   const notices: any[] = []
   assert.equal(await distribution(db, notices).forceAssignRoundRobin(lead, ['br@example.invalid']), null)
   assert.equal(notices.length, 0)
+  assert.deepEqual(rpcCalls, [['get_eligible_buyers_by_language', { p_product_type: 'lead', p_state: 'FL', p_language: 'es' }]])
   assert.ok(db.queries.every(q => !q.calls.some(c => ['update', 'insert', 'upsert'].includes(c[0]))))
 })

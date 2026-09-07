@@ -15,7 +15,7 @@ function loadTs(relative, mocks = {}) {
 
 const policy = loadTs('src/lib/buyer-policy.ts')
 const rules = loadTs('src/lib/admin-rule.ts')
-const state = loadTs('src/lib/admin-rule-state.ts', { './admin-rule': rules })
+const state = loadTs('src/lib/admin-rule-state.ts', { './admin-rule': rules, './buyer-policy': policy })
 const gab = { id: 'gabriel', name: 'Gabriel Stroppa', email: 'staff@example.test', is_active: true, is_admin: false, remaining: 56, leads_count: 44, credit_id: 'internal-credit', created_at: '2026-08-01' }
 const customer = { id: 'customer', name: 'Customer', email: 'customer@example.test', is_active: true, is_admin: false, remaining: 10, leads_count: 0, credit_id: 'paid-credit', created_at: '2026-08-02' }
 const lead = { id: 'test-lead', name: 'Test', state: 'FL', product_type: 'lead', lead_language: 'pt', meta_lead_id: 'test-meta', assigned_to: null }
@@ -34,11 +34,27 @@ function fixture({ routing = {}, extra = {}, eligible = [gab, customer] } = {}) 
     ...extra,
   }
   const writes = [], queries = [], notices = []
-  const db = { rpc: async () => ({ data: eligible }), from(table) {
+  const db = { rpc: async (name, args) => {
+    if (name === 'get_eligible_buyers_by_language') return { data: eligible, error: null }
+    if (name === 'assign_paid_lead_with_credit') {
+      const rows = tables.credits.filter(c => c.buyer_id === args.p_buyer_id && c.type === 'lead' && c.lead_language === args.p_language)
+      const net = rows.reduce((sum, c) => sum + c.total_purchased - c.total_used, 0)
+      const credit = rows.find(c => c.total_purchased > c.total_used)
+      const target = tables.leads.find(l => l.id === args.p_lead_id && !l.assigned_to)
+      if (net <= 0 || !credit || !target) return { data: null, error: null }
+      credit.total_used++
+      Object.assign(target, { assigned_to: args.p_buyer_id, status: 'assigned', delivery_credit_id: credit.id })
+      writes.push({ table: 'credits', mode: 'rpc', value: { total_used: credit.total_used }, ids: [credit.id] })
+      writes.push({ table: 'leads', mode: 'rpc', value: { assigned_to: args.p_buyer_id, delivery_credit_id: credit.id }, ids: [target.id] })
+      return { data: credit.id, error: null }
+    }
+    throw new Error(`Unexpected RPC: ${name}`)
+  }, from(table) {
     const filters = []; let options = {}, mode = null, value, limit = Infinity
     const q = {
       select(columns, opts = {}) { options = opts; return q },
       eq(k, v) { filters.push(r => r[k] === v); return q },
+      is(k, v) { filters.push(r => r[k] === v); return q },
       in(k, vs) { filters.push(r => vs.includes(r[k])); return q },
       not(k, op, v) { filters.push(r => v === null ? r[k] != null : r[k] !== v); return q },
       neq(k, v) { filters.push(r => r[k] !== v); return q },
@@ -146,7 +162,7 @@ test('explicit priority can deliver to staff with no credits and without debitin
   assert.equal(f.writes.length, 1)
   assert.equal(f.writes[0].table, 'leads')
   assert.equal(f.writes[0].value.assigned_to, gab.id)
-  assert.equal(f.queries.includes('credits'), false)
+  assert.equal(f.writes.some(w => w.table === 'credits'), false)
 })
 
 test('staff status does not alter another selected recipient or override priority licensing', async () => {

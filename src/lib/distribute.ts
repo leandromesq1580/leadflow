@@ -23,22 +23,11 @@ async function runBuyerAutomations(buyerId: string): Promise<void> {
   }
 }
 
-async function assignLeadToBuyer(
+async function finishLeadAssignment(
   supabase: ReturnType<typeof createAdminClient>,
   lead: Lead,
-  buyer: { id: string; name: string; email: string; phone?: string; notification_email?: boolean; notification_sms?: boolean },
-  creditId: string | null = null,
+  buyer: { id: string; name: string; email: string; phone?: string; notification_email?: boolean; notification_sms?: boolean; credit_id?: string },
 ): Promise<EligibleBuyer> {
-  await supabase
-    .from('leads')
-    .update({
-      assigned_to: buyer.id,
-      assigned_at: new Date().toISOString(),
-      status: 'assigned',
-      delivery_credit_id: creditId,
-    })
-    .eq('id', lead.id)
-
   await sendLeadNotificationEmail(buyer as any, lead)
 
   const { data: pipe } = await supabase
@@ -66,6 +55,57 @@ async function assignLeadToBuyer(
   }
 
   return buyer as unknown as EligibleBuyer
+}
+
+/** Free assignment is reserved for an explicit staff priority or the configured fallback. */
+async function assignLeadToBuyer(
+  supabase: ReturnType<typeof createAdminClient>,
+  lead: Lead,
+  buyer: { id: string; name: string; email: string; phone?: string; notification_email?: boolean; notification_sms?: boolean },
+): Promise<EligibleBuyer | null> {
+  const { error } = await supabase
+    .from('leads')
+    .update({
+      assigned_to: buyer.id,
+      assigned_at: new Date().toISOString(),
+      status: 'assigned',
+      delivery_credit_id: null,
+    })
+    .eq('id', lead.id)
+    .is('assigned_to', null)
+
+  if (error) {
+    console.error(`[Distribute] free assignment failed for lead=${lead.id}:`, error.message)
+    return null
+  }
+  return finishLeadAssignment(supabase, lead, buyer)
+}
+
+/**
+ * Paid assignment is atomic in Postgres: it verifies the buyer's NET balance,
+ * debits exactly one language-matching credit and assigns the lead together.
+ */
+async function assignPaidLeadToBuyer(
+  supabase: ReturnType<typeof createAdminClient>,
+  lead: Lead,
+  buyer: { id: string; name: string; email: string; phone?: string; notification_email?: boolean; notification_sms?: boolean },
+): Promise<EligibleBuyer | null> {
+  const language = leadLanguageForLead(lead)
+  if (!language) return null
+  const { data: creditId, error } = await supabase.rpc('assign_paid_lead_with_credit', {
+    p_lead_id: lead.id,
+    p_buyer_id: buyer.id,
+    p_language: language,
+  })
+  if (error) {
+    console.error(`[Distribute] paid assignment failed for lead=${lead.id} buyer=${buyer.id}:`, error.message)
+    return null
+  }
+  if (!creditId) {
+    console.log(`[Distribute] paid assignment refused for lead=${lead.id} buyer=${buyer.id}: no positive net credit or lead already assigned`)
+    return null
+  }
+  return finishLeadAssignment(supabase, lead, { ...buyer, credit_id: creditId })
 }
 
 /**
@@ -127,32 +167,23 @@ export async function forceAssignRoundRobin(
     ordered = filtered
   }
 
-  // 💳 CRÉDITO: o roteamento por pool TAMBÉM cobra crédito (igual à distribuição
-  // normal). Antes entregava lead pago DE GRAÇA, lesando quem paga. Só roteia pra
-  // quem tem saldo de lead > 0 e debita ao entregar. Sem ninguém com saldo → null
-  // (cai na distribuição normal, que respeita crédito/estado + tem fallback).
-  const creditByBuyer = new Map<string, { id: string; remaining: number }>()
-  {
-    const cids = ordered.map(b => b.id)
-    const { data: creds } = await supabase
-      .from('credits')
-      .select('id, buyer_id, total_purchased, total_used, expires_at')
-      .in('buyer_id', cids)
-      .eq('type', 'lead')
-      .eq('lead_language', language)
-    const nowMs = Date.now()
-    for (const c of creds || []) {
-      const remaining = (c.total_purchased || 0) - (c.total_used || 0)
-      const ok = remaining > 0 && (!c.expires_at || new Date(c.expires_at).getTime() > nowMs)
-      if (!ok) continue
-      const prev = creditByBuyer.get(c.buyer_id)
-      if (!prev || remaining > prev.remaining) creditByBuyer.set(c.buyer_id, { id: c.id, remaining })
-    }
-    ordered = ordered.filter(b => creditByBuyer.has(b.id))
-    if (ordered.length === 0) {
-      console.log(`[Distribute] ROUND_ROBIN: ninguem do pool tem credito de lead (lead ${lead.id}) - cai na distribuicao normal`)
-      return null
-    }
+  // 💳 CRÉDITO: usa a mesma visão de saldo LÍQUIDO da fila normal. Uma dívida
+  // negativa continua abatendo compras futuras e impede novas entregas até o
+  // saldo líquido voltar a ser positivo.
+  const { data: paidEligible, error: eligibleError } = await supabase.rpc('get_eligible_buyers_by_language', {
+    p_product_type: 'lead',
+    p_state: lead.state || null,
+    p_language: language,
+  })
+  if (eligibleError) {
+    console.error('[Distribute] ROUND_ROBIN: falha ao verificar crédito líquido:', eligibleError.message)
+    return null
+  }
+  const paidIds = new Set((paidEligible || []).map((b: { id: string }) => b.id))
+  ordered = ordered.filter(b => paidIds.has(b.id))
+  if (ordered.length === 0) {
+    console.log(`[Distribute] ROUND_ROBIN: ninguem do pool tem credito liquido de lead (lead ${lead.id}) - cai na distribuicao normal`)
+    return null
   }
 
   // Busca ULTIMO lead Meta atribuido a qualquer buyer da lista
@@ -177,14 +208,8 @@ export async function forceAssignRoundRobin(
     }
   }
 
-  const cr = creditByBuyer.get(nextBuyer.id)
-  const assigned = await assignLeadToBuyer(supabase, lead, nextBuyer, cr?.id || null)
-  // Debita 1 credito de lead do escolhido (roteamento agora COBRA, como a normal).
-  if (cr) {
-    const { data: row } = await supabase.from('credits').select('total_used').eq('id', cr.id).single()
-    if (row) await supabase.from('credits').update({ total_used: (row.total_used || 0) + 1 }).eq('id', cr.id)
-  }
-  console.log(`[Distribute] ROUND_ROBIN: lead ${lead.id} → ${nextBuyer.name} (credito debitado; anterior: ${lastLead?.assigned_to || 'nenhum'})`)
+  const assigned = await assignPaidLeadToBuyer(supabase, lead, nextBuyer)
+  if (assigned) console.log(`[Distribute] ROUND_ROBIN: lead ${lead.id} → ${nextBuyer.name} (credito debitado atomicamente; anterior: ${lastLead?.assigned_to || 'nenhum'})`)
   return assigned
 }
 
@@ -201,8 +226,7 @@ export async function tryAdminRule(
   rule?: AdminRule | null,
   dryRun = false
 ): Promise<EligibleBuyer | null> {
-  // A regra de prioridade gratuita existente se aplica somente ao produto BR.
-  // Leads em espanhol exigem saldo comprado especificamente em espanhol.
+  // A regra de prioridade configurada existe somente no produto BR.
   if (leadLanguageForLead(lead) !== 'pt') return null
   if (!adminRuleTurn(rule, 0).N || !rule?.admin_emails?.length) return null
   const supabase = createAdminClient()
@@ -213,8 +237,12 @@ export async function tryAdminRule(
 
   // Dry-run (preview/teste): retorna quem PEGARIA sem atribuir nem notificar.
   if (dryRun) return { ...(chosen as any), _everyN: everyN, _position: position, _isTurn: isTurn } as EligibleBuyer
-  const assigned = await assignLeadToBuyer(supabase, lead, chosen)
-  console.log(`[Distribute] REGRA ADMIN (1 a cada ${everyN}): lead ${lead.id} #${position} → ${chosen.name}`)
+  // Funcionários explicitamente marcados continuam sendo a única exceção sem
+  // débito. Cliente com prioridade usa a mesma cobrança atômica da fila paga.
+  const assigned = chosen.isStaff
+    ? await assignLeadToBuyer(supabase, lead, chosen)
+    : await assignPaidLeadToBuyer(supabase, lead, chosen)
+  if (assigned) console.log(`[Distribute] REGRA ADMIN (1 a cada ${everyN}): lead ${lead.id} #${position} → ${chosen.name} (${chosen.isStaff ? 'funcionario' : 'credito debitado'})`)
   return assigned
 }
 
@@ -421,63 +449,8 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
     console.log(`[Distribute] regra=${queueOrder} piso: ${semHoje.length} sem lead hoje -> ${selectedBuyer.name}`)
   } catch (e) { console.error('[Distribute] piso err (fallback):', (e as any)?.message) }
 
-  // Assign lead to buyer
-  const { error: assignError } = await supabase
-    .from('leads')
-    .update({
-      assigned_to: selectedBuyer.id,
-      assigned_at: new Date().toISOString(),
-      status: 'assigned',
-      delivery_credit_id: selectedBuyer.credit_id,
-    })
-    .eq('id', lead.id)
-
-  if (assignError) {
-    console.error('[Distribute] Failed to assign lead:', assignError)
-    return null
-  }
-
-  // Decrement credit
-  const { data: credit } = await supabase
-    .from('credits')
-    .select('total_used')
-    .eq('id', selectedBuyer.credit_id)
-    .single()
-
-  if (credit) {
-    await supabase
-      .from('credits')
-      .update({ total_used: credit.total_used + 1 })
-      .eq('id', selectedBuyer.credit_id)
-  }
-
-  // Notify buyer (always — function sends email + WhatsApp to buyer/admin/group)
-  await sendLeadNotificationEmail(selectedBuyer, lead)
-
-  // Auto-add to default pipeline (if buyer has one)
-  const { data: defaultPipeline } = await supabase
-    .from('pipelines')
-    .select('id, stages:pipeline_stages(id, position)')
-    .eq('buyer_id', selectedBuyer.id)
-    .eq('is_default', true)
-    .single()
-
-  if (defaultPipeline?.stages?.length) {
-    const firstStage = (defaultPipeline.stages as any[]).sort((a: any, b: any) => a.position - b.position)[0]
-    const { error: pipelineError } = await supabase.from('pipeline_leads').upsert({
-      lead_id: lead.id,
-      pipeline_id: defaultPipeline.id,
-      stage_id: firstStage.id,
-      position: 0,
-      moved_at: new Date().toISOString(),
-    }, { onConflict: 'lead_id,pipeline_id' })
-    if (pipelineError) {
-      console.error(`[Distribute] failed to place lead=${lead.id} in pipeline:`, pipelineError.message)
-    } else {
-      // A automação de "entrou no estágio" passa a acontecer na própria entrega.
-      await runBuyerAutomations(selectedBuyer.id)
-    }
-  }
+  const assigned = await assignPaidLeadToBuyer(supabase, lead, selectedBuyer)
+  if (!assigned) return null
 
   // Agency mode: sub-distribute to team member
   const { data: buyerInfo } = await supabase
@@ -492,7 +465,7 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
 
   console.log(`[Distribute] Lead ${lead.id} (${lead.state}) → ${selectedBuyer.name} (remaining: ${selectedBuyer.remaining - 1})`)
 
-  return selectedBuyer
+  return assigned
 }
 
 /**
