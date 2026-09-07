@@ -1,6 +1,7 @@
 import { Resend } from 'resend'
 import { localeDoBuyer, trad, type BuyerLocale } from './buyer-locale'
 import { orientarPendencia, type PolicyChangeAlert, type PolicyStatus } from './insurance-policies'
+import { leadNotificationLanguageLabel, type LeadLanguageFields } from './lead-message-locale'
 
 let _resend: Resend | null = null
 function getResend(): Resend {
@@ -173,10 +174,11 @@ export async function notifyPolicyChanges(
  * fica cego: todo lead gera aviso, mesmo os que ficam pendentes. Quando o lead
  * for finalmente distribuído, o sendLeadNotificationEmail avisa "entregue pra X".
  */
-export async function notifyGroupLeadPending(lead: { name: string; phone: string; state?: string | null; interest?: string | null }) {
+export async function notifyGroupLeadPending(lead: LeadLanguageFields & { name: string; phone: string; state?: string | null; interest?: string | null }) {
   const msg = `🔔 *NOVO LEAD RECEBIDO* (aguardando distribuição)
 
 📋 *${lead.name}*
+${leadNotificationLanguageLabel(lead)}
 📞 ${lead.phone}
 📍 ${lead.state || '—'}
 💡 ${lead.interest || 'Seguro de vida'}
@@ -292,7 +294,7 @@ interface Buyer {
   notification_phone_2?: string | null
 }
 
-interface Lead {
+interface Lead extends LeadLanguageFields {
   id?: string
   name: string
   phone: string
@@ -312,28 +314,33 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead): Promi
     if ((lead as any).id) {
       const { createAdminClient } = await import('@/lib/supabase/admin')
       const { data: src } = await createAdminClient()
-        .from('leads').select('meta_lead_id').eq('id', (lead as any).id).maybeSingle()
+        .from('leads').select('meta_lead_id, lead_language, form_name').eq('id', (lead as any).id).maybeSingle()
       if (src && !src.meta_lead_id) {
         console.log(`[Notify] Lead ${(lead as any).id} e MANUAL — pula notificacao (regra: manual nao notifica).`)
         return false
       }
+      // Also hydrate narrow callers (retry/reassignment) from the canonical row.
+      if (src) lead = { ...lead, ...src }
     }
   } catch { /* se a checagem falhar, segue o fluxo normal */ }
 
   // Idioma do corretor pros avisos abaixo (push, email, WhatsApp). Cron/webhook não
   // enxerga o cookie de idioma → busca no settings; qualquer falha cai em 'pt'.
-  let L = trad('pt')
+  let locale: BuyerLocale = 'pt'
+  let L = trad(locale)
   try {
     const { createAdminClient } = await import('@/lib/supabase/admin')
-    L = trad(await localeDoBuyer(createAdminClient(), (buyer as any).id))
+    locale = await localeDoBuyer(createAdminClient(), (buyer as any).id)
+    L = trad(locale)
   } catch { /* mantém 'pt' */ }
+  const language = leadNotificationLanguageLabel(lead, locale)
 
   // Fire-and-forget push
   try {
     const { pushToBuyer } = await import('@/lib/push-notify')
     pushToBuyer((buyer as any).id || '', {
       title: `🎯 ${L('Novo lead', 'New lead', 'Nuevo lead')} — ${lead.name}`,
-      body: `${lead.state} · ${lead.interest}. ${L('Ligue nos próximos 5 minutos!', 'Call within the next 5 minutes!', '¡Llama en los próximos 5 minutos!')}`,
+      body: `${language} · ${lead.state} · ${lead.interest}. ${L('Ligue nos próximos 5 minutos!', 'Call within the next 5 minutes!', '¡Llama en los próximos 5 minutos!')}`,
       url: '/dashboard/leads',
       tag: `lead-${lead.id}`,
     }).catch(err => console.error('[Push] err', err))
@@ -354,6 +361,7 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead): Promi
 
             <div style="background:#fff;padding:16px;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:16px;">
               <p style="margin:4px 0;"><strong>${L('Nome', 'Name', 'Nombre')}:</strong> ${lead.name}</p>
+              <p style="margin:4px 0;"><strong>${language}</strong></p>
               <p style="margin:4px 0;"><strong>${L('Telefone', 'Phone', 'Teléfono')}:</strong> <a href="tel:${lead.phone}" style="color:#1a56db;font-weight:700;">${lead.phone}</a></p>
               <p style="margin:4px 0;"><strong>${L('Estado', 'State', 'Estado')}:</strong> ${lead.state}</p>
               <p style="margin:4px 0;"><strong>${L('Interesse', 'Interest', 'Interés')}:</strong> ${lead.interest}</p>
@@ -383,6 +391,7 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead): Promi
   const adminMsg = `🔔 *NOVO LEAD RECEBIDO*
 
 📋 *${lead.name}*
+${leadNotificationLanguageLabel(lead)}
 📞 ${lead.phone}
 📍 ${lead.state}
 💡 ${lead.interest}
@@ -403,6 +412,7 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead): Promi
     const whatsappMsg = `🎯 *${L('Novo Lead — Lead4Producers!', 'New Lead — Lead4Producers!', '¡Nuevo Lead — Lead4Producers!')}*
 
 📋 *${lead.name}*
+${language}
 📞 ${lead.phone}
 📍 ${lead.state}
 💡 ${lead.interest}
@@ -601,7 +611,7 @@ export async function sendTeamMemberNotification(member: TeamMember, lead: Lead,
     if ((lead as any).id) {
       const { createAdminClient } = await import('@/lib/supabase/admin')
       const { data: src } = await createAdminClient()
-        .from('leads').select('campaign_name, form_name, raw_data').eq('id', (lead as any).id).maybeSingle()
+        .from('leads').select('campaign_name, form_name, raw_data, lead_language, meta_lead_id').eq('id', (lead as any).id).maybeSingle()
       const isManual = !!src && (
         (src.raw_data as any)?.source === 'manual' ||
         src.campaign_name === 'Manual' ||
@@ -611,12 +621,14 @@ export async function sendTeamMemberNotification(member: TeamMember, lead: Lead,
         console.log(`[Notify team] Lead ${(lead as any).id} e MANUAL — pula notificacao ao membro (regra: manual nao notifica).`)
         return
       }
+      if (src) lead = { ...lead, ...src }
     }
   } catch { /* se a checagem falhar, segue o fluxo normal */ }
 
   // Idioma do membro: locale é por buyer, então só existe se ele tem conta própria
   // (auth_user_id → buyers). Membro sem conta segue em 'pt' (comportamento de sempre).
-  let L = trad('pt')
+  let locale: BuyerLocale = 'pt'
+  let L = trad(locale)
 
   // Push: se o membro tem conta propria (auth_user_id), manda push pro buyer dele
   if (member.auth_user_id) {
@@ -626,16 +638,19 @@ export async function sendTeamMemberNotification(member: TeamMember, lead: Lead,
       const db = createAdminClient()
       const { data: memberBuyer } = await db.from('buyers').select('id').eq('auth_user_id', member.auth_user_id).single()
       if (memberBuyer?.id) {
-        L = trad(await localeDoBuyer(db, memberBuyer.id))
+        locale = await localeDoBuyer(db, memberBuyer.id)
+        L = trad(locale)
         pushToBuyer(memberBuyer.id, {
           title: `🎯 ${L('Novo lead', 'New lead', 'Nuevo lead')} — ${lead.name}`,
-          body: `${lead.state} · ${lead.interest}. ${L('Ligue nos próximos 5 minutos!', 'Call within the next 5 minutes!', '¡Llama en los próximos 5 minutos!')}`,
+          body: `${leadNotificationLanguageLabel(lead, locale)} · ${lead.state} · ${lead.interest}. ${L('Ligue nos próximos 5 minutos!', 'Call within the next 5 minutes!', '¡Llama en los próximos 5 minutos!')}`,
           url: `/dashboard/pipeline?lead=${(lead as any).id || ''}`,
           tag: `lead-team-${(lead as any).id || member.id}`,
         }).catch(err => console.error('[Push team] err', err))
       }
     } catch (e) { console.error('[Push team] setup failed', e) }
   }
+
+  const language = leadNotificationLanguageLabel(lead, locale)
 
   // Email
   if (member.email) {
@@ -653,6 +668,7 @@ export async function sendTeamMemberNotification(member: TeamMember, lead: Lead,
               <p style="color:#64748b;margin-top:0;">${L(`Ola ${member.name}, voce recebeu um lead exclusivo:`, `Hi ${member.name}, you've received an exclusive lead:`, `Hola ${member.name}, recibiste un lead exclusivo:`)}</p>
               <div style="background:#fff;padding:16px;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:16px;">
                 <p style="margin:4px 0;"><strong>${L('Nome', 'Name', 'Nombre')}:</strong> ${lead.name}</p>
+                <p style="margin:4px 0;"><strong>${language}</strong></p>
                 <p style="margin:4px 0;"><strong>${L('Telefone', 'Phone', 'Teléfono')}:</strong> <a href="tel:${lead.phone}" style="color:#6366f1;font-weight:700;">${lead.phone}</a></p>
                 <p style="margin:4px 0;"><strong>${L('Estado', 'State', 'Estado')}:</strong> ${lead.state}</p>
                 <p style="margin:4px 0;"><strong>${L('Interesse', 'Interest', 'Interés')}:</strong> ${lead.interest}</p>
@@ -678,6 +694,7 @@ export async function sendTeamMemberNotification(member: TeamMember, lead: Lead,
     const msg = `🎯 *${L('Novo Lead — Lead4Producers!', 'New Lead — Lead4Producers!', '¡Nuevo Lead — Lead4Producers!')}*
 
 📋 *${lead.name}*
+${language}
 📞 ${lead.phone}
 📍 ${lead.state}
 💡 ${lead.interest}

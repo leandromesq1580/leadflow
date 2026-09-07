@@ -29,3 +29,15 @@ export function leadMessageLanguageLabel(locale: LeadMessageLocale | null, ui = 
   }
   return labels[ui === 'en' || ui === 'es' ? ui : 'pt'][locale || 'unknown']
 }
+
+/** Product/contact language in delivery alerts; never infer nationality from a name. */
+export function leadNotificationLanguageLabel(lead: LeadLanguageFields, ui = 'pt'): string {
+  const locale = leadMessageLocale(lead)
+  if (!locale) return `🌐 ${leadMessageLanguageLabel(null, ui)}`
+  const labels = {
+    pt: { pt: '🇧🇷 Lead BR (português)', es: '🇪🇸 Lead em espanhol', en: '🇺🇸 Lead em inglês' },
+    es: { pt: '🇧🇷 Lead BR (portugués)', es: '🇪🇸 Lead en español', en: '🇺🇸 Lead en inglés' },
+    en: { pt: '🇧🇷 BR lead (Portuguese)', es: '🇪🇸 Spanish-speaking lead', en: '🇺🇸 English-speaking lead' },
+  }
+  return labels[ui === 'en' || ui === 'es' ? ui : 'pt'][locale]
+}
