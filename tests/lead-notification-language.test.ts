@@ -82,7 +82,7 @@ for (const leadLanguage of ['pt', 'es']) for (const locale of ['pt', 'en', 'es']
     assert.equal(f.push.length, 1); assert.ok(f.push[0][1].body.startsWith(recipientLabel))
     assert.equal(f.updates.length, 1)
     assert.deepEqual(Object.keys(f.updates[0]), ['notified_at'], 'adding a label must not affect assignment/credits')
-    assert.ok(f.queries.find(q => q.table === 'leads').calls.find(c => c[0] === 'select')[1].includes('lead_language'))
+    assert.ok(f.queries.find(q => q.table === 'leads').calls.find((c: any[]) => c[0] === 'select')[1].includes('lead_language'))
   })
 
   test(`team member: ${leadLanguage} lead, ${locale} member; WhatsApp, email and push`, async t => {
