@@ -11,9 +11,11 @@ export interface AdminRuleCandidate {
   is_active: boolean
   states: string[]
   receivedToday: number
+  isStaff: boolean
+  priorityCredits: number
 }
 
-export type AdminRuleBlock = 'disabled' | 'inactive' | 'no_license' | 'daily_paused' | 'daily_limit'
+export type AdminRuleBlock = 'disabled' | 'inactive' | 'no_license' | 'no_credit' | 'daily_paused' | 'daily_limit'
 
 export function easternDayStartISO(now = new Date()): string {
   const p = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(now)
@@ -53,5 +55,6 @@ export function evaluateAdminRule<T extends AdminRuleCandidate>(rule: AdminRule 
   if (!pool.length) return result(null, 'no_license')
   const index = (Math.max(Math.floor(turn.position / turn.N), 1) - 1) % pool.length
   const candidate = pool[index]
+  if (!candidate.isStaff && candidate.priorityCredits <= 0) return result(candidate, 'no_credit')
   return result(candidate, adminDailyBlock(rule, candidate.receivedToday))
 }

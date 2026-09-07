@@ -14,5 +14,5 @@ test('lead distribution triggers automations immediately after pipeline placemen
   const source = readFileSync(new URL('../src/lib/distribute.ts', import.meta.url), 'utf8')
   assert.match(source, /import \{ runAutomations \} from '\.\/automation-engine'/)
   assert.match(source, /await runBuyerAutomations\(buyer\.id\)/)
-  assert.match(source, /await runBuyerAutomations\(selectedBuyer\.id\)/)
+  assert.match(source, /return finishLeadAssignment\(supabase, lead, \{ \.\.\.buyer, credit_id: creditId \} as any\)/)
 })

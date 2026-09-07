@@ -15,7 +15,7 @@ function loadTs(relative, mocks = {}) {
 
 const rules = loadTs('src/lib/admin-rule.ts')
 const { evaluateAdminRule, adminRuleTurn, easternDayStartISO } = rules
-const jen = { id: 'jen', name: 'Jeniffer', email: 'jen@example.com', is_active: true, states: ['FL', 'CT', 'MA'], receivedToday: 0 }
+const jen = { id: 'jen', name: 'Jeniffer', email: 'jen@example.com', is_active: true, states: ['FL', 'CT', 'MA'], receivedToday: 0, isStaff: false, priorityCredits: 25 }
 const base = { admin_emails: [jen.email], one_in: 2, daily_max: null }
 const noStaff = { readBuyerPolicy: async () => ({ staffIds: new Set(), metricsExcludedIds: new Set() }) }
 
@@ -41,6 +41,12 @@ test('positive daily cap includes all system leads received today and blocks at 
   assert.equal(evaluateAdminRule({ ...base, daily_max: 5 }, 1, [{ ...jen, receivedToday: 4 }], 'FL').eligible, true)
   assert.equal(evaluateAdminRule({ ...base, daily_max: 5 }, 1, [{ ...jen, receivedToday: 5 }], 'FL').blockedReason, 'daily_limit')
   assert.equal(evaluateAdminRule(base, 1, [{ ...jen, receivedToday: 100 }], 'FL').eligible, true)
+})
+
+test('paid priority stops at zero or negative net credit; explicit staff remains free', () => {
+  assert.equal(evaluateAdminRule(base, 1, [{ ...jen, priorityCredits: 0 }], 'FL').blockedReason, 'no_credit')
+  assert.equal(evaluateAdminRule(base, 1, [{ ...jen, priorityCredits: -28 }], 'FL').blockedReason, 'no_credit')
+  assert.equal(evaluateAdminRule(base, 1, [{ ...jen, isStaff: true, priorityCredits: 0 }], 'FL').eligible, true)
 })
 
 test('inactive accounts, missing licenses and disabled rules do not receive priority leads', () => {
@@ -97,7 +103,7 @@ test('queue renders a blocked cap honestly instead of announcing PRÓXIMO', () =
   const React = require('react')
   const { renderToStaticMarkup } = require('react-dom/server')
   for (const blocked of [true, false]) {
-    const fixture = { adminRule: { N: 2, leadsUntilAdmin: 1, isTurn: true, herTurnNow: !blocked, ruleAvailable: !blocked }, admins: [{ id: 'jen', nome: 'Jeniffer', estados: ['FL'], regraAdmin: 2, isFallback: false, receivedToday: 0, dailyMax: blocked ? 0 : null, blockedReason: blocked ? 'daily_paused' : null, isNext: !blocked }], fila: [] }
+    const fixture = { adminRule: { N: 2, leadsUntilAdmin: 1, isTurn: true, herTurnNow: !blocked, ruleAvailable: !blocked }, admins: [{ id: 'jen', nome: 'Jeniffer', estados: ['FL'], regraAdmin: 2, isFallback: false, receivedToday: 0, dailyMax: blocked ? 0 : null, priorityCredits: 25, blockedReason: blocked ? 'daily_paused' : null, isNext: !blocked }], fila: [] }
     const values = ['pt', fixture, false, '17:00:00', false, false]
     const { DeliveryQueueCard } = loadTs('src/components/admin/delivery-queue-card.tsx', { react: { ...React, useState: () => [values.shift(), () => {}], useRef: () => ({ current: '' }), useEffect: () => {} } })
     const html = renderToStaticMarkup(React.createElement(DeliveryQueueCard))
@@ -114,8 +120,8 @@ test('queue renders a blocked cap honestly instead of announcing PRÓXIMO', () =
 
 test('delivery writes the selected owner and notifies only on an eligible priority turn (mock database)', async () => {
   let prior = 1181
-  const writes = [], notices = []
-  const fakeDb = { from(table) {
+  const writes = [], notices = [], rpcCalls = []
+  const fakeDb = { rpc: async (name, args) => { rpcCalls.push([name, args]); return { data: 'paid-credit', error: null } }, from(table) {
     const query = {
       update(value) { writes.push({ table, value }); return query },
       eq() { return query }, select() { return query },
@@ -137,12 +143,16 @@ test('delivery writes the selected owner and notifies only on an eligible priori
   await tryAdminRule(lead, { ...base, daily_max: 0 })
   assert.equal(writes.length, 0)
   assert.equal((await tryAdminRule(lead, base)).id, 'jen')
-  assert.equal(writes.length, 1)
-  assert.equal(writes[0].value.assigned_to, 'jen')
+  assert.equal(writes.length, 0)
+  assert.equal(rpcCalls.length, 1)
+  assert.equal(rpcCalls[0][0], 'assign_paid_lead_with_credit')
+  assert.equal(rpcCalls[0][1].p_lead_id, lead.id)
+  assert.equal(rpcCalls[0][1].p_buyer_id, jen.id)
+  assert.equal(rpcCalls[0][1].p_language, 'pt')
   assert.equal(notices.length, 1)
   prior++
   assert.equal(await tryAdminRule({ ...lead, id: 'fake-next-lead' }, base), null)
-  assert.equal(writes.length, 1)
+  assert.equal(writes.length, 0)
   assert.equal(notices.length, 1)
 })
 
@@ -152,10 +162,11 @@ test('queue API does not announce capped/inactive/unlicensed accounts and report
     { cap: 5, today: 5, active: true, states: ['FL'], expected: false, reason: 'daily_limit' },
     { cap: null, today: 0, active: false, states: ['FL'], expected: false, reason: 'inactive' },
     { cap: null, today: 0, active: true, states: [], expected: false, reason: 'no_license' },
+    { cap: null, today: 0, active: true, states: ['FL'], credits: -28, expected: false, reason: 'no_credit' },
     { cap: null, today: 0, active: true, states: ['FL'], expected: true, reason: null },
   ]) {
     const rule = { ...base, daily_max: scenario.cap }
-    const candidate = { ...jen, is_active: scenario.active, states: scenario.states, receivedToday: scenario.today }
+    const candidate = { ...jen, is_active: scenario.active, states: scenario.states, receivedToday: scenario.today, priorityCredits: scenario.credits ?? jen.priorityCredits }
     const db = { rpc: async () => ({ data: [] }), from(table) {
       const result = table === 'settings' ? { data: { value: { admin_rule: rule } } }
         : table === 'buyers' ? { data: [candidate] }
