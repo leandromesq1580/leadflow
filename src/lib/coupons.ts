@@ -11,15 +11,10 @@ export interface PlatformCoupon {
 }
 
 export const PLATFORM_COUPONS: Record<string, PlatformCoupon> = {
-  // Bianca Zimmer — preço legado $22/lead em qualquer pacote, permanente.
-  // 2026-07-22: contas fundidas; o email da conta única virou biancazimmer.bz@gmail.com.
-  LEADZIMMER22: {
-    code: 'LEADZIMMER22',
-    productType: 'lead',
-    unitPriceCents: 2200,
-    allowedEmails: ['biancazimmer.bz@gmail.com'],
-    label: 'Parceiro — $22/lead',
-  },
+  // Vazio desde 2026-09-07: LEADZIMMER22 (Bianca Zimmer, $22/lead legado) removido a
+  // pedido do dono — nunca chegou a ser usado (a única compra de leads da conta foi a
+  // $28, preço de catálogo) e hoje o preço fora do catálogo vem de sales_team_pricing.
+  // Para criar um cupom novo, basta adicionar a entrada aqui (travada por email).
 }
 
 export function resolveCoupon(
