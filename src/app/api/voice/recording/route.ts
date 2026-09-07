@@ -2,6 +2,9 @@ import { NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
+// Ligação longa = MP3 de dezenas de MB: baixar do Twilio + subir no Storage não cabe
+// no timeout padrão da função (ligações de 43 min ficaram sem gravação em 07/09/2026).
+export const maxDuration = 300
 
 const ok = () =>
   new Response('<?xml version="1.0" encoding="UTF-8"?><Response/>', { headers: { 'Content-Type': 'text/xml' } })
