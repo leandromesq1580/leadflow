@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { localeDoBuyer, trad } from '@/lib/buyer-locale'
+import { sameWhatsAppPhone, selectWhatsAppConversation, whatsappEventCutoff, type WhatsAppOutboundContext } from '@/lib/wa-conversation-routing'
 
 /**
  * POST /api/webhook/wa-bridge
@@ -13,12 +14,11 @@ import { localeDoBuyer, trad } from '@/lib/buyer-locale'
  *        - Se lead.assigned_to_member -> buyer da conta do team_member
  *        - Senao -> lead.assigned_to
  *      Owner do member SEMPRE ganha de owner da agency. Sempre.
- *   3. Se ha varios candidatos (lead duplicado), desempata por:
- *        a) recipientBuyerId (buyer cujo wa_bridge_phone == TO) — so se
- *           usado realmente em multi-bridge. Em single-bridge isso aponta
- *           sempre pra agency e NAO pode sobrescrever member.
- *        b) Lead delegado (assigned_to_member NOT NULL)
- *        c) Mais recente (assigned_at desc)
+ *   3. Restringe ao dono da bridge / seus leads delegados ANTES de desempatar.
+ *      Em duplicidade, prefere a conversa de saída mais recente do número
+ *      recebido, validada contra a bridge do owner REAL. Depois: afinidade da
+ *      bridge, recipient inequívoco, delegação e recência. Bridge compartilhada
+ *      NÃO pode escolher um recipient arbitrário com limit(1).
  *   4. Inbox final = owner REAL do lead escolhido. recipientBuyerId
  *      NUNCA sobrescreve. Erro historico (commit 482464a) era inverter
  *      isso e fazer leads delegados pra team_member caírem na agency.
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { wa_message_id, from, to, body, type, has_media, media_url, media_type, direction, push_name, bridge_owner_buyer_id } = await request.json()
+    const { wa_message_id, from, to, body, type, has_media, media_url, media_type, direction, push_name, bridge_owner_buyer_id, timestamp } = await request.json()
     if (!wa_message_id || !from) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
     }
@@ -50,11 +50,12 @@ export async function POST(request: NextRequest) {
     // Antes, uma segunda tentativa (backfill) era descartada aqui e o furo virava
     // permanente. Agora, se a repetição TROUXE o arquivo e a linha guardada não tem,
     // a gente preenche. Só isso: nada de duplicar mensagem nem sobrescrever texto.
-    const { data: existing } = await db
+    const { data: existing, error: existingError } = await db
       .from('whatsapp_messages')
       .select('id, media_url')
       .eq('wa_message_id', wa_message_id)
       .maybeSingle()
+    if (existingError) throw existingError
     if (existing) {
       if (media_url && !existing.media_url) {
         await db.from('whatsapp_messages')
@@ -76,13 +77,12 @@ export async function POST(request: NextRequest) {
     if (ownBridgePhone) {
       const last10To = ownBridgePhone.slice(-10)
       const last11To = ownBridgePhone.slice(-11)
-      const { data: bridgeBuyer } = await db
+      const { data: bridgeBuyers, error: bridgeError } = await db
         .from('buyers')
         .select('id')
         .or(`wa_bridge_phone.eq.${ownBridgePhone},wa_bridge_phone.ilike.%${last10To},wa_bridge_phone.ilike.%${last11To}`)
-        .limit(1)
-        .maybeSingle()
-      recipientBuyerId = bridgeBuyer?.id || null
+      if (bridgeError) throw bridgeError
+      recipientBuyerId = bridgeBuyers?.length === 1 ? bridgeBuyers[0].id : null
     }
 
     if (!contactPhone) return NextResponse.json({ skipped: 'no_contact' })
@@ -142,13 +142,13 @@ export async function POST(request: NextRequest) {
 
     // Acha leads pelo phone do CONTATO (o lead)
     const last10 = contactPhone.slice(-10)
-    const last11 = contactPhone.slice(-11)
-
-    const { data: candidates } = await db
+    const { data: candidates, error: candidatesError } = await db
       .from('leads')
       .select('id, assigned_to, assigned_to_member, phone, name, created_at, assigned_at')
       .or(`phone_digits.eq.${contactPhone},phone_digits.ilike.%${last10}`)
-      .limit(10)
+      .order('created_at', { ascending: false })
+      .limit(100)
+    if (candidatesError) throw candidatesError
 
     if (!candidates || candidates.length === 0) {
       // 🆕 NOVO CLIENTE: caiu na bridge de VENDAS (18632808696 = Lead4Pro /
@@ -214,16 +214,18 @@ export async function POST(request: NextRequest) {
     const memberIds = Array.from(new Set(candidates.map(c => c.assigned_to_member).filter(Boolean) as string[]))
     const memberBuyerById = new Map<string, string>()
     if (memberIds.length > 0) {
-      const { data: members } = await db
+      const { data: members, error: membersError } = await db
         .from('team_members')
         .select('id, auth_user_id')
         .in('id', memberIds)
+      if (membersError) throw membersError
       const authIds = (members || []).map(m => m.auth_user_id).filter(Boolean) as string[]
       if (authIds.length > 0) {
-        const { data: buyers } = await db
+        const { data: buyers, error: buyersError } = await db
           .from('buyers')
           .select('id, auth_user_id')
           .in('auth_user_id', authIds)
+        if (buyersError) throw buyersError
         const authToBuyer = new Map<string, string>()
         for (const b of buyers || []) {
           if (b.auth_user_id) authToBuyer.set(b.auth_user_id, b.id)
@@ -237,20 +239,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Score: owner valido (1000) + match c/ recipient (500, desempate)
-    //        + delegado (100, prefere member sobre agency em duplicidade)
-    //        + recencia (peso pequeno)
     const enriched = candidates.map(c => {
       const memberBuyerId = c.assigned_to_member ? memberBuyerById.get(c.assigned_to_member) || null : null
       const ownerBuyerId = memberBuyerId || c.assigned_to || null
-      let score = 0
-      if (ownerBuyerId) score += 1000
-      if (recipientBuyerId && ownerBuyerId === recipientBuyerId) score += 500
-      if (c.assigned_to_member && memberBuyerId) score += 100
-      const t = c.assigned_at || c.created_at
-      if (t) score += new Date(t).getTime() / 1e10
-      return { ...c, memberBuyerId, ownerBuyerId, score }
-    }).sort((a, b) => b.score - a.score)
+      return { ...c, memberBuyerId, ownerBuyerId }
+    })
 
     // 🔒 ESCOPO: só aceita lead que pertence ao DONO DA BRIDGE (dele direto OU delegado a um
     // membro DELE). Se o contato não é lead dele, é conversa pessoal / de outra conta → NÃO
@@ -260,10 +253,36 @@ export async function POST(request: NextRequest) {
       console.log(`[WA Inbox] contato ${contactPhone} nao e lead do dono da bridge ${bridgeOwner} — descartado`)
       return NextResponse.json({ skipped: 'not_owner_lead' })
     }
-    const match = owned[0]
+    const ownerBridgePhones = new Map<string, string | null>()
+    const cutoff = whatsappEventCutoff(timestamp)
+    const outbound: WhatsAppOutboundContext[] = []
+    if (owned.length > 1) {
+      const ownerIds = [...new Set(owned.map(c => c.ownerBuyerId).filter(Boolean))] as string[]
+      const { data: ownerBridges, error: ownerBridgesError } = await db.from('buyers')
+        .select('id, wa_bridge_phone').in('id', ownerIds)
+      if (ownerBridgesError) throw ownerBridgesError
+      for (const owner of ownerBridges || []) ownerBridgePhones.set(owner.id, owner.wa_bridge_phone)
+      const context = await Promise.all(owned.filter(c => c.ownerBuyerId &&
+        sameWhatsAppPhone(ownerBridgePhones.get(c.ownerBuyerId), ownBridgePhone),
+      ).map(async c => {
+        const { data, error } = await db.from('whatsapp_messages')
+          .select('lead_id, buyer_id, from_phone, sent_at')
+          .eq('lead_id', c.id).eq('buyer_id', c.ownerBuyerId!)
+          .eq('direction', 'out').in('status', ['sent', 'delivered', 'read'])
+          .or(`from_phone.eq.${ownBridgePhone},from_phone.eq.,from_phone.is.null`)
+          .lte('sent_at', cutoff).order('sent_at', { ascending: false }).limit(1)
+        if (error) throw error
+        return data || []
+      }))
+      outbound.push(...context.flat())
+    }
+    const match = selectWhatsAppConversation({
+      candidates: owned, bridgeOwner, bridgePhone: ownBridgePhone, recipientBuyerId,
+      ownerBridgePhones, outbound, cutoff,
+    })
 
-    if (!match.ownerBuyerId) {
-      console.log(`[WA Inbox] Lead ${match.id} sem owner valido — skip`)
+    if (!match?.ownerBuyerId) {
+      console.log('[WA Inbox] Lead sem owner valido — skip')
       return NextResponse.json({ skipped: 'no_owner' })
     }
 
@@ -302,7 +321,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    await db.from('whatsapp_messages').insert({
+    const { error: insertError } = await db.from('whatsapp_messages').insert({
       buyer_id: inboxBuyerId,
       lead_id: match.id,
       direction: isOut ? 'out' : 'in',
@@ -314,6 +333,12 @@ export async function POST(request: NextRequest) {
       wa_message_id,
       status: isOut ? 'sent' : 'delivered',
     })
+    if (insertError) {
+      // Concurrent retries of the same WhatsApp id are safe; other persistence
+      // errors must not be acknowledged as a successful delivery to the CRM.
+      if (insertError.code === '23505') return NextResponse.json({ skipped: 'duplicate' })
+      throw insertError
+    }
 
     // Auto-corrige o nome: lead criado como "Novo cliente XXXX" (1a msg sem pushname,
     // ex. e2e_notification) ganha o NOME REAL do WhatsApp quando o lead manda um chat
