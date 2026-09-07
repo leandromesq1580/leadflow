@@ -29,7 +29,9 @@ export async function GET(request?: NextRequest) {
   const routing: any = rt?.value || {}
   const ar: any = language === 'pt' ? routing.admin_rule || {} : {}
   const adminEmails: string[] = (ar.admin_emails || []).map((e: string) => e.trim().toLowerCase()).filter(Boolean)
-  const fallbackEmail: string | null = language === 'pt' ? routing.fallback_email || null : null
+  // O fallback operacional recebe qualquer idioma quando não existe comprador
+  // pago elegível para o estado. Por isso também precisa aparecer na fila ES.
+  const fallbackEmail: string | null = routing.fallback_email || null
   const queueOrder: string = routing.queue_order || 'credito'
 
   // The preview and actual delivery share the same state, license and daily-cap checks.

@@ -43,19 +43,26 @@ function distribution(db: any, notifications: any[]) {
 
 const lead = { id: 'lead', name: 'Fixture', email: 'fixture@example.invalid', phone: '', city: '', state: 'FL', interest: '', campaign_name: '', product_type: 'lead', lead_language: 'es' }
 
-test('Spanish/unknown leads never use legacy free/admin fallback; queue failure fails closed', async () => {
+test('Spanish leads use the configured operational fallback; unknown language and queue failure fail closed', async () => {
   const calls: any[] = []
-  const db = database(() => { throw new Error('Unexpected legacy fallback database access') }, async (...args) => { calls.push(args); return { data: [], error: null } })
+  const fallback = { id: 'fallback', name: 'Regiane', email: 'regiane@example.invalid' }
+  const db = database(q => {
+    if (q.table === 'settings') return { data: { value: { fallback_email: fallback.email } }, error: null }
+    if (q.table === 'buyers') return { data: fallback, error: null }
+    if (q.table === 'leads') return { data: null, error: null }
+    if (q.table === 'pipelines') return { data: null, error: null }
+    throw new Error(`Unexpected fallback query: ${q.table}`)
+  }, async (...args) => { calls.push(args); return { data: [], error: null } })
   const notices: any[] = []
   const app = distribution(db, notices)
   assert.equal(await app.tryAdminRule(lead, { admin_emails: ['admin@example.invalid'], one_in: 1 }), null)
-  assert.equal(await app.distributeLeadToNextBuyer(lead), null)
+  assert.equal((await app.distributeLeadToNextBuyer(lead)).id, fallback.id)
   assert.deepEqual(calls[0], ['get_eligible_buyers_by_language', { p_product_type: 'lead', p_state: 'FL', p_language: 'es' }])
   assert.equal(await app.distributeLeadToNextBuyer({ ...lead, meta_lead_id: 'unknown', lead_language: null }), null)
   assert.equal(calls.length, 1)
   db.rpc = async () => ({ data: null, error: { message: 'test failure' } })
   assert.equal(await app.distributeLeadToNextBuyer({ ...lead, lead_language: 'pt' }), null)
-  assert.equal(notices.length, 0)
+  assert.equal(notices.length, 1)
 })
 
 test('normal distribution uses language queue, language daily floor, and only the returned credit', async () => {

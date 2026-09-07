@@ -257,15 +257,16 @@ interface EligibleBuyer {
  * Fallback 24/7: quando a distribuição normal não acha ninguém (sem comprador
  * do estado, ou ninguém dentro da janela de horário agora), o lead vai pro
  * comprador de fallback (settings.lead_routing.fallback_email — tipicamente a
- * Regiane, que atende sempre). Garante que NADA fica preso. Se não houver
- * fallback configurado/ativo, o lead fica pendente (e o grupo é avisado).
+ * Regiane, que atende sempre). O fallback operacional vale para leads BR e em
+ * espanhol: ele só é usado quando não existe comprador pago elegível e não
+ * consome crédito. Se não houver fallback configurado/ativo, o lead fica
+ * pendente (e o grupo é avisado).
  */
 async function assignToFallback(
   supabase: ReturnType<typeof createAdminClient>,
   lead: Lead,
   reason: string,
 ): Promise<EligibleBuyer | null> {
-  if (leadLanguageForLead(lead) !== 'pt') return null
   const { data: setting } = await supabase.from('settings').select('value').eq('key', 'lead_routing').maybeSingle()
   const fallbackEmail = (setting?.value as any)?.fallback_email
   if (!fallbackEmail) {
