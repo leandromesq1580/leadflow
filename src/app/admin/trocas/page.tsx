@@ -7,14 +7,14 @@ interface Req {
   status: string
   requested_at: string
   decided_at: string | null
-  evidence: { attemptDays?: number; calls?: number; smsSent?: number; capUsed?: number; capMax?: number } | null
-  lead: { id: string; name: string; phone: string; state: string } | null
+  evidence: { invalidContact?: 'phone' | 'email' | 'both'; phone?: string | null; email?: string | null; details?: string | null } | null
+  lead: { id: string; name: string; phone: string; email: string; state: string } | null
   buyer: { id: string; name: string; email: string } | null
 }
 
 /**
- * /admin/trocas — pedidos de troca de lead com o dossiê objetivo (ligações, SMS,
- * silêncio do lead). Aprovar = +1 crédito ao comprador e o lead vira FRIO (estoque).
+ * /admin/trocas — pedidos de troca com a declaração do dado inválido.
+ * Aprovar = +1 crédito no idioma original e arquivamento definitivo do lead inválido.
  */
 export default function TrocasPage() {
   const [reqs, setReqs] = useState<Req[]>([])
@@ -34,7 +34,7 @@ export default function TrocasPage() {
 
   async function decide(id: string, action: 'approve' | 'deny') {
     if (busy) return
-    if (action === 'approve' && !confirm('Aprovar a troca? O comprador ganha +1 crédito e o lead vira FRIO no estoque.')) return
+    if (action === 'approve' && !confirm('Aprovar a troca após verificar o contato? O comprador ganha +1 crédito e o lead inválido é arquivado, sem voltar ao estoque.')) return
     setBusy(id)
     try {
       const r = await fetch('/api/admin/lead-exchanges', {
@@ -55,8 +55,8 @@ export default function TrocasPage() {
     <div className="p-8 max-w-4xl">
       <h1 className="text-[24px] font-extrabold" style={{ color: '#1a1a2e' }}>🔁 Trocas de Lead</h1>
       <p className="text-[13px] mt-1 mb-6" style={{ color: '#64748b' }}>
-        Elegibilidade automática: 14 dias com o comprador, ≥8 dias com tentativa (ligação/SMS) e ZERO resposta do lead.
-        Aprovar devolve 1 crédito e manda o lead pro estoque frio. Teto por comprador: 30% dos leads pagos.
+        Troca somente quando o telefone e/ou o e-mail não existe, é inválido ou está fora de serviço.
+        Falta de resposta ou interesse não se qualifica. Verifique o contato antes de aprovar; o lead aprovado é arquivado e não volta ao estoque.
       </p>
       {needsMigration && (
         <div className="rounded-xl p-4 mb-4 text-[13px] font-semibold" style={{ background: '#fef3c7', color: '#92400e' }}>
@@ -75,14 +75,16 @@ export default function TrocasPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="text-[14px] font-bold" style={{ color: '#1a1a2e' }}>
-                        {r.lead?.name || '?'} <span className="font-medium" style={{ color: '#94a3b8' }}>({r.lead?.state || '?'} · {r.lead?.phone || ''})</span>
+                        {r.lead?.name || '?'} <span className="font-medium" style={{ color: '#94a3b8' }}>({r.lead?.state || '?'})</span>
                       </p>
                       <p className="text-[12px] mt-0.5" style={{ color: '#64748b' }}>
                         Pedido por <b>{r.buyer?.name || r.buyer?.email}</b> em {new Date(r.requested_at).toLocaleDateString('pt-BR')}
                       </p>
                       <p className="text-[12px] mt-2 font-semibold" style={{ color: '#3730a3' }}>
-                        📊 {e.attemptDays ?? '?'} dias com tentativa · {e.calls ?? '?'} ligações · {e.smsSent ?? '?'} SMS · 0 respostas · teto {e.capUsed ?? '?'}/{e.capMax ?? '?'}
+                        ⚠️ Declarado inválido: {e.invalidContact === 'both' ? 'telefone e e-mail' : e.invalidContact === 'email' ? 'e-mail' : 'telefone'}
                       </p>
+                      <p className="text-[12px] mt-1" style={{ color: '#475569' }}>📞 {e.phone || r.lead?.phone || 'não informado'} · ✉️ {e.email || r.lead?.email || 'não informado'}</p>
+                      {e.details && <p className="text-[12px] mt-1" style={{ color: '#475569' }}>📝 {e.details}</p>}
                     </div>
                     <div className="flex gap-2 flex-shrink-0">
                       <button onClick={() => decide(r.id, 'approve')} disabled={busy === r.id}

@@ -1,24 +1,24 @@
-import { createAdminClient } from './supabase/admin'
+import type { createAdminClient } from './supabase/admin'
 
 /**
- * POLÍTICA DE LEADS E USO — aceite versionado (clickwrap), decisão 2026-07-28.
+ * POLÍTICA DE LEADS E USO — aceite versionado (clickwrap).
  * Mudou regra relevante → suba a versão AQUI e todo mundo precisa aceitar de novo
- * antes da PRÓXIMA compra (o uso do CRM não trava; compra trava — escolha do dono).
+ * antes de continuar usando a plataforma.
  * Registro append-only em policy_acceptances (quem/quando/versão/contexto/IP).
- * TOLERANTE: antes da migration 033 rodar, o gate fica INERTE (não bloqueia venda).
+ * Falha fechada: sem confirmação explícita no banco, o aceite continua pendente.
  */
-export const CURRENT_POLICY_VERSION = '2026-07-28.1'
+export const CURRENT_POLICY_VERSION = '2026-09-07.1'
 
 type Db = ReturnType<typeof createAdminClient>
 
-/** Buyer já aceitou a versão vigente? (pré-migration → true, gate inerte) */
+/** Buyer já aceitou a versão vigente? Erro de leitura nunca presume aceite. */
 export async function hasAcceptedCurrentPolicy(db: Db, buyerId: string): Promise<boolean> {
   try {
     const { data, error } = await db.from('buyers')
       .select('accepted_policy_version').eq('id', buyerId).maybeSingle()
-    if (error) return true // coluna ainda não existe → não bloqueia venda
+    if (error) return false
     return data?.accepted_policy_version === CURRENT_POLICY_VERSION
-  } catch { return true }
+  } catch { return false }
 }
 
 /** Grava o aceite (append-only + cache no buyer). Idempotente por (buyer, versão). */
@@ -35,7 +35,10 @@ export async function recordPolicyAcceptance(
       if (/does not exist/i.test(insErr.message)) return { ok: false, needsMigration: true }
       return { ok: false, error: insErr.message }
     }
-    await db.from('buyers').update({ accepted_policy_version: CURRENT_POLICY_VERSION }).eq('id', buyerId)
+    const { error: updateErr } = await db.from('buyers')
+      .update({ accepted_policy_version: CURRENT_POLICY_VERSION })
+      .eq('id', buyerId)
+    if (updateErr) return { ok: false, error: updateErr.message }
     return { ok: true }
   } catch (e: any) {
     return { ok: false, error: e?.message }

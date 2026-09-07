@@ -21,6 +21,8 @@ import { I18nProvider } from '@/lib/i18n-client'
 import { LocaleSync } from '@/components/locale-sync'
 import { TopBar } from '@/components/dashboard/topbar'
 import { PrivacyProvider } from '@/lib/privacy-mode'
+import { PolicyAcceptanceGate } from '@/components/policy-acceptance-gate'
+import { hasAcceptedCurrentPolicy } from '@/lib/policies'
 import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
@@ -59,13 +61,21 @@ export default async function DashboardLayout({ children }: { children: React.Re
     return <SuspendedAccount name={buyer.name || user!.email || ''} />
   }
 
+  const locale = await getLocale()
+  const acceptedPolicy = buyer?.id ? await hasAcceptedCurrentPolicy(db, buyer.id) : true
+  if (!acceptedPolicy) {
+    return (
+      <I18nProvider locale={locale}>
+        <PolicyAcceptanceGate context="dashboard_required" />
+      </I18nProvider>
+    )
+  }
+
   const showTrial = isTrialActive(buyer)
   const daysLeft = trialDaysRemaining(buyer)
   const apptOnly = isAppointmentOnly(buyer)
   const leadOnly = isLeadOnly(buyer)
   const podeApolices = await podeVerApolices(db, buyer?.id)
-  const locale = await getLocale()
-
   // "Ver como": admin vendo o sistema na pele de outro usuário
   const impAsRaw = (await cookies()).get('l4p-imp-as')?.value
   const impAs = impAsRaw ? decodeURIComponent(impAsRaw) : null

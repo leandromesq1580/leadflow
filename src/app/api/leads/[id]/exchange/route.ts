@@ -7,10 +7,9 @@ import { notifyAdmins } from '@/lib/notifications'
 export const dynamic = 'force-dynamic'
 
 /**
- * GET  /api/leads/[id]/exchange — elegibilidade + status do pedido (comprador logado).
- * POST /api/leads/[id]/exchange — solicita a troca (valida elegibilidade no servidor).
- * Regra (2026-07-25): 14 dias trabalhados (≥8 dias com tentativa) + 0 respostas;
- * teto de 30% dos leads pagos. Aprovação é manual no /admin/trocas.
+ * GET  /api/leads/[id]/exchange — propriedade + status do pedido (comprador logado).
+ * POST /api/leads/[id]/exchange — declara telefone/e-mail inválido e solicita análise.
+ * Aprovação é manual no /admin/trocas.
  */
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: leadId } = await params
@@ -35,7 +34,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const caller = await callerBuyer(db)
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const elig = await checkExchangeEligibility(db, leadId, caller.id)
+  const body = await request.json().catch(() => ({}))
+  const invalidContact = typeof body.invalid_contact === 'string' ? body.invalid_contact : null
+  const details = typeof body.details === 'string' ? body.details : null
+  const elig = await checkExchangeEligibility(db, leadId, caller.id, { invalidContact, details })
   if (!elig.eligible) {
     return NextResponse.json({ error: 'Lead não elegível: ' + elig.reasons.join(' ') }, { status: 400 })
   }
@@ -55,10 +57,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { data: b } = await db.from('buyers').select('name, email').eq('id', caller.id).maybeSingle()
     const { data: l } = await db.from('leads').select('name, state').eq('id', leadId).maybeSingle()
     const d = elig.dossier
+    const contactLabel = d.invalidContact === 'both' ? 'telefone e e-mail' : d.invalidContact === 'email' ? 'e-mail' : 'telefone'
     await notifyAdmins(
       `🔁 *SOLICITAÇÃO DE TROCA DE LEAD*\n\n👤 ${b?.name || b?.email}\n📋 Lead: ${l?.name || leadId} (${l?.state || '?'})\n` +
-      `📊 ${d.attemptDays} dias c/ tentativa · ${d.calls} ligações · ${d.smsSent} SMS · 0 respostas\n` +
-      `Teto: ${d.capUsed + 1}/${d.capMax}\n\nAprovar em: lead4producers.com/admin/trocas`
+      `⚠️ Contato declarado inválido: ${contactLabel}\n` +
+      `${d.details ? `📝 ${d.details}\n` : ''}\nVerificar e decidir em: lead4producers.com/admin/trocas`
     )
   } catch { /* aviso é best-effort */ }
 

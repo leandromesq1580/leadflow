@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { CURRENT_POLICY_VERSION, recordPolicyAcceptance } from '@/lib/policies'
 
 function genReferralCode(): string {
   return Math.random().toString(36).slice(2, 10)
@@ -11,10 +12,13 @@ function genReferralCode(): string {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { auth_user_id, email, name, phone, referral_code } = await request.json()
+    const { auth_user_id, email, name, phone, referral_code, policy_accepted, policy_version } = await request.json()
 
     if (!auth_user_id || !email || !name) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+    }
+    if (policy_accepted !== true || policy_version !== CURRENT_POLICY_VERSION) {
+      return NextResponse.json({ error: 'Policy acceptance required', policy_required: true }, { status: 412 })
     }
 
     const supabase = createAdminClient()
@@ -27,6 +31,14 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (existing) {
+      const acceptance = await recordPolicyAcceptance(
+        supabase,
+        existing.id,
+        'signup',
+        request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null,
+        request.headers.get('user-agent'),
+      )
+      if (!acceptance.ok) return NextResponse.json({ error: acceptance.error || 'Policy acceptance failed' }, { status: 500 })
       return NextResponse.json({ buyer: existing })
     }
 
@@ -80,6 +92,20 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('[Register] Failed to create buyer:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+    if (!data?.id) {
+      return NextResponse.json({ error: 'Buyer creation returned no record' }, { status: 500 })
+    }
+
+    const acceptance = await recordPolicyAcceptance(
+      supabase,
+      data.id,
+      'signup',
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null,
+      request.headers.get('user-agent'),
+    )
+    if (!acceptance.ok) {
+      return NextResponse.json({ error: acceptance.error || 'Policy acceptance failed', buyer_created: true }, { status: 500 })
     }
 
     // Track signup (no credit yet — credit triggers on first purchase / subscription)

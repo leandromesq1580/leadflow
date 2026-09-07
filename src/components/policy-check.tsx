@@ -18,7 +18,7 @@ export function PolicyCheck({ context, dark = false }: { context: string; dark?:
     let alive = true
     fetch('/api/policies/accept').then(r => r.json())
       .then(d => { if (alive) setState(d.accepted ? 'accepted' : 'needed') })
-      .catch(() => { if (alive) setState('accepted') }) // erro de rede não trava a tela; o gate do servidor decide
+      .catch(() => { if (alive) setState('needed') })
     return () => { alive = false }
   }, [])
 
@@ -45,15 +45,14 @@ export function PolicyCheck({ context, dark = false }: { context: string; dark?:
       background: dark ? 'rgba(124,58,237,0.10)' : 'var(--accent-light)',
       border: `1px solid ${dark ? 'rgba(124,58,237,0.35)' : 'rgba(139,92,246,0.35)'}`,
     }}>
-      <p className="text-[13px] font-bold" style={{ color: ink }}>{L('📜 Antes de comprar: aceite a Política de Leads e Uso', '📜 Before you buy: accept the Leads & Usage Policy', '📜 Antes de comprar: acepta la Política de Leads y Uso')}</p>
+      <p className="text-[13px] font-bold" style={{ color: ink }}>{L('📜 Aceite a Política de Leads e Uso atualizada', '📜 Accept the updated Leads & Usage Policy', '📜 Acepta la Política de Leads y Uso actualizada')}</p>
       <p className="text-[12px] mt-1" style={{ color: mut }}>
-        {L('Regras de entrega, janelas de horário, garantia de troca (14 dias / 8 tentativas), leads frios, gravação de ligações e SMS automático.',
-          'Delivery rules, time windows, exchange guarantee (14 days / 8 attempts), cold leads, call recording, and automatic SMS.',
-          'Reglas de entrega, ventanas de horario, garantía de cambio (14 días / 8 intentos), leads fríos, grabación de llamadas y SMS automático.')}{' '}
+        {L('7 dias grátis para teste; pagamentos da assinatura não são reembolsáveis; renovação automática com cancelamento pela plataforma; assinatura não inclui leads; troca somente por telefone e/ou e-mail inexistente ou inválido.',
+          '7-day free trial; subscription payments are non-refundable; automatic renewal with in-platform cancellation; subscription does not include leads; exchanges only for a nonexistent or invalid phone number and/or email address.',
+          'Prueba gratuita de 7 días; los pagos de suscripción no son reembolsables; renovación automática con cancelación desde la plataforma; la suscripción no incluye leads; cambios solo por teléfono y/o correo inexistente o inválido.')}{' '}
         <a href="/politicas" target="_blank" rel="noopener noreferrer" className="font-bold underline" style={{ color: 'var(--accent)' }}>
           {L('Ler a política completa ↗', 'Read the full policy ↗', 'Leer la política completa ↗')}
         </a>
-        {t._locale === 'en' ? ' (policy text in Portuguese — English version available upon request)' : t._locale === 'es' ? ' (texto en portugués — versión en inglés disponible bajo solicitud)' : ''}
       </p>
       <label className="flex items-start gap-2 mt-3 cursor-pointer select-none">
         <input type="checkbox" className="mt-0.5 w-4 h-4 accent-indigo-500" checked={false} readOnly

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { MetaPixel } from '@/components/meta-pixel'
 import { useT } from '@/lib/i18n-client'
+import { CURRENT_POLICY_VERSION } from '@/lib/policies'
 
 export default function RegisterPage() {
   const t = useT()
@@ -17,6 +18,9 @@ export default function RegisterPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [policyAccepted, setPolicyAccepted] = useState(false)
+  const [registrationWarning, setRegistrationWarning] = useState('')
+  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -28,6 +32,16 @@ export default function RegisterPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
+
+    if (!policyAccepted) {
+      setError(L(
+        'Leia e aceite a Política de Leads e Uso para criar sua conta.',
+        'Read and accept the Leads & Usage Policy to create your account.',
+        'Lee y acepta la Política de Leads y Uso para crear tu cuenta.',
+      ))
+      setLoading(false)
+      return
+    }
 
     // Domínio digitado errado passa no formato mas cria conta-fantasma que nunca
     // recebe email (caso real: reginamoyess@gmail.vom, 12/08) — barra na porta.
@@ -47,7 +61,7 @@ export default function RegisterPage() {
     const supabase = createClient()
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email, password,
-      options: { data: { name, phone } },
+      options: { data: { name, phone, policy_version: CURRENT_POLICY_VERSION } },
     })
 
     if (authError) {
@@ -57,11 +71,26 @@ export default function RegisterPage() {
     }
 
     if (authData.user) {
-      await fetch('/api/auth/register', {
+      const registration = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ auth_user_id: authData.user.id, email, name, phone, referral_code: referralCode || undefined }),
+        body: JSON.stringify({
+          auth_user_id: authData.user.id,
+          email,
+          name,
+          phone,
+          referral_code: referralCode || undefined,
+          policy_accepted: true,
+          policy_version: CURRENT_POLICY_VERSION,
+        }),
       })
+      if (!registration.ok) {
+        setRegistrationWarning(L(
+          'Sua conta foi criada, mas o registro do aceite precisa ser concluído no primeiro acesso.',
+          'Your account was created, but your acceptance must be completed on your first sign-in.',
+          'Tu cuenta fue creada, pero deberás completar la aceptación en el primer acceso.',
+        ))
+      }
     }
 
     setSuccess(true)
@@ -83,6 +112,7 @@ export default function RegisterPage() {
             <p className="text-[40px] mb-4">✉️</p>
             <h2 className="text-[20px] font-extrabold mb-3" style={{ color: '#1a1a2e' }}>{t.auth.checkEmail}</h2>
             <p className="text-[14px] mb-6" style={{ color: '#64748b' }}>{t.auth.confirmationSent} <strong>{email}</strong>.</p>
+            {registrationWarning && <p className="text-[12px] mb-5 rounded-xl p-3" style={{ background: '#fffbeb', color: '#92400e' }}>{registrationWarning}</p>}
             <Link href="/login" className="inline-block px-6 py-3 rounded-xl text-[14px] font-bold text-white" style={{ background: '#6366f1' }}>{t.auth.backToLogin}</Link>
           </div>
         </div>
@@ -141,8 +171,17 @@ export default function RegisterPage() {
                 </button>
               </div>
             </div>
+            <label className="flex items-start gap-3 rounded-xl p-3 cursor-pointer" style={{ background: '#f8f9fc', border: '1px solid #e8ecf4' }}>
+              <input type="checkbox" checked={policyAccepted} onChange={(event) => setPolicyAccepted(event.target.checked)} required className="mt-0.5 h-4 w-4 accent-indigo-600" />
+              <span className="text-[12px] leading-relaxed" style={{ color: '#475569' }}>
+                {L('Li e aceito a ', 'I have read and accept the ', 'He leído y acepto la ')}
+                <Link href="/politicas" target="_blank" className="font-bold underline" style={{ color: '#6366f1' }}>
+                  {L('Política de Leads e Uso da Plataforma', 'Platform Leads & Usage Policy', 'Política de Leads y Uso de la Plataforma')}
+                </Link>.
+              </span>
+            </label>
             {error && <div className="text-[13px] font-semibold px-4 py-3 rounded-xl" style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca' }}>{error}</div>}
-            <button type="submit" disabled={loading} className="w-full py-4 rounded-xl font-bold text-[14px] text-white disabled:opacity-50"
+            <button type="submit" disabled={loading || !policyAccepted} className="w-full py-4 rounded-xl font-bold text-[14px] text-white disabled:opacity-50"
               style={{ background: '#6366f1', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}>
               {loading ? t.auth.creatingAccount : t.auth.createAccountBtn}
             </button>

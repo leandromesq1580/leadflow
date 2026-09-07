@@ -6,13 +6,13 @@ import { useT } from '@/lib/i18n-client'
 interface Elig {
   eligible: boolean
   reasons: string[]
-  dossier: { attemptDays: number; calls: number; smsSent: number; capUsed: number; capMax: number }
+  dossier: { phone: string | null; email: string | null }
   request?: { status: string } | null
 }
 
 /**
- * Caixa "Troca de lead" (aba Detalhes). Aparece o botão quando o lead cumpre a
- * régua (14 dias, ≥8 dias com tentativa, 0 respostas). Pedido vai pro admin aprovar.
+ * Caixa "Troca de lead" (aba Detalhes). O comprador declara qual dado de contato
+ * não existe/é inválido. O pedido vai para conferência do admin.
  */
 export function ExchangeBox({ leadId }: { leadId: string }) {
   const t = useT()
@@ -20,6 +20,8 @@ export function ExchangeBox({ leadId }: { leadId: string }) {
   const [e, setE] = useState<Elig | null>(null)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
+  const [invalidContact, setInvalidContact] = useState<'phone' | 'email' | 'both' | ''>('')
+  const [details, setDetails] = useState('')
 
   useEffect(() => {
     let alive = true
@@ -33,10 +35,18 @@ export function ExchangeBox({ leadId }: { leadId: string }) {
 
   async function solicitar() {
     if (busy) return
+    if (!invalidContact) {
+      setMsg(L('Selecione qual contato é inválido.', 'Select which contact is invalid.', 'Selecciona cuál contacto es inválido.'))
+      return
+    }
     if (!confirm(L('Solicitar a TROCA deste lead? Ele sai da sua conta se aprovado e você recebe 1 crédito de volta.', 'Request the EXCHANGE of this lead? If approved, it leaves your account and you get 1 credit back.', '¿Solicitar el CAMBIO de este lead? Si se aprueba, sale de tu cuenta y recibes 1 crédito de vuelta.'))) return
     setBusy(true)
     try {
-      const r = await fetch(`/api/leads/${leadId}/exchange`, { method: 'POST' })
+      const r = await fetch(`/api/leads/${leadId}/exchange`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invalid_contact: invalidContact, details }),
+      })
       const d = await r.json()
       if (r.ok) { setE({ ...e!, request: { status: 'pending' } }); setMsg('') }
       else setMsg(d.error || L('Não consegui solicitar.', 'Could not submit the request.', 'No pude enviar la solicitud.'))
@@ -44,7 +54,6 @@ export function ExchangeBox({ leadId }: { leadId: string }) {
     setBusy(false)
   }
 
-  const d = e.dossier
   const chip = (txt: string, color: string, bg: string) => (
     <div className="rounded-xl p-3 mt-3 text-[12px] font-semibold" style={{ background: bg, color }}>{txt}</div>
   )
@@ -56,14 +65,26 @@ export function ExchangeBox({ leadId }: { leadId: string }) {
   if (e.eligible) {
     return (
       <div className="rounded-xl p-4 mt-3" style={{ background: 'var(--accent-light)', border: '1px solid rgba(139,92,246,0.35)' }}>
-        <p className="text-[13px] font-bold" style={{ color: '#5b21b6' }}>{L('🔁 Este lead é elegível pra troca', '🔁 This lead is eligible for exchange', '🔁 Este lead es elegible para cambio')}</p>
+        <p className="text-[13px] font-bold" style={{ color: '#5b21b6' }}>{L('🔁 Solicitar análise para troca', '🔁 Request an exchange review', '🔁 Solicitar revisión para cambio')}</p>
         <p className="text-[12px] mt-1" style={{ color: '#6d28d9' }}>
-          {L(
-            `${d.attemptDays} dias com tentativa · ${d.calls} ligações · ${d.smsSent} SMS · nenhuma resposta em 14 dias.`,
-            `${d.attemptDays} days with attempts · ${d.calls} calls · ${d.smsSent} SMS · no response in 14 days.`,
-            `${d.attemptDays} días con intentos · ${d.calls} llamadas · ${d.smsSent} SMS · ninguna respuesta en 14 días.`,
-          )}
+          {L('Somente telefone e/ou e-mail inexistente, inválido ou fora de serviço dá direito à troca. Falta de resposta ou interesse não se qualifica.', 'Only a nonexistent, invalid, or out-of-service phone number and/or email address qualifies. No response or lack of interest does not qualify.', 'Solo un teléfono y/o correo inexistente, inválido o fuera de servicio califica. La falta de respuesta o interés no califica.')}
         </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {([
+            ['phone', L('Telefone', 'Phone', 'Teléfono')],
+            ['email', L('E-mail', 'Email', 'Correo')],
+            ['both', L('Ambos', 'Both', 'Ambos')],
+          ] as const).map(([value, label]) => (
+            <button key={value} type="button" onClick={() => { setInvalidContact(value); setMsg('') }}
+              className="rounded-lg px-3 py-2 text-[12px] font-bold"
+              style={{ background: invalidContact === value ? 'var(--accent)' : '#fff', color: invalidContact === value ? '#fff' : '#5b21b6', border: '1px solid rgba(139,92,246,.35)' }}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <textarea value={details} onChange={event => setDetails(event.target.value)} maxLength={500}
+          placeholder={L('Detalhes para a verificação (opcional)', 'Details for verification (optional)', 'Detalles para la verificación (opcional)')}
+          className="mt-3 min-h-20 w-full rounded-lg p-3 text-[12px] outline-none" style={{ background: '#fff', color: '#1e293b', border: '1px solid rgba(139,92,246,.3)' }} />
         <button onClick={solicitar} disabled={busy}
           className="mt-3 px-4 py-2 rounded-lg text-[12px] font-bold text-white disabled:opacity-50"
           style={{ background: 'var(--accent)' }}>

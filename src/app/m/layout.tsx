@@ -12,6 +12,8 @@ import { SuspendedAccount } from '@/components/dashboard/suspended-account'
 import { MobileBottomNav } from '@/components/mobile/bottom-nav'
 import { MHeader } from '@/components/mobile/m-header'
 import { TutorChat } from '@/components/tutor-chat'
+import { PolicyAcceptanceGate } from '@/components/policy-acceptance-gate'
+import { hasAcceptedCurrentPolicy } from '@/lib/policies'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,6 +54,14 @@ export default async function MobileLayout({ children }: { children: React.React
   }
 
   const locale = await getLocale()
+  const acceptedPolicy = buyer?.id ? await hasAcceptedCurrentPolicy(db, buyer.id) : true
+  if (!acceptedPolicy) {
+    return (
+      <I18nProvider locale={locale}>
+        <PolicyAcceptanceGate context="mobile_required" />
+      </I18nProvider>
+    )
+  }
 
   return (
     <I18nProvider locale={locale}>

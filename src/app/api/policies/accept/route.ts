@@ -24,8 +24,7 @@ export async function POST(request: NextRequest) {
   const ua = request.headers.get('user-agent')
   const r = await recordPolicyAcceptance(db, caller.id, String(context || 'manual').slice(0, 40), ip, ua)
   if (!r.ok && r.needsMigration) {
-    // migration 033 pendente — não trava o cliente; o gate também está inerte
-    return NextResponse.json({ ok: true, pending_migration: true, version: CURRENT_POLICY_VERSION })
+    return NextResponse.json({ error: 'O registro de aceite está indisponível. Tente novamente.' }, { status: 503 })
   }
   if (!r.ok) return NextResponse.json({ error: r.error || 'Falha ao registrar aceite' }, { status: 500 })
   return NextResponse.json({ ok: true, version: CURRENT_POLICY_VERSION })

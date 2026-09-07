@@ -20,7 +20,7 @@ export async function GET() {
   if (!db) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   try {
     const { data } = await db.from('lead_exchange_requests')
-      .select('id, status, evidence, requested_at, decided_at, lead:leads(id, name, phone, state), buyer:buyers(id, name, email)')
+      .select('id, status, evidence, requested_at, decided_at, lead:leads(id, name, phone, email, state), buyer:buyers(id, name, email)')
       .order('requested_at', { ascending: false }).limit(100)
     return NextResponse.json({ requests: data || [] })
   } catch (e: any) {
@@ -30,8 +30,8 @@ export async function GET() {
 
 /**
  * POST /api/admin/lead-exchanges — { id, action: 'approve' | 'deny' }.
- * Aprovar: +1 crédito de lead ao comprador (compensação, preço 0) e o lead volta
- * pro estoque como FRIO (sem dono, status new) pra revenda. Negar: só marca.
+ * Aprovar: +1 crédito no idioma original e arquiva o lead inválido, removendo-o de
+ * todos os pipelines. Ele nunca volta ao estoque. Negar: só marca o pedido.
  */
 export async function POST(request: NextRequest) {
   const db = await requireAdmin()
@@ -42,11 +42,15 @@ export async function POST(request: NextRequest) {
   }
 
   const { data: req } = await db.from('lead_exchange_requests')
-    .select('id, lead_id, buyer_id, status').eq('id', id).maybeSingle()
+    .select('id, lead_id, buyer_id, status, evidence').eq('id', id).maybeSingle()
   if (!req) return NextResponse.json({ error: 'Pedido não encontrado' }, { status: 404 })
   if (req.status !== 'pending') return NextResponse.json({ error: `Pedido já ${req.status}` }, { status: 409 })
 
   if (action === 'approve') {
+    const invalidContact = (req.evidence as any)?.invalidContact
+    if (!['phone', 'email', 'both'].includes(invalidContact)) {
+      return NextResponse.json({ error: 'Pedido criado sob a política antiga. Negue este pedido e peça uma nova solicitação identificando telefone, e-mail ou ambos.' }, { status: 409 })
+    }
     const { data: lead } = await db.from('leads').select('lead_language, form_name, meta_lead_id').eq('id', req.lead_id).single()
     const language = lead ? leadLanguageForLead(lead) : null
     if (!language) return NextResponse.json({ error: 'Confirme o idioma do lead antes de devolver o crédito.' }, { status: 409 })
@@ -61,12 +65,15 @@ export async function POST(request: NextRequest) {
       })
       if (credErr) return NextResponse.json({ error: 'Falha ao creditar: ' + credErr.message }, { status: 500 })
     }
-    // 2) lead volta pro estoque como FRIO
+    // 2) arquiva o lead inválido e remove todos os cards; não pode ser redistribuído.
     const { error: leadErr } = await db.from('leads').update({
-      assigned_to: null, assigned_to_member: null, assigned_at: null,
-      status: 'new', type: 'cold',
+      archived: true,
+      archived_at: new Date().toISOString(),
+      archived_by: req.buyer_id,
     }).eq('id', req.lead_id)
-    if (leadErr) return NextResponse.json({ error: 'Crédito ok, mas falha ao reciclar lead: ' + leadErr.message }, { status: 500 })
+    if (leadErr) return NextResponse.json({ error: 'Crédito ok, mas falha ao arquivar lead inválido: ' + leadErr.message }, { status: 500 })
+    const { error: pipelineErr } = await db.from('pipeline_leads').delete().eq('lead_id', req.lead_id)
+    if (pipelineErr) return NextResponse.json({ error: 'Lead arquivado, mas falha ao removê-lo do pipeline: ' + pipelineErr.message }, { status: 500 })
   }
 
   await db.from('lead_exchange_requests')
