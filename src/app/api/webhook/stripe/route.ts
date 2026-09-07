@@ -6,6 +6,7 @@ import { notifyGroupPurchase } from '@/lib/notifications'
 import { grantReferralReward, cancelRewardsFor, consumeCredit } from '@/lib/referral'
 import Stripe from 'stripe'
 import { leadLanguageLabel, purchaseLeadLanguage } from '@/lib/lead-language'
+import { recordCompletedPurchaseConsent, recordStripeDispute } from '@/lib/chargeback-evidence'
 
 /**
  * POST /api/webhook/stripe
@@ -40,6 +41,10 @@ export async function POST(request: NextRequest) {
       const session = event.data.object as Stripe.Checkout.Session
       if (session.payment_status !== 'paid' && session.payment_status !== 'no_payment_required') break
 
+      // Prova por cobranca: aceite interno + checkbox nativo da Stripe + produto/valor.
+      // Erro aqui pede retry do webhook; nunca sacrifica o registro probatorio.
+      await recordCompletedPurchaseConsent(supabase, session)
+
       // UPGRADE de plano CRM: o cliente pagou a diferença via checkout (uma NOVA assinatura do
       // novo plano foi criada e será sincronizada pelo handler customer.subscription.created).
       // Aqui só CANCELAMOS a assinatura ANTIGA.
@@ -56,6 +61,13 @@ export async function POST(request: NextRequest) {
       // customer.subscription.created (marca metadata.addon) — aqui não há crédito.
       if (session.metadata?.addon) {
         console.log(`[Stripe Webhook] checkout do add-on ${session.metadata.addon} concluído para ${session.metadata?.buyer_id}`)
+        break
+      }
+
+      // Checkout recorrente do CRM e tratado pelos eventos de subscription/invoice.
+      // Sem esta saida ele caia na validacao de idioma de pacote e retornava 500.
+      if (session.mode === 'subscription' || session.metadata?.product_type === 'crm_pro') {
+        console.log(`[Stripe Webhook] checkout CRM concluido para ${session.metadata?.buyer_id}`)
         break
       }
 
@@ -346,6 +358,15 @@ export async function POST(request: NextRequest) {
         if (refErr) console.error('[Stripe Webhook] falha ao marcar refunded:', refErr)
         else console.log(`[Stripe Webhook] pagamento marcado REFUNDED (PI ${pi})`)
       }
+      break
+    }
+
+    case 'charge.dispute.created':
+    case 'charge.dispute.updated':
+    case 'charge.dispute.closed':
+    case 'charge.dispute.funds_withdrawn':
+    case 'charge.dispute.funds_reinstated': {
+      await recordStripeDispute(supabase, event, event.data.object as Stripe.Dispute)
       break
     }
 

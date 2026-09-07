@@ -26,7 +26,8 @@ async function runBuyerAutomations(buyerId: string): Promise<void> {
 async function assignLeadToBuyer(
   supabase: ReturnType<typeof createAdminClient>,
   lead: Lead,
-  buyer: { id: string; name: string; email: string; phone?: string; notification_email?: boolean; notification_sms?: boolean }
+  buyer: { id: string; name: string; email: string; phone?: string; notification_email?: boolean; notification_sms?: boolean },
+  creditId: string | null = null,
 ): Promise<EligibleBuyer> {
   await supabase
     .from('leads')
@@ -34,6 +35,7 @@ async function assignLeadToBuyer(
       assigned_to: buyer.id,
       assigned_at: new Date().toISOString(),
       status: 'assigned',
+      delivery_credit_id: creditId,
     })
     .eq('id', lead.id)
 
@@ -175,9 +177,9 @@ export async function forceAssignRoundRobin(
     }
   }
 
-  const assigned = await assignLeadToBuyer(supabase, lead, nextBuyer)
-  // Debita 1 credito de lead do escolhido (roteamento agora COBRA, como a normal).
   const cr = creditByBuyer.get(nextBuyer.id)
+  const assigned = await assignLeadToBuyer(supabase, lead, nextBuyer, cr?.id || null)
+  // Debita 1 credito de lead do escolhido (roteamento agora COBRA, como a normal).
   if (cr) {
     const { data: row } = await supabase.from('credits').select('total_used').eq('id', cr.id).single()
     if (row) await supabase.from('credits').update({ total_used: (row.total_used || 0) + 1 }).eq('id', cr.id)
@@ -426,6 +428,7 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
       assigned_to: selectedBuyer.id,
       assigned_at: new Date().toISOString(),
       status: 'assigned',
+      delivery_credit_id: selectedBuyer.credit_id,
     })
     .eq('id', lead.id)
 

@@ -8,6 +8,8 @@ import type { createAdminClient } from './supabase/admin'
  * Falha fechada: sem confirmação explícita no banco, o aceite continua pendente.
  */
 export const CURRENT_POLICY_VERSION = '2026-09-07.1'
+/** SHA-256 do documento versionado publicado em /politicas. */
+export const CURRENT_POLICY_SHA256 = 'c179e400eceacc79dc31dec934f10d875380c7feeab5cc4e032b9bb1d13e35a9'
 
 type Db = ReturnType<typeof createAdminClient>
 
@@ -19,6 +21,27 @@ export async function hasAcceptedCurrentPolicy(db: Db, buyerId: string): Promise
     if (error) return false
     return data?.accepted_policy_version === CURRENT_POLICY_VERSION
   } catch { return false }
+}
+
+/** Evidencia exata usada em cada Checkout. Falha fechada se o aceite sumir. */
+export async function currentPolicyEvidence(db: Db, buyerId: string): Promise<{
+  acceptanceId: string
+  version: string
+  sha256: string
+  acceptedAt: string
+}> {
+  const { data, error } = await db.from('policy_acceptances')
+    .select('id, accepted_at')
+    .eq('buyer_id', buyerId)
+    .eq('version', CURRENT_POLICY_VERSION)
+    .maybeSingle()
+  if (error || !data) throw new Error('POLICY_ACCEPTANCE_REQUIRED')
+  return {
+    acceptanceId: data.id,
+    version: CURRENT_POLICY_VERSION,
+    sha256: CURRENT_POLICY_SHA256,
+    acceptedAt: data.accepted_at,
+  }
 }
 
 /** Grava o aceite (append-only + cache no buyer). Idempotente por (buyer, versão). */

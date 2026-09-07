@@ -7,6 +7,8 @@ import { hasAcceptedCurrentPolicy } from '@/lib/policies'
 import { discountForOrder } from '@/lib/referral'
 import { readSalesTeamPricing, purchaseUnitPrice, NO_TEAM_PRICING } from '@/lib/sales-team-pricing'
 import { isLeadLanguage, leadLanguageLabel } from '@/lib/lead-language'
+import { getLocale } from '@/lib/locale'
+import { checkoutPolicyMetadata, stripeTermsConsent } from '@/lib/checkout-policy'
 
 export async function POST(request: NextRequest) {
   try {
@@ -68,6 +70,7 @@ export async function POST(request: NextRequest) {
         policy_required: true,
       }, { status: 412 })
     }
+    const policyMetadata = await checkoutPolicyMetadata(db, buyer.id, await getLocale())
 
     // Cupom da plataforma (só pacotes de LEAD): validado server-side por email do
     // comprador; força o preço por lead no unit_amount. Cupom inválido/de outra conta
@@ -114,11 +117,14 @@ export async function POST(request: NextRequest) {
         price_source: quote.source,
         sales_team_member: String(teamPricing.is_member),
         referral_discount_cents: String(referralDiscount),
+        product_description: `${selectedPackage.quantity} ${PRODUCTS[productType].name} — ${leadLanguageLabel(leadLanguage)}`,
+        ...policyMetadata,
       },
       payment_intent_data: {
         description: `${selectedPackage.quantity}x ${PRODUCTS[productType].name} — ${leadLanguageLabel(leadLanguage)} — ${buyer.name || buyer.email}`,
-        metadata: { buyer_id: buyer.id, package_id: selectedPackage.id, lead_language: leadLanguage },
+        metadata: { buyer_id: buyer.id, package_id: selectedPackage.id, lead_language: leadLanguage, ...policyMetadata },
       },
+      consent_collection: stripeTermsConsent,
       success_url: 'https://lead4producers.com/dashboard/credits?success=true',
       cancel_url: 'https://lead4producers.com/dashboard/credits?cancelled=true',
     }

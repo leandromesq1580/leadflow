@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
     assigned_to_member: null,
     assigned_at: new Date().toISOString(),
     status: 'assigned',
+    delivery_credit_id: debitRow?.id || null,
   }).eq('id', lead_id)
 
   // 2) Sai de TODOS os pipelines atuais (remove do pipeline do dono antigo)

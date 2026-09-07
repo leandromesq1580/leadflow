@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { hasAcceptedCurrentPolicy } from '@/lib/policies'
+import { getLocale } from '@/lib/locale'
+import { checkoutPolicyMetadata, stripeTermsConsent } from '@/lib/checkout-policy'
 
 /**
  * POST /api/apolices/checkout — assinatura do add-on Gestão de Apólices ($39/mês).
@@ -24,6 +27,10 @@ export async function POST() {
       .eq('auth_user_id', user.id)
       .single()
     if (!buyer) return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
+    if (!(await hasAcceptedCurrentPolicy(db, buyer.id))) {
+      return NextResponse.json({ error: 'Aceite a Política de Leads e Uso antes de assinar.', policy_required: true }, { status: 412 })
+    }
+    const policyMetadata = await checkoutPolicyMetadata(db, buyer.id, await getLocale())
 
     // já tem o add-on ativo? não cobra duas vezes
     const { data: addonRow } = await db.from('settings').select('value').eq('key', 'apolices_addon').maybeSingle()
@@ -54,8 +61,9 @@ export async function POST() {
         },
         quantity: 1,
       }],
-      metadata: { buyer_id: buyer.id, addon: 'apolices' },
-      subscription_data: { metadata: { buyer_id: buyer.id, addon: 'apolices' } },
+      metadata: { buyer_id: buyer.id, product_type: 'addon_apolices', product_description: 'Gestão de Apólices', addon: 'apolices', ...policyMetadata },
+      subscription_data: { metadata: { buyer_id: buyer.id, addon: 'apolices', ...policyMetadata } },
+      consent_collection: stripeTermsConsent,
       success_url: 'https://lead4producers.com/dashboard/apolices?addon=ok',
       cancel_url: 'https://lead4producers.com/dashboard/apolices?cancelled=1',
     })

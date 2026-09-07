@@ -14,6 +14,7 @@ import { MHeader } from '@/components/mobile/m-header'
 import { TutorChat } from '@/components/tutor-chat'
 import { PolicyAcceptanceGate } from '@/components/policy-acceptance-gate'
 import { hasAcceptedCurrentPolicy } from '@/lib/policies'
+import { AccessAuditBeacon } from '@/components/access-audit-beacon'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,6 +66,7 @@ export default async function MobileLayout({ children }: { children: React.React
 
   return (
     <I18nProvider locale={locale}>
+      <AccessAuditBeacon locale={locale} />
       <PrivacyProvider>
         <div className="m-root m-tap">
           <div className="m-scroll">

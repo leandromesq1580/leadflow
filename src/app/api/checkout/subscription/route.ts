@@ -4,6 +4,8 @@ import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hasAcceptedCurrentPolicy } from '@/lib/policies'
 import { getCrmPlan } from '@/lib/crm-plans'
+import { getLocale } from '@/lib/locale'
+import { checkoutPolicyMetadata, stripeTermsConsent } from '@/lib/checkout-policy'
 
 /**
  * POST /api/checkout/subscription — Create Stripe Checkout for CRM Pro $99/mo
@@ -37,6 +39,7 @@ export async function POST(request: NextRequest) {
         policy_required: true,
       }, { status: 412 })
     }
+    const policyMetadata = await checkoutPolicyMetadata(db, buyer.id, await getLocale())
 
     if (buyer.crm_subscription_status === 'active') {
       return NextResponse.json({ error: 'Already subscribed' }, { status: 400 })
@@ -68,8 +71,9 @@ export async function POST(request: NextRequest) {
         },
         quantity: 1,
       }],
-      metadata: { buyer_id: buyer.id, product_type: 'crm_pro', plan: plan.key, interval: plan.interval },
-      subscription_data: { metadata: { buyer_id: buyer.id, plan: plan.key, interval: plan.interval } },
+      metadata: { buyer_id: buyer.id, product_type: 'crm_pro', product_description: `CRM Pro — ${plan.label}`, plan: plan.key, interval: plan.interval, ...policyMetadata },
+      subscription_data: { metadata: { buyer_id: buyer.id, plan: plan.key, interval: plan.interval, ...policyMetadata } },
+      consent_collection: stripeTermsConsent,
       success_url: 'https://lead4producers.com/dashboard?crm=activated',
       cancel_url: 'https://lead4producers.com/dashboard/credits?cancelled=true',
     })

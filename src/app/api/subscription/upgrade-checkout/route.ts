@@ -3,6 +3,9 @@ import { getStripe } from '@/lib/stripe'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCrmPlan, CRM_PLAN_LIST } from '@/lib/crm-plans'
+import { hasAcceptedCurrentPolicy } from '@/lib/policies'
+import { getLocale } from '@/lib/locale'
+import { checkoutPolicyMetadata, stripeTermsConsent } from '@/lib/checkout-policy'
 
 /**
  * POST /api/subscription/upgrade-checkout  { plan }
@@ -29,6 +32,10 @@ export async function POST(request: NextRequest) {
       .eq('auth_user_id', user.id)
       .single()
     if (!buyer) return NextResponse.json({ error: 'Buyer não encontrado' }, { status: 404 })
+    if (!(await hasAcceptedCurrentPolicy(db, buyer.id))) {
+      return NextResponse.json({ error: 'Aceite a Política de Leads e Uso antes de alterar a assinatura.', policy_required: true }, { status: 412 })
+    }
+    const policyMetadata = await checkoutPolicyMetadata(db, buyer.id, await getLocale())
     if (buyer.crm_subscription_status !== 'active' || !buyer.crm_subscription_id) {
       return NextResponse.json({ error: 'Sem assinatura ativa pra trocar. Assine um plano primeiro.' }, { status: 400 })
     }
@@ -90,8 +97,9 @@ export async function POST(request: NextRequest) {
         quantity: 1,
       }],
       discounts,
-      subscription_data: { metadata: { buyer_id: buyer.id, plan: plan.key, interval: plan.interval } },
-      metadata: { buyer_id: buyer.id, product_type: 'crm_pro', plan: plan.key, kind: 'crm_upgrade', old_subscription_id: sub.id },
+      subscription_data: { metadata: { buyer_id: buyer.id, plan: plan.key, interval: plan.interval, ...policyMetadata } },
+      metadata: { buyer_id: buyer.id, product_type: 'crm_pro', product_description: `Upgrade CRM Pro — ${plan.label}`, plan: plan.key, kind: 'crm_upgrade', old_subscription_id: sub.id, ...policyMetadata },
+      consent_collection: stripeTermsConsent,
       success_url: 'https://lead4producers.com/dashboard/credits?upgraded=1',
       cancel_url: 'https://lead4producers.com/dashboard/credits?cancelled=true',
     })

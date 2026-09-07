@@ -6,6 +6,7 @@ import { hasAcceptedCurrentPolicy } from '@/lib/policies'
 import { getLocale } from '@/lib/locale'
 import { I18nProvider } from '@/lib/i18n-client'
 import { redirect } from 'next/navigation'
+import { AccessAuditBeacon } from '@/components/access-audit-beacon'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,6 +40,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex min-h-screen" style={{ background: '#f8f9fc' }}>
+      <AccessAuditBeacon locale={locale} />
       <div className="hidden md:block">
         <Sidebar type="admin" userName={buyer?.name || user!.email || ''} />
       </div>

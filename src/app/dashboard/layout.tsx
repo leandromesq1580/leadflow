@@ -24,6 +24,7 @@ import { PrivacyProvider } from '@/lib/privacy-mode'
 import { PolicyAcceptanceGate } from '@/components/policy-acceptance-gate'
 import { hasAcceptedCurrentPolicy } from '@/lib/policies'
 import { redirect } from 'next/navigation'
+import { AccessAuditBeacon } from '@/components/access-audit-beacon'
 
 export const dynamic = 'force-dynamic'
 
@@ -82,6 +83,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <I18nProvider locale={locale}>
+      <AccessAuditBeacon locale={locale} />
       <PrivacyProvider>
       <div className="flex min-h-screen" style={{ background: 'var(--bg)' }}>
         <div className="hidden md:block">

@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { hasAcceptedCurrentPolicy } from '@/lib/policies'
+import { getLocale } from '@/lib/locale'
+import { checkoutPolicyMetadata, stripeTermsConsent } from '@/lib/checkout-policy'
 
 /**
  * POST /api/roteiro/checkout — assinatura do add-on "IA na Ligação" ($49/mês).
@@ -25,6 +28,10 @@ export async function POST() {
       .eq('auth_user_id', user.id)
       .single()
     if (!buyer) return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
+    if (!(await hasAcceptedCurrentPolicy(db, buyer.id))) {
+      return NextResponse.json({ error: 'Aceite a Política de Leads e Uso antes de assinar.', policy_required: true }, { status: 412 })
+    }
+    const policyMetadata = await checkoutPolicyMetadata(db, buyer.id, await getLocale())
 
     const { data: addonRow } = await db.from('settings').select('value').eq('key', 'ia_ligacao_addon').maybeSingle()
     if (((addonRow?.value as Record<string, { active?: boolean }>) || {})[buyer.id]?.active) {
@@ -54,8 +61,9 @@ export async function POST() {
         },
         quantity: 1,
       }],
-      metadata: { buyer_id: buyer.id, addon: 'ia_ligacao' },
-      subscription_data: { metadata: { buyer_id: buyer.id, addon: 'ia_ligacao' } },
+      metadata: { buyer_id: buyer.id, product_type: 'addon_ia_ligacao', product_description: 'IA na Ligação', addon: 'ia_ligacao', ...policyMetadata },
+      subscription_data: { metadata: { buyer_id: buyer.id, addon: 'ia_ligacao', ...policyMetadata } },
+      consent_collection: stripeTermsConsent,
       success_url: 'https://lead4producers.com/dashboard/roteiro?addon=ok',
       cancel_url: 'https://lead4producers.com/dashboard/roteiro?cancelled=1',
     })

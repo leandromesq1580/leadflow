@@ -4,13 +4,13 @@ import type { createAdminClient } from '@/lib/supabase/admin'
 type Db = ReturnType<typeof createAdminClient>
 
 /** Resolve o buyer da SESSÃO logada (via cookie). null = não autenticado / sem buyer. */
-export async function callerBuyer(db: Db): Promise<{ id: string; isAdmin: boolean } | null> {
+export async function callerBuyer(db: Db): Promise<{ id: string; isAdmin: boolean; authUserId: string } | null> {
   const supabase = await createServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
   const { data: b } = await db.from('buyers').select('id, is_admin').eq('auth_user_id', user.id).maybeSingle()
   if (!b) return null
-  return { id: b.id, isAdmin: !!b.is_admin }
+  return { id: b.id, isAdmin: !!b.is_admin, authUserId: user.id }
 }
 
 /** true se o caller pode agir como o buyerId alvo (é ele mesmo ou admin). */

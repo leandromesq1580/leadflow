@@ -84,6 +84,11 @@ test('checkout rejects missing/invalid language and sends selected language to S
     '@/lib/supabase/admin': { createAdminClient: () => ({ from: () => chain() }) },
     '@/lib/coupons': { resolveCoupon: () => null },
     '@/lib/policies': { hasAcceptedCurrentPolicy: async () => true },
+    '@/lib/locale': { getLocale: async () => 'pt' },
+    '@/lib/checkout-policy': {
+      checkoutPolicyMetadata: async () => ({ policy_version: 'test', policy_sha256: 'hash', policy_acceptance_id: 'acceptance', policy_accepted_at: '2026-09-07', policy_locale: 'pt' }),
+      stripeTermsConsent: { terms_of_service: 'required' },
+    },
     '@/lib/referral': { discountForOrder: async () => 0 },
     '@/lib/sales-team-pricing': {
       NO_TEAM_PRICING: { is_member: false, lead_unit_price_cents: 2100 },
@@ -122,6 +127,7 @@ test('paid webhook uses atomic fulfillment, legacy BR, retries on error, and ign
     '@/lib/crm-plans': { LEADS_PER_MONTH: 5, CRM_PLAN_LIST: [] },
     '@/lib/notifications': { notifyGroupPurchase: async (notice: any) => { notices.push(notice) } },
     '@/lib/referral': { grantReferralReward: async () => {}, cancelRewardsFor: async () => {}, consumeCredit: async () => {} },
+    '@/lib/chargeback-evidence': { recordCompletedPurchaseConsent: async () => {}, recordStripeDispute: async () => {} },
   })
   const session = (language: string | undefined = 'es') => ({ id: 'cs_test', payment_status: 'paid', payment_intent: 'pi_test', amount_total: 28000, metadata: { buyer_id: 'buyer', product_type: 'lead', quantity: '10', price_per_unit: '28', lead_language: language } })
   const send = () => POST(new Request('http://localhost/api/webhook/stripe', { method: 'POST', headers: { 'stripe-signature': 'test' }, body: '{}' }))
