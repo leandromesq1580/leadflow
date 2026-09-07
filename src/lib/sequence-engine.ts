@@ -4,7 +4,8 @@ import { resolveSendBridge } from '@/lib/wa-bridge'
 import { checkSendRate } from '@/lib/send-guard'
 import { Resend } from 'resend'
 import { localeDoBuyer, trad } from '@/lib/buyer-locale'
-import { localizeSystemTemplate } from '@/lib/system-template-i18n'
+import { localizeLeadTemplate } from '@/lib/lead-message-template'
+import { requireLeadMessageLocale } from '@/lib/lead-message-locale'
 
 /**
  * Enrolla o lead em todas as sequences ativas cujo trigger_stage_id bate com o stage
@@ -305,7 +306,7 @@ async function executeStep(step: any, enr: any): Promise<void> {
   const { data: lead } = await db.from('leads').select('*').eq('id', enr.lead_id).single()
   const { data: agent } = await db.from('buyers').select('name, email, phone, is_active').eq('id', enr.buyer_id).single()
   if (!lead || !agent) throw new Error('Lead or agent missing')
-  const loc = await localeDoBuyer(db, enr.buyer_id)
+  const loc = requireLeadMessageLocale(lead)
   // Comprador suspenso: não dispara mensagem (sequência fica parada até reativar)
   if (agent.is_active === false) { console.log(`[Sequence] buyer ${enr.buyer_id} suspenso — skip`); return }
 
@@ -316,12 +317,13 @@ async function executeStep(step: any, enr: any): Promise<void> {
   if (step.template_id) {
     const { data: tpl } = await db.from('templates').select('*').eq('id', step.template_id).single()
     if (!tpl) throw new Error('Template not found')
-    const localizedTemplate = localizeSystemTemplate(tpl, loc)
-    body = renderTemplate(localizedTemplate.body, lead, agent)
+    const localizedTemplate = await localizeLeadTemplate(db, tpl, lead)
+    body = renderTemplate(localizedTemplate.body, lead, agent, loc)
     type = localizedTemplate.type
-    subject = localizedTemplate.subject ? renderTemplate(localizedTemplate.subject, lead, agent) : null
+    subject = localizedTemplate.subject ? renderTemplate(localizedTemplate.subject, lead, agent, loc) : null
   } else if (step.custom_body) {
-    body = renderTemplate(step.custom_body, lead, agent)
+    const copy = await localizeLeadTemplate(db, { name: '', body: step.custom_body }, lead)
+    body = renderTemplate(copy.body, lead, agent, loc)
   } else {
     throw new Error('Step has no template or custom_body')
   }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { callerBuyer, canActAs } from '@/lib/api-auth'
+import { leadMessageLocale, type LeadMessageLocale } from '@/lib/lead-message-locale'
 
 interface Conversation {
   lead_id: string
@@ -8,6 +9,7 @@ interface Conversation {
   lead_phone: string
   lead_state: string | null
   lead_ai_score: number | null
+  lead_language: LeadMessageLocale | null
   last_body: string | null
   last_direction: 'in' | 'out'
   last_sent_at: string
@@ -55,7 +57,7 @@ export async function GET(request: NextRequest) {
   // Busca dados dos leads pra exibir nome/telefone/estado/AI score
   const { data: leads } = await db
     .from('leads')
-    .select('id, name, phone, state, ai_score')
+    .select('id, name, phone, state, ai_score, lead_language, form_name, meta_lead_id')
     .in('id', leadIds)
 
   const leadMap: Record<string, any> = {}
@@ -79,6 +81,7 @@ export async function GET(request: NextRequest) {
         lead_phone: L.phone || '',
         lead_state: L.state || null,
         lead_ai_score: L.ai_score ?? null,
+        lead_language: leadMessageLocale(L),
         last_body: preview || '(sem texto)',
         last_direction: last.direction as 'in' | 'out',
         last_sent_at: last.sent_at,

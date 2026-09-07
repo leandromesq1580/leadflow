@@ -4,7 +4,9 @@ import { renderTemplate } from '@/lib/template-render'
 import { resolveSendBridge } from '@/lib/wa-bridge'
 import { checkSendRate } from '@/lib/send-guard'
 import { Resend } from 'resend'
-import { localizeSystemTemplate, systemTemplateNames } from '@/lib/system-template-i18n'
+import { systemTemplateNames } from '@/lib/system-template-i18n'
+import { localizeLeadTemplate } from '@/lib/lead-message-template'
+import { requireLeadMessageLocale } from '@/lib/lead-message-locale'
 
 interface Automation {
   id: string
@@ -39,7 +41,7 @@ export async function runAutomations(buyerIds?: string[]): Promise<{ ran: number
         // Idempotency: (automation_id, lead_id, meeting_id) — meeting_id NULL para triggers sem reunião
         let existingQuery = db
           .from('automation_runs')
-          .select('id')
+          .select('id, status, error, created_at')
           .eq('automation_id', auto.id)
         existingQuery = target.lead_id
           ? existingQuery.eq('lead_id', target.lead_id)
@@ -48,7 +50,11 @@ export async function runAutomations(buyerIds?: string[]): Promise<{ ran: number
           ? existingQuery.eq('meeting_id', target.meeting_id)
           : existingQuery.is('meeting_id', null)
         const { data: existing } = await existingQuery.maybeSingle()
-        if (existing) continue
+        // Language preparation fails BEFORE transport, so these failures alone are
+        // safe to retry. Never reopen a successful, reserved or transport-failed run.
+        const retryLanguage = existing?.status === 'failed' && String(existing.error || '').startsWith('[lead-language]')
+          && Date.now() - new Date(existing.created_at).getTime() >= 5 * 60_000
+        if (existing && !retryLanguage) continue
 
         // 🛑 TRAVA PERSISTENTE (incidente 2026-07-31): automation_runs é apagado por
         // CASCADE quando a automação é deletada — recriar zerava a trava e reenviava
@@ -80,14 +86,19 @@ export async function runAutomations(buyerIds?: string[]): Promise<{ ran: number
         // do envio, que tem retry). Agora o INSERT vem primeiro: o UNIQUE
         // (automation_id, lead_id) do banco é o lock atômico — quem perder a corrida
         // recebe erro de duplicidade e PULA, sem enviar nada.
-        const { data: reserva, error: reservaErr } = await db.from('automation_runs').insert({
+        const reservation = {
           automation_id: auto.id,
           lead_id: target.lead_id,
           pipeline_lead_id: target.pipeline_lead_id || null,
           meeting_id: target.meeting_id || null,
           meeting_source: target.meeting_source || null,
           status: 'skipped', // vira success/failed depois do envio
-        }).select('id').maybeSingle()
+        }
+        const { data: reserva, error: reservaErr } = retryLanguage
+          ? await db.from('automation_runs').update({ status: 'skipped', error: null, created_at: new Date().toISOString() })
+            .eq('id', existing!.id).eq('status', 'failed').eq('error', existing!.error).select('id').maybeSingle()
+          : await db.from('automation_runs').insert(reservation).select('id').maybeSingle()
+        if (!reserva && !reservaErr) continue
 
         if (reservaErr) {
           if (/duplicate|unique/i.test(reservaErr.message)) {
@@ -294,9 +305,9 @@ async function executeAction(auto: Automation, target: Target): Promise<void> {
     // Comprador suspenso: não dispara automação
     if (agent.is_active === false) { console.log(`[Automation] buyer ${auto.buyer_id} suspenso — skip`); return }
 
-    const loc = await localeDoBuyer(db, auto.buyer_id)
-    const localizedTemplate = localizeSystemTemplate(template, loc)
-    const body = renderTemplate(localizedTemplate.body, lead, agent)
+    const loc = requireLeadMessageLocale(lead)
+    const localizedTemplate = await localizeLeadTemplate(db, template, lead)
+    const body = renderTemplate(localizedTemplate.body, lead, agent, loc)
 
     if (template.type === 'whatsapp') {
       if (!lead.phone) throw new Error('Lead sem telefone')
@@ -331,7 +342,7 @@ async function executeAction(auto: Automation, target: Target): Promise<void> {
       if (!resendKey) throw new Error('Resend not configured')
       const resend = new Resend(resendKey)
       const subject = localizedTemplate.subject
-        ? renderTemplate(localizedTemplate.subject, lead, agent)
+        ? renderTemplate(localizedTemplate.subject, lead, agent, loc)
         : loc === 'en' ? `Message from ${agent.name}` : loc === 'es' ? `Mensaje de ${agent.name}` : `Mensagem de ${agent.name}`
       await resend.emails.send({
         from: `${agent.name} <onboarding@resend.dev>`,

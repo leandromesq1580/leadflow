@@ -5,18 +5,27 @@ import { renderTemplate } from '@/lib/template-render'
 import { resolveSendBridge } from '@/lib/wa-bridge'
 import { Resend } from 'resend'
 import { getLocale } from '@/lib/locale'
-import { localizeSystemTemplate } from '@/lib/system-template-i18n'
+import { localizeLeadTemplate } from '@/lib/lead-message-template'
+import { requireLeadMessageLocale } from '@/lib/lead-message-locale'
+import { atorDaSessao, podeOperarQuadro, leadPertenceAoQuadro } from '@/lib/pipeline-guard'
+
+export const maxDuration = 120
 
 /** POST /api/templates/send — render template and send via WhatsApp or Email */
 export async function POST(request: NextRequest) {
   const locale = await getLocale()
   const L = (pt: string, en: string, es: string) => locale === 'en' ? en : locale === 'es' ? es : pt
-  const { template_id, lead_id, buyer_id, override_body } = await request.json()
+  const { template_id, lead_id, buyer_id, override_body, preview, automated, channel } = await request.json()
   if ((!template_id && !override_body) || !lead_id || !buyer_id) {
     return NextResponse.json({ error: L('Campos obrigatórios ausentes', 'Required fields are missing', 'Faltan campos obligatorios') }, { status: 400 })
   }
 
   const db = createAdminClient()
+  const actor = await atorDaSessao(db)
+  if (!actor) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await podeOperarQuadro(db, actor, buyer_id)) || (!actor.isAdmin && !(await leadPertenceAoQuadro(db, lead_id, buyer_id)))) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   const [templateRes, leadRes, buyerRes] = await Promise.all([
     template_id ? db.from('templates').select('*').eq('id', template_id).single() : Promise.resolve({ data: null }),
@@ -24,15 +33,37 @@ export async function POST(request: NextRequest) {
     db.from('buyers').select('name, email, phone').eq('id', buyer_id).single(),
   ])
 
-  const template = templateRes.data ? localizeSystemTemplate(templateRes.data, locale) : null
+  let template = templateRes.data
   const lead = leadRes.data
   const agent = buyerRes.data
 
   if (!lead || !agent) return NextResponse.json({ error: L('Lead ou corretor não encontrado', 'Lead or producer not found', 'No se encontró el prospecto o el productor') }, { status: 404 })
 
-  const type = template?.type || 'whatsapp'
-  const body = override_body || renderTemplate(template.body, lead, agent)
-  const subject = template?.subject ? renderTemplate(template.subject, lead, agent) : null
+  if (template_id && !template) return NextResponse.json({ error: 'Template not found' }, { status: 404 })
+  if (template && !template.is_system && template.buyer_id !== buyer_id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const type = template?.type || (channel === 'email' ? 'email' : 'whatsapp')
+  let body: string
+  let subject: string | null = null
+  let messageLocale = locale
+  try {
+    if (!override_body || automated) {
+      messageLocale = requireLeadMessageLocale(lead)
+      const copy = await localizeLeadTemplate(db, override_body ? { name: '', body: override_body } : template, lead)
+      body = renderTemplate(copy.body, lead, agent, messageLocale)
+      subject = copy.subject ? renderTemplate(copy.subject, lead, agent, messageLocale) : null
+      if (!override_body) template = copy
+    } else {
+      // Deliberately typed messages stay as written; automatic copy is always localized.
+      body = override_body
+    }
+  } catch {
+    return NextResponse.json({ error: L(
+      'Não foi possível preparar a mensagem no idioma do lead. Nenhuma mensagem foi enviada. Confira o idioma do cadastro e tente novamente.',
+      'Could not prepare the message in the lead’s language. Nothing was sent. Check the lead language and try again.',
+      'No se pudo preparar el mensaje en el idioma del lead. No se envió ningún mensaje. Revisa el idioma del lead e inténtalo de nuevo.',
+    ) }, { status: 422 })
+  }
+  if (preview) return NextResponse.json({ sent_body: body, subject, message_locale: messageLocale })
 
   if (type === 'whatsapp') {
     if (!lead.phone) return NextResponse.json({ error: L('Lead sem telefone', 'Lead has no phone number', 'El prospecto no tiene teléfono') }, { status: 400 })
@@ -111,7 +142,7 @@ export async function POST(request: NextRequest) {
     await resend.emails.send({
       from: `${agent.name} <onboarding@resend.dev>`,
       to: lead.email,
-      subject: subject || (locale === 'en' ? `Message from ${agent.name}` : locale === 'es' ? `Mensaje de ${agent.name}` : `Mensagem de ${agent.name}`),
+      subject: subject || (messageLocale === 'en' ? `Message from ${agent.name}` : messageLocale === 'es' ? `Mensaje de ${agent.name}` : `Mensagem de ${agent.name}`),
       html: body.replace(/\n/g, '<br/>'),
     })
   }

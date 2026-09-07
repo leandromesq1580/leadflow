@@ -6,11 +6,13 @@ import { useT } from '@/lib/i18n-client'
 import { MIcon } from '@/components/mobile/icons'
 import { StageSheet } from '@/components/mobile/stage-sheet'
 import { getInitials, timeAgo } from '@/lib/utils'
+import { LeadLanguageBadge } from '@/components/lead-language-badge'
+import type { LeadLanguageFields } from '@/lib/lead-message-locale'
 
 interface Stage { id: string; name: string; color: string; position: number }
 interface PLead {
   id: string; stage_id: string
-  lead: { id: string; name: string; phone: string; city: string; state: string; status: string; interest: string; created_at: string }
+  lead: LeadLanguageFields & { id: string; name: string; phone: string; city: string; state: string; status: string; interest: string; created_at: string }
 }
 
 function avatarBg(name: string) {
@@ -137,6 +139,7 @@ export default function MobilePipeline() {
                     <div className="m-av" style={{ width: 44, height: 44, fontSize: 14, background: avatarBg(c.lead.name) }}>{getInitials(c.lead.name)}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ margin: 0, fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.lead.name}</p>
+                      <div style={{ marginTop: 5 }}><LeadLanguageBadge lead={c.lead} /></div>
                       <p className="m-muted" style={{ margin: '2px 0 0', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {[[c.lead.city, c.lead.state].filter(Boolean).join(', '), timeAgo(c.lead.created_at, loc)].filter(Boolean).join(' · ')}
                       </p>

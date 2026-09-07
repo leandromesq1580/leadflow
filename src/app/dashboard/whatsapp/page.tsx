@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { WhatsAppInbox } from '@/components/whatsapp-inbox'
 import { useT } from '@/lib/i18n-client'
 import { useRealtime } from '@/lib/use-realtime'
+import { LeadLanguageBadge } from '@/components/lead-language-badge'
 
 interface Conversation {
   lead_id: string
@@ -11,6 +12,7 @@ interface Conversation {
   lead_phone: string
   lead_state: string | null
   lead_ai_score: number | null
+  lead_language: string | null
   last_body: string
   last_direction: 'in' | 'out'
   last_sent_at: string
@@ -198,6 +200,7 @@ export default function WhatsAppPage() {
                           </span>
                         )}
                       </div>
+                      <div className="mt-1"><LeadLanguageBadge lead={c} /></div>
                     </div>
                   </button>
                 )
@@ -217,6 +220,7 @@ export default function WhatsAppPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[14px] font-bold" style={{ color: 'var(--fg)' }}>{selected.lead_name}</p>
+                  <div className="my-1"><LeadLanguageBadge lead={selected} /></div>
                   <div className="flex items-center gap-2 text-[11px]" style={{ color: 'var(--fg-secondary)' }}>
                     <span>{selected.lead_phone}</span>
                     {selected.lead_state && <><span>·</span><span>{selected.lead_state}</span></>}

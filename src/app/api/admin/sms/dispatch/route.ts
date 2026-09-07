@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendSms } from '@/lib/twilio'
+import { requireLeadMessageLocale } from '@/lib/lead-message-locale'
+import { translateLeadCopy } from '@/lib/lead-message-template'
+
+export const maxDuration = 120
 
 /**
  * POST /api/admin/sms/dispatch — envia o PRÓXIMO lote de uma campanha.
@@ -23,18 +27,32 @@ export async function POST(request: NextRequest) {
 
   const take = Math.min(Math.max(Number(batch) || 20, 1), 40)
   const { data: queued } = await db.from('sms_messages')
-    .select('id, to_phone, body')
+    .select('id, lead_id, to_phone, body')
     .eq('campaign_id', campaign_id)
     .eq('status', 'queued')
     .order('created_at', { ascending: true })
     .limit(take)
 
   let sent = 0, failed = 0
+  const startedAt = Date.now()
   for (const m of queued || []) {
-    const r = await sendSms(m.to_phone, m.body)
+    // A custom text may need translation; leave the remaining rows queued for
+    // the next batch instead of exceeding the request deadline mid-delivery.
+    if (Date.now() - startedAt > 45_000) break
+    let body: string
+    try {
+      const { data: lead } = await db.from('leads').select('lead_language, form_name, meta_lead_id').eq('id', m.lead_id).single()
+      if (!lead) throw new Error('[lead-language] Destinatário não encontrado')
+      body = (await translateLeadCopy(db, { body: m.body, subject: null }, requireLeadMessageLocale(lead))).body
+    } catch (error: any) {
+      failed++
+      await db.from('sms_messages').update({ status: 'failed', error: String(error.message).slice(0, 300) }).eq('id', m.id)
+      continue
+    }
+    const r = await sendSms(m.to_phone, body)
     if (r.ok) {
       sent++
-      await db.from('sms_messages').update({ status: 'sent', twilio_sid: r.sid || null }).eq('id', m.id)
+      await db.from('sms_messages').update({ status: 'sent', body, twilio_sid: r.sid || null }).eq('id', m.id)
     } else {
       failed++
       await db.from('sms_messages').update({ status: 'failed', error: (r.error || '').slice(0, 300) }).eq('id', m.id)
