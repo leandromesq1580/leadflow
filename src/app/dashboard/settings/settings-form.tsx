@@ -190,6 +190,16 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
     setStates(prev => prev.includes(code) ? prev.filter(s => s !== code) : [...prev, code])
   }
 
+  function selectAllStates() {
+    markSelectionChange()
+    setStates([...allStates])
+  }
+
+  function deselectAllStates() {
+    markSelectionChange()
+    setStates([])
+  }
+
   function toggleAvail(key: string) {
     markSelectionChange()
     const wasOn = avail.includes(key)
@@ -259,7 +269,30 @@ export function SettingsForm({ buyer, activeStates, activeAvailability, activeAv
       {/* States / Licenses */}
       <div className="rounded-2xl p-6 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
         <h2 className="text-[15px] font-bold mb-2" style={{ color: 'var(--fg)' }}>{t.settings.statesTitle}</h2>
-        <p className="text-[13px] mb-4" style={{ color: 'var(--fg-muted)' }}>{t.settings.statesHelp}</p>
+        <p className="text-[13px] mb-3" style={{ color: 'var(--fg-muted)' }}>{t.settings.statesHelp}</p>
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <button
+            type="button"
+            onClick={selectAllStates}
+            disabled={states.length === allStates.length}
+            className="px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all disabled:opacity-40 disabled:cursor-default"
+            style={{ background: 'var(--accent-light)', color: 'var(--accent)', border: '1px solid rgba(139,92,246,0.35)' }}
+          >
+            ✓ {L('Selecionar todos', 'Select all', 'Seleccionar todos')}
+          </button>
+          <button
+            type="button"
+            onClick={deselectAllStates}
+            disabled={states.length === 0}
+            className="px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all disabled:opacity-40 disabled:cursor-default"
+            style={{ background: 'var(--bg)', color: 'var(--fg-secondary)', border: '1px solid var(--border)' }}
+          >
+            × {L('Desmarcar todos', 'Deselect all', 'Desmarcar todos')}
+          </button>
+          <span className="text-[11px] font-semibold" style={{ color: 'var(--fg-muted)' }}>
+            {states.length}/{allStates.length} {L('selecionados', 'selected', 'seleccionados')}
+          </span>
+        </div>
         <div className="flex flex-wrap gap-2">
           {allStates.map(code => (
             <button

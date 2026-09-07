@@ -77,7 +77,7 @@ export default function MobileConfig() {
       })
       if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || L('Erro', 'Error', 'Error')) }
       setSaved(true); setTimeout(() => setSaved(false), 2500)
-    } catch (e: any) { setErr(e?.message || L('Falha ao salvar.', 'Save failed.', 'Error al guardar.')) }
+    } catch (e: unknown) { setErr(e instanceof Error && e.message ? e.message : L('Falha ao salvar.', 'Save failed.', 'Error al guardar.')) }
     setSaving(false)
   }
 
@@ -111,6 +111,19 @@ export default function MobileConfig() {
           {/* Estados */}
           <div className="m-card" style={{ padding: 18, marginBottom: 16 }}>
             <p style={section}>{L('Estados licenciados', 'Licensed states', 'Estados con licencia')}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <button type="button" className="m-chip m-tap" disabled={states.length === US_STATES.length}
+                onClick={() => setStates([...US_STATES])}
+                style={{ border: '1px solid rgba(165,180,252,0.45)', color: '#a5b4fc', opacity: states.length === US_STATES.length ? 0.45 : 1 }}>
+                ✓ {L('Selecionar todos', 'Select all', 'Seleccionar todos')}
+              </button>
+              <button type="button" className="m-chip m-tap" disabled={states.length === 0}
+                onClick={() => setStates([])}
+                style={{ opacity: states.length === 0 ? 0.45 : 1 }}>
+                × {L('Desmarcar todos', 'Deselect all', 'Desmarcar todos')}
+              </button>
+              <span className="m-muted" style={{ marginLeft: 'auto', fontSize: 11 }}>{states.length}/{US_STATES.length}</span>
+            </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
               {US_STATES.map(c => (
                 <span key={c} className={`m-chip m-tap${states.includes(c) ? ' on' : ''}`} onClick={() => toggleState(c)} style={{ padding: '6px 11px' }}>{c}</span>
