@@ -7,6 +7,7 @@ import { getInitials } from '@/lib/utils'
 import { AssignButton } from './assign-button'
 import { usePrivacy } from '@/lib/privacy-mode'
 import { useT } from '@/lib/i18n-client'
+import { ManualEmailComposer } from '@/components/manual-email-composer'
 import { LeadLanguageBadge } from '@/components/lead-language-badge'
 import type { LeadLanguageFields } from '@/lib/lead-message-locale'
 
@@ -98,10 +99,12 @@ export function LeadsList({ leads, isAgency, teamMembers }: Props) {
         )}
         {query && (
           <p className="mt-2 text-[12px]" style={{ color: 'var(--fg-secondary)' }}>
-            {filtered.length} {filtered.length === 1 ? L('resultado para', 'result for', 'resultado para') : L('resultados para', 'results for', 'resultados para')} "{query}"
+            {filtered.length} {filtered.length === 1 ? L('resultado para', 'result for', 'resultado para') : L('resultados para', 'results for', 'resultados para')} &quot;{query}&quot;
           </p>
         )}
       </div>
+
+      <ManualEmailComposer leads={filtered} />
 
       <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         {filtered.length > 0 ? (
