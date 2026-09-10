@@ -28,8 +28,5 @@ Nome: `ADR-NNN-titulo-curto.md`, numeração sequencial.
 
 ## Índice
 
-Nenhum ADR registrado ainda (auditoria de 2026-09-09). Decisões técnicas relevantes
-já tomadas mas não formalizadas como ADR incluem: substituição do cron VPS por
-Vercel Cron Pro para captura Meta (ver `docs/integrations/meta-ads.md`) e a separação
-de saldo de créditos BR/ES (ver `docs/features/lead-language-rollout.md`). Retroagir
-esses dois em ADR é opcional — priorize registrar decisões daqui para frente.
+- [ADR-001](ADR-001-meta-capture-vercel-cron.md) — Captura de leads Meta migrada de cron em VPS para Vercel Cron (2026-09-04).
+- [ADR-002](ADR-002-lead-language-credit-separation.md) — Separação de saldo de créditos por idioma do lead BR/ES (2026-08-31).
