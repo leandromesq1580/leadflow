@@ -20,4 +20,6 @@ no Mac do Leandro — contém `/etc/wa-bridge/*.env` (API keys por bridge) + uni
 7. Sessões WhatsApp NÃO são restauráveis (expiram) → clientes reescaneiam QR (fica sempre vivo)
 8. Conferir: `bash /opt/wa-bridge/watchdog.sh && tail /var/log/wa-bridge-watchdog.log`
 
-Registro de decisões/receitas: memória do Claude (`feedback_wa_bridge_recovery`).
+Registro de decisões/receitas relacionadas: ver `docs/architecture/infrastructure.md`
+e `docs/incidents/`. Este runbook é a fonte de verdade — não depende de memória
+de nenhum agente específico.
