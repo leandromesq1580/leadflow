@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { DndContext, DragEndEvent, DragOverEvent, PointerSensor, useSensor, useSensors, closestCorners, DragOverlay, DragStartEvent } from '@dnd-kit/core'
 import { KanbanColumn } from './kanban-column'
 import { LeadCard } from './lead-card'
@@ -22,8 +22,11 @@ export default function PipelinePage() {
   const t = useT()
   const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [pipelines, setPipelines] = useState<Pipeline[]>([])
-  const [activePipeline, setActivePipeline] = useState<Pipeline | null>(null)
-  const [leads, setLeads] = useState<PipelineLead[]>([])
+  const [board, setBoard] = useState<{ pipeline: Pipeline | null; leads: PipelineLead[] }>({ pipeline: null, leads: [] })
+  const { pipeline: activePipeline, leads } = board
+  const setLeads = (update: PipelineLead[] | ((previous: PipelineLead[]) => PipelineLead[])) => {
+    setBoard(previous => ({ ...previous, leads: typeof update === 'function' ? update(previous.leads) : update }))
+  }
   const [loading, setLoading] = useState(true)
   const [buyerId, setBuyerId] = useState('')
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null)
@@ -48,6 +51,11 @@ export default function PipelinePage() {
   const [closedOnly, setClosedOnly] = useState(false)
   const [staleOnly, setStaleOnly] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+  const [loadError, setLoadError] = useState(false)
+  const [pendingPipelineId, setPendingPipelineId] = useState<string | null>(null)
+  const memberRequest = useRef(0)
+  const pipelineRequest = useRef<{ pipelineId: string; selecting: boolean } | null>(null)
+  const committedPipelineId = useRef(activePipeline?.id ?? null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -94,18 +102,24 @@ export default function PipelinePage() {
   }
 
   async function loadMemberPipeline(memberId: string) {
+    const requestId = ++memberRequest.current
     setLoadingMember(true)
-    setSelectedMemberId(memberId)
     try {
-      const r = await fetch(`/api/team/member-pipeline?member_id=${memberId}`)
-      if (r.ok) {
-        const d = await r.json()
-        setMemberPipeline(d.pipeline || null)
-        setMemberLeads(d.leads || [])
-        setMemberHasOwn(d.member?.has_own_pipeline !== false)
-      }
+      const r = await fetch(`/api/team/member-pipeline?member_id=${memberId}`, { cache: 'no-store' })
+      if (!r.ok) throw new Error('Pipeline load failed')
+      const d = await r.json()
+      if (!d.pipeline || !Array.isArray(d.leads)) throw new Error('Pipeline load failed')
+      if (requestId !== memberRequest.current) return
+      // Commit identity and cards together; never label the previous member's cards as a new member.
+      setSelectedMemberId(memberId)
+      setMemberPipeline(d.pipeline)
+      setMemberLeads(d.leads)
+      setMemberHasOwn(d.member?.has_own_pipeline !== false)
+      setLoadError(false)
+    } catch {
+      if (requestId === memberRequest.current) setLoadError(true)
     } finally {
-      setLoadingMember(false)
+      if (requestId === memberRequest.current) setLoadingMember(false)
     }
   }
 
@@ -118,16 +132,40 @@ export default function PipelinePage() {
 
     if (pipes.length > 0) {
       const active = pipes.find((p: Pipeline) => p.is_default) || pipes[0]
-      setActivePipeline(active)
-      loadLeads(active.id)
+      await loadLeads(active, true)
     }
     setLoading(false)
   }
 
-  async function loadLeads(pipelineId: string) {
-    const r = await fetch(`/api/pipelines/${pipelineId}/leads`)
-    const d = await r.json()
-    setLeads(d.leads || [])
+  async function loadLeads(pipeline: Pipeline, selecting = false) {
+    // Poll/realtime/modal callbacks from the old board cannot cancel a selection
+    // or switch back after it commits. Explicit selections always start a new token,
+    // including A -> B -> A -> B: comparing pipeline IDs alone is not sufficient.
+    const previous = pipelineRequest.current
+    if (!selecting && previous && (previous.selecting || previous.pipelineId !== pipeline.id)) return
+    const request = { pipelineId: pipeline.id, selecting }
+    pipelineRequest.current = request
+    if (selecting) setPendingPipelineId(pipeline.id)
+    try {
+      const r = await fetch(`/api/pipelines/${pipeline.id}/leads`, { cache: 'no-store' })
+      if (!r.ok) throw new Error('Pipeline load failed')
+      const d = await r.json()
+      if (!Array.isArray(d.leads)) throw new Error('Pipeline load failed')
+      if (request !== pipelineRequest.current) return
+      request.selecting = false
+      committedPipelineId.current = pipeline.id
+      // One state update keeps the column identity and its cards indivisible.
+      setBoard({ pipeline, leads: d.leads })
+      setPendingPipelineId(null)
+      setLoadError(false)
+    } catch {
+      if (request === pipelineRequest.current) {
+        request.selecting = false
+        request.pipelineId = committedPipelineId.current ?? pipeline.id
+        setPendingPipelineId(null)
+        setLoadError(true)
+      }
+    }
   }
 
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({})
@@ -165,7 +203,7 @@ export default function PipelinePage() {
     if (!activePipeline || view !== 'mine') return
     const iv = setInterval(() => {
       if (activeCard || selectedLead) return
-      loadLeads(activePipeline.id)
+      loadLeads(activePipeline)
     }, 60000)
     return () => clearInterval(iv)
   }, [activePipeline, view, activeCard, selectedLead])
@@ -177,7 +215,7 @@ export default function PipelinePage() {
     'INSERT',
     activePipeline?.id && view === 'mine' ? `pipeline_id=eq.${activePipeline.id}` : null,
     () => {
-      if (!activeCard && !selectedLead && activePipeline) loadLeads(activePipeline.id)
+      if (!activeCard && !selectedLead && activePipeline) loadLeads(activePipeline)
     },
   )
 
@@ -188,7 +226,7 @@ export default function PipelinePage() {
     'UPDATE',
     activePipeline?.id && view === 'mine' ? `pipeline_id=eq.${activePipeline.id}` : null,
     () => {
-      if (!activeCard && !selectedLead && activePipeline) loadLeads(activePipeline.id)
+      if (!activeCard && !selectedLead && activePipeline) loadLeads(activePipeline)
     },
   )
 
@@ -345,15 +383,25 @@ export default function PipelinePage() {
 
   return (
     <div>
+      {loadError && <p role="alert" className="mb-4 text-sm" style={{ color: 'var(--fg-muted)' }}>
+        {L('Não foi possível atualizar o funil. Os cards anteriores foram mantidos. Tente novamente.', 'Could not refresh the pipeline. Previous cards were kept. Please try again.', 'No se pudo actualizar el embudo. Se conservaron las tarjetas anteriores. Inténtalo de nuevo.')}
+        {view === 'mine' && <button className="ml-2 underline" onClick={() => {
+          const pipeline = activePipeline || pipelines.find(p => p.is_default) || pipelines[0]
+          if (pipeline) loadLeads(pipeline, true)
+        }}>{L('Tentar novamente', 'Try again', 'Intentar de nuevo')}</button>}
+      </p>}
       {/* Header */}
+      {pendingPipelineId && <p role="status" className="mb-4 text-sm" style={{ color: 'var(--fg-muted)' }}>
+        {L('Carregando funil… Exibindo:', 'Loading pipeline… Showing:', 'Cargando embudo… Mostrando:')} {activePipeline?.name || '—'}
+      </p>}
       <div className="flex items-center justify-between mb-6">
         <div>
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{t.sidebar.pipeline}</h1>
             {pipelines.length > 1 && (
-              <select value={activePipeline?.id || ''} onChange={e => {
+              <select value={pendingPipelineId ?? activePipeline?.id ?? ''} onChange={e => {
                 const p = pipelines.find(pp => pp.id === e.target.value)
-                if (p) { setActivePipeline(p); loadLeads(p.id) }
+                if (p) loadLeads(p, true)
               }}
                 className="px-3 py-1.5 rounded-lg text-[13px] font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-200"
                 style={{ border: '1px solid var(--border)', color: 'var(--fg)', background: 'var(--bg-card)' }}>
@@ -499,7 +547,7 @@ export default function PipelinePage() {
                       viewedMemberId={selectedMemberId}
                       onAssigned={() => {
                         if (selectedMemberId) loadMemberPipeline(selectedMemberId)
-                        if (activePipeline) loadLeads(activePipeline.id)
+                        if (activePipeline) loadLeads(activePipeline)
                         loadTeamData(buyerId)
                       }}
                       onArchived={() => selectedMemberId && loadMemberPipeline(selectedMemberId)}
@@ -622,8 +670,8 @@ export default function PipelinePage() {
                 onLeadClick={(item) => setSelectedLead(item)}
                 unreadCounts={unreadCounts}
                 teamMembers={isAgency ? teamMembers : undefined}
-                onAssigned={() => activePipeline && loadLeads(activePipeline.id)}
-                onArchived={() => activePipeline && loadLeads(activePipeline.id)}
+                onAssigned={() => activePipeline && loadLeads(activePipeline)}
+                onArchived={() => activePipeline && loadLeads(activePipeline)}
               />
             ))}
           </div>
@@ -631,7 +679,7 @@ export default function PipelinePage() {
           <DragOverlay dropAnimation={null}>
             {activeCard && (
               <div style={{ width: 274, transform: 'rotate(2deg)' }}>
-                <LeadCard pipelineLeadId={activeCard.id} lead={activeCard.lead} movedAt={activeCard.moved_at} onClick={() => {}} />
+                <LeadCard pipelineLeadId={activeCard.id} lead={activeCard.lead} movedAt={activeCard.moved_at} lastFollowUp={activeCard.last_follow_up} onClick={() => {}} />
               </div>
             )}
           </DragOverlay>
@@ -658,7 +706,7 @@ export default function PipelinePage() {
           onSaved={() => {
             setSelectedLead(null)
             setDirectLeadId(null)
-            if (activePipeline) loadLeads(activePipeline.id)
+            if (activePipeline) loadLeads(activePipeline)
             if (isAgency) loadTeamData(buyerId)
           }}
         />

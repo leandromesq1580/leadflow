@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { FollowUpBadge } from '@/components/follow-up-badge'
+import type { LastFollowUp } from '@/lib/pipeline-follow-ups'
 import { useT } from '@/lib/i18n-client'
 import { MIcon } from '@/components/mobile/icons'
 import { StageSheet } from '@/components/mobile/stage-sheet'
@@ -12,6 +14,7 @@ import type { LeadLanguageFields } from '@/lib/lead-message-locale'
 interface Stage { id: string; name: string; color: string; position: number }
 interface PLead {
   id: string; stage_id: string
+  last_follow_up?: LastFollowUp | null
   lead: LeadLanguageFields & { id: string; name: string; phone: string; city: string; state: string; status: string; interest: string; created_at: string }
 }
 
@@ -46,7 +49,8 @@ export default function MobilePipeline() {
     try {
       const r = await fetch(`/api/pipelines?buyer_id=${bid}`, { cache: 'no-store' })
       const d = await r.json()
-      const pipes = d.pipelines || []
+      if (!r.ok || !Array.isArray(d.pipelines)) throw new Error('Pipeline load failed')
+      const pipes = d.pipelines
       if (pipes.length === 0) { setNoPipeline(true); setCards([]); return }
       const def = pipes.find((p: any) => p.is_default) || pipes[0]
       const stages = (def.stages || []).slice().sort((a: Stage, b: Stage) => a.position - b.position)
@@ -60,7 +64,9 @@ export default function MobilePipeline() {
     try {
       const r = await fetch(`/api/pipelines/${pid}/leads`, { cache: 'no-store' })
       const d = await r.json()
-      setCards(d.leads || [])
+      if (!r.ok || !Array.isArray(d.leads)) throw new Error('Pipeline load failed')
+      setCards(d.leads)
+      setErr(false)
     } catch { setErr(true) }
   }
 
@@ -140,6 +146,7 @@ export default function MobilePipeline() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ margin: 0, fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.lead.name}</p>
                       <div style={{ marginTop: 5 }}><LeadLanguageBadge lead={c.lead} /></div>
+                      <FollowUpBadge lastFollowUp={c.last_follow_up} locale={loc} />
                       <p className="m-muted" style={{ margin: '2px 0 0', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {[[c.lead.city, c.lead.state].filter(Boolean).join(', '), timeAgo(c.lead.created_at, loc)].filter(Boolean).join(' · ')}
                       </p>
