@@ -141,17 +141,21 @@ export default function MobilePipeline() {
               ? <p className="m-muted" style={{ textAlign: 'center', paddingTop: 30, fontSize: 14 }}>{L('Nenhum lead nesta etapa.', 'No leads in this stage.', 'Sin leads en esta etapa.')}</p>
               : shown.map(c => (
                 <div key={c.id} className="m-card" style={{ padding: 12, marginBottom: 11, display: 'flex', alignItems: 'center', gap: 11 }}>
-                  <Link href={`/m/leads/${c.lead.id}`} className="m-link" style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 11 }}>
-                    <div className="m-av" style={{ width: 44, height: 44, fontSize: 14, background: avatarBg(c.lead.name) }}>{getInitials(c.lead.name)}</div>
+                  <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 11 }}>
+                    <Link href={`/m/leads/${c.lead.id}`} className="m-link" aria-label={c.lead.name}>
+                      <div className="m-av" style={{ width: 44, height: 44, fontSize: 14, background: avatarBg(c.lead.name) }}>{getInitials(c.lead.name)}</div>
+                    </Link>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ margin: 0, fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.lead.name}</p>
-                      <div style={{ marginTop: 5 }}><LeadLanguageBadge lead={c.lead} /></div>
+                      <Link href={`/m/leads/${c.lead.id}`} className="m-link">
+                        <p style={{ margin: 0, fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.lead.name}</p>
+                        <div style={{ marginTop: 5 }}><LeadLanguageBadge lead={c.lead} /></div>
+                      </Link>
                       <FollowUpBadge lastFollowUp={c.last_follow_up} locale={loc} />
                       <p className="m-muted" style={{ margin: '2px 0 0', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {[[c.lead.city, c.lead.state].filter(Boolean).join(', '), timeAgo(c.lead.created_at, loc)].filter(Boolean).join(' · ')}
                       </p>
                     </div>
-                  </Link>
+                  </div>
                   <button className="m-tap" onClick={() => setMoveCard(c)} aria-label={L('Mover', 'Move', 'Mover')} style={{ width: 38, height: 38, borderRadius: 11, background: 'rgba(99,102,241,0.14)', border: '1px solid rgba(99,102,241,0.25)', color: '#a5b4fc', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
                     <MIcon name="columns" size={18} />
                   </button>

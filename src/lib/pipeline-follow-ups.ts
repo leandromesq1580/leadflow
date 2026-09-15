@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 export interface LastFollowUp {
   type: string
+  description?: string | null
   scheduled_at: string | null
   created_at: string
 }
@@ -18,7 +19,7 @@ export async function latestPipelineFollowUps(db: SupabaseClient, leadIds: strin
     const batch = ids.slice(start, start + BATCH)
     for (let offset = 0; ; offset += PAGE) {
       let query = db.from('follow_ups')
-        .select('lead_id, type, scheduled_at, created_at')
+        .select('lead_id, type, description, scheduled_at, created_at')
         .in('lead_id', batch)
       // Preserve the pseudo-pipeline's existing scheduled-first semantics.
       if (options.scheduledFirst) query = query.order('scheduled_at', { ascending: false, nullsFirst: false })

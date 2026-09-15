@@ -1,3 +1,6 @@
+'use client'
+
+import { usePrivacy } from '@/lib/privacy-mode'
 import type { LastFollowUp } from '@/lib/pipeline-follow-ups'
 
 const FU_META_BY_LOCALE = {
@@ -44,6 +47,10 @@ function formatFuDate(iso: string, locale: string): string {
 }
 
 export function FollowUpBadge({ lastFollowUp, locale }: { lastFollowUp?: LastFollowUp | null; locale: string }) {
+  const privacy = usePrivacy()
+  const description = privacy.enabled ? '' : lastFollowUp?.description?.trim() || ''
+  const expandLabel = locale === 'en' ? 'Read full text' : locale === 'es' ? 'Ver texto completo' : 'Ver texto completo'
+  const collapseLabel = locale === 'en' ? 'Collapse text' : locale === 'es' ? 'Contraer texto' : 'Recolher texto'
   const t = { _locale: locale }
   return <>
       {lastFollowUp && (() => {
@@ -61,6 +68,17 @@ export function FollowUpBadge({ lastFollowUp, locale }: { lastFollowUp?: LastFol
             <span className="text-[10px] font-semibold" style={{ color: color.color, opacity: 0.8 }}>
               · {formatFuDate(when, t._locale)}
             </span>
+            {description && (
+              <details className="group w-full min-w-0 text-xs" style={{ color: color.color, overflowWrap: 'anywhere' }}
+                onClick={e => e.stopPropagation()} onPointerDown={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
+                <summary className="cursor-pointer list-none rounded focus-visible:outline-2 focus-visible:outline-offset-2">
+                  <span className="block whitespace-pre-wrap line-clamp-3 group-open:hidden">{description.length > 240 ? `${description.slice(0, 240)}…` : description}</span>
+                  <span className="block mt-1 text-[10px] underline group-open:hidden">{expandLabel}</span>
+                  <span className="hidden text-[10px] underline group-open:block">{collapseLabel}</span>
+                </summary>
+                <p className="mt-1 max-h-48 overflow-y-auto whitespace-pre-wrap" tabIndex={0}>{description}</p>
+              </details>
+            )}
           </div>
         )
       })()}

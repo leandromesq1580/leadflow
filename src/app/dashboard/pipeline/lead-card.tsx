@@ -1,6 +1,7 @@
 'use client'
 
 import { FollowUpBadge } from '@/components/follow-up-badge'
+import type { LastFollowUp } from '@/lib/pipeline-follow-ups'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { getStaleness } from '@/lib/stale-leads'
@@ -18,12 +19,6 @@ interface Lead extends LeadLanguageFields {
 }
 
 interface TeamMember { id: string; name: string }
-
-interface LastFollowUp {
-  type: string
-  scheduled_at: string | null
-  created_at: string
-}
 
 interface Props {
   pipelineLeadId: string
@@ -126,6 +121,8 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
       </div>
 
       <div className="mb-2.5 ml-[42px]"><LeadLanguageBadge lead={lead} /></div>
+      {/* Último follow-up registrado, imediatamente abaixo do idioma. */}
+      {lastFollowUp && <div className="mb-2.5 ml-[42px] min-w-0"><FollowUpBadge lastFollowUp={lastFollowUp} locale={t._locale} /></div>}
 
       {/* Phone */}
       {lead.phone && (
@@ -135,8 +132,6 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
         </div>
       )}
 
-      {/* Último follow-up */}
-      {lastFollowUp && <div className="mb-2.5 ml-[42px]"><FollowUpBadge lastFollowUp={lastFollowUp} locale={t._locale} /></div>}
       {/* Footer */}
       <div className="flex items-center justify-between ml-[42px]">
         <div className="flex items-center gap-1.5">
