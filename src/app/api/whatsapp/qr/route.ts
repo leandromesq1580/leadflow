@@ -27,7 +27,10 @@ export async function GET() {
 
   // Get status from bridge
   try {
-    const statusRes = await fetch(`${bridge.url}/status`, {
+    // wake=1: avisa o bridge que alguém está olhando a tela de conexão. Canal parado
+    // em QR sem ninguém olhando derruba o Chrome (idle) pra não afogar a VPS; o wake
+    // sobe o Chrome de novo e o QR volta em ~30s (UI mostra 'starting' enquanto isso).
+    const statusRes = await fetch(`${bridge.url}/status?wake=1`, {
       headers: { apikey: bridge.key },
       signal: AbortSignal.timeout(10000),
     })
@@ -46,7 +49,7 @@ export async function GET() {
     }
 
     // Sync DB status
-    const newStatus = status.ready ? 'connected' : (status.hasQR ? 'pending_qr' : 'starting')
+    const newStatus = status.ready ? 'connected' : (status.hasQR && !status.idle ? 'pending_qr' : 'starting')
     const updates: Record<string, unknown> = { wa_bridge_status: newStatus }
     if (status.ready && status.number) updates.wa_bridge_phone = String(status.number)
     await db.from('buyers').update(updates).eq('id', buyer.id)
