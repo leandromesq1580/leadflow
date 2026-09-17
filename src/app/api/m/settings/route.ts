@@ -22,7 +22,13 @@ export async function GET() {
   let activeStates: string[] = []
   let activeAvailability: string[] = []
   try { const { data } = await db.from('buyer_states').select('state_code').eq('buyer_id', buyer.id); activeStates = (data || []).map((s: any) => s.state_code) } catch {}
-  try { const { data } = await db.from('buyer_availability').select('day_type, period').eq('buyer_id', buyer.id); activeAvailability = (data || []).map((a: any) => `${a.day_type}_${a.period}`) } catch {}
+  // hours per window (set on the web app) — the mobile app cannot edit them, but must carry them on save
+  const availabilityHours: Record<string, number[] | null> = {}
+  try {
+    const { data } = await db.from('buyer_availability').select('day_type, period, hours').eq('buyer_id', buyer.id)
+    activeAvailability = (data || []).map((a: any) => `${a.day_type}_${a.period}`)
+    for (const a of (data || []) as any[]) availabilityHours[`${a.day_type}_${a.period}`] = a.hours ?? null
+  } catch {}
 
-  return NextResponse.json({ buyer, activeStates, activeAvailability })
+  return NextResponse.json({ buyer, activeStates, activeAvailability, availabilityHours })
 }

@@ -27,6 +27,7 @@ export default function MobileConfig() {
   const [notifSms, setNotifSms] = useState(false)
   const [states, setStates] = useState<string[]>([])
   const [avail, setAvail] = useState<string[]>([])
+  const [availHours, setAvailHours] = useState<Record<string, number[] | null>>({})
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [err, setErr] = useState('')
@@ -51,7 +52,7 @@ export default function MobileConfig() {
         setBuyerId(d.buyer.id)
         setName(d.buyer.name || ''); setPhone(d.buyer.phone || ''); setWhatsapp(d.buyer.whatsapp || ''); setCalLink(d.buyer.cal_link || '')
         setNotifEmail(d.buyer.notification_email !== false); setNotifSms(!!d.buyer.notification_sms)
-        setStates(d.activeStates || []); setAvail(d.activeAvailability || [])
+        setStates(d.activeStates || []); setAvail(d.activeAvailability || []); setAvailHours(d.availabilityHours || {})
       }
       setLoaded(true)
     }).catch(() => setLoaded(true))
@@ -72,7 +73,7 @@ export default function MobileConfig() {
           buyer_id: buyerId, name, phone, whatsapp, cal_link: calLink,
           notification_email: notifEmail, notification_sms: notifSms,
           states,
-          availability: avail.map(a => { const [day_type, period] = a.split('_'); return { day_type, period } }),
+          availability: avail.map(a => { const [day_type, period] = a.split('_'); return { day_type, period, hours: availHours[a] ?? null } }),
         }),
       })
       if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || L('Erro', 'Error', 'Error')) }
