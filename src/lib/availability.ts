@@ -23,11 +23,17 @@ export type Period = 'morning' | 'afternoon' | 'evening'
 export interface AvailabilityRow { day_type: string; period: string; hours?: number[] | null }
 
 /** Horas (locais) que cada período cobre — fonte única pra UI e validação. */
+// Regra do dono (17/09/2026): a NOITE vai das 6 PM até 7:59 AM do dia seguinte.
+// "Período inteiro" na noite = recebe de madrugada também (alguns clientes não se
+// importam); quem não quer madrugada marca só as horas (6 PM, 7 PM, 8 PM...).
 export const PERIOD_HOURS: Record<Period, number[]> = {
   morning: [8, 9, 10, 11],
   afternoon: [12, 13, 14, 15, 16, 17],
-  evening: [18, 19, 20],
+  evening: [18, 19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6, 7],
 }
+
+/** Hora em que o "dia" da disponibilidade vira: 0h–7h ainda pertencem à NOITE do dia anterior. */
+export const DAY_ROLLOVER_HOUR = 8
 
 /** Rótulo de hora no padrão americano: 8 → "8 AM", 12 → "12 PM", 20 → "8 PM". */
 export function hourLabel(h: number): string {
@@ -95,22 +101,30 @@ export function buyerTimezone(states: string[] | null | undefined): string {
   return top[0]
 }
 
-/** Janela atual (day_type + period) no fuso informado. period null = madrugada. */
+/** Janela atual (day_type + period) no fuso informado. */
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
 export function currentWindow(tz: string, now: Date = new Date()): { day_type: DayType; period: Period | null; hour: number } {
-  let weekday = 'Mon'
+  let todayName = 'Mon'
   let hour = 12
   try {
     const parts = new Intl.DateTimeFormat('en-US', {
       timeZone: tz, weekday: 'short', hour: '2-digit', hour12: false,
     }).formatToParts(now)
-    weekday = parts.find(p => p.type === 'weekday')?.value || weekday
+    todayName = parts.find(p => p.type === 'weekday')?.value || todayName
     const h = parts.find(p => p.type === 'hour')?.value
     if (h != null) hour = parseInt(h, 10) % 24 // '24' → 0
   } catch { /* tz inválido → usa defaults */ }
+  // Madrugada (0h–7h) é o fim da NOITE que começou às 6 PM do dia ANTERIOR: quem marcou
+  // "Mon-Fri · Noite" recebe na madrugada de sábado (noite de sexta), mas não na de
+  // segunda (noite de domingo). O dia anterior é obtido girando o NOME do dia (calendário),
+  // nunca subtraindo horas reais — na virada do horário de verão a noite tem 9h/7h e a
+  // subtração cai no dia errado às 7h (verificado: fall-back 01/11 e spring-forward 09/03).
+  const idx = WEEKDAYS.indexOf(todayName)
+  const weekday = hour < DAY_ROLLOVER_HOUR && idx >= 0 ? WEEKDAYS[(idx + 6) % 7] : todayName
 
   const day_type: DayType = weekday === 'Sat' ? 'saturday' : weekday === 'Sun' ? 'sunday' : 'weekday'
-  // O período vem de PERIOD_HOURS (as MESMAS horas que a tela oferece). Hora fora
-  // delas (madrugada, 6-7h, 21h-23h) = nenhum período → comprador indisponível.
+  // O período vem de PERIOD_HOURS (as MESMAS horas que a tela oferece); as 24h estão cobertas.
   const period: Period | null =
     (Object.keys(PERIOD_HOURS) as Period[]).find(p => PERIOD_HOURS[p].includes(hour)) ?? null
 
@@ -126,7 +140,7 @@ export function isAvailableNow(rows: AvailabilityRow[] | null | undefined, tz: s
   // Sem config = disponível sempre (não penaliza quem nunca configurou).
   if (!rows || rows.length === 0) return true
   const { day_type, period, hour } = currentWindow(tz, now)
-  if (!period) return false // madrugada: ninguém marca esse período
+  if (!period) return false // defesa: PERIOD_HOURS cobre as 24h, não deve acontecer
   const row = rows.find(r => r.day_type === day_type && r.period === period)
   if (!row) return false
   // Granularidade por hora: só restringe se o comprador escolheu horas.

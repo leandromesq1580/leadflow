@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { PERIOD_HOURS, hourLabel } from '@/lib/availability'
 import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n-client'
 import { MIcon } from '@/components/mobile/icons'
@@ -59,9 +60,20 @@ export default function MobileConfig() {
   }, [])
 
   const toggleState = (c: string) => setStates(p => p.includes(c) ? p.filter(s => s !== c) : [...p, c])
-  const toggleAvail = (k: string) => setAvail(p => p.includes(k) ? p.filter(a => a !== k) : [...p, k])
+  const toggleAvail = (k: string) => {
+    setAvail(p => p.includes(k) ? p.filter(a => a !== k) : [...p, k])
+    // período desligado → esquece as horas escolhidas nele
+    setAvailHours(prev => { if (!(k in prev)) return prev; const n = { ...prev }; delete n[k]; return n })
+  }
+  // Mesma regra da web: nenhuma hora = período TODO (na noite, inclui a madrugada);
+  // horas marcadas = só aquelas. Quem não quer lead de madrugada marca 6 PM, 7 PM, 8 PM.
+  const toggleHour = (key: string, h: number) => setAvailHours(prev => {
+    const cur = prev[key] || []
+    const next = cur.includes(h) ? cur.filter(x => x !== h) : [...cur, h].sort((a, b) => a - b)
+    return { ...prev, [key]: next.length ? next : null }
+  })
   const dayLabel = (d: string) => ({ weekday: L('Dias de semana', 'Weekdays', 'Días de semana'), saturday: L('Sábado', 'Saturday', 'Sábado'), sunday: L('Domingo', 'Sunday', 'Domingo'), holiday: L('Feriados', 'Holidays', 'Feriados') } as Record<string, string>)[d]
-  const periodLabel = (p: string) => ({ morning: L('Manhã', 'Morning', 'Mañana'), afternoon: L('Tarde', 'Afternoon', 'Tarde'), evening: L('Noite', 'Evening', 'Noche') } as Record<string, string>)[p]
+  const periodLabel = (p: string) => ({ morning: L('Manhã', 'Morning', 'Mañana'), afternoon: L('Tarde', 'Afternoon', 'Tarde'), evening: L('Noite (6 PM–8 AM)', 'Evening (6 PM–8 AM)', 'Noche (6 PM–8 AM)') } as Record<string, string>)[p]
 
   async function save() {
     if (saving || !buyerId) return
@@ -138,12 +150,32 @@ export default function MobileConfig() {
             {DAY_KEYS.map(d => (
               <div key={d} style={{ marginBottom: 12 }}>
                 <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 8px' }}>{dayLabel(d)}</p>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {PERIOD_KEYS.map(p => {
                     const key = `${d}_${p}`
                     return <span key={key} className={`m-chip m-tap${avail.includes(key) ? ' on' : ''}`} onClick={() => toggleAvail(key)}>{periodLabel(p)}</span>
                   })}
                 </div>
+                {PERIOD_KEYS.filter(p => avail.includes(`${d}_${p}`)).map(p => {
+                  const key = `${d}_${p}`
+                  const hrs = availHours[key] || []
+                  return (
+                    <div key={`${key}_h`} style={{ marginTop: 8, marginLeft: 4, paddingLeft: 10, borderLeft: '2px solid rgba(255,255,255,0.08)' }}>
+                      <p className="m-muted" style={{ fontSize: 11, margin: '0 0 6px' }}>
+                        {periodLabel(p)} · <span style={{ color: '#a5b4fc', fontWeight: 600 }}>
+                          {hrs.length === 0
+                            ? L('período todo', 'entire period', 'todo el período')
+                            : `${hrs.length} ${L(hrs.length > 1 ? 'horários escolhidos' : 'horário escolhido', hrs.length > 1 ? 'hours selected' : 'hour selected', hrs.length > 1 ? 'horas elegidas' : 'hora elegida')}`}
+                        </span>
+                      </p>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {PERIOD_HOURS[p].map(h => (
+                          <span key={h} className={`m-chip m-tap${hrs.includes(h) ? ' on' : ''}`} onClick={() => toggleHour(key, h)} style={{ padding: '5px 9px', fontSize: 11 }}>{hourLabel(h)}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             ))}
           </div>

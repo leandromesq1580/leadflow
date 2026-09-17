@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { periodRangeLabel } from '@/lib/availability'
 import { startCheckout } from '@/lib/checkout-client'
 import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n-client'
@@ -17,10 +18,11 @@ const DAY_TYPES = (locale: string) => [
   { key: 'sunday', label: locale === 'en' ? 'Sunday' : locale === 'es' ? 'Domingo' : 'Domingo' },
 ]
 
+// Faixa de horas vem de PERIOD_HOURS (fonte única); a noite vai até 8 AM do dia seguinte.
 const PERIODS = (locale: string) => [
-  { key: 'morning', label: locale === 'en' ? 'Morning' : locale === 'es' ? 'Mañana' : 'Manha' },
-  { key: 'afternoon', label: locale === 'en' ? 'Afternoon' : locale === 'es' ? 'Tarde' : 'Tarde' },
-  { key: 'evening', label: locale === 'en' ? 'Evening' : locale === 'es' ? 'Noche' : 'Noite' },
+  { key: 'morning' as const, label: locale === 'en' ? 'Morning' : locale === 'es' ? 'Mañana' : 'Manha', hours: periodRangeLabel('morning') },
+  { key: 'afternoon' as const, label: locale === 'en' ? 'Afternoon' : locale === 'es' ? 'Tarde' : 'Tarde', hours: periodRangeLabel('afternoon') },
+  { key: 'evening' as const, label: locale === 'en' ? 'Evening' : locale === 'es' ? 'Noche' : 'Noite', hours: periodRangeLabel('evening') },
 ]
 
 const ALL_AVAIL = DAY_TYPES('pt').flatMap(d => PERIODS('pt').map(p => `${d.key}_${p.key}`))
@@ -231,6 +233,7 @@ export default function OnboardingPage() {
                             border: `1px solid ${avail.includes(key) ? '#6366f1' : 'rgba(255,255,255,0.1)'}`,
                           }}>
                           {period.label}
+                          <span className="block text-[10px] font-medium opacity-70">{period.hours}</span>
                         </button>
                       )
                     })}
