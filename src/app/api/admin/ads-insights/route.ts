@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { readPricingCatalogOrDefault } from '@/lib/lead-pricing'
+import { callerBuyer } from '@/lib/api-auth'
 
 const AD_ACCOUNT_ID = 'act_2374409502997954'
-const LEAD_PRICE = 28 // selling price per lead (âncora jul/2026)
 
 /**
  * GET /api/admin/ads-insights — Fetch Meta Ads campaign data
@@ -10,6 +12,13 @@ const LEAD_PRICE = 28 // selling price per lead (âncora jul/2026)
  * ?breakdown=region
  */
 export async function GET(request: NextRequest) {
+  // só admin (a tela /admin/ads é gateada, mas a rota não era)
+  const db = createAdminClient()
+  const caller = await callerBuyer(db)
+  if (!caller) return NextResponse.json({ error: 'Entre novamente na sua conta.' }, { status: 401, headers: { 'Cache-Control': 'private, no-store' } })
+  if (!caller.isAdmin) return NextResponse.json({ error: 'Apenas administradores.' }, { status: 403, headers: { 'Cache-Control': 'private, no-store' } })
+  // preço de venda por lead = pacote de entrada definido em /admin/precos (era const 28)
+  const LEAD_PRICE = (await readPricingCatalogOrDefault(db)).anchorLeadCents / 100
   const url = new URL(request.url)
   const period = url.searchParams.get('period') || 'last_7d'
   const level = url.searchParams.get('level') || 'campaign'
@@ -117,7 +126,7 @@ export async function GET(request: NextRequest) {
     totals.cpl = totals.leads > 0 ? totals.spend / totals.leads : 0
     totals.roi = totals.spend > 0 ? totals.revenue / totals.spend : 0
 
-    return NextResponse.json({ rows, totals, period, level: breakdown || level })
+    return NextResponse.json({ rows, totals, period, level: breakdown || level , leadPrice: LEAD_PRICE })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

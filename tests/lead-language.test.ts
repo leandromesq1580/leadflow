@@ -80,6 +80,17 @@ test('checkout rejects missing/invalid language and sends selected language to S
       PRODUCTS: { lead: { name: 'Lead Exclusivo', packages: [{ id: 'lead_10', quantity: 10, unitPriceCents: 2800, pricePerUnit: 28 }] }, cold_lead: { name: 'Lead Frio', packages: [{ id: 'cold_25', quantity: 25, unitPriceCents: 400, pricePerUnit: 4 }] } },
       getStripe: () => ({ checkout: { sessions: { create: async (params: any) => { sessions.push(params); return { url: 'https://checkout.example.invalid/test' } } } } }),
     },
+    // catálogo de preços (/admin/precos): mesmo formato do PRODUCTS acima, lido do banco na rota real
+    '@/lib/lead-pricing': {
+      readPricingCatalog: async () => ({
+        lead: { name: 'Lead Exclusivo', packages: [{ id: 'lead_10', quantity: 10, unitPriceCents: 2800, pricePerUnit: 28 }] },
+        cold_lead: { name: 'Lead Frio', packages: [{ id: 'cold_25', quantity: 25, unitPriceCents: 400, pricePerUnit: 4 }] },
+      }),
+      findPackage: (catalog: any, id: string) => {
+        for (const productType of ['lead', 'cold_lead']) { const pkg = catalog[productType].packages.find((p: any) => p.id === id); if (pkg) return { productType, pkg } }
+        return null
+      },
+    },
     '@/lib/supabase/server': { createServerSupabase: async () => ({ auth: { getUser: async () => ({ data: { user: { id: 'test-user' } } }) } }) },
     '@/lib/supabase/admin': { createAdminClient: () => ({ from: () => chain() }) },
     '@/lib/coupons': { resolveCoupon: () => null },

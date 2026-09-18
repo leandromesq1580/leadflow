@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getStripe, PRODUCTS, type ProductType } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
+import { readPricingCatalog, findPackage, type PricedProductType } from '@/lib/lead-pricing'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveCoupon } from '@/lib/coupons'
@@ -20,22 +21,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Appointments não estão mais disponíveis para compra.' }, { status: 400 })
     }
 
-    // Find package
-    let selectedPackage = null
-    let productType: ProductType | null = null
-
-    for (const [type, product] of Object.entries(PRODUCTS)) {
-      const pkg = product.packages.find((p) => p.id === packageId)
-      if (pkg) {
-        selectedPackage = pkg
-        productType = type as ProductType
-        break
-      }
+    // Pacote no catálogo VIGENTE (definido pelo admin em /admin/precos; sem linha salva
+    // = padrão de fábrica). Falha de leitura = erro, nunca cobrar preço que não é o atual.
+    let catalog
+    try { catalog = await readPricingCatalog(createAdminClient()) }
+    catch (e) {
+      console.error('[Checkout] tabela de preços indisponível:', e instanceof Error ? e.message : e)
+      return NextResponse.json({ error: 'Compra temporariamente indisponível. Tente novamente em instantes.' }, { status: 503 })
     }
-
-    if (!selectedPackage || !productType) {
+    const found = findPackage(catalog, packageId)
+    if (!found) {
       return NextResponse.json({ error: 'Invalid package' }, { status: 400 })
     }
+    const selectedPackage = found.pkg
+    const productType: PricedProductType = found.productType
 
     // Product language is required even if the portal itself is already in Spanish.
     if (!isLeadLanguage(leadLanguage)) {
@@ -96,7 +95,7 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: `${PRODUCTS[productType].name} — ${leadLanguageLabel(leadLanguage)} — ${selectedPackage.quantity}x`,
+              name: `${catalog[productType].name} — ${leadLanguageLabel(leadLanguage)} — ${selectedPackage.quantity}x`,
               description: `${selectedPackage.quantity} ${productType === 'cold_lead' ? 'leads frios' : 'leads exclusivos'} · ${leadLanguageLabel(leadLanguage)} · ${buyer.name || buyer.email}${quote.source === 'sales_team' ? ' · preço de equipe' : quote.couponCode ? ` · cupom ${quote.couponCode}` : ''}`,
             },
             unit_amount: unitPriceCents,
@@ -117,11 +116,11 @@ export async function POST(request: NextRequest) {
         price_source: quote.source,
         sales_team_member: String(teamPricing.is_member),
         referral_discount_cents: String(referralDiscount),
-        product_description: `${selectedPackage.quantity} ${PRODUCTS[productType].name} — ${leadLanguageLabel(leadLanguage)}`,
+        product_description: `${selectedPackage.quantity} ${catalog[productType].name} — ${leadLanguageLabel(leadLanguage)}`,
         ...policyMetadata,
       },
       payment_intent_data: {
-        description: `${selectedPackage.quantity}x ${PRODUCTS[productType].name} — ${leadLanguageLabel(leadLanguage)} — ${buyer.name || buyer.email}`,
+        description: `${selectedPackage.quantity}x ${catalog[productType].name} — ${leadLanguageLabel(leadLanguage)} — ${buyer.name || buyer.email}`,
         metadata: { buyer_id: buyer.id, package_id: selectedPackage.id, lead_language: leadLanguage, ...policyMetadata },
       },
       consent_collection: stripeTermsConsent,

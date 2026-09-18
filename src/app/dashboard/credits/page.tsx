@@ -1,6 +1,8 @@
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { PRODUCTS, getStripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
+import { readPricingCatalogOrDefault } from '@/lib/lead-pricing'
+import { moneyFromDollars } from '@/lib/money'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { BuyButton } from './buy-button'
@@ -54,7 +56,8 @@ export default async function CreditsPage({
   const totalAppts = allCredits.filter(c => c.type === 'appointment').reduce((s, c) => s + c.total_purchased - c.total_used, 0)
 
   const teamPricing = await readSalesTeamPricing(db, buyer.id)
-  const leadPackages = PRODUCTS.lead.packages.map(pkg => {
+  const catalog = await readPricingCatalogOrDefault(db) // preços definidos em /admin/precos
+  const leadPackages = catalog.lead.packages.map(pkg => {
     const quote = purchaseUnitPrice('lead', pkg.unitPriceCents, teamPricing)
     return { ...pkg, pricePerUnit: quote.unitPriceCents / 100, totalDisplay: quote.unitPriceCents * pkg.quantity / 100 }
   })
@@ -224,27 +227,29 @@ export default async function CreditsPage({
           return (
             <div key={pkg.id} className="rounded-2xl p-6 relative" style={{ background: 'var(--bg-card)', border: params.package === pkg.id ? '2px solid var(--accent)' : '1px solid var(--border)' }}>
               <p className="text-[13px] font-medium" style={{ color: 'var(--fg-secondary)' }}>{pkg.quantity} Leads</p>
-              <p className="text-[32px] font-extrabold mt-1" style={{ color: 'var(--fg)' }}>${pkg.totalDisplay}</p>
-              <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>${pkg.pricePerUnit}/lead</p>
+              <p className="text-[32px] font-extrabold mt-1" style={{ color: 'var(--fg)' }}>{moneyFromDollars(pkg.totalDisplay)}</p>
+              <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{moneyFromDollars(pkg.pricePerUnit)}/lead</p>
               <BuyButton packageId={pkg.id} color="var(--accent)" />
             </div>
           )
         })}
       </div>
 
-      {/* Cold Lead Packages */}
+      {/* Cold Lead Packages — some da tela quando o admin deixa o frio sem pacote */}
+      {catalog.cold_lead.packages.length > 0 && <>
       <h2 className="text-[16px] font-bold mb-4" style={{ color: 'var(--fg)' }}>{L('❄️ Leads Frios (7+ dias)', '❄️ Cold Leads (7+ days)', '❄️ Leads Fríos (7+ días)')}</h2>
       <p className="text-[13px] mb-4" style={{ color: 'var(--fg-muted)' }}>{L('Preço reduzido. Entrega manual pela equipe, no idioma escolhido.', 'Reduced price. Manual delivery by our team, in the selected language.', 'Precio reducido. Entrega manual por el equipo, en el idioma seleccionado.')}</p>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        {PRODUCTS.cold_lead.packages.map((pkg) => (
+        {catalog.cold_lead.packages.map((pkg) => (
           <div key={pkg.id} className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
             <p className="text-[13px] font-medium" style={{ color: 'var(--fg-secondary)' }}>{pkg.quantity} {L('Leads Frios', 'Cold Leads', 'Leads Fríos')}</p>
-            <p className="text-[32px] font-extrabold mt-1" style={{ color: 'var(--fg)' }}>${pkg.totalDisplay}</p>
-            <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>${pkg.pricePerUnit}/lead</p>
+            <p className="text-[32px] font-extrabold mt-1" style={{ color: 'var(--fg)' }}>{moneyFromDollars(pkg.totalDisplay)}</p>
+            <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{moneyFromDollars(pkg.pricePerUnit)}/lead</p>
             <BuyButton packageId={pkg.id} color="#64748b" />
           </div>
         ))}
       </div>
+      </>}
 
       </LeadPurchaseOptions>
 

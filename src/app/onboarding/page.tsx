@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { periodRangeLabel } from '@/lib/availability'
+import { moneyFromCents } from '@/lib/money'
 import { startCheckout } from '@/lib/checkout-client'
 import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n-client'
@@ -36,6 +37,14 @@ export default function OnboardingPage() {
   const dayTypes = DAY_TYPES(t._locale)
   const periods = PERIODS(t._locale)
   const [step, setStep] = useState(1)
+  // pacote de entrada (definido em /admin/precos); padrão de fábrica até carregar
+  const [entry, setEntry] = useState({ quantity: 10, unitPriceCents: 2800, totalCents: 28000 })
+  useEffect(() => {
+    fetch('/api/pricing', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => {
+      const p = d?.lead?.packages?.[0]
+      if (p) setEntry({ quantity: p.quantity, unitPriceCents: p.unitPriceCents, totalCents: p.totalCents })
+    }).catch(() => {})
+  }, [])
   const [states, setStates] = useState<string[]>([])
   const [avail, setAvail] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
@@ -286,12 +295,12 @@ export default function OnboardingPage() {
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded text-white" style={{ background: '#6366f1' }}>POPULAR</span>
                     <div>
                       <p className="text-[14px] font-bold text-white">{L('Comprar 1º Pacote', 'Buy 1st Package', 'Comprar 1er Paquete')}</p>
-                      <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{L('10 leads exclusivos pra comecar a fechar', '10 exclusive leads to start closing', '10 leads exclusivos para empezar a cerrar')}</p>
+                      <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{L('10 leads exclusivos pra comecar a fechar', '10 exclusive leads to start closing', '10 leads exclusivos para empezar a cerrar').replace(/^10\b/, String(entry.quantity))}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-[16px] font-extrabold text-white">$280</p>
-                    <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>$28/lead</p>
+                    <p className="text-[16px] font-extrabold text-white">{moneyFromCents(entry.totalCents)}</p>
+                    <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{moneyFromCents(entry.unitPriceCents)}/lead</p>
                   </div>
                 </div>
               </button>

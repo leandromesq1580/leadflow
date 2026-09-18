@@ -17,7 +17,9 @@ export function getStripe(): Stripe {
 // Alias for backward compat — use getStripe() in API routes
 export const stripe = null as unknown as Stripe
 
-// Product configs — unitPriceCents is per-unit in cents for Stripe
+// PADRÃO DE FÁBRICA dos pacotes. O preço VIGENTE é o que o admin salvou em /admin/precos
+// (settings.lead_pricing, lido por lib/lead-pricing.ts). Só vale isto aqui enquanto o admin
+// nunca salvou. Nenhuma tela ou cobrança deve importar PRODUCTS diretamente para preço.
 export const PRODUCTS = {
   lead: {
     name: 'Lead Exclusivo',

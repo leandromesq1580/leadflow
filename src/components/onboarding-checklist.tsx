@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getLocale } from '@/lib/locale'
 import Link from 'next/link'
 import { DismissButton } from './dismiss-button'
+import { readPricingCatalogOrDefault, moneyFromCents } from '@/lib/lead-pricing'
 
 interface Props { buyerId: string }
 
@@ -16,11 +17,13 @@ export async function OnboardingChecklist({ buyerId }: Props) {
 
   if (!buyer || buyer.onboarding_dismissed) return null
 
-  const [statesRes, creditsRes, membersRes] = await Promise.all([
+  const [statesRes, creditsRes, membersRes, catalog] = await Promise.all([
     db.from('buyer_states').select('state_code').eq('buyer_id', buyerId),
     db.from('credits').select('id').eq('buyer_id', buyerId).limit(1),
     db.from('team_members').select('id').eq('buyer_id', buyerId).limit(1),
+    readPricingCatalogOrDefault(db),
   ])
+  const entry = catalog.lead.packages[0] // pacote de entrada (definido em /admin/precos)
 
   const hasStates = (statesRes.data?.length ?? 0) > 0
   const hasCredits = (creditsRes.data?.length ?? 0) > 0
@@ -43,7 +46,7 @@ export async function OnboardingChecklist({ buyerId }: Props) {
     {
       done: hasCredits,
       label: L('Compre seu primeiro pacote', 'Buy your first package', 'Compra tu primer paquete'),
-      desc: L('Comece com 10 leads exclusivos por $280', 'Start with 10 exclusive leads for $280', 'Comienza con 10 prospectos exclusivos por $280'),
+      desc: L(`Comece com ${entry.quantity} leads exclusivos por ${moneyFromCents(entry.totalCents)}`, `Start with ${entry.quantity} exclusive leads for ${moneyFromCents(entry.totalCents)}`, `Comienza con ${entry.quantity} prospectos exclusivos por ${moneyFromCents(entry.totalCents)}`),
       href: '/dashboard/credits',
     },
     {

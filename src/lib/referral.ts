@@ -22,19 +22,25 @@ const PCT_LEAD = 0.05
 
 type Db = ReturnType<typeof createAdminClient>
 
-/** Tabela fixa (valores comunicados ao cliente); fora dela cai no percentual. */
-const TABELA: Record<number, number> = {
+/**
+ * Tabela fixa (valores comunicados ao cliente); fora dela cai no percentual.
+ * Separada por tipo: com o preço de lead configurável (/admin/precos), um pedido de
+ * leads pode somar exatamente o valor de um plano CRM e NÃO pode pagar a recompensa do CRM.
+ */
+const TABELA_CRM: Record<number, number> = {
   9900: 1000,   // CRM mensal
   23700: 2500,  // CRM trimestral
   41400: 4000,  // CRM semestral
   71880: 7000,  // CRM anual
-  28000: 1500,  // 10 leads
+}
+const TABELA_LEAD: Record<number, number> = {
+  28000: 1500,  // 10 leads (catálogo original)
   65000: 3000,  // 25 leads
   115000: 5500, // 50 leads
 }
 
 export function rewardCentsFor(kind: 'crm' | 'lead', amountCents: number): number {
-  const fixo = TABELA[amountCents]
+  const fixo = (kind === 'crm' ? TABELA_CRM : TABELA_LEAD)[amountCents]
   if (fixo) return fixo
   const pct = kind === 'crm' ? PCT_CRM : PCT_LEAD
   return Math.floor((amountCents * pct) / 100) * 100 // arredonda pra dólar inteiro

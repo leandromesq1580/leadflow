@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveCoupon } from '@/lib/coupons'
-import { PRODUCTS } from '@/lib/stripe'
+import { readPricingCatalog } from '@/lib/lead-pricing'
 import { readSalesTeamPricing, purchaseUnitPrice } from '@/lib/sales-team-pricing'
 
 // Valida um cupom da plataforma pro comprador LOGADO e devolve os preços ajustados
@@ -29,9 +29,10 @@ export async function POST(request: NextRequest) {
     }
 
     const teamPricing = await readSalesTeamPricing(db, buyer!.id)
-    const quote = purchaseUnitPrice('lead', PRODUCTS.lead.packages[0].unitPriceCents, teamPricing, coupon)
+    const catalog = await readPricingCatalog(db)
+    const quote = purchaseUnitPrice('lead', catalog.anchorLeadCents, teamPricing, coupon)
     const unitPrice = quote.unitPriceCents / 100
-    const packages = PRODUCTS.lead.packages.map((p) => ({
+    const packages = catalog.lead.packages.map((p) => ({
       id: p.id,
       quantity: p.quantity,
       total: (p.quantity * quote.unitPriceCents) / 100,

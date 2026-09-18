@@ -5,7 +5,8 @@ import { startCheckout } from '@/lib/checkout-client'
 import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n-client'
 import { MIcon } from '@/components/mobile/icons'
-import { PRODUCTS } from '@/lib/stripe'
+import type { PricingPackage } from '@/lib/lead-pricing'
+import { moneyFromDollars } from '@/lib/money'
 import { PolicyCheck } from '@/components/policy-check'
 import { CRM_PLAN_LIST } from '@/lib/crm-plans'
 import type { PurchaseHistoryItem } from '@/lib/purchase-history'
@@ -13,7 +14,7 @@ import { purchaseUnitPrice, NO_TEAM_PRICING, type SalesTeamPricing } from '@/lib
 import { SalesTeamPriceNotice } from '@/components/sales-team-price-notice'
 import { LEAD_LANGUAGES, leadLanguageLabel, type LeadLanguage } from '@/lib/lead-language'
 
-interface CreditsData { totalLeads: number; totalAppts: number; leadsByLanguage: Record<LeadLanguage, number>; crm_plan: string; crm_subscription_status: string | null; crm_plan_key: string | null; history: PurchaseHistoryItem[]; teamPricing: SalesTeamPricing }
+interface CreditsData { totalLeads: number; totalAppts: number; leadsByLanguage: Record<LeadLanguage, number>; crm_plan: string; crm_subscription_status: string | null; crm_plan_key: string | null; history: PurchaseHistoryItem[]; teamPricing: SalesTeamPricing; catalog?: { lead: { packages: PricingPackage[] }; cold_lead: { packages: PricingPackage[] } } }
 
 export default function MobileCreditos() {
   const t = useT()
@@ -99,7 +100,9 @@ export default function MobileCreditos() {
 
   const isActive = d?.crm_subscription_status === 'active'
   const currentPlanKey = d?.crm_plan_key || null
-  const leadPkgs = PRODUCTS.lead.packages
+  // Pacotes vêm do catálogo do admin (/admin/precos) junto com os dados de crédito
+  const leadPkgs = d?.catalog?.lead.packages ?? []
+  const coldPkgs = d?.catalog?.cold_lead.packages ?? []
   const historyLabel = (item: PurchaseHistoryItem) => {
     let label: string
     if (item.productType === 'crm') {
@@ -182,7 +185,7 @@ export default function MobileCreditos() {
           <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{p.quantity} {type}</p>
           {leadLanguage && <p style={{ margin: '3px 0', fontSize: 12, fontWeight: 700, color: '#c084fc' }}>{leadLanguageLabel(leadLanguage, loc)}</p>}
           <p className="m-muted" style={{ margin: '1px 0 0', fontSize: 12 }}>
-            ${per}/{L('cada', 'each', 'cada')}
+            {moneyFromDollars(per)}/{L('cada', 'each', 'cada')}
             {isLead && cupomInfo && <span style={{ color: '#4ade80', fontWeight: 700 }}> · {cupomInfo.code}</span>}
           </p>
         </div>
@@ -353,11 +356,11 @@ export default function MobileCreditos() {
             </fieldset>
             {leadPkgs.map(p => <PkgRow key={p.id} p={p} type="Leads" isLead />)}
           </div>
-          <div className="m-card" style={{ padding: '4px 16px', marginBottom: 14 }}>
+          {coldPkgs.length > 0 && <div className="m-card" style={{ padding: '4px 16px', marginBottom: 14 }}>
             <p style={{ fontSize: 14, fontWeight: 700, margin: '14px 0 2px' }}>{L('Leads frios', 'Cold leads', 'Leads fríos')}</p>
             <p className="m-muted" style={{ fontSize: 12 }}>{L('Entrega manual pela equipe no idioma escolhido.', 'Manual delivery by our team in the selected language.', 'Entrega manual por el equipo en el idioma seleccionado.')}</p>
-            {PRODUCTS.cold_lead.packages.map(p => <PkgRow key={p.id} p={p} type={L('Frios', 'Cold', 'Fríos')} />)}
-          </div>
+            {coldPkgs.map(p => <PkgRow key={p.id} p={p} type={L('Frios', 'Cold', 'Fríos')} />)}
+          </div>}
           </>}
 
           {/* Histórico unificado: pacotes, assinatura CRM e ajustes de crédito */}

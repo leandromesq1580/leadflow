@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useT } from '@/lib/i18n-client'
+import { moneyFromDollars } from '@/lib/money'
 
 /**
  * CALCULADORA DE RENTABILIDADE — custo de compra de leads vs receita de apólices.
@@ -43,6 +44,21 @@ export default function CalculadoraPage() {
   const [qtd, setQtd] = useState(25)
 
   const [reais, setReais] = useState<Reais | null>(null)
+  // pacotes reais da casa — vêm de /admin/precos (fallback = padrão de fábrica até carregar)
+  const [pacotes, setPacotes] = useState<{ q: number; p: number }[]>([{ q: 10, p: 28 }, { q: 25, p: 26 }, { q: 50, p: 23 }])
+  const custoTocado = useRef(false) // o catálogo só semeia o custo se o usuário ainda não mexeu
+  useEffect(() => {
+    fetch('/api/pricing', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => {
+      const list = (d?.lead?.packages || []) as { quantity: number; pricePerUnit: number }[]
+      if (!list.length) return
+      setPacotes(list.map(p => ({ q: p.quantity, p: p.pricePerUnit })))
+      if (!custoTocado.current) setCusto(list[0].pricePerUnit)
+    }).catch(() => {})
+  }, [])
+  const precosPacotes = pacotes.map(p => p.p)
+  const faixaPacotes = precosPacotes.length
+    ? (Math.min(...precosPacotes) === Math.max(...precosPacotes) ? moneyFromDollars(precosPacotes[0]) : `${moneyFromDollars(Math.min(...precosPacotes))}–${moneyFromDollars(Math.max(...precosPacotes))}`)
+    : '—'
 
   useEffect(() => {
     // mesmo idiom das outras telas: cookie supabase → auth id → buyer → analytics
@@ -160,7 +176,7 @@ export default function CalculadoraPage() {
         <div style={card} className="p-5">
           <p style={secTitle}>◎ {L('PARÂMETROS DE LEADS', 'LEAD PARAMETERS', 'PARÁMETROS DE LEADS')}</p>
           {sliderRow(L('Taxa de fechamento', 'Close rate', 'Tasa de cierre'), `${taxa}%`, range(taxa, setTaxa, 1, 50))}
-          {sliderRow(L('Custo por lead', 'Cost per lead', 'Costo por lead'), money(custo), range(custo, setCusto, 3, 60), 'var(--fg)', L('pacotes: $23–$28', 'packages: $23–$28','paquetes: $23–$28'))}
+          {sliderRow(L('Custo por lead', 'Cost per lead', 'Costo por lead'), money(custo), range(custo, v => { custoTocado.current = true; setCusto(v) }, 3, 60), 'var(--fg)', L(`pacotes: ${faixaPacotes}`, `packages: ${faixaPacotes}`, `paquetes: ${faixaPacotes}`))}
           {sliderRow('Chargebacks', `${cb}%`, range(cb, setCb, 0, 30), '#dc2626')}
         </div>
 
@@ -205,14 +221,13 @@ export default function CalculadoraPage() {
         <div className="flex items-center justify-between gap-3 flex-wrap px-5 py-3" style={{ background: 'var(--bg-soft)', borderBottom: '1px solid var(--border)' }}>
           <p style={secTitle}>🛒 {L('SIMULE SUA COMPRA DE LEADS', 'SIMULATE YOUR LEAD PURCHASE', 'SIMULA TU COMPRA DE LEADS')}</p>
           <div className="flex items-center gap-2 flex-wrap">
-            {/* pacotes reais da casa (âncora stripe.ts jul/2026): 10=$28, 25=$26, 50=$23 */}
-            {[{ q: 10, p: 28 }, { q: 25, p: 26 }, { q: 50, p: 23 }].map(pk => (
-              <button key={pk.q} onClick={() => { setQtd(pk.q); setCusto(pk.p) }}
+            {pacotes.map(pk => (
+              <button key={pk.q} onClick={() => { custoTocado.current = true; setQtd(pk.q); setCusto(pk.p) }}
                 className="px-3 py-1.5 rounded-lg text-[12px] font-bold"
                 style={qtd === pk.q && custo === pk.p
                   ? { background: 'linear-gradient(135deg,var(--accent),#8b5cf6)', color: 'var(--bg-card)' }
                   : { background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--fg-secondary)' }}>
-                {pk.q} leads · ${pk.p}
+                {pk.q} leads · {moneyFromDollars(pk.p)}
               </button>
             ))}
           </div>

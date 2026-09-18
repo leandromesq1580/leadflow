@@ -53,11 +53,13 @@ test('prices require integral cents within the supported range', () => {
   for (const value of [50, 2100, 2150, 100000]) assert.equal(validTeamPrice(value), true)
 })
 
-function dbMock({ pricingData = team, pricingError = null, buyer = { id: buyerId, email: 'fictional@example.com', name: 'Test', stripe_customer_id: null }, buyerError = null, writeError = null } = {}) {
+function dbMock({ pricingData = team, pricingError = null, buyer = { id: buyerId, email: 'fictional@example.com', name: 'Test', stripe_customer_id: null }, buyerError = null, writeError = null, settingsRow = null, settingsError = null } = {}) {
   const operations = []
   return { operations, from(table) {
     const op = { table, filters: [] }; operations.push(op)
+    // 'settings' = catálogo de preços (/admin/precos); null → padrão de fábrica (PRODUCTS)
     const result = () => table === 'buyers' ? { data: buyer, error: buyerError }
+      : table === 'settings' ? { data: settingsRow, error: settingsError }
       : { data: op.write ? { is_member: op.write.is_member, lead_unit_price_cents: op.write.lead_unit_price_cents } : pricingData, error: op.write ? writeError : pricingError }
     const query = {
       select(columns) { op.columns = columns; return query },

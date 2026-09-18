@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import Link from 'next/link'
 import { LeadRoutingCard } from './lead-routing-card'
 
 export default function AdminSettingsPage() {
@@ -28,7 +29,6 @@ export default function AdminSettingsPage() {
     setTimeout(() => setSaved(false), 3000)
   }
 
-  const pricing = (settings.pricing || {}) as Record<string, number>
   const distribution = (settings.distribution || {}) as Record<string, unknown>
   const metaWebhook = (settings.meta_webhook || {}) as Record<string, unknown>
 
@@ -43,27 +43,13 @@ export default function AdminSettingsPage() {
         </div>
       )}
 
-      {/* Pricing */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-        <h2 className="font-bold text-gray-900 mb-4">💰 Precos</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Lead Exclusivo ($/lead)</label>
-            <input type="number" value={pricing.lead_exclusive || 22}
-              onChange={(e) => setSettings({ ...settings, pricing: { ...pricing, lead_exclusive: Number(e.target.value) } })}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Appointment ($/appt)</label>
-            <input type="number" value={pricing.appointment || 38}
-              onChange={(e) => setSettings({ ...settings, pricing: { ...pricing, appointment: Number(e.target.value) } })}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
+      {/* Preços: agora têm tela própria (/admin/precos) — a chave antiga settings.pricing não é lida por ninguém */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h2 className="font-bold text-gray-900">💰 Preços de leads</h2>
+          <p className="text-xs text-gray-400 mt-0.5">Valor do lead e pacotes (exclusivo e frio) — vale para compra, checkout, app e landing.</p>
         </div>
-        <button onClick={() => saveSetting('pricing', settings.pricing || {})} disabled={saving}
-          className="mt-4 bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 disabled:opacity-50">
-          Salvar Precos
-        </button>
+        <Link href="/admin/precos" className="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700">Gerenciar preços →</Link>
       </div>
 
       {/* Distribution */}

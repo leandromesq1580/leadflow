@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getStripe } from '@/lib/stripe'
 import { buildPurchaseHistory } from '@/lib/purchase-history'
 import { readSalesTeamPricing } from '@/lib/sales-team-pricing'
+import { readPricingCatalogOrDefault } from '@/lib/lead-pricing'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,6 +24,7 @@ export async function GET() {
   try { teamPricing = await readSalesTeamPricing(db, buyer.id) }
   catch { return NextResponse.json({ error: 'Pricing unavailable' }, { status: 503 }) }
 
+  const catalog = await readPricingCatalogOrDefault(db) // pacotes/preços definidos em /admin/precos
   const [creditsRes, paymentsRes] = await Promise.all([
     db.from('credits')
       .select('id, type, total_purchased, total_used, price_per_unit, purchased_at, stripe_payment_id, lead_language')
@@ -53,5 +55,6 @@ export async function GET() {
     crm_plan_key,
     history,
     teamPricing,
+    catalog: { lead: catalog.lead, cold_lead: catalog.cold_lead },
   }, { headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie' } })
 }

@@ -9,6 +9,8 @@ import { LiveLeadToast } from '@/components/live-lead-toast'
 import { MetaPixel } from '@/components/meta-pixel'
 import { BuyCheckoutCta } from '@/components/buy-checkout-cta'
 import { CrmPlansGrid } from '@/app/dashboard/planos/crm-plans-grid'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { readPricingCatalogOrDefault, moneyFromCents } from '@/lib/lead-pricing'
 
 export const metadata = {
   robots: { index: false, follow: false },   // versão antiga arquivada em /old
@@ -16,6 +18,7 @@ export const metadata = {
 
 export default async function LandingPage() {
   const locale = await getLocale()
+  const catalog = await readPricingCatalogOrDefault(createAdminClient()) // preços de /admin/precos
   const t = getMessages(locale)
 
   return (
@@ -225,7 +228,7 @@ export default async function LandingPage() {
       <section className="py-8 sm:py-12" style={{ background: '#f8f9fc', borderBottom: '1px solid #e8ecf4' }}>
         <div className="max-w-5xl mx-auto px-4 flex flex-wrap justify-center gap-6 sm:gap-12">
           {[
-            { n: '$28', label: t.stats.perLead },
+            { n: moneyFromCents(catalog.anchorLeadCents), label: t.stats.perLead },
             { n: '< 5min', label: t.stats.delivery },
             { n: '100%', label: t.stats.exclusive },
             { n: 'AI', label: t.stats.ai },
@@ -404,7 +407,7 @@ export default async function LandingPage() {
                 </div>
                 <p className="text-[11px] font-bold mb-2" style={{ color: '#6366f1' }}>#{s.step}</p>
                 <h3 className="text-[15px] font-extrabold mb-2" style={{ color: '#1a1a2e' }}>{s.title}</h3>
-                <p className="text-[12px] leading-relaxed" style={{ color: '#64748b' }}>{s.desc}</p>
+                <p className="text-[12px] leading-relaxed" style={{ color: '#64748b' }}>{s.desc.replace('$280', moneyFromCents(catalog.lead.packages[0].totalCents))}</p>
               </div>
             ))}
           </div>
@@ -462,16 +465,12 @@ export default async function LandingPage() {
           </div>
           <p className="text-center text-[13px] mb-7 max-w-xl mx-auto" style={{ color: '#94a3b8' }}>{t.pricing.pkg.leadsNote}</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-16 max-w-4xl mx-auto">
-            {[
-              { id: 'lead_10', qty: 10, total: 280, per: 28 },
-              { id: 'lead_25', qty: 25, total: 650, per: 26, tag: t.pricing.pkg.popular },
-              { id: 'lead_50', qty: 50, total: 1150, per: 23 },
-            ].map((p, i) => (
+            {catalog.lead.packages.map((p, i) => ({ id: p.id, qty: p.quantity, total: p.totalDisplay, per: p.pricePerUnit, tag: i === 1 ? t.pricing.pkg.popular : undefined })).map((p, i) => (
               <div key={i} className="rounded-2xl p-6 relative text-center" style={{ background: '#fff', border: p.tag ? '2px solid #6366f1' : '1px solid #e8ecf4', boxShadow: p.tag ? '0 14px 40px rgba(99,102,241,0.2)' : '0 4px 12px rgba(0,0,0,0.04)' }}>
                 {p.tag && <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap" style={{ background: '#6366f1', color: '#fff' }}>{p.tag}</span>}
                 <p className="text-[15px] font-bold" style={{ color: '#64748b' }}>{p.qty} {t.pricing.pkg.unitLeads}</p>
-                <p className="text-[38px] font-extrabold leading-none my-2" style={{ color: '#1a1a2e' }}>${p.total}</p>
-                <p className="text-[13px] font-bold mb-1" style={{ color: '#6366f1' }}>${p.per}{t.pricing.pkg.perLead}</p>
+                <p className="text-[38px] font-extrabold leading-none my-2" style={{ color: '#1a1a2e' }}>{moneyFromCents(Math.round(p.total * 100))}</p>
+                <p className="text-[13px] font-bold mb-1" style={{ color: '#6366f1' }}>{moneyFromCents(Math.round(p.per * 100))}{t.pricing.pkg.perLead}</p>
                 <div className="mb-4" />
                 <BuyCheckoutCta block packageId={p.id} label={t.pricing.pkg.buy} />
               </div>

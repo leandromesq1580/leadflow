@@ -1017,7 +1017,7 @@ fbq('init','2063191714573000');fbq('track','PageView');
       <div class="q"><button aria-expanded="false">Minha equipe já me dá um CRM grátis. Por que pagar?<span class="pm">+</span></button><div class="a"><p>O CRM grátis da equipe é genérico, em inglês, não te entrega clientes — e desaparece se você trocar de time. A Lead4Pro é SUA: seus clientes, seu número, seu histórico, para sempre. E funciona em paralelo com qualquer equipe ou upline — a gente não é IMO, não mexe no seu contrato nem na sua comissão.</p></div></div>
       <div class="q"><button aria-expanded="false">Já comprei lead uma vez e me arrependi.<span class="pm">+</span></button><div class="a"><p>Quase todo agente que chega aqui já passou por isso. A diferença está no modelo: aqui o cliente é exclusivo de verdade (1 cliente = 1 agente), chega em minutos e cai dentro de uma operação que multiplica sua chance de contato — número local, IA na ligação e follow-up automático. Na consultoria, você vê tudo funcionando ao vivo antes de decidir qualquer coisa.</p></div></div>
       <div class="q"><button aria-expanded="false">Funciona no meu estado?<span class="pm">+</span></button><div class="a"><p>Captamos clientes nos 50 estados. Você entra na fila dos estados onde tem licença e vê sua posição em tempo real, com transparência total. As vagas do seu estado são confirmadas na consultoria.</p></div></div>
-      <div class="q"><button aria-expanded="false">Quanto custa?<span class="pm">+</span></button><div class="a"><p>Com transparência, como tudo aqui: plano a partir de <b>$99/mês</b> + o pacote de clientes que você escolher (a partir de <b>$280</b>). O tamanho certo do pacote depende de quantos clientes/mês você quer receber — e na consultoria a conta é refeita com a calculadora, com os SEUS números. Você sai sabendo exatamente o investimento e o retorno esperado.</p></div></div>
+      <div class="q"><button aria-expanded="false">Quanto custa?<span class="pm">+</span></button><div class="a"><p>Com transparência, como tudo aqui: plano a partir de <b>$99/mês</b> + o pacote de clientes que você escolher (a partir de <b data-l4p-price="lead_from">$280</b>). O tamanho certo do pacote depende de quantos clientes/mês você quer receber — e na consultoria a conta é refeita com a calculadora, com os SEUS números. Você sai sabendo exatamente o investimento e o retorno esperado.</p></div></div>
       <div class="q"><button aria-expanded="false">Não entendo de tecnologia. Vou me perder?<span class="pm">+</span></button><div class="a"><p>A plataforma foi feita pra quem vende, não pra quem programa. Onboarding guiado em menos de 2 minutos, tudo em português, e a Zoe — nossa assistente — te ensina qualquer coisa, dentro da tela, a qualquer hora.</p></div></div>
       <div class="q"><button aria-expanded="false">A IA fala com o meu cliente?<span class="pm">+</span></button><div class="a"><p>Não. A IA trabalha PRA você, não no seu lugar: ela escuta, entende o momento da conversa e sugere na sua tela. Quem fala é você. Quem fecha é você.</p></div></div>
       <div class="q"><button aria-expanded="false">Ainda estou tirando minha licença. Posso entrar?<span class="pm">+</span></button><div class="a"><p>Pode se preparar: a consultoria monta seu plano pra começar com o pé direito no dia em que a licença sair — e você já conhece a fila do seu estado. Agende normalmente e conte sua situação na primeira pergunta.</p></div></div>
@@ -1179,7 +1179,7 @@ window.addEventListener('scroll',()=>{if(!rvTick){rvTick=true;requestAnimationFr
 window.addEventListener('load',rvFallback);setTimeout(rvFallback,600);
 
 /* ================= calculadora ================= */
-const PRECO_CLIENTE=28; // 🔧 valor de referência do pacote de entrada (pacote 10 = $28/cliente)
+let PRECO_CLIENTE=28; // padrão de fábrica — o valor vigente vem de /api/pricing (admin: /admin/precos)
 const fmt=n=>'$'+Math.round(n).toLocaleString('en-US');
 const rC=document.getElementById('rC'),rT=document.getElementById('rT'),rA=document.getElementById('rA'),rK=document.getElementById('rK');
 function slider(el){const p=(el.value-el.min)/(el.max-el.min)*100;el.style.setProperty('--pct',p+'%')}
@@ -1198,6 +1198,8 @@ function calc(){
   [rC,rT,rA,rK].forEach(slider);
 }
 [rC,rT,rA,rK].forEach(el=>el.addEventListener('input',calc));calc();
+/* preço vigente definido pelo admin em /admin/precos: atualiza a referência da calculadora e o "a partir de $X" */
+fetch('/api/pricing',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(d=>{const p=d&&d.lead&&d.lead.packages&&d.lead.packages[0];if(!p)return;PRECO_CLIENTE=p.pricePerUnit;document.querySelectorAll('[data-l4p-price="lead_from"]').forEach(el=>{el.textContent='$'+Math.round(p.totalDisplay).toLocaleString('en-US')});calc();}).catch(()=>{});
 
 /* ================= mapa (tile grid EUA) ================= */
 /* col,row · hot = alto volume de comunidade brasileira */
