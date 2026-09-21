@@ -14,7 +14,7 @@ import { purchaseUnitPrice, NO_TEAM_PRICING, type SalesTeamPricing } from '@/lib
 import { SalesTeamPriceNotice } from '@/components/sales-team-price-notice'
 import { LEAD_LANGUAGES, leadLanguageLabel, type LeadLanguage } from '@/lib/lead-language'
 
-interface CreditsData { totalLeads: number; totalAppts: number; leadsByLanguage: Record<LeadLanguage, number>; crm_plan: string; crm_subscription_status: string | null; crm_plan_key: string | null; history: PurchaseHistoryItem[]; teamPricing: SalesTeamPricing; catalog?: { lead: { packages: PricingPackage[] }; cold_lead: { packages: PricingPackage[] } } }
+interface CreditsData { totalLeads: number; totalAppts: number; leadsByLanguage: Record<LeadLanguage, number>; crm_plan: string; crm_subscription_status: string | null; crm_plan_key: string | null; history: PurchaseHistoryItem[]; teamPricing: SalesTeamPricing; catalog?: { lead: { packages: PricingPackage[] }; cold_lead: { packages: PricingPackage[] } }; coldStock?: Partial<Record<LeadLanguage, number>> }
 
 export default function MobileCreditos() {
   const t = useT()
@@ -179,6 +179,8 @@ export default function MobileCreditos() {
       cupomInfo ? { code: cupomInfo.code, unitPriceCents: Math.round(cupomInfo.unitPrice * 100) } : null)
     const per = quote.unitPriceCents / 100
     const total = p.quantity * per
+    // frio sem estoque no idioma escolhido = esgotado (o checkout confere de novo)
+    const soldOut = !isLead && !!leadLanguage && ((d?.coldStock?.[leadLanguage] ?? 0) < p.quantity)
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <div>
@@ -189,7 +191,7 @@ export default function MobileCreditos() {
             {isLead && cupomInfo && <span style={{ color: '#4ade80', fontWeight: 700 }}> · {cupomInfo.code}</span>}
           </p>
         </div>
-        <button onClick={() => go('/api/checkout', { packageId: p.id, leadLanguage, couponCode: isLead && cupomInfo ? cupomInfo.code : undefined })} disabled={busy || !leadLanguage} aria-label={`${L('Comprar', 'Buy', 'Comprar')} ${p.quantity} ${type} ${leadLanguage ? leadLanguageLabel(leadLanguage, loc) : ''} — $${total}`} className="m-tap" style={{ display: 'flex', alignItems: 'center', gap: 6, minHeight: 44, padding: '0 14px', borderRadius: 11, background: 'var(--m-grad)', border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: busy || !leadLanguage ? 0.5 : 1 }}>${total.toLocaleString('en-US')}</button>
+        <button onClick={() => go('/api/checkout', { packageId: p.id, leadLanguage, couponCode: isLead && cupomInfo ? cupomInfo.code : undefined })} disabled={busy || !leadLanguage || soldOut} aria-label={`${L('Comprar', 'Buy', 'Comprar')} ${p.quantity} ${type} ${leadLanguage ? leadLanguageLabel(leadLanguage, loc) : ''} — $${total}`} className="m-tap" style={{ display: 'flex', alignItems: 'center', gap: 6, minHeight: 44, padding: '0 14px', borderRadius: 11, background: 'var(--m-grad)', border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: busy || !leadLanguage || soldOut ? 0.5 : 1 }}>{soldOut ? L('Esgotado', 'Sold out', 'Agotado') : moneyFromDollars(total)}</button>
       </div>
     )
   }

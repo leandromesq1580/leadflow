@@ -794,3 +794,41 @@ export async function sendAdminAlert(message: string) {
     console.error('[Notify] Failed to send admin alert:', error)
   }
 }
+
+/**
+ * Aviso ÚNICO ao comprador quando o admin entrega leads frios (e-mail + WhatsApp).
+ * Devolve o que de fato saiu — vira lead_notification_receipts na entrega.
+ */
+export async function notifyColdLeadsDelivered(
+  buyer: { id: string; name: string; email: string; phone: string | null; notification_phone_2?: string | null },
+  count: number,
+  language: 'pt' | 'es',
+): Promise<{ email: boolean; whatsapp: boolean }> {
+  const langLabel = language === 'es' ? 'Leads em espanhol' : 'Leads BR (português)'
+  const url = `${(process.env.NEXT_PUBLIC_APP_URL || 'https://lead4producers.com').replace(/\/$/, '')}/dashboard/leads`
+  let email = false
+  try {
+    await getResend().emails.send({
+      from: (process.env.RESEND_FROM_EMAIL || 'Lead4Producers <onboarding@resend.dev>').trim(),
+      to: buyer.email,
+      subject: `❄️ ${count} leads frios entregues — Lead4Pro`,
+      html: `
+        <div style="font-family:sans-serif;max-width:500px;margin:0 auto;">
+          <div style="background:#334155;color:#fff;padding:20px;border-radius:12px 12px 0 0;"><h2 style="margin:0;">Seus leads frios chegaram</h2></div>
+          <div style="background:#f8fafc;padding:24px;border:1px solid #e2e8f0;border-radius:0 0 12px 12px;">
+            <p style="color:#64748b;margin-top:0;">Olá ${buyer.name}, entregamos <strong>${count} leads frios</strong> (${langLabel}) na sua conta. Eles já aparecem em "Meus Leads" com telefone, e-mail e estado.</p>
+            <p style="color:#64748b;">Leads frios são contatos com 7 dias ou mais — vale aquecer com mensagem antes de ligar.</p>
+            <a href="${url}" style="display:block;text-align:center;background:#334155;color:#fff;padding:14px;border-radius:8px;text-decoration:none;font-weight:700;">Ver meus leads</a>
+          </div>
+        </div>`,
+    })
+    email = true
+  } catch (e) { console.error('[ColdLeads] e-mail falhou:', e) }
+  let whatsapp = false
+  const phones = [buyer.phone, buyer.notification_phone_2].map(p => String(p || '').trim()).filter(Boolean)
+  for (const phone of phones) {
+    const ok = await sendWhatsApp(phone, `❄️ *${count} leads frios entregues — Lead4Pro*\n\n${langLabel}. Já estão em *Meus Leads* com telefone, e-mail e estado:\n${url}`)
+    whatsapp = whatsapp || ok
+  }
+  return { email, whatsapp }
+}

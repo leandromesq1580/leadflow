@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getStripe } from '@/lib/stripe'
 import { readPricingCatalogOrDefault } from '@/lib/lead-pricing'
 import { moneyFromDollars } from '@/lib/money'
+import { coldStockByLanguage } from '@/lib/cold-leads'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { BuyButton } from './buy-button'
@@ -57,6 +58,7 @@ export default async function CreditsPage({
 
   const teamPricing = await readSalesTeamPricing(db, buyer.id)
   const catalog = await readPricingCatalogOrDefault(db) // preços definidos em /admin/precos
+  const coldStock = catalog.cold_lead.packages.length ? await coldStockByLanguage(db) : { pt: 0, es: 0 }
   const leadPackages = catalog.lead.packages.map(pkg => {
     const quote = purchaseUnitPrice('lead', pkg.unitPriceCents, teamPricing)
     return { ...pkg, pricePerUnit: quote.unitPriceCents / 100, totalDisplay: quote.unitPriceCents * pkg.quantity / 100 }
@@ -245,7 +247,8 @@ export default async function CreditsPage({
             <p className="text-[13px] font-medium" style={{ color: 'var(--fg-secondary)' }}>{pkg.quantity} {L('Leads Frios', 'Cold Leads', 'Leads Fríos')}</p>
             <p className="text-[32px] font-extrabold mt-1" style={{ color: 'var(--fg)' }}>{moneyFromDollars(pkg.totalDisplay)}</p>
             <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>{moneyFromDollars(pkg.pricePerUnit)}/lead</p>
-            <BuyButton packageId={pkg.id} color="#64748b" />
+            <p className="text-[11px] mt-1" style={{ color: 'var(--fg-muted)' }}>{L('Disponíveis agora', 'Available now', 'Disponibles ahora')}: BR {coldStock.pt} · ES {coldStock.es}</p>
+            <BuyButton packageId={pkg.id} color="#64748b" quantity={pkg.quantity} stock={coldStock} />
           </div>
         ))}
       </div>

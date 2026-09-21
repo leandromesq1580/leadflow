@@ -5,6 +5,7 @@ import { getStripe } from '@/lib/stripe'
 import { buildPurchaseHistory } from '@/lib/purchase-history'
 import { readSalesTeamPricing } from '@/lib/sales-team-pricing'
 import { readPricingCatalogOrDefault } from '@/lib/lead-pricing'
+import { coldStockByLanguage } from '@/lib/cold-leads'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,6 +26,7 @@ export async function GET() {
   catch { return NextResponse.json({ error: 'Pricing unavailable' }, { status: 503 }) }
 
   const catalog = await readPricingCatalogOrDefault(db) // pacotes/preços definidos em /admin/precos
+  const coldStock = catalog.cold_lead.packages.length ? await coldStockByLanguage(db).catch(() => ({ pt: 0, es: 0 })) : { pt: 0, es: 0 }
   const [creditsRes, paymentsRes] = await Promise.all([
     db.from('credits')
       .select('id, type, total_purchased, total_used, price_per_unit, purchased_at, stripe_payment_id, lead_language')
@@ -56,5 +58,6 @@ export async function GET() {
     history,
     teamPricing,
     catalog: { lead: catalog.lead, cold_lead: catalog.cold_lead },
+    coldStock,
   }, { headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie' } })
 }

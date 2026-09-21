@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
 import { readPricingCatalog, findPackage, type PricedProductType } from '@/lib/lead-pricing'
+import { countColdStock } from '@/lib/cold-leads'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveCoupon } from '@/lib/coupons'
@@ -59,6 +60,19 @@ export async function POST(request: NextRequest) {
 
     if (!buyer) {
       return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
+    }
+
+    // ❄️ Lead frio só se vende com estoque no idioma (21/09/2026): antes o pacote era
+    // vendido com estoque zero, "entregava" 0 em silêncio e virava chargeback sem defesa.
+    if (productType === 'cold_lead') {
+      const stock = await countColdStock(db, leadLanguage)
+      if (stock < selectedPackage.quantity) {
+        return NextResponse.json({
+          error: `Sem estoque suficiente de leads frios (${leadLanguageLabel(leadLanguage)}) agora: ${stock} disponíveis para um pacote de ${selectedPackage.quantity}. Assim que houver estoque o pacote volta a ficar disponível.`,
+          code: 'COLD_STOCK',
+          stock,
+        }, { status: 409 })
+      }
     }
 
     // 🔏 CLICKWRAP (2026-07-28): sem aceite da política vigente, sem compra.

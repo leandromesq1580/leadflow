@@ -80,6 +80,8 @@ test('checkout rejects missing/invalid language and sends selected language to S
       PRODUCTS: { lead: { name: 'Lead Exclusivo', packages: [{ id: 'lead_10', quantity: 10, unitPriceCents: 2800, pricePerUnit: 28 }] }, cold_lead: { name: 'Lead Frio', packages: [{ id: 'cold_25', quantity: 25, unitPriceCents: 400, pricePerUnit: 4 }] } },
       getStripe: () => ({ checkout: { sessions: { create: async (params: any) => { sessions.push(params); return { url: 'https://checkout.example.invalid/test' } } } } }),
     },
+    // estoque de leads frios (guard do checkout): sempre suficiente neste teste
+    '@/lib/cold-leads': { countColdStock: async () => 1000 },
     // catálogo de preços (/admin/precos): mesmo formato do PRODUCTS acima, lido do banco na rota real
     '@/lib/lead-pricing': {
       readPricingCatalog: async () => ({
