@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { updateLeadRouting } from '@/lib/lead-routing-settings'
 
 interface Buyer { id: string; name: string; email: string; is_staff?: boolean }
 interface Step { email: string; limit: number; delivered: number }
 interface Routing {
+  priority_only?: boolean
   mode: 'normal' | 'exclusive' | 'random' | 'roundrobin' | 'sequential'
   exclusive_email?: string | null
   pool_emails?: string[]
@@ -29,6 +31,10 @@ export function LeadRoutingCard() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  const [prioritySaving, setPrioritySaving] = useState(false)
+  const [priorityError, setPriorityError] = useState('')
+  const [savedAdminRule, setSavedAdminRule] = useState<Routing['admin_rule']>()
+  const priorityDraft = JSON.stringify(routing.admin_rule || {}) !== JSON.stringify(savedAdminRule || {})
   const customerBuyers = buyers.filter(b => !b.is_staff)
 
   useEffect(() => { load() }, [])
@@ -41,9 +47,37 @@ export function LeadRoutingCard() {
       fetch('/api/admin/agents').then(r => r.json()).catch(() => ({ agents: [] })),
       sb.from('settings').select('value').eq('key', 'lead_routing').maybeSingle(),
     ])
+    if (lr.error) { setPriorityError('Não foi possível carregar o roteamento. Atualize a página.'); return }
     setBuyers(agentsRes.agents || [])
-    if (lr.data?.value) setRouting(lr.data.value as Routing)
+    if (lr.data?.value) {
+      const loadedRouting = lr.data.value as Routing
+      setRouting(loadedRouting)
+      setSavedAdminRule(loadedRouting.admin_rule)
+    }
     setLoaded(true)
+  }
+
+  async function togglePriorityOnly() {
+    if (!loaded || prioritySaving || saving || (priorityDraft && !routing.priority_only)) return
+    setPrioritySaving(true)
+    setPriorityError('')
+    try {
+      const response = await fetch('/api/admin/priority-only', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priority_only: routing.priority_only !== true }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Falha ao salvar')
+      setRouting(current => ({ ...current, priority_only: result.priority_only,
+        // Another tab may have changed the saved selection. Reconcile clean
+        // drafts only; edits made before or during this request stay visible.
+        admin_rule: JSON.stringify(current.admin_rule || {}) === JSON.stringify(savedAdminRule || {})
+          ? result.admin_rule ?? undefined : current.admin_rule,
+      }))
+      setSavedAdminRule(result.admin_rule ?? undefined)
+    } catch (error) {
+      setPriorityError(error instanceof Error ? error.message : 'Falha ao salvar')
+    } finally { setPrioritySaving(false) }
   }
 
   async function save() {
@@ -51,22 +85,27 @@ export function LeadRoutingCard() {
       if (!confirm('O limite diário está em ZERO. Isso bloqueia TODOS os leads pela regra de prioridade, mesmo com agentes selecionados. Deseja salvar esse bloqueio? Para permitir entregas sem teto diário, clique em Cancelar e depois em “Remover limite diário”.')) return
     }
     setSaving(true)
-    const sb = createClient()
-    // Protege contra lost-update: o poll pode ter incrementado o "delivered" enquanto
-    // o card estava aberto. Re-lê do banco e mantém o MAIOR valor por etapa (nunca reverte a contagem).
-    let toSave = routing
-    if (routing.mode === 'sequential' && routing.steps?.length) {
-      const { data: fresh } = await sb.from('settings').select('value').eq('key', 'lead_routing').maybeSingle()
-      const freshSteps = ((fresh?.value as Routing)?.steps) || []
-      toSave = {
-        ...routing,
-        steps: routing.steps.map((s, i) => ({ ...s, delivered: Math.max(s.delivered || 0, freshSteps[i]?.delivered || 0) })),
-      }
-    }
-    const { error } = await sb.from('settings').upsert({ key: 'lead_routing', value: toSave as any, updated_at: new Date().toISOString() })
-    setSaving(false)
-    if (error) { alert('Falha ao salvar o roteamento: ' + error.message); return }
-    setRouting(toSave)
+    try {
+      const sb = createClient()
+      const value = await updateLeadRouting(sb, current => {
+        const freshSteps = (current.steps as Step[] | undefined) || []
+        return {
+          ...current, ...routing,
+          // This form never owns the immediate switch or the queue-order selector.
+          priority_only: current.priority_only === true,
+          queue_order: current.queue_order,
+          steps: routing.steps?.map((step, i) => ({ ...step,
+            delivered: freshSteps[i]?.email === step.email
+              ? Math.max(step.delivered || 0, freshSteps[i].delivered || 0) : step.delivered,
+          })),
+        }
+      })
+      setRouting(value as unknown as Routing)
+      setSavedAdminRule((value as unknown as Routing).admin_rule)
+    } catch (error) {
+      alert('Falha ao salvar o roteamento: ' + (error instanceof Error ? error.message : 'tente novamente'))
+      return
+    } finally { setSaving(false) }
     setSaved(true); setTimeout(() => setSaved(false), 3000)
   }
 
@@ -109,7 +148,9 @@ export function LeadRoutingCard() {
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
       <h2 className="font-bold text-gray-900 mb-1">🧭 Roteamento de Leads</h2>
       <p className="text-xs text-gray-400 mb-4">Para onde vão os próximos leads que chegarem do Meta</p>
-      <p className="text-xs text-indigo-700 bg-indigo-50 rounded-lg p-3 mb-4">Funcionários ficam fora da fila e dos roteamentos por crédito. Para direcionar leads a um funcionário, selecione-o explicitamente na Regra do Administrador abaixo; essa entrega não consome créditos.</p>
+      <p className="text-xs text-indigo-700 bg-indigo-50 rounded-lg p-3 mb-4">{routing.priority_only
+        ? 'Somente os prioritários salvos recebem leads automáticos. Funcionários selecionados também precisam de crédito no idioma do lead; cada entrega consome um crédito e respeita licença, horários e teto diário.'
+        : 'Funcionários ficam fora da fila e dos roteamentos por crédito. Para direcionar leads a um funcionário, selecione-o explicitamente na Regra do Administrador abaixo; essa entrega não consome créditos.'}</p>
 
       {/* Seletor de modo */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5">
@@ -204,6 +245,18 @@ export function LeadRoutingCard() {
       {/* Regra do Administrador — 1 a cada N leads (proporcional), independente do modo acima */}
       <div className="pt-4 mt-4 border-t border-gray-100">
         <label className="block text-sm font-semibold text-gray-700 mb-1">👤 Regra do Administrador</label>
+        <div className="p-3 mb-3 rounded-xl border border-indigo-200 bg-indigo-50">
+          <button type="button" role="switch" aria-checked={routing.priority_only === true}
+            disabled={!loaded || prioritySaving || saving || (priorityDraft && !routing.priority_only)} onClick={togglePriorityOnly}
+            className="font-semibold text-sm text-indigo-900 disabled:opacity-50">
+            Entregar somente aos prioritários — {prioritySaving ? 'Salvando…' : routing.priority_only ? 'Ligado' : 'Desligado'}
+          </button>
+          <p className="text-xs text-indigo-800 mt-2">Salva imediatamente. Ligado: todos os leads automáticos do sistema (PT e ES) ficam restritos aos destinatários da prioridade salvos, com crédito do próprio idioma, conta ativa, licença, horário e limite diário. Sem elegível, ficam pendentes; não há fallback. A proporção “1 a cada N” fica suspensa, sem apagar a seleção ou as regras anteriores.</p>
+          <p className="text-xs text-indigo-800 mt-1">Salve alterações nos destinatários antes de ligar. Ao desligar, volta o roteamento anterior. Leads históricos, manuais e agendamentos não são reatribuídos.</p>
+          {priorityDraft && <p role="status" className="text-sm text-amber-800 mt-2">Regra de prioridade com alterações não salvas (rascunho). A seleção e o limite salvos continuam valendo. Salve o roteamento antes de ligar.</p>}
+          {routing.priority_only && !savedAdminRule?.admin_emails?.length && <p role="status" className="text-sm text-amber-800 mt-2">Nenhum prioritário salvo: leads automáticos ficam pendentes.</p>}
+          {priorityError && <p role="alert" className="text-sm text-red-700 mt-2">{priorityError}</p>}
+        </div>
         <p className="text-[11px] text-gray-400 mb-3">
           A cada <b>N leads do sistema</b>, 1 vai pro(s) destinatário(s) (em rodízio), com PRIORIDADE sobre o roteamento abaixo e respeitando a licença de estado. <b>Cliente paga 1 crédito por entrega e para automaticamente quando o saldo líquido chega a zero ou fica negativo.</b> Somente funcionário explicitamente marcado recebe por esta regra sem débito. Ex.: <b>3</b> = a cada 2 leads pros outros, o 3º vai para a prioridade. 0 = desligado. Dá pra combinar com um <b>teto por dia</b>; batido o teto, a vez é pulada. <i>O fallback não respeita o teto — é o último recurso.</i>
         </p>
@@ -221,7 +274,7 @@ export function LeadRoutingCard() {
         </div>
         {routing.admin_rule?.daily_max === 0 && (
           <div role="alert" className="p-3 mb-3 rounded-xl border border-red-200 bg-red-50 text-red-800 text-sm">
-            <b>Prioridade bloqueada: limite diário em zero.</b> Os agentes selecionados não receberão nenhum lead por esta regra, nem nos próximos dias, até alterar esse limite.
+            <b>{priorityDraft ? 'Rascunho: limite diário em zero.' : 'Prioridade bloqueada: limite diário em zero.'}</b> {priorityDraft ? 'Este bloqueio só passa a valer ao salvar o roteamento.' : 'Os agentes selecionados não receberão nenhum lead por esta regra, nem nos próximos dias, até alterar esse limite.'}
             <button type="button" onClick={() => setDailyMax('')} className="block mt-2 font-bold underline">Remover limite diário</button>
           </div>
         )}
@@ -240,7 +293,7 @@ export function LeadRoutingCard() {
       </div>
 
       <div className="flex items-center gap-3 mt-5">
-        <button onClick={save} disabled={saving || !loaded}
+        <button onClick={save} disabled={saving || prioritySaving || !loaded}
           className="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 disabled:opacity-50">
           {saving ? 'Salvando…' : 'Salvar Roteamento'}
         </button>
