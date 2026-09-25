@@ -94,7 +94,7 @@ export default async function CreditsPage({
   const currentPlanLabel = currentPlanKey && planLabelI18n[currentPlanKey] && locale !== 'pt'
     ? (locale === 'en' ? planLabelI18n[currentPlanKey][0] : planLabelI18n[currentPlanKey][1])
     : rawPlanLabel
-  const cancelDateStr = cancelAtEnd && periodEndTs ? new Date(periodEndTs * 1000).toLocaleDateString(dateLocale) : null
+  const cancelDateStr = cancelAtEnd && periodEndTs ? new Date(periodEndTs * 1000).toLocaleDateString(dateLocale, { timeZone: 'America/New_York' }) : null
   const localizedPlanLabel = (key: string) => {
     const plan = getCrmPlan(key)
     if (!plan) return null
@@ -262,7 +262,7 @@ export default async function CreditsPage({
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-semibold" style={{ color: 'var(--fg)' }}>{purchaseLabel(purchase)}</p>
                     <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>
-                      {new Date(purchase.purchasedAt).toLocaleDateString(dateLocale)} · {purchaseStatus(purchase)}
+                      {new Date(purchase.purchasedAt).toLocaleDateString(dateLocale, { timeZone: 'America/New_York' })} · {purchaseStatus(purchase)}
                       {purchase.note ? ` · ${purchase.note}` : ''}
                     </p>
                   </div>

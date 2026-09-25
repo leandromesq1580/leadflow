@@ -1,5 +1,7 @@
 'use client'
 
+import { formatFloridaDateTime } from '@/lib/florida-time'
+
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n-client'
@@ -14,8 +16,8 @@ function avatarBg(name: string) {
   const h = ((name?.charCodeAt(0) || 65) * 37) % 360
   return `linear-gradient(135deg, hsl(${h}, 62%, 52%), hsl(${(h + 40) % 360}, 62%, 46%))`
 }
-function hhmm(iso: string) {
-  try { return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) } catch { return '' }
+function hhmm(iso: string, locale: string) {
+  return formatFloridaDateTime(iso, locale, { hour: '2-digit', minute: '2-digit' })
 }
 
 export default function MobileThread() {
@@ -117,7 +119,7 @@ export default function MobileThread() {
                 : <a href={m.media_url} target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'underline', fontSize: 12 }}>{L('Anexo', 'Attachment', 'Adjunto')}</a>
             )}
             {m.body && <span>{m.body}</span>}
-            <span className="m-bubble-time">{hhmm(m.sent_at)}</span>
+            <span className="m-bubble-time">{hhmm(m.sent_at, loc)}</span>
             {m.direction === 'out' && m.channel !== 'sms' && m.wa_message_id && (
               <button
                 type="button"

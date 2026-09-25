@@ -1,4 +1,5 @@
 'use client'
+import { FLORIDA_TIME_ZONE } from '@/lib/florida-time'
 
 import { useState, useEffect, useRef } from 'react'
 import { useRealtime } from '@/lib/use-realtime'
@@ -328,8 +329,8 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
 
   function fmtTime(iso: string) {
     const d = new Date(iso)
-    const date = d.toLocaleDateString(t._locale === 'en' ? 'en-US' : t._locale === 'es' ? 'es-US' : 'pt-BR', { day: '2-digit', month: '2-digit' })
-    const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+    const date = d.toLocaleDateString(t._locale === 'en' ? 'en-US' : t._locale === 'es' ? 'es-US' : 'pt-BR', { timeZone: FLORIDA_TIME_ZONE, day: '2-digit', month: '2-digit' })
+    const time = d.toLocaleTimeString('en-US', { timeZone: FLORIDA_TIME_ZONE, hour: 'numeric', minute: '2-digit', hour12: true })
     return `${date} ${time}`
   }
 

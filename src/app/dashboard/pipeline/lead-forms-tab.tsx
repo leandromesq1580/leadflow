@@ -339,7 +339,7 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
             <p style={{ fontSize: 14, fontWeight: 800, color: 'var(--fg)', margin: 0 }}>{L('Nova aplicação · cadastro do cliente', 'New application · client intake', 'Nueva aplicación · registro del cliente')}</p>
             {rascunhoEm && (
               <span style={{ fontSize: 11, fontWeight: 700, color: '#059669' }}>
-                ✓ {L('Rascunho guardado', 'Draft saved', 'Borrador guardado')} {new Date(rascunhoEm).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })} — {L('pode sair e voltar', 'you can leave and come back', 'puede salir y volver')}
+                ✓ {L('Rascunho guardado', 'Draft saved', 'Borrador guardado')} {new Date(rascunhoEm).toLocaleTimeString(dateLocale, { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' })} — {L('pode sair e voltar', 'you can leave and come back', 'puede salir y volver')}
               </span>
             )}
           </div>
@@ -389,7 +389,7 @@ export function LeadFormsTab({ leadId, buyerId }: { leadId: string; buyerId: str
                   <span style={{ fontSize: 18 }}>📄</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{data.nome_completo || L('Aplicação', 'Application', 'Aplicación')}</p>
-                    <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '1px 0 0' }}>{new Date(rec.created_at).toLocaleString(dateLocale)}</p>
+                    <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '1px 0 0' }}>{new Date(rec.created_at).toLocaleString(dateLocale, { timeZone: 'America/New_York' })}</p>
                   </div>
                   <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{open ? '▲' : '▼'}</span>
                 </button>

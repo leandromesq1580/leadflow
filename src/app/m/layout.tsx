@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getLocale } from '@/lib/locale'
+import { FloridaTimeNotice } from '@/components/florida-time-notice'
 import { I18nProvider } from '@/lib/i18n-client'
 import { PrivacyProvider } from '@/lib/privacy-mode'
 import { PwaRegister } from '@/components/pwa-register'
@@ -72,6 +73,7 @@ export default async function MobileLayout({ children }: { children: React.React
           <div className="m-scroll">
             <div className="m-shell">
               <MHeader userName={buyer?.name || user.email || ''} />
+              <FloridaTimeNotice locale={locale} />
               {children}
             </div>
           </div>

@@ -82,7 +82,7 @@ export function AppointmentManager({ appointments, clients }: Props) {
       {appointments.map((a, i) => {
         const m = stMeta(a.status)
         const dt = new Date(a.scheduled_at)
-        const when = dt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+        const when = dt.toLocaleString('pt-BR', { timeZone: 'America/New_York', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
         const isEd = editing === a.id
         return (
           <div key={a.id} style={{ borderBottom: i < appointments.length - 1 ? '1px solid #f1f5f9' : 'none' }}>

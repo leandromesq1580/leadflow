@@ -30,7 +30,7 @@ function timeSinceArchived(ts: string | null, locale: string = 'pt'): string {
   if (s < 3600) return L(`há ${Math.floor(s / 60)} min`, `${Math.floor(s / 60)} min ago`, `hace ${Math.floor(s / 60)} min`)
   if (s < 86400) return L(`há ${Math.floor(s / 3600)} h`, `${Math.floor(s / 3600)} h ago`, `hace ${Math.floor(s / 3600)} h`)
   if (s < 86400 * 30) return L(`há ${Math.floor(s / 86400)} dias`, `${Math.floor(s / 86400)} days ago`, `hace ${Math.floor(s / 86400)} días`)
-  return new Date(ts).toLocaleDateString(locale === 'en' ? 'en-US' : locale === 'es' ? 'es-US' : 'pt-BR')
+  return new Date(ts).toLocaleDateString(locale === 'en' ? 'en-US' : locale === 'es' ? 'es-US' : 'pt-BR', { timeZone: 'America/New_York' })
 }
 
 export default function ArchivedLeadsPage() {

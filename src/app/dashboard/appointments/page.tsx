@@ -1,7 +1,8 @@
 'use client'
+import { formatFloridaDateTime } from '@/lib/florida-time'
 
 import { useEffect, useMemo, useState } from 'react'
-import { faixaDeHoras } from '@/lib/calendar-hours'
+
 import { TimePicker } from '@/components/time-picker'
 import { useT } from '@/lib/i18n-client'
 
@@ -27,6 +28,21 @@ interface CalendarEvent {
 }
 
 type View = 'month' | 'week' | 'day'
+
+// Calendar anchors are literal days, not instants. These helpers are display-only:
+// do not use their results in API writes or rescheduling payloads.
+const calendarDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+const eventDay = (value: string | Date) => formatFloridaDateTime(value, 'en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' })
+const eventHour = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) ? 0 : Number(formatFloridaDateTime(value, 'en-US', { hour: '2-digit', hourCycle: 'h23' }))
+function displayHours(events: CalendarEvent[], start: number, end: number) {
+  for (const event of events) {
+    const hour = eventHour(event.start)
+    if (!Number.isFinite(hour)) continue
+    if (hour < start) start = Math.max(0, hour - 1)
+    if (hour > end) end = Math.min(23, hour + 1)
+  }
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i)
+}
 
 const WEEKDAYS = (locale: string) => locale === 'en'
   ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -252,7 +268,7 @@ function LegendItem({ color, kind, label }: { color: string; kind: EventKind; la
 
 // Unified event pill with visual distinction by kind
 function EventPill({ event, onClick, compact }: { event: CalendarEvent; onClick: () => void; compact?: boolean }) {
-  const time = new Date(event.start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  const time = /^\d{4}-\d{2}-\d{2}$/.test(event.start) ? '' : formatFloridaDateTime(event.start, 'en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
   const kind = event.kind
 
   // Task: checkbox style
@@ -349,8 +365,8 @@ function MonthView({ anchor, events, onClick, onDia }: { anchor: Date; events: C
       <div className="grid grid-cols-7 grid-rows-6">
         {days.map((d, i) => {
           const inMonth = d.getMonth() === anchor.getMonth()
-          const isToday = d.toDateString() === today.toDateString()
-          const dayEvents = events.filter(e => new Date(e.start).toDateString() === d.toDateString())
+          const isToday = calendarDay(d) === eventDay(today)
+          const dayEvents = events.filter(e => eventDay(e.start) === calendarDay(d))
           return (
             <div key={i} className="min-h-[110px] p-1.5"
               style={{
@@ -393,9 +409,9 @@ function WeekView({ anchor, events, onClick }: { anchor: Date; events: CalendarE
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(start); d.setDate(start.getDate() + i); return d
   })
-  const daysStr = days.map(d => d.toDateString())
-  const doPeriodo = events.filter(e => daysStr.includes(new Date(e.start).toDateString()))
-  const hours = faixaDeHoras(doPeriodo.map(e => e.start), 7, 20)
+  const daysStr = days.map(calendarDay)
+  const doPeriodo = events.filter(e => daysStr.includes(eventDay(e.start)))
+  const hours = displayHours(doPeriodo, 7, 20)
   const today = new Date()
 
   return (
@@ -403,7 +419,7 @@ function WeekView({ anchor, events, onClick }: { anchor: Date; events: CalendarE
       <div className="grid" style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}>
         <div className="p-2" style={{ background: 'var(--bg)' }} />
         {days.map((d, i) => {
-          const isToday = d.toDateString() === today.toDateString()
+          const isToday = calendarDay(d) === eventDay(today)
           return (
             <div key={i} className="p-2 text-center"
               style={{ background: isToday ? 'var(--accent-light)' : 'var(--bg)', borderLeft: '1px solid var(--bg-soft)' }}>
@@ -420,12 +436,7 @@ function WeekView({ anchor, events, onClick }: { anchor: Date; events: CalendarE
               {hourLabel(h)}
             </div>
             {days.map((d, di) => {
-              const cell = new Date(d); cell.setHours(h)
-              const cellEnd = new Date(d); cellEnd.setHours(h + 1)
-              const cellEvents = events.filter(e => {
-                const t = new Date(e.start)
-                return t >= cell && t < cellEnd
-              })
+              const cellEvents = doPeriodo.filter(e => eventDay(e.start) === calendarDay(d) && eventHour(e.start) === h)
               return (
                 <div key={di} className="p-0.5 min-h-[50px] relative space-y-0.5"
                   style={{ borderLeft: '1px solid var(--bg-soft)' }}>
@@ -443,18 +454,13 @@ function WeekView({ anchor, events, onClick }: { anchor: Date; events: CalendarE
 }
 
 function DayView({ anchor, events, onClick }: { anchor: Date; events: CalendarEvent[]; onClick: (e: CalendarEvent) => void }) {
-  const doDia = events.filter(e => new Date(e.start).toDateString() === anchor.toDateString())
-  const hours = faixaDeHoras(doDia.map(e => e.start), 6, 22)
+  const doDia = events.filter(e => eventDay(e.start) === calendarDay(anchor))
+  const hours = displayHours(doDia, 6, 22)
   return (
     <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
       <div className="overflow-y-auto max-h-[700px]">
         {hours.map(h => {
-          const cell = new Date(anchor); cell.setHours(h, 0, 0, 0)
-          const cellEnd = new Date(anchor); cellEnd.setHours(h + 1, 0, 0, 0)
-          const cellEvents = events.filter(e => {
-            const t = new Date(e.start)
-            return t >= cell && t < cellEnd
-          })
+          const cellEvents = doDia.filter(e => eventHour(e.start) === h)
           return (
             <div key={h} className="grid" style={{ gridTemplateColumns: '80px minmax(0, 1fr)', borderTop: '1px solid var(--bg-soft)', minHeight: 70 }}>
               <div className="px-3 py-3 text-[11px]" style={{ color: 'var(--fg-muted)' }}>
@@ -597,12 +603,12 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
           </div>
           {!editing ? (
             <p className="text-[14px] font-bold mt-1" style={{ color: 'var(--fg)' }}>
-              {startDate.toLocaleDateString(dateLocale, { weekday: 'long', day: '2-digit', month: 'long' })}
+              {formatFloridaDateTime(event.start, dateLocale, { weekday: 'long', day: '2-digit', month: 'long' })}
               {L(' às ', ' at ', ' a las ')}
-              {startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+              {!/^\d{4}-\d{2}-\d{2}$/.test(event.start) && formatFloridaDateTime(event.start, 'en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
               {event.end && (
                 <span className="text-[12px] font-medium ml-1" style={{ color: 'var(--fg-secondary)' }}>
-                  {L('até', 'until', 'hasta')} {new Date(event.end).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                  {L('até', 'until', 'hasta')} {formatFloridaDateTime(event.end, 'en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                 </span>
               )}
             </p>

@@ -2,6 +2,7 @@ import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Badge } from '@/components/ui/badge'
 import { getInitials } from '@/lib/utils'
+import { formatFloridaDateTime } from '@/lib/florida-time'
 import { getLocale } from '@/lib/locale'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -13,10 +14,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const { id } = await params
   const locale = await getLocale()
   const L = (pt: string, en: string, es: string) => locale === 'en' ? en : locale === 'es' ? es : pt
-  const dateLocale = locale === 'en' ? 'en-US' : locale === 'es' ? 'es-US' : 'pt-BR'
-  const formatDate = (date: string | Date) => new Intl.DateTimeFormat(dateLocale, {
-    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
-  }).format(new Date(date))
+  const formatDate = (date: string | null) => formatFloridaDateTime(date, locale)
   const supabase = await createServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -93,8 +91,13 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             <Badge status={lead.type} />
           </div>
           <div className="rounded-xl p-4" style={{ background: 'var(--bg)' }}>
-            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Recebido em', 'Received on', 'Recibido el')}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Entrada do lead', 'Lead entry', 'Entrada del lead')}</p>
             <p className="text-[14px] font-semibold mt-1" style={{ color: 'var(--fg)' }}>{formatDate(lead.created_at)}</p>
+          </div>
+          <div className="rounded-xl p-4" style={{ background: 'var(--bg)' }}>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Entregue ao cliente (CRM)', 'Delivered to client (CRM)', 'Entregado al cliente (CRM)')}</p>
+            <p className="text-[14px] font-semibold mt-1" style={{ color: 'var(--fg)' }}>{formatDate(lead.assigned_at)}</p>
+            <p className="text-[11px] mt-1" style={{ color: 'var(--fg-muted)' }}>{L('Atribuição no CRM; não confirma recebimento no WhatsApp.', 'CRM assignment; does not confirm WhatsApp receipt.', 'Asignación en CRM; no confirma recepción en WhatsApp.')}</p>
           </div>
         </div>
       </div>

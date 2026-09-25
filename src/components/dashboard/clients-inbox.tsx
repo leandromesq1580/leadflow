@@ -1,5 +1,7 @@
 'use client'
 
+import { formatFloridaDateTime } from '@/lib/florida-time'
+
 import { useState, useEffect, useRef, useMemo } from 'react'
 
 interface Conversation {
@@ -15,7 +17,7 @@ function timeAgo(iso: string) {
   const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
   if (m < 1) return 'agora'; if (m < 60) return `${m}m`
   const h = Math.floor(m / 60); if (h < 24) return `${h}h`
-  const d = new Date(iso); return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+  return formatFloridaDateTime(iso, 'pt', { day: '2-digit', month: '2-digit' })
 }
 
 export function ClientsInbox() {
@@ -116,7 +118,7 @@ export function ClientsInbox() {
                   <div className="max-w-[78%] px-3 py-2 rounded-2xl" style={{ background: m.direction === 'out' ? '#dcf8c6' : 'var(--bg-card)', border: m.direction === 'in' ? '1px solid var(--border)' : 'none' }}>
                     {m.body && <p className="text-[13px] whitespace-pre-wrap break-words" style={{ color: 'var(--fg)' }}>{m.body}</p>}
                     {!m.body && m.media_type && <p className="text-[12px] italic" style={{ color: 'var(--fg-secondary)' }}>📎 {m.media_type}</p>}
-                    <p className="text-[9px] mt-0.5 text-right" style={{ color: 'var(--fg-muted)' }}>{new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+                    <p className="text-[9px] mt-0.5 text-right" style={{ color: 'var(--fg-muted)' }}>{formatFloridaDateTime(m.created_at, 'pt', { hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
                 </div>
               ))}

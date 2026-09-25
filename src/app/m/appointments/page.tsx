@@ -1,4 +1,5 @@
 'use client'
+import { formatFloridaDateTime } from '@/lib/florida-time'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -32,14 +33,15 @@ export default function MobileAppointments() {
   }, [])
 
   const locale = loc === 'en' ? 'en-US' : loc === 'es' ? 'es' : 'pt-BR'
-  const hhmm = (iso: string) => { try { return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) } catch { return '' } }
-  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const hhmm = (iso: string) => /^\d{4}-\d{2}-\d{2}$/.test(iso) ? '' : formatFloridaDateTime(iso, locale, { hour: '2-digit', minute: '2-digit' })
+  // Display grouping only; never reuse these calendar keys to schedule or persist events.
+  const dayKey = (iso: string | Date) => formatFloridaDateTime(iso, 'en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' })
+  const today = Date.parse(dayKey(new Date()))
   const dayLabel = (iso: string) => {
-    const d = new Date(iso); const dd = new Date(d); dd.setHours(0, 0, 0, 0)
-    const diff = Math.round((dd.getTime() - today.getTime()) / 86400000)
+    const diff = (Date.parse(dayKey(iso)) - today) / 86400000
     if (diff === 0) return L('Hoje', 'Today', 'Hoy')
     if (diff === 1) return L('Amanhã', 'Tomorrow', 'Mañana')
-    return d.toLocaleDateString(locale, { weekday: 'short', day: '2-digit', month: '2-digit' })
+    return formatFloridaDateTime(iso, locale, { weekday: 'short', day: '2-digit', month: '2-digit' })
   }
   const kindIcon = (k: string) => k === 'followup' ? 'refresh' : k === 'calendar_item' ? 'calendar' : 'calendar'
 

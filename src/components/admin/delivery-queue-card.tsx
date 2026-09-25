@@ -50,7 +50,7 @@ export function DeliveryQueueCard() {
         const sig = JSON.stringify([d.adminRule, d.admins, (d.fila || []).map((q: Row) => q.id + ':' + q.creditos)])
         if (sigRef.current && sigRef.current !== sig) { setFlash(true); setTimeout(() => { if (alive) setFlash(false) }, 2500) }
         sigRef.current = sig
-        setData(d); setUpdatedAt(new Date().toLocaleTimeString('pt-BR'))
+        setData(d); setUpdatedAt(new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/New_York' }))
       } catch { if (alive) setData(null) }
       if (alive) setLoading(false)
     }

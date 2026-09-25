@@ -864,7 +864,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                                 {fu.description}
                               </p>
                               <p className="text-[11px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>
-                                {new Date(fu.created_at).toLocaleDateString(dateLocale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })} · {typeInfo.label}
+                                {new Date(fu.created_at).toLocaleDateString(dateLocale, { timeZone: 'America/New_York', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })} · {typeInfo.label}
                               </p>
                             </>
                           )}
@@ -938,7 +938,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                         <div className="flex-1 min-w-0">
                           <p className="text-[13px] font-semibold truncate" style={{ color: 'var(--fg)' }}>{att.file_name}</p>
                           <p className="text-[11px]" style={{ color: 'var(--fg-muted)' }}>
-                            {formatFileSize(att.file_size)} · {new Date(att.created_at).toLocaleDateString(dateLocale)}
+                            {formatFileSize(att.file_size)} · {new Date(att.created_at).toLocaleDateString(dateLocale, { timeZone: 'America/New_York' })}
                           </p>
                         </div>
                         <button onClick={async () => {
