@@ -6,9 +6,9 @@ import { leadLanguageLabel, type LeadLanguage } from '@/lib/lead-language'
 
 interface Admin { id: string; nome: string; estados: string[]; regraAdmin: number | null; isFallback: boolean; receivedToday: number; dailyMax: number | null; priorityCredits: number; blockedReason: AdminRuleBlock | null; isNext: boolean; isStaff?: boolean }
 interface Row { pos: number; id: string; nome: string; creditos: number; estados: string[]; recebeuHoje?: boolean }
-interface Data { adminRule: { N: number; leadsUntilAdmin: number | null; herTurnNow: boolean; ruleAvailable: boolean; isTurn: boolean }; queueOrder?: string; admins: Admin[]; fila: Row[] }
+interface Data { priorityOnly?: boolean; pendingReason?: string | null; adminRule: { N: number; leadsUntilAdmin: number | null; herTurnNow: boolean; ruleAvailable: boolean; isTurn: boolean }; queueOrder?: string; admins: Admin[]; fila: Row[] }
 
-const BLOCK_LABELS: Record<AdminRuleBlock, string> = { disabled: 'Regra desligada', inactive: 'Conta inativa', no_license: 'Sem estado licenciado', no_credit: 'Sem crédito líquido — prioridade bloqueada', daily_paused: 'Bloqueado: limite diário = 0', daily_limit: 'Limite diário atingido' }
+const BLOCK_LABELS: Record<AdminRuleBlock, string> = { outside_hours: 'Fora do horário disponível', disabled: 'Regra desligada', inactive: 'Conta inativa', no_license: 'Sem estado licenciado', no_credit: 'Sem crédito líquido — prioridade bloqueada', daily_paused: 'Bloqueado: limite diário = 0', daily_limit: 'Limite diário atingido' }
 
 const QUEUE_LABELS: Record<string, string> = { credito: 'Crédito', antiguidade: 'Antiguidade', hibrido: 'Híbrido', rodizio: 'Rodízio' }
 
@@ -66,7 +66,9 @@ export function DeliveryQueueCard() {
 
   const ar = data?.adminRule
   const adminNome = data?.admins.filter(a => a.isNext).map(a => a.nome).join(' / ') || 'Prioridade'
-  const proximoTxt = ar
+  const proximoTxt = data?.priorityOnly
+    ? data.pendingReason || 'Somente prioritários elegíveis no estado e idioma do lead; sem fallback.'
+    : ar
     ? (ar.herTurnNow
       ? `👑 ${adminNome} — 1 a cada ${ar.N}, conforme o estado do lead`
       : `1º apto da fila no estado do lead${ar.N > 0 && !ar.ruleAvailable ? ' · prioridade bloqueada (veja o motivo abaixo)' : ar.N > 0 && ar.isTurn ? ' · prioridade sem destinatário apto nesta vez' : ar.N > 0 && ar.leadsUntilAdmin ? ` · vez da prioridade em ${ar.leadsUntilAdmin} leads, conforme estado e limite diário` : ''}`)
@@ -113,10 +115,10 @@ export function DeliveryQueueCard() {
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-semibold flex items-center gap-2 flex-wrap" style={{ color: 'var(--fg)' }}>
                   <span className="truncate">{a.nome}</span>
-                  {a.isStaff && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#eef2ff', color: '#4338ca' }}>Funcionário · sem débito de crédito</span>}
-                  {!a.isStaff && !!a.regraAdmin && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: a.priorityCredits > 0 ? '#dcfce7' : '#fee2e2', color: a.priorityCredits > 0 ? '#15803d' : '#dc2626' }}>{a.priorityCredits} créditos · prioridade consome saldo</span>}
+                  {a.isStaff && !data.priorityOnly && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#eef2ff', color: '#4338ca' }}>Funcionário · sem débito de crédito</span>}
+                  {(data.priorityOnly || !a.isStaff) && !!a.regraAdmin && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: a.priorityCredits > 0 ? '#dcfce7' : '#fee2e2', color: a.priorityCredits > 0 ? '#15803d' : '#dc2626' }}>{a.priorityCredits} créditos · prioridade consome saldo</span>}
                   <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase" style={{ background: '#ede9fe', color: '#6d28d9' }}>{a.regraAdmin ? 'prioridade' : 'reserva'}</span>
-                  {a.regraAdmin ? <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#ede9fe', color: '#6d28d9' }}>1 a cada {a.regraAdmin}</span> : null}
+                  {a.regraAdmin ? <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#ede9fe', color: '#6d28d9' }}>{data.priorityOnly ? 'exclusivo' : `1 a cada ${a.regraAdmin}`}</span> : null}
                   {a.isFallback ? <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-soft)', color: 'var(--fg-secondary)' }}>fallback</span> : null}
                 </p>
                 <div className="flex gap-1 flex-wrap mt-1"><StateChips estados={a.estados} /></div>
@@ -134,6 +136,7 @@ export function DeliveryQueueCard() {
             </div>
           ))}
 
+          {data.priorityOnly ? <div className="px-6 py-4 text-center text-[12px]" style={{ color: 'var(--fg-muted)' }}>Fila de crédito suspensa enquanto o modo exclusivo estiver ligado.</div> : <>
           <div className="px-6 py-2" style={{ background: '#fafbff' }}><p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>Fila por {(QUEUE_LABELS[data?.queueOrder || 'credito'] || 'Crédito').toLowerCase()} — recebem os outros leads</p></div>
 
           {data.fila.length === 0 ? <div className="px-6 py-4 text-center text-[12px]" style={{ color: 'var(--fg-muted)' }}>Ninguém com crédito.</div> : data.fila.map((q, i) => (
@@ -146,6 +149,7 @@ export function DeliveryQueueCard() {
               <div className="text-right flex-shrink-0"><p className="text-[18px] font-extrabold" style={{ color: '#15803d' }}>{q.creditos}</p><p className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>a receber</p></div>
             </div>
           ))}
+          </>}
         </div>
       )}
     </div>

@@ -9,7 +9,7 @@ function loadTs(relative, mocks = {}) {
   const filename = path.join(__dirname, '..', relative)
   const code = ts.transpileModule(fs.readFileSync(filename, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText
   const module = { exports: {} }
-  vm.runInNewContext(code, { module, exports: module.exports, require: name => name in mocks ? mocks[name] : name.endsWith('/lead-language') ? loadTs('src/lib/lead-language.ts') : require(name), console, Date, Intl, URL, process: { env: {} } }, { filename })
+  vm.runInNewContext(code, { module, exports: module.exports, require: name => name in mocks ? mocks[name] : name.endsWith('/lead-language') ? loadTs('src/lib/lead-language.ts') : name === '@/lib/availability' ? loadTs('src/lib/availability.ts') : require(name), console, Date, Intl, URL, process: { env: {} } }, { filename })
   return module.exports
 }
 
@@ -36,6 +36,14 @@ function fixture({ routing = {}, extra = {}, eligible = [gab, customer] } = {}) 
   const writes = [], queries = [], notices = []
   const db = { rpc: async (name, args) => {
     if (name === 'get_eligible_buyers_by_language') return { data: eligible, error: null }
+    if (name === 'assign_automatic_free_lead') {
+      const target = tables.leads.find(l => l.id === args.p_lead_id && !l.assigned_to)
+      const routing = tables.settings.find(s => s.key === 'lead_routing')?.value
+      if (!target || routing?.priority_only === true) return { data: false, error: null }
+      Object.assign(target, { assigned_to: args.p_buyer_id, status: 'assigned', delivery_credit_id: null })
+      writes.push({ table: 'leads', mode: 'rpc', value: { assigned_to: args.p_buyer_id, delivery_credit_id: null }, ids: [target.id] })
+      return { data: true, error: null }
+    }
     if (name === 'assign_paid_lead_with_credit') {
       const rows = tables.credits.filter(c => c.buyer_id === args.p_buyer_id && c.type === 'lead' && c.lead_language === args.p_language)
       const net = rows.reduce((sum, c) => sum + c.total_purchased - c.total_used, 0)
@@ -96,6 +104,39 @@ function api(relative, f) {
   })
 }
 
+for (const path of ['fallback', 'staff']) {
+  test(`OFF snapshot cannot assign free ${path} after priority-only is enabled`, async () => {
+    const f = fixture({ routing: { priority_only: false, fallback_email: customer.email }, eligible: [] })
+    const originalRpc = f.db.rpc
+    f.db.rpc = async (name, args) => {
+      if (name === 'get_eligible_buyers_by_language' || name === 'assign_automatic_free_lead') {
+        f.tables.settings.find(s => s.key === 'lead_routing').value = { priority_only: true, fallback_email: customer.email, admin_rule: { admin_emails: [] } }
+      }
+      // RPC refusal is covered with the actual migration in priority-only-db.test.ts.
+      if (name === 'assign_automatic_free_lead') return { data: false, error: null }
+      return originalRpc(name, args)
+    }
+    const originalFrom = f.db.from
+    f.db.from = table => {
+      const q = originalFrom(table)
+      const update = q.update
+      q.update = value => {
+        if (table === 'leads' && value.assigned_to) {
+          f.tables.settings.find(s => s.key === 'lead_routing').value.priority_only = true
+        }
+        return update(value)
+      }
+      return q
+    }
+    const result = path === 'fallback'
+      ? await distribution(f).distributeLeadToNextBuyer(lead)
+      : await distribution(f).tryAdminRule(lead, { admin_emails: [gab.email], one_in: 1 })
+    assert.equal(result, null)
+    assert.equal(f.writes.length, 0)
+    assert.deepEqual(f.notices, [])
+  })
+}
+
 test('only explicit staff membership excludes a buyer from routing; metrics exclusions stay separate', async () => {
   const f = fixture()
   f.tables.settings.push({ key: 'metrics_exclude_buyers', value: { buyers: [customer.id] } })
@@ -149,6 +190,18 @@ test('staff cannot receive through fallback when no customer is eligible', async
   assert.equal(await distribution(f).distributeLeadToNextBuyer(lead), null)
   assert.equal(f.writes.length, 0)
   assert.equal(f.notices.length, 0)
+})
+
+test('ONLY never grants a selected staff member a free lead; positive credit is required and debited', async () => {
+  for (const funded of [false, true]) {
+    const f = fixture({ routing: { priority_only: true, admin_rule: { admin_emails: [gab.email], one_in: 1 } },
+      ...(funded ? {} : { extra: { credits: [] } }) })
+    const result = await distribution(f).tryAdminRule(lead, { admin_emails: [gab.email], one_in: 1 })
+    assert.equal(result?.id || null, funded ? gab.id : null)
+    assert.equal(f.writes.filter(w => w.table === 'credits').length, funded ? 1 : 0)
+    if (funded) assert.equal(f.tables.credits[0].total_used, 45)
+    else assert.equal(f.writes.length, 0)
+  }
 })
 
 test('explicit priority can deliver to staff with no credits and without debiting', async () => {

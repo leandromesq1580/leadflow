@@ -1,3 +1,4 @@
+import { latestPipelineFollowUps, FOLLOW_UP_LOAD_ERROR } from '@/lib/pipeline-follow-ups'
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getLocale } from '@/lib/locale'
@@ -145,11 +146,13 @@ export async function GET(request: NextRequest) {
         stages: (pipe.stages || []).sort((a: any, b: any) => a.position - b.position),
       }
 
-      const { data: plRawAll } = await db
+      const { data: plRawAll, error: leadsError } = await db
         .from('pipeline_leads')
         .select('id, stage_id, position, moved_at, lead:leads(id, name, email, phone, city, state, interest, type, status, created_at, contract_closed, policy_value, assigned_to, assigned_to_member)')
         .eq('pipeline_id', pipe.id)
         .order('position')
+
+      if (leadsError) return NextResponse.json({ error: 'Não foi possível carregar os leads.', code: 'PIPELINE_LOAD_FAILED' }, { status: 503 })
 
       // Filtra: so leads que AINDA pertencem ao member.
       // - lead.assigned_to_member = memberId (atribuido como team_member da agencia)
@@ -162,26 +165,11 @@ export async function GET(request: NextRequest) {
         return L.assigned_to_member === memberId || L.assigned_to === memberBuyerId
       })
 
-      // Anexa ultimo follow-up (pagina pra driblar limit 1000 do PostgREST)
-      const leadIds = (plRaw || []).map((pl: any) => pl.lead?.id).filter(Boolean)
-      const latestByLead: Record<string, any> = {}
-      if (leadIds.length > 0) {
-        const PAGE = 1000
-        for (let offset = 0; offset < 20000; offset += PAGE) {
-          const { data: fus } = await db
-            .from('follow_ups')
-            .select('lead_id, type, scheduled_at, created_at')
-            .in('lead_id', leadIds)
-            // Ordena SOMENTE por created_at DESC (data do registro). Ver
-            // /api/pipelines/[id]/leads pro motivo.
-            .order('created_at', { ascending: false })
-            .range(offset, offset + PAGE - 1)
-          if (!fus || fus.length === 0) break
-          for (const fu of fus) {
-            if (!latestByLead[fu.lead_id]) latestByLead[fu.lead_id] = fu
-          }
-          if (fus.length < PAGE) break
-        }
+      let latestByLead: Awaited<ReturnType<typeof latestPipelineFollowUps>>
+      try {
+        latestByLead = await latestPipelineFollowUps(db, (plRaw || []).map((pl: any) => pl.lead?.id).filter(Boolean))
+      } catch {
+        return NextResponse.json({ error: FOLLOW_UP_LOAD_ERROR, code: 'FOLLOW_UP_LOAD_FAILED' }, { status: 503 })
       }
 
       const leads = (plRaw || []).map((pl: any) => ({
@@ -202,32 +190,20 @@ export async function GET(request: NextRequest) {
   }
 
   // 2) Fallback: membro sem conta propria — pseudo-pipeline com so "Atribuidos"
-  const { data: leadsRaw } = await db
+  const { data: leadsRaw, error: leadsError } = await db
     .from('leads')
     .select('id, name, email, phone, city, state, interest, type, status, created_at, contract_closed, policy_value, assigned_to, assigned_to_member')
     .eq('assigned_to_member', memberId)
     .order('created_at', { ascending: false })
     .limit(500)
 
-  // Popula last_follow_up
-  const leadIdsPseudo = (leadsRaw || []).map((L: any) => L.id).filter(Boolean)
-  const latestPseudo: Record<string, any> = {}
-  if (leadIdsPseudo.length > 0) {
-    const PAGE = 1000
-    for (let offset = 0; offset < 20000; offset += PAGE) {
-      const { data: fus } = await db
-        .from('follow_ups')
-        .select('lead_id, type, scheduled_at, created_at')
-        .in('lead_id', leadIdsPseudo)
-        .order('scheduled_at', { ascending: false, nullsFirst: false })
-        .order('created_at', { ascending: false })
-        .range(offset, offset + PAGE - 1)
-      if (!fus || fus.length === 0) break
-      for (const fu of fus) {
-        if (!latestPseudo[fu.lead_id]) latestPseudo[fu.lead_id] = fu
-      }
-      if (fus.length < PAGE) break
-    }
+  if (leadsError) return NextResponse.json({ error: 'Não foi possível carregar os leads.', code: 'PIPELINE_LOAD_FAILED' }, { status: 503 })
+
+  let latestPseudo: Awaited<ReturnType<typeof latestPipelineFollowUps>>
+  try {
+    latestPseudo = await latestPipelineFollowUps(db, (leadsRaw || []).map((L: any) => L.id).filter(Boolean), { scheduledFirst: true })
+  } catch {
+    return NextResponse.json({ error: FOLLOW_UP_LOAD_ERROR, code: 'FOLLOW_UP_LOAD_FAILED' }, { status: 503 })
   }
 
   const pseudoStageId = `pseudo-${memberId}`

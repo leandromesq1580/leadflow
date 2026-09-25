@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { transpileModule, ModuleKind } from 'typescript'
+import { transpileModule, ModuleKind, ScriptTarget } from 'typescript'
 import * as languages from '../src/lib/lead-language'
 
 type Query = { table: string; calls: [string, ...any[]][] }
@@ -32,7 +32,7 @@ function distribution(db: any, notifications: any[]) {
     './buyer-policy': { readBuyerPolicy: async () => ({ staffIds: new Set() }), withoutStaff: (rows: any[]) => rows },
     './automation-engine': { runAutomations: async () => ({ ran: 0, failed: 0 }) },
   }
-  const js = transpileModule(readFileSync(new URL('../src/lib/distribute.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ModuleKind.CommonJS } }).outputText
+  const js = transpileModule(readFileSync(new URL('../src/lib/distribute.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ModuleKind.CommonJS, target: ScriptTarget.ES2022 } }).outputText
   const module = { exports: {} as any }
   new Function('require', 'module', 'exports', js)((name: string) => {
     assert.ok(name in dependencies, name)
@@ -52,14 +52,21 @@ test('Spanish leads use the configured operational fallback; unknown language an
     if (q.table === 'leads') return { data: null, error: null }
     if (q.table === 'pipelines') return { data: null, error: null }
     throw new Error(`Unexpected fallback query: ${q.table}`)
-  }, async (...args) => { calls.push(args); return { data: [], error: null } })
+  }, async (...args) => {
+    calls.push(args)
+    if (args[0] === 'get_eligible_buyers_by_language') return { data: [], error: null }
+    assert.equal(args[0], 'assign_automatic_free_lead')
+    return { data: true, error: null }
+  })
   const notices: any[] = []
   const app = distribution(db, notices)
   assert.equal(await app.tryAdminRule(lead, { admin_emails: ['admin@example.invalid'], one_in: 1 }), null)
   assert.equal((await app.distributeLeadToNextBuyer(lead)).id, fallback.id)
   assert.deepEqual(calls[0], ['get_eligible_buyers_by_language', { p_product_type: 'lead', p_state: 'FL', p_language: 'es' }])
   assert.equal(await app.distributeLeadToNextBuyer({ ...lead, meta_lead_id: 'unknown', lead_language: null }), null)
-  assert.equal(calls.length, 1)
+  assert.deepEqual(calls[1], ['assign_automatic_free_lead', { p_lead_id: lead.id, p_buyer_id: fallback.id }])
+  assert.equal(calls.length, 2)
+  assert.ok(db.queries.every(q => !q.calls.some(c => c[0] === 'update')), 'fallback uses only the atomic free RPC')
   db.rpc = async () => ({ data: null, error: { message: 'test failure' } })
   assert.equal(await app.distributeLeadToNextBuyer({ ...lead, lead_language: 'pt' }), null)
   assert.equal(notices.length, 1)

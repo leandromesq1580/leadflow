@@ -1,5 +1,7 @@
 'use client'
 
+import { FollowUpBadge } from '@/components/follow-up-badge'
+import type { LastFollowUp } from '@/lib/pipeline-follow-ups'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { getStaleness } from '@/lib/stale-leads'
@@ -17,12 +19,6 @@ interface Lead extends LeadLanguageFields {
 }
 
 interface TeamMember { id: string; name: string }
-
-interface LastFollowUp {
-  type: string
-  scheduled_at: string | null
-  created_at: string
-}
 
 interface Props {
   pipelineLeadId: string
@@ -44,49 +40,6 @@ function timeAgo(date: string) {
   if (s < 3600) return `${Math.floor(s / 60)}m`
   if (s < 86400) return `${Math.floor(s / 3600)}h`
   return `${Math.floor(s / 86400)}d`
-}
-
-const FU_META_BY_LOCALE = {
-  pt: {
-    call:     { label: 'Ligação' },
-    meeting:  { label: 'Reunião' },
-    whatsapp: { label: 'WhatsApp' },
-    email:    { label: 'E-mail' },
-    note:     { label: 'Nota' },
-  },
-  en: {
-    call:     { label: 'Call' },
-    meeting:  { label: 'Meeting' },
-    whatsapp: { label: 'WhatsApp' },
-    email:    { label: 'Email' },
-    note:     { label: 'Note' },
-  },
-  es: {
-    call:     { label: 'Llamada' },
-    meeting:  { label: 'Reunión' },
-    whatsapp: { label: 'WhatsApp' },
-    email:    { label: 'Email' },
-    note:     { label: 'Nota' },
-  },
-}
-
-const FU_COLOR: Record<string, { icon: string; bg: string; color: string }> = {
-  call:     { icon: '📞', bg: '#eff6ff', color: '#1d4ed8' },
-  meeting:  { icon: '🤝', bg: 'var(--warn-line)', color: '#92400e' },
-  whatsapp: { icon: '💬', bg: 'var(--ok-line)', color: '#15803d' },
-  email:    { icon: '✉️', bg: '#f3e8ff', color: '#6b21a8' },
-  note:     { icon: '📝', bg: 'var(--bg-soft)', color: 'var(--fg-secondary)' },
-}
-
-// Horario Eastern (EUA) em AM/PM — o lead mora nos EUA, nao no Brasil
-const LEAD_TZ = 'America/New_York'
-function formatFuDate(iso: string, locale: string): string {
-  const d = new Date(iso)
-  // PT mantém dd/mm (en-GB); EN vê mm/dd (en-US); ES segue es-US
-  const dateLocale = locale === 'en' ? 'en-US' : locale === 'es' ? 'es-US' : 'en-GB'
-  const dateStr = d.toLocaleDateString(dateLocale, { timeZone: LEAD_TZ, day: '2-digit', month: '2-digit' }) // 21/04
-  const timeStr = d.toLocaleTimeString('en-US', { timeZone: LEAD_TZ, hour: 'numeric', minute: '2-digit', hour12: true }) // 6:00 PM
-  return `${dateStr} ${timeStr}`
 }
 
 export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, unreadCount = 0, lastFollowUp, teamMembers, onAssigned, onArchived, viewedMemberId }: Props) {
@@ -168,6 +121,8 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
       </div>
 
       <div className="mb-2.5 ml-[42px]"><LeadLanguageBadge lead={lead} /></div>
+      {/* Último follow-up registrado, imediatamente abaixo do idioma. */}
+      {lastFollowUp && <div className="mb-2.5 ml-[42px] min-w-0"><FollowUpBadge lastFollowUp={lastFollowUp} locale={t._locale} /></div>}
 
       {/* Phone */}
       {lead.phone && (
@@ -176,26 +131,6 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
           <span className="text-[12px] font-semibold" style={{ color: 'var(--fg-secondary)' }}>{privacy.mask(lead.phone, 'phone')}</span>
         </div>
       )}
-
-      {/* Último follow-up */}
-      {lastFollowUp && (() => {
-        const color = FU_COLOR[lastFollowUp.type] || FU_COLOR.note
-        const labels = FU_META_BY_LOCALE[t._locale as keyof typeof FU_META_BY_LOCALE] || FU_META_BY_LOCALE.pt
-        const label = (labels as any)[lastFollowUp.type]?.label || (labels as any).note.label
-        const when = lastFollowUp.scheduled_at || lastFollowUp.created_at
-        return (
-          <div className="flex items-center gap-1.5 mb-2.5 ml-[42px] px-2 py-1 rounded-md"
-            style={{ background: color.bg }}>
-            <span className="text-[11px]">{color.icon}</span>
-            <span className="text-[10px] font-extrabold uppercase tracking-wide" style={{ color: color.color }}>
-              {label}
-            </span>
-            <span className="text-[10px] font-semibold" style={{ color: color.color, opacity: 0.8 }}>
-              · {formatFuDate(when, t._locale)}
-            </span>
-          </div>
-        )
-      })()}
 
       {/* Footer */}
       <div className="flex items-center justify-between ml-[42px]">

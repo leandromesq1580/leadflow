@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sanitizeHours } from '@/lib/availability'
+import { callerBuyer, canActAs } from '@/lib/api-auth'
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url)
@@ -18,80 +19,82 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(buyer)
 }
 
+const stateCodes = new Set('AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY DC'.split(' '))
+const days = new Set(['weekday', 'saturday', 'sunday', 'holiday'])
+const periods = new Set(['morning', 'afternoon', 'evening'])
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { buyer_id, auth_user_id, name, phone, whatsapp, notification_phone_2, cal_link, notification_email, notification_sms, states, availability, is_agency, team_distribution_mode } = body
-
     const db = createAdminClient()
-
-    // Resolve buyer_id from auth_user_id if needed
+    const caller = await callerBuyer(db)
+    if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const body = await request.json().catch(() => null)
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json({ error: 'Invalid settings' }, { status: 400 })
+    }
+    const { buyer_id, auth_user_id, states, availability } = body
     let resolvedBuyerId = buyer_id
     if (!resolvedBuyerId && auth_user_id) {
-      const { data: buyer } = await db.from('buyers').select('id').eq('auth_user_id', auth_user_id).single()
-      resolvedBuyerId = buyer?.id
-    }
-
-    if (!resolvedBuyerId) {
-      return NextResponse.json({ error: 'Missing buyer_id' }, { status: 400 })
-    }
-
-    // Update buyer profile
-    const updateData: Record<string, unknown> = {}
-    if (name !== undefined) updateData.name = name
-    if (phone !== undefined) updateData.phone = phone
-    if (whatsapp !== undefined) updateData.whatsapp = whatsapp
-    // 2º número de notificação (só destinatário — não conecta bridge). '' → null.
-    if (notification_phone_2 !== undefined) updateData.notification_phone_2 = String(notification_phone_2 || '').trim() || null
-    if (cal_link !== undefined) updateData.cal_link = cal_link
-    if (notification_email !== undefined) updateData.notification_email = notification_email
-    if (notification_sms !== undefined) updateData.notification_sms = notification_sms
-    if (is_agency !== undefined) updateData.is_agency = is_agency
-    if (team_distribution_mode !== undefined) updateData.team_distribution_mode = team_distribution_mode
-
-    if (Object.keys(updateData).length > 0) {
-      const { error } = await db.from('buyers').update(updateData).eq('id', resolvedBuyerId)
-      if (error) throw error
-    }
-
-    // Update states: delete all, then insert new
-    const { error: statesDeleteError } = await db.from('buyer_states').delete().eq('buyer_id', resolvedBuyerId)
-    if (statesDeleteError) throw statesDeleteError
-    if (states && states.length > 0) {
-      const { error } = await db.from('buyer_states').insert(
-        states.map((state_code: string) => ({ buyer_id: resolvedBuyerId, state_code }))
-      )
-      if (error) throw error
-    }
-
-    // Update availability: delete all, then insert new
-    const { error: availabilityDeleteError } = await db.from('buyer_availability').delete().eq('buyer_id', resolvedBuyerId)
-    if (availabilityDeleteError) throw availabilityDeleteError
-    if (availability && availability.length > 0) {
-      // `hours` = granularidade opcional de 1h. Vazio → null = período inteiro.
-      // sanitizeHours descarta hora fora do período (payload adulterado).
-      type AvailRow = { buyer_id: string; day_type: string; period: string; hours: number[] | null }
-      const rows: AvailRow[] = availability.map((a: { day_type: string; period: string; hours?: number[] | null }) => {
-        const hrs = sanitizeHours(a.period, a.hours)
-        return { buyer_id: resolvedBuyerId, day_type: a.day_type, period: a.period, hours: hrs.length ? hrs : null }
-      })
-      const ins = await db.from('buyer_availability').insert(rows)
-      // Tolerante à migration 030 não ter rodado ainda: regrava sem `hours`
-      // (= período inteiro) em vez de estourar e perder a config toda.
-      if (ins.error && /hours/i.test(ins.error.message || '')) {
-        console.warn('[Settings] coluna `hours` ausente — rode a migration 030. Salvando período inteiro.')
-        const fallback = await db.from('buyer_availability').insert(
-          rows.map(r => ({ buyer_id: r.buyer_id, day_type: r.day_type, period: r.period }))
-        )
-        if (fallback.error) throw fallback.error
-      } else if (ins.error) {
-        throw ins.error
+      if (!caller.isAdmin && auth_user_id !== caller.authUserId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
+      const { data: buyer, error } = await db.from('buyers').select('id').eq('auth_user_id', auth_user_id).single()
+      if (error || !buyer) return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
+      resolvedBuyerId = buyer.id
     }
+    if (typeof resolvedBuyerId !== 'string' || !uuid.test(resolvedBuyerId)) {
+      return NextResponse.json({ error: 'Invalid buyer_id' }, { status: 400 })
+    }
+    if (!canActAs(caller, resolvedBuyerId)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
+    // Omitted collections mean preserve; only an explicit array means replace.
+    // Validate the whole payload BEFORE any mutation (null is not an empty list).
+    if (states !== undefined && (!Array.isArray(states) || states.some(s => typeof s !== 'string' || !stateCodes.has(s)))) {
+      return NextResponse.json({ error: 'Invalid states' }, { status: 400 })
+    }
+    if (availability !== undefined && (!Array.isArray(availability) || availability.some(a =>
+      !a || typeof a !== 'object' || !days.has(a.day_type) || !periods.has(a.period)
+      || (a.hours != null && !Array.isArray(a.hours))))) {
+      return NextResponse.json({ error: 'Invalid availability' }, { status: 400 })
+    }
+    const profile: Record<string, unknown> = {}
+    for (const key of ['name', 'phone', 'whatsapp', 'notification_phone_2', 'cal_link']) {
+      if (body[key] === undefined) continue
+      if (body[key] !== null && typeof body[key] !== 'string') return NextResponse.json({ error: 'Invalid profile' }, { status: 400 })
+      profile[key] = key === 'notification_phone_2' ? (body[key] || '').trim() || null : body[key]
+    }
+    for (const key of ['notification_email', 'notification_sms', 'is_agency']) {
+      if (body[key] === undefined) continue
+      if (typeof body[key] !== 'boolean') return NextResponse.json({ error: 'Invalid profile' }, { status: 400 })
+      profile[key] = body[key]
+    }
+    if (body.team_distribution_mode !== undefined) {
+      if (!['manual', 'auto_roundrobin'].includes(body.team_distribution_mode)) return NextResponse.json({ error: 'Invalid team mode' }, { status: 400 })
+      profile.team_distribution_mode = body.team_distribution_mode
+    }
+    type AvailabilityInput = { day_type: string; period: string; hours?: unknown }
+    const rows = availability === undefined ? null : (availability as AvailabilityInput[]).map(a => {
+      const hours = sanitizeHours(a.period, a.hours)
+      return { day_type: a.day_type, period: a.period, hours: hours.length ? hours : null }
+    })
+    if (rows && new Set(rows.map(a => `${a.day_type}:${a.period}`)).size !== rows.length) {
+      return NextResponse.json({ error: 'Duplicate availability' }, { status: 400 })
+    }
+    const { error } = await db.rpc('save_buyer_settings', {
+      p_buyer_id: resolvedBuyerId,
+      p_profile: profile,
+      p_states: states === undefined ? null : [...new Set(states as string[])],
+      p_availability: rows,
+    })
+    if (error) {
+      // Never log the request/profile or raw database error (may contain PII).
+      console.error('[Settings] Save failed', { code: error.code })
+      return NextResponse.json({ error: 'Failed to save; previous settings preserved' }, { status: 500 })
+    }
     return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('[Settings] Error:', error)
+  } catch {
+    console.error('[Settings] Save unavailable')
     return NextResponse.json({ error: 'Failed to save' }, { status: 500 })
   }
 }

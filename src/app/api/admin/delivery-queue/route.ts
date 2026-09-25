@@ -5,6 +5,7 @@ import { adminDailyBlock, adminRuleTurn, easternDayStartISO, evaluateAdminRule }
 import { readAdminRuleState } from '@/lib/admin-rule-state'
 import { readBuyerPolicy } from '@/lib/buyer-policy'
 import { isLeadLanguage } from '@/lib/lead-language'
+import { buyerTimezone, isAvailableNow } from '@/lib/availability'
 
 /**
  * GET /api/admin/delivery-queue — Fila ÚNICA com integridade total.
@@ -27,6 +28,30 @@ export async function GET(request?: NextRequest) {
   const { data: rt, error: routingError } = await db.from('settings').select('value').eq('key', 'lead_routing').maybeSingle()
   if (routingError) return NextResponse.json({ error: 'Não foi possível verificar o roteamento.' }, { status: 503 })
   const routing: any = rt?.value || {}
+  if (routing.priority_only === true) {
+    try {
+      const rule = routing.admin_rule || {}
+      const snapshot = await readAdminRuleState(db, rule, language)
+      const admins = await Promise.all(snapshot.candidates.map(async candidate => {
+        const { data: windows, error } = await db.from('buyer_availability').select('day_type, period, hours').eq('buyer_id', candidate.id)
+        if (error) throw error
+        const blockedReason = !candidate.is_active ? 'inactive' : !candidate.states.length ? 'no_license'
+          : candidate.priorityCredits <= 0 ? 'no_credit' : adminDailyBlock(rule, candidate.receivedToday)
+            || (!isAvailableNow(windows || [], buyerTimezone(candidate.states)) ? 'outside_hours' : null)
+        return { id: candidate.id, nome: candidate.name, estados: candidate.states, regraAdmin: 1,
+          isFallback: false, receivedToday: candidate.receivedToday, dailyMax: rule.daily_max ?? null,
+          priorityCredits: candidate.priorityCredits, blockedReason, isNext: !blockedReason, isStaff: candidate.isStaff }
+      }))
+      const available = admins.some(a => a.isNext)
+      return NextResponse.json({ leadLanguage: language, priorityOnly: true,
+        pendingReason: available ? null : 'Nenhum prioritário elegível neste idioma: leads ficam pendentes, sem fallback.',
+        adminRule: { N: 1, leadsUntilAdmin: 1, herTurnNow: available, isTurn: true, ruleAvailable: available },
+        queueOrder: routing.queue_order || 'credito', admins, fila: [],
+      }, { headers: { 'Cache-Control': 'private, no-store' } })
+    } catch {
+      return NextResponse.json({ error: 'Não foi possível verificar os prioritários. Distribuição permanece bloqueada.' }, { status: 503 })
+    }
+  }
   const ar: any = language === 'pt' ? routing.admin_rule || {} : {}
   const adminEmails: string[] = (ar.admin_emails || []).map((e: string) => e.trim().toLowerCase()).filter(Boolean)
   // O fallback operacional recebe qualquer idioma quando não existe comprador
