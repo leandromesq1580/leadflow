@@ -258,7 +258,9 @@ export function LeadRoutingCard() {
           {priorityError && <p role="alert" className="text-sm text-red-700 mt-2">{priorityError}</p>}
         </div>
         <p className="text-[11px] text-gray-400 mb-3">
-          A cada <b>N leads do sistema</b>, 1 vai pro(s) destinatário(s) (em rodízio), com PRIORIDADE sobre o roteamento abaixo e respeitando a licença de estado. <b>Cliente paga 1 crédito por entrega e para automaticamente quando o saldo líquido chega a zero ou fica negativo.</b> Somente funcionário explicitamente marcado recebe por esta regra sem débito. Ex.: <b>3</b> = a cada 2 leads pros outros, o 3º vai para a prioridade. 0 = desligado. Dá pra combinar com um <b>teto por dia</b>; batido o teto, a vez é pulada. <i>O fallback não respeita o teto — é o último recurso.</i>
+          {routing.priority_only
+            ? 'Com o modo exclusivo ligado, a proporção 1 a cada N fica suspensa e todo destinatário, inclusive funcionário, consome crédito do idioma; não há fallback.'
+            : <>A cada <b>N leads do sistema</b>, 1 vai pro(s) destinatário(s) (em rodízio), com PRIORIDADE sobre o roteamento abaixo e respeitando a licença de estado. <b>Cliente paga 1 crédito por entrega e para automaticamente quando o saldo líquido chega a zero ou fica negativo.</b> Somente funcionário explicitamente marcado recebe por esta regra sem débito. Ex.: <b>3</b> = a cada 2 leads pros outros, o 3º vai para a prioridade. 0 = desligado. Dá pra combinar com um <b>teto por dia</b>; batido o teto, a vez é pulada. <i>O fallback não respeita o teto — é o último recurso.</i></>}
         </p>
         <div className="flex items-center gap-2 mb-3">
           <label className="text-sm text-gray-700">A cada</label>

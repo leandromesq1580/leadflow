@@ -518,7 +518,7 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
  * lead chegou. Chamado pelo cron (poll-leads). Quando a janela de alguém abre,
  * o lead é finalmente entregue. Ignora leads muito antigos pra não acumular.
  */
-export async function redistributePendingLeads(routingEmails?: string[] | null, maxAgeHours = 72): Promise<number> {
+export async function redistributePendingLeads(routingEmails?: string[] | null, maxAgeHours = 168): Promise<number> {
   const supabase = createAdminClient()
   const cutoff = new Date(Date.now() - maxAgeHours * 3600_000).toISOString()
   const { data: pending } = await supabase
