@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { pushToBuyer } from '@/lib/push-notify'
 import { getBridgeForBuyer } from '@/lib/wa-bridge'
 import { localesDosBuyers, trad } from '@/lib/buyer-locale'
+import { formatFloridaDateTime } from '@/lib/florida-time'
 
 /**
  * GET /api/cron/reminders
@@ -42,8 +43,9 @@ interface UpcomingEvent {
   lead_id: string | null
 }
 
+/** Vercel runs in UTC: the time announced to the corretor must be Florida wall clock, marked as such. */
 function fmtTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  return `${formatFloridaDateTime(iso, 'en', { hour: 'numeric', minute: '2-digit', hour12: true })} (ET)`
 }
 
 function shouldFire(elapsedMs: number, intervalMin: number): boolean {

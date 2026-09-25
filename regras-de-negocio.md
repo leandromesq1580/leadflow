@@ -227,6 +227,27 @@ Esse espalhamento é o motivo deste arquivo existir: consolidar a intenção num
 - **Implementação:** `buyer_availability` (`002_business_rules.sql:32`) + `src/lib/availability.ts`.
 - **Forçada por:** banco + código.
 
+#### R-LIC-03 · Horário oficial do sistema = Flórida (America/New_York)
+- **Enunciado:** todo horário exibido ou enviado pelo sistema (dashboard, admin, mobile,
+  lembretes, e-mails, mensagens de confirmação) é o horário oficial da Flórida (costa leste,
+  `America/New_York`, EST/EDT com horário de verão automático), independente do fuso do
+  navegador ou do servidor (Vercel = UTC). O horário em que o cliente recebeu o lead no
+  WhatsApp (`notified_at`) é exibido como "Entregue no WhatsApp" e tem que bater com o
+  horário da mensagem no celular dele; sem `notified_at`, mostra a atribuição no CRM
+  (`assigned_at`). Datas/horas digitadas em formulários de agenda são interpretadas como
+  horário da Flórida antes de gravar, e a interface deixa o fuso explícito (aviso no topo
+  de cada shell + rótulo nos campos de hora).
+- **Critérios de aceite:** navegador em Brasília cria compromisso às 10:00 → agenda mostra
+  10:00 (não 09:00/11:00); abrir e salvar sem editar não muda o horário; eventos 23:00-23:59
+  ET aparecem na visão do dia; KPIs "hoje" viram à meia-noite da Flórida; textos de
+  lembrete/confirmação trazem "(ET)" ou "(horário da Flórida)". Timestamps gravados no banco
+  não são reescritos; cron/disponibilidade/distribuição não mudam.
+- **Implementação:** `src/lib/florida-time.ts` (`formatFloridaDateTime`, `floridaParts`,
+  `floridaWallClockToISO`, `floridaDayRange`), `src/components/florida-time-notice.tsx`,
+  `docs/features/florida-time.md`; testes `tests/florida-time.test.ts`,
+  `tests/florida-display.test.ts`, `tests/florida-display.cjs`.
+- **Forçada por:** código (testes rodam com `TZ=UTC` e `TZ=America/Sao_Paulo`).
+
 ### 3.4 Tiers e acesso ao CRM
 
 #### R-TIER-01 · Quem tem acesso ao CRM

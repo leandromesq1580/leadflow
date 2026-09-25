@@ -191,7 +191,7 @@ export default function ReferralPage() {
               <div key={i} className="flex justify-between items-center py-2" style={{ borderBottom: i < data.rewards.length - 1 ? '1px solid var(--bg-soft)' : 'none' }}>
                 <div>
                   <p className="text-[13px] font-bold" style={{ color: 'var(--fg)' }}>{r.name}</p>
-                  <p className="text-[11px]" style={{ color: 'var(--fg-muted)' }}>{triggerLabels(L)[r.trigger]} · {new Date(r.granted_at).toLocaleDateString(t._locale === 'en' ? 'en-US' : t._locale === 'es' ? 'es-US' : 'pt-BR')}</p>
+                  <p className="text-[11px]" style={{ color: 'var(--fg-muted)' }}>{triggerLabels(L)[r.trigger]} · {new Date(r.granted_at).toLocaleDateString(t._locale === 'en' ? 'en-US' : t._locale === 'es' ? 'es-US' : 'pt-BR', { timeZone: 'America/New_York' })}</p>
                 </div>
                 <span className="text-[14px] font-bold" style={{ color: r.cents > 0 ? '#10b981' : 'var(--fg-muted)' }}>
                   {r.cents > 0 ? `+$${(r.cents / 100).toFixed(2)}` : '—'}

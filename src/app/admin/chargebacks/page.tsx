@@ -46,7 +46,7 @@ export default async function ChargebacksPage() {
                     </div>
                     <p className="mt-1 text-sm text-slate-500">{buyer?.email || '—'} · {item.stripe_dispute_id}</p>
                     <p className="mt-2 text-sm text-slate-700">Motivo: <b>{item.reason || 'não informado'}</b> · Valor: <b>{String(item.currency || 'usd').toUpperCase()} {(Number(item.amount_cents || 0) / 100).toFixed(2)}</b></p>
-                    <p className="mt-1 text-xs text-slate-500">Prazo: {item.evidence_due_by ? new Date(item.evidence_due_by).toLocaleString('pt-BR') : 'consultar Stripe'}</p>
+                    <p className="mt-1 text-xs text-slate-500">Prazo: {item.evidence_due_by ? new Date(item.evidence_due_by).toLocaleString('pt-BR', { timeZone: 'America/New_York' }) : 'consultar Stripe'}</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <a href={`/api/admin/chargebacks/${item.id}/dossier`} className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-bold text-white hover:bg-violet-700">Baixar dossiê PDF</a>

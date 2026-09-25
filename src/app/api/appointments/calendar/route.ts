@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 /**
- * GET /api/appointments/calendar?buyer_id=X&from=ISO&to=ISO
+ * GET /api/appointments/calendar?buyer_id=X&from=ISO&to=ISO  (from inclusive, to exclusive)
  * Retorna eventos unificados de 3 fontes:
  *   1. appointments (tabela dedicada)
  *   2. follow_ups com scheduled_at
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       .select('id, scheduled_at, status, qualification_notes, lead:leads(id, name, phone, state)')
       .eq('buyer_id', buyerId)
       .gte('scheduled_at', from)
-      .lte('scheduled_at', to)
+      .lt('scheduled_at', to)
       .order('scheduled_at'),
 
     db.from('follow_ups')
@@ -33,14 +33,14 @@ export async function GET(request: NextRequest) {
       .eq('buyer_id', buyerId)
       .not('scheduled_at', 'is', null)
       .gte('scheduled_at', from)
-      .lte('scheduled_at', to)
+      .lt('scheduled_at', to)
       .order('scheduled_at'),
 
     db.from('calendar_items')
       .select('*, lead:leads(id, name, phone)')
       .eq('buyer_id', buyerId)
       .gte('start_at', from)
-      .lte('start_at', to)
+      .lt('start_at', to)
       .order('start_at'),
   ])
 

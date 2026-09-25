@@ -13,6 +13,7 @@ import { LeadFormsTab } from './lead-forms-tab'
 import { useT } from '@/lib/i18n-client'
 import { LeadLanguageBadge } from '@/components/lead-language-badge'
 import { leadMessageLocale } from '@/lib/lead-message-locale'
+import { floridaToday, floridaWallClockToISO } from '@/lib/florida-time'
 
 interface Props {
   leadId: string
@@ -98,9 +99,9 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
     const [hh, mm] = fuTime.split(':').map(Number)
     const horaFmt = `${hh % 12 || 12}:${String(mm).padStart(2, '0')} ${hh >= 12 ? 'PM' : 'AM'}`
     setFuConfirmMsg(message(
-      `Oi ${first}! 👋 como combinado deixamos nossa conversa para o dia ${d}/${m}/${y} às ${horaFmt}. Até lá!\nQualquer imprevisto, é só me avisar por aqui. 🙂`,
-      `Hi ${first}! 👋 as agreed, our conversation is set for ${m}/${d}/${y} at ${horaFmt}. Talk to you then!\nIf anything comes up, just let me know here. 🙂`,
-      `¡Hola ${first}! 👋 como quedamos, dejamos nuestra conversación para el día ${d}/${m}/${y} a las ${horaFmt}. ¡Hasta entonces!\nCualquier imprevisto, avísame por aquí. 🙂`
+      `Oi ${first}! 👋 como combinado deixamos nossa conversa para o dia ${d}/${m}/${y} às ${horaFmt} (horário da Flórida). Até lá!\nQualquer imprevisto, é só me avisar por aqui. 🙂`,
+      `Hi ${first}! 👋 as agreed, our conversation is set for ${m}/${d}/${y} at ${horaFmt} (Florida time, ET). Talk to you then!\nIf anything comes up, just let me know here. 🙂`,
+      `¡Hola ${first}! 👋 como quedamos, dejamos nuestra conversación para el día ${d}/${m}/${y} a las ${horaFmt} (hora de Florida). ¡Hasta entonces!\nCualquier imprevisto, avísame por aquí. 🙂`
     ))
   }, [fuType, fuSendConfirm, fuConfirmEdited, fuDate, fuTime, lead?.name, lead?.lead_language, lead?.form_name])
 
@@ -303,7 +304,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
     let scheduled_at: string | null = null
     if (fuDate) {
       const time = fuTime || '09:00'
-      scheduled_at = new Date(`${fuDate}T${time}:00`).toISOString()
+      scheduled_at = floridaWallClockToISO(fuDate, time)
     }
     const res = await fetch(`/api/leads/${leadId}/follow-ups`, {
       method: 'POST',
@@ -750,12 +751,12 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                   }}>
                     <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: fuType === 'meeting' ? '#92400e' : 'var(--fg-muted)' }}>
                       {fuType === 'meeting'
-                        ? '📅 ' + L('Data e hora da reunião — OBRIGATÓRIO', 'Meeting date and time — REQUIRED', 'Fecha y hora de la reunión — OBLIGATORIO')
-                        : '📅 ' + L('Agendar (opcional — aparece no calendário)', 'Schedule (optional — shows on the calendar)', 'Agendar (opcional — aparece en el calendario)')}
+                        ? '📅 ' + L('Data e hora da reunião (horário da Flórida) — OBRIGATÓRIO', 'Meeting date and time (Florida time) — REQUIRED', 'Fecha y hora de la reunión (hora de Florida) — OBLIGATORIO')
+                        : '📅 ' + L('Agendar (opcional — horário da Flórida, aparece no calendário)', 'Schedule (optional — Florida time, shows on the calendar)', 'Agendar (opcional — hora de Florida, aparece en el calendario)')}
                     </p>
                     <div className="flex gap-2">
                       <input type="date" value={fuDate} onChange={e => setFuDate(e.target.value)}
-                        min={new Date().toISOString().slice(0, 10)}
+                        min={floridaToday()}
                         required={fuType === 'meeting'}
                         className="flex-1 px-3 py-2 rounded-lg text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
                         style={{
@@ -864,7 +865,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                                 {fu.description}
                               </p>
                               <p className="text-[11px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>
-                                {new Date(fu.created_at).toLocaleDateString(dateLocale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })} · {typeInfo.label}
+                                {new Date(fu.created_at).toLocaleDateString(dateLocale, { timeZone: 'America/New_York', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })} · {typeInfo.label}
                               </p>
                             </>
                           )}
@@ -938,7 +939,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                         <div className="flex-1 min-w-0">
                           <p className="text-[13px] font-semibold truncate" style={{ color: 'var(--fg)' }}>{att.file_name}</p>
                           <p className="text-[11px]" style={{ color: 'var(--fg-muted)' }}>
-                            {formatFileSize(att.file_size)} · {new Date(att.created_at).toLocaleDateString(dateLocale)}
+                            {formatFileSize(att.file_size)} · {new Date(att.created_at).toLocaleDateString(dateLocale, { timeZone: 'America/New_York' })}
                           </p>
                         </div>
                         <button onClick={async () => {

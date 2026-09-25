@@ -369,7 +369,7 @@ export default function MobileCreditos() {
                   <div style={{ minWidth: 0 }}>
                     <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>{historyLabel(h)}</p>
                     <p className="m-muted" style={{ margin: '1px 0 0', fontSize: 11 }}>
-                      {new Date(h.purchasedAt).toLocaleDateString(loc === 'en' ? 'en-US' : loc === 'es' ? 'es-US' : 'pt-BR')} · {historyStatus(h)}
+                      {new Date(h.purchasedAt).toLocaleDateString(loc === 'en' ? 'en-US' : loc === 'es' ? 'es-US' : 'pt-BR', { timeZone: 'America/New_York' })} · {historyStatus(h)}
                       {h.remaining !== null ? ` · ${h.remaining} ${L('restantes', 'left', 'restantes')}` : ''}
                     </p>
                   </div>

@@ -294,7 +294,7 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
       )}
 
       {conector?.conectado && conector.ultimaSync && !avisoSync && (() => {
-        const fmt = (iso: string) => new Date(iso).toLocaleString(t._locale === 'en' ? 'en-US' : t._locale === 'es' ? 'es-US' : 'pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+        const fmt = (iso: string) => new Date(iso).toLocaleString(t._locale === 'en' ? 'en-US' : t._locale === 'es' ? 'es-US' : 'pt-BR', { timeZone: 'America/New_York', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
         const varrido = conector.robo?.last_run || null
         const horasAtras = varrido ? (Date.now() - new Date(varrido).getTime()) / 3_600_000 : null
         const velho = horasAtras != null && horasAtras > 24
@@ -339,7 +339,7 @@ export function PoliciesClient({ buyerId }: { buyerId: string }) {
                       <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--fg-secondary)' }}>{alerta.requirement || (statusFrom || statusTo ? `${statusFrom || '—'} → ${statusTo || '—'}` : '')}</p>
                       {action && alerta.kind !== 'requirement_removed' && <p className="text-[11.5px] font-bold mt-1" style={{ color: '#7c3aed' }}>➡️ {action}</p>}
                     </div>
-                    <span className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>{new Date(alerta.created_at).toLocaleString(loc === 'en' ? 'en-US' : loc === 'es' ? 'es-US' : 'pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>{new Date(alerta.created_at).toLocaleString(loc === 'en' ? 'en-US' : loc === 'es' ? 'es-US' : 'pt-BR', { timeZone: 'America/New_York', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                 </div>
               )
