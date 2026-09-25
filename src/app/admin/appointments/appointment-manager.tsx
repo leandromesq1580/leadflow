@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { floridaParts, floridaWallClockToISO } from '@/lib/florida-time'
 
 interface Appt {
   id: string
@@ -25,13 +26,6 @@ const STATUSES = [
 ]
 const stMeta = (s: string) => STATUSES.find(x => x.v === s) || STATUSES[0]
 
-function toLocalParts(iso: string) {
-  const d = new Date(iso)
-  const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-  const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-  return { date, time }
-}
-
 export function AppointmentManager({ appointments, clients }: Props) {
   const router = useRouter()
   const [editing, setEditing] = useState<string | null>(null)
@@ -43,14 +37,15 @@ export function AppointmentManager({ appointments, clients }: Props) {
   const [buyerId, setBuyerId] = useState('')
 
   function openEdit(a: Appt) {
-    const { date, time } = toLocalParts(a.scheduled_at)
+    // Prefill in Florida time (the same wall clock shown in the list), so saving unchanged keeps the instant.
+    const { date, time } = floridaParts(a.scheduled_at)
     setDate(date); setTime(time); setStatus(a.status); setNotes(a.qualification_notes || ''); setBuyerId(a.buyer_id)
     setEditing(a.id)
   }
 
   async function save(id: string) {
     setBusy(true)
-    const scheduled_at = new Date(`${date}T${time}:00`).toISOString()
+    const scheduled_at = floridaWallClockToISO(date, time)
     const r = await fetch(`/api/appointments/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -108,6 +103,7 @@ export function AppointmentManager({ appointments, clients }: Props) {
                 <div className="flex flex-wrap gap-2 mb-2 items-center">
                   <input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputCls} style={inputStyle} />
                   <input type="time" value={time} onChange={e => setTime(e.target.value)} className={inputCls} style={inputStyle} />
+                  <span className="text-[11px]" style={{ color: '#94a3b8' }}>horário da Flórida (ET)</span>
                   <select value={status} onChange={e => setStatus(e.target.value)} className={inputCls + ' cursor-pointer'} style={inputStyle}>
                     {STATUSES.map(s => <option key={s.v} value={s.v}>{s.label}</option>)}
                   </select>

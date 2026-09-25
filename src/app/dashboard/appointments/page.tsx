@@ -1,5 +1,5 @@
 'use client'
-import { formatFloridaDateTime } from '@/lib/florida-time'
+import { addFloridaDays, floridaDayRange, floridaParts, floridaToday, floridaWallClockToISO, formatFloridaDateTime } from '@/lib/florida-time'
 
 import { useEffect, useMemo, useState } from 'react'
 
@@ -29,9 +29,18 @@ interface CalendarEvent {
 
 type View = 'month' | 'week' | 'day'
 
-// Calendar anchors are literal days, not instants. These helpers are display-only:
-// do not use their results in API writes or rescheduling payloads.
-const calendarDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+// Calendar anchors are Florida calendar days ('YYYY-MM-DD'), never browser Dates: the grid, the
+// fetch range and "today" all follow the Florida day so every browser sees the same cells.
+const weekdayOf = (day: string) => new Date(`${day}T00:00:00Z`).getUTCDay()
+const dayOfMonth = (day: string) => Number(day.slice(8, 10))
+const monthOf = (day: string) => day.slice(0, 7)
+const shiftMonth = (day: string, delta: number) => {
+  const d = new Date(`${day.slice(0, 7)}-01T00:00:00Z`)
+  d.setUTCMonth(d.getUTCMonth() + delta)
+  return d.toISOString().slice(0, 10)
+}
+const monthGridStart = (day: string) => { const first = `${monthOf(day)}-01`; return addFloridaDays(first, -weekdayOf(first)) }
+const weekStart = (day: string) => addFloridaDays(day, -weekdayOf(day))
 const eventDay = (value: string | Date) => formatFloridaDateTime(value, 'en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' })
 const eventHour = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) ? 0 : Number(formatFloridaDateTime(value, 'en-US', { hour: '2-digit', hourCycle: 'h23' }))
 function displayHours(events: CalendarEvent[], start: number, end: number) {
@@ -69,7 +78,7 @@ export default function AppointmentsPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<View>('month')
-  const [anchor, setAnchor] = useState(new Date())
+  const [anchor, setAnchor] = useState(() => floridaToday())
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
   const [creating, setCreating] = useState<'event' | 'task' | null>(null)
   const [showCreateMenu, setShowCreateMenu] = useState(false)
@@ -93,30 +102,14 @@ export default function AppointmentsPage() {
     setBuyerId(b.id)
   }
 
-  const { rangeFrom, rangeTo } = useMemo(() => {
-    if (view === 'month') {
-      const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1)
-      const last = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0)
-      const start = new Date(first)
-      start.setDate(first.getDate() - first.getDay())
-      // a grade desenha SEMPRE 42 células (6 semanas). Buscar só até o fim da última
-      // semana do mês deixava a 6ª linha sem dados — compromisso lá era invisível.
-      const end = new Date(start)
-      end.setDate(start.getDate() + 41)
-      end.setHours(23, 59, 59)
-      return { rangeFrom: start.toISOString(), rangeTo: end.toISOString() }
-    }
-    if (view === 'week') {
-      const start = new Date(anchor)
-      start.setDate(anchor.getDate() - anchor.getDay())
-      start.setHours(0, 0, 0, 0)
-      const end = new Date(start)
-      end.setDate(start.getDate() + 7)
-      return { rangeFrom: start.toISOString(), rangeTo: end.toISOString() }
-    }
-    const start = new Date(anchor); start.setHours(0, 0, 0, 0)
-    const end = new Date(anchor); end.setHours(23, 59, 59)
-    return { rangeFrom: start.toISOString(), rangeTo: end.toISOString() }
+  // Bounds are Florida midnights (from inclusive, to exclusive), so a Brazil browser fetches the
+  // same events as a Florida one — including 23:00-23:59 ET of the last day.
+  const { rangeStart, rangeFrom, rangeTo } = useMemo(() => {
+    // a grade desenha SEMPRE 42 células (6 semanas). Buscar só até o fim da última
+    // semana do mês deixava a 6ª linha sem dados — compromisso lá era invisível.
+    const [start, days] = view === 'month' ? [monthGridStart(anchor), 42] : view === 'week' ? [weekStart(anchor), 7] : [anchor, 1]
+    const { fromIso, toIso } = floridaDayRange(start, days)
+    return { rangeStart: start, rangeFrom: fromIso, rangeTo: toIso }
   }, [view, anchor])
 
   useEffect(() => {
@@ -135,25 +128,17 @@ export default function AppointmentsPage() {
   }
 
   function goPrev() {
-    const d = new Date(anchor)
-    if (view === 'month') d.setMonth(d.getMonth() - 1)
-    else if (view === 'week') d.setDate(d.getDate() - 7)
-    else d.setDate(d.getDate() - 1)
-    setAnchor(d)
+    setAnchor(view === 'month' ? shiftMonth(anchor, -1) : addFloridaDays(anchor, view === 'week' ? -7 : -1))
   }
   function goNext() {
-    const d = new Date(anchor)
-    if (view === 'month') d.setMonth(d.getMonth() + 1)
-    else if (view === 'week') d.setDate(d.getDate() + 7)
-    else d.setDate(d.getDate() + 1)
-    setAnchor(d)
+    setAnchor(view === 'month' ? shiftMonth(anchor, 1) : addFloridaDays(anchor, view === 'week' ? 7 : 1))
   }
 
   const headerTxt = view === 'month'
-    ? `${MONTHS(t._locale)[anchor.getMonth()]} ${anchor.getFullYear()}`
+    ? `${MONTHS(t._locale)[Number(anchor.slice(5, 7)) - 1]} ${anchor.slice(0, 4)}`
     : view === 'week'
-      ? `${L('Semana de', 'Week of', 'Semana del')} ${new Date(rangeFrom).toLocaleDateString(dateLocale)}`
-      : anchor.toLocaleDateString(dateLocale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+      ? `${L('Semana de', 'Week of', 'Semana del')} ${formatFloridaDateTime(rangeStart, dateLocale, { day: '2-digit', month: '2-digit', year: 'numeric' })}`
+      : formatFloridaDateTime(anchor, dateLocale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
   return (
     <div className="max-w-[1200px]">
@@ -192,7 +177,7 @@ export default function AppointmentsPage() {
               </>
             )}
           </div>
-          <button onClick={() => setAnchor(new Date())}
+          <button onClick={() => setAnchor(floridaToday())}
             className="px-3 py-2 rounded-lg text-[12px] font-bold"
             style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>
             {L('Hoje', 'Today', 'Hoy')}
@@ -340,17 +325,12 @@ function EventPill({ event, onClick, compact }: { event: CalendarEvent; onClick:
 
 const VISIVEIS_NO_MES = 4
 
-function MonthView({ anchor, events, onClick, onDia }: { anchor: Date; events: CalendarEvent[]; onClick: (e: CalendarEvent) => void; onDia: (d: Date) => void }) {
+function MonthView({ anchor, events, onClick, onDia }: { anchor: string; events: CalendarEvent[]; onClick: (e: CalendarEvent) => void; onDia: (d: string) => void }) {
   const t = useT()
   const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
-  const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1)
-  const start = new Date(first); start.setDate(first.getDate() - first.getDay())
-  const days: Date[] = []
-  for (let i = 0; i < 42; i++) {
-    const d = new Date(start); d.setDate(start.getDate() + i)
-    days.push(d)
-  }
-  const today = new Date()
+  const start = monthGridStart(anchor)
+  const days = Array.from({ length: 42 }, (_, i) => addFloridaDays(start, i))
+  const today = floridaToday()
 
   return (
     <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
@@ -364,9 +344,9 @@ function MonthView({ anchor, events, onClick, onDia }: { anchor: Date; events: C
       </div>
       <div className="grid grid-cols-7 grid-rows-6">
         {days.map((d, i) => {
-          const inMonth = d.getMonth() === anchor.getMonth()
-          const isToday = calendarDay(d) === eventDay(today)
-          const dayEvents = events.filter(e => eventDay(e.start) === calendarDay(d))
+          const inMonth = monthOf(d) === monthOf(anchor)
+          const isToday = d === today
+          const dayEvents = events.filter(e => eventDay(e.start) === d)
           return (
             <div key={i} className="min-h-[110px] p-1.5"
               style={{
@@ -377,7 +357,7 @@ function MonthView({ anchor, events, onClick, onDia }: { anchor: Date; events: C
               <div className="flex justify-between items-center mb-1">
                 <span className={`text-[11px] font-bold ${isToday ? 'text-white px-1.5 py-0.5 rounded-full' : ''}`}
                   style={{ background: isToday ? 'var(--accent)' : 'transparent', color: isToday ? 'var(--bg-card)' : inMonth ? '#1a1a2e' : '#c0c8d4' }}>
-                  {d.getDate()}
+                  {dayOfMonth(d)}
                 </span>
                 {dayEvents.length > VISIVEIS_NO_MES && (
                   // antes era só um texto: o resto do dia ficava inalcançável (67 dias
@@ -403,28 +383,25 @@ function MonthView({ anchor, events, onClick, onDia }: { anchor: Date; events: C
   )
 }
 
-function WeekView({ anchor, events, onClick }: { anchor: Date; events: CalendarEvent[]; onClick: (e: CalendarEvent) => void }) {
+function WeekView({ anchor, events, onClick }: { anchor: string; events: CalendarEvent[]; onClick: (e: CalendarEvent) => void }) {
   const t = useT()
-  const start = new Date(anchor); start.setDate(anchor.getDate() - anchor.getDay()); start.setHours(0, 0, 0, 0)
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(start); d.setDate(start.getDate() + i); return d
-  })
-  const daysStr = days.map(calendarDay)
-  const doPeriodo = events.filter(e => daysStr.includes(eventDay(e.start)))
+  const start = weekStart(anchor)
+  const days = Array.from({ length: 7 }, (_, i) => addFloridaDays(start, i))
+  const doPeriodo = events.filter(e => days.includes(eventDay(e.start)))
   const hours = displayHours(doPeriodo, 7, 20)
-  const today = new Date()
+  const today = floridaToday()
 
   return (
     <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
       <div className="grid" style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}>
         <div className="p-2" style={{ background: 'var(--bg)' }} />
         {days.map((d, i) => {
-          const isToday = calendarDay(d) === eventDay(today)
+          const isToday = d === today
           return (
             <div key={i} className="p-2 text-center"
               style={{ background: isToday ? 'var(--accent-light)' : 'var(--bg)', borderLeft: '1px solid var(--bg-soft)' }}>
               <p className="text-[10px] font-bold uppercase" style={{ color: 'var(--fg-muted)' }}>{WEEKDAYS(t._locale)[i]}</p>
-              <p className="text-[18px] font-extrabold" style={{ color: isToday ? 'var(--accent)' : 'var(--fg)' }}>{d.getDate()}</p>
+              <p className="text-[18px] font-extrabold" style={{ color: isToday ? 'var(--accent)' : 'var(--fg)' }}>{dayOfMonth(d)}</p>
             </div>
           )
         })}
@@ -436,7 +413,7 @@ function WeekView({ anchor, events, onClick }: { anchor: Date; events: CalendarE
               {hourLabel(h)}
             </div>
             {days.map((d, di) => {
-              const cellEvents = doPeriodo.filter(e => eventDay(e.start) === calendarDay(d) && eventHour(e.start) === h)
+              const cellEvents = doPeriodo.filter(e => eventDay(e.start) === d && eventHour(e.start) === h)
               return (
                 <div key={di} className="p-0.5 min-h-[50px] relative space-y-0.5"
                   style={{ borderLeft: '1px solid var(--bg-soft)' }}>
@@ -453,8 +430,8 @@ function WeekView({ anchor, events, onClick }: { anchor: Date; events: CalendarE
   )
 }
 
-function DayView({ anchor, events, onClick }: { anchor: Date; events: CalendarEvent[]; onClick: (e: CalendarEvent) => void }) {
-  const doDia = events.filter(e => eventDay(e.start) === calendarDay(anchor))
+function DayView({ anchor, events, onClick }: { anchor: string; events: CalendarEvent[]; onClick: (e: CalendarEvent) => void }) {
+  const doDia = events.filter(e => eventDay(e.start) === anchor)
   const hours = displayHours(doDia, 6, 22)
   return (
     <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
@@ -483,10 +460,11 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
   const t = useT()
   const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const dateLocale = t._locale === 'en' ? 'en-US' : t._locale === 'es' ? 'es-US' : 'pt-BR'
-  const startDate = new Date(event.start)
+  // Prefill with the Florida wall clock the user sees on the card, so saving unchanged keeps the instant.
+  const startParts = floridaParts(event.start)
   const [editing, setEditing] = useState(false)
-  const [newDate, setNewDate] = useState(startDate.toISOString().slice(0, 10))
-  const [newTime, setNewTime] = useState(startDate.toTimeString().slice(0, 5))
+  const [newDate, setNewDate] = useState(startParts.date)
+  const [newTime, setNewTime] = useState(startParts.time)
   const [busy, setBusy] = useState(false)
 
   const endpointBase = event.kind === 'appointment' ? `/api/appointments/${event.raw_id}`
@@ -499,7 +477,7 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
   async function reschedule() {
     if (!newDate || !newTime) { alert(L('Data e hora obrigatórias', 'Date and time are required', 'Fecha y hora obligatorias')); return }
     setBusy(true)
-    const iso = new Date(`${newDate}T${newTime}:00`).toISOString()
+    const iso = floridaWallClockToISO(newDate, newTime)
     const r = await fetch(endpointBase, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -613,16 +591,19 @@ function EventDetail({ event, onClose, onChanged }: { event: CalendarEvent; onCl
               )}
             </p>
           ) : (
-            <div className="flex gap-2 mt-2">
-              <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg text-[12px]" style={{ background: 'var(--bg-card)', border: '1px solid rgba(139,92,246,0.35)' }} />
-              <TimePicker value={newTime} onChange={setNewTime}
-                className="px-2 py-2 rounded-lg text-[12px] bg-white border border-[rgba(139,92,246,0.35)]" />
-              <button onClick={reschedule} disabled={busy}
-                className="px-3 py-2 rounded-lg text-[11px] font-bold text-white disabled:opacity-50" style={{ background: 'var(--accent)' }}>
-                {L('Salvar', 'Save', 'Guardar')}
-              </button>
-              <button onClick={() => setEditing(false)} className="text-[11px] font-bold" style={{ color: 'var(--fg-muted)' }}>×</button>
+            <div className="mt-2">
+              <div className="flex gap-2">
+                <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
+                  className="flex-1 px-3 py-2 rounded-lg text-[12px]" style={{ background: 'var(--bg-card)', border: '1px solid rgba(139,92,246,0.35)' }} />
+                <TimePicker value={newTime} onChange={setNewTime}
+                  className="px-2 py-2 rounded-lg text-[12px] bg-white border border-[rgba(139,92,246,0.35)]" />
+                <button onClick={reschedule} disabled={busy}
+                  className="px-3 py-2 rounded-lg text-[11px] font-bold text-white disabled:opacity-50" style={{ background: 'var(--accent)' }}>
+                  {L('Salvar', 'Save', 'Guardar')}
+                </button>
+                <button onClick={() => setEditing(false)} className="text-[11px] font-bold" style={{ color: 'var(--fg-muted)' }}>×</button>
+              </div>
+              <p className="text-[10px] mt-1" style={{ color: 'var(--fg-muted)' }}>{L('Horário da Flórida (ET)', 'Florida time (ET)', 'Hora de Florida (ET)')}</p>
             </div>
           )}
         </div>
@@ -703,7 +684,7 @@ const ITEM_COLORS = ['#0ea5e9', '#10b981', 'var(--accent)', '#8b5cf6', '#f59e0b'
 function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
   kind: 'event' | 'task'
   buyerId: string
-  anchor: Date
+  anchor: string
   onClose: () => void
   onCreated: () => void
 }) {
@@ -711,7 +692,7 @@ function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
   const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [date, setDate] = useState(anchor.toISOString().slice(0, 10))
+  const [date, setDate] = useState(anchor)
   const [time, setTime] = useState(kind === 'event' ? '09:00' : '09:00')
   const [endTime, setEndTime] = useState('10:00')
   const [allDay, setAllDay] = useState(false)
@@ -730,11 +711,10 @@ function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
     if (!allDay && !time) { setError(L('Hora obrigatória', 'Time is required', 'Hora obligatoria')); return }
 
     setSaving(true)
-    const start_at = allDay
-      ? new Date(`${date}T00:00:00`).toISOString()
-      : new Date(`${date}T${time}:00`).toISOString()
+    // Wall clock typed in the form is Florida time; store the matching UTC instant.
+    const start_at = floridaWallClockToISO(date, allDay ? '00:00' : time)
     const end_at = (isEvent && !allDay && endTime)
-      ? new Date(`${date}T${endTime}:00`).toISOString()
+      ? floridaWallClockToISO(date, endTime)
       : null
 
     const r = await fetch('/api/calendar-items', {
@@ -783,7 +763,7 @@ function CreateItemModal({ kind, buyerId, anchor, onClose, onCreated }: {
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[10px] font-bold uppercase" style={{ color: 'var(--fg-muted)' }}>{L('Data', 'Date', 'Fecha')}</label>
+              <label className="text-[10px] font-bold uppercase" style={{ color: 'var(--fg-muted)' }}>{L('Data', 'Date', 'Fecha')} · {L('horário da Flórida', 'Florida time', 'hora de Florida')}</label>
               <input type="date" value={date} onChange={e => setDate(e.target.value)}
                 className="w-full mt-1 px-3 py-2 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }} />
             </div>

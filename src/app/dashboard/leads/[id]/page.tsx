@@ -95,9 +95,19 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             <p className="text-[14px] font-semibold mt-1" style={{ color: 'var(--fg)' }}>{formatDate(lead.created_at)}</p>
           </div>
           <div className="rounded-xl p-4" style={{ background: 'var(--bg)' }}>
-            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Entregue ao cliente (CRM)', 'Delivered to client (CRM)', 'Entregado al cliente (CRM)')}</p>
-            <p className="text-[14px] font-semibold mt-1" style={{ color: 'var(--fg)' }}>{formatDate(lead.assigned_at)}</p>
-            <p className="text-[11px] mt-1" style={{ color: 'var(--fg-muted)' }}>{L('Atribuição no CRM; não confirma recebimento no WhatsApp.', 'CRM assignment; does not confirm WhatsApp receipt.', 'Asignación en CRM; no confirma recepción en WhatsApp.')}</p>
+            {lead.notified_at ? (
+              <>
+                <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Entregue no WhatsApp', 'Delivered on WhatsApp', 'Entregado en WhatsApp')}</p>
+                <p className="text-[14px] font-semibold mt-1" style={{ color: 'var(--fg)' }}>{formatDate(lead.notified_at)}</p>
+                <p className="text-[11px] mt-1" style={{ color: 'var(--fg-muted)' }}>{L('Mesmo horário que o cliente recebeu no celular (Flórida).', 'Same time the client received it on their phone (Florida).', 'Misma hora en que el cliente lo recibió en el celular (Florida).')}</p>
+              </>
+            ) : (
+              <>
+                <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Entregue ao cliente (CRM)', 'Delivered to client (CRM)', 'Entregado al cliente (CRM)')}</p>
+                <p className="text-[14px] font-semibold mt-1" style={{ color: 'var(--fg)' }}>{formatDate(lead.assigned_at)}</p>
+                <p className="text-[11px] mt-1" style={{ color: 'var(--fg-muted)' }}>{L('Atribuição no CRM; não confirma recebimento no WhatsApp.', 'CRM assignment; does not confirm WhatsApp receipt.', 'Asignación en CRM; no confirma recepción en WhatsApp.')}</p>
+              </>
+            )}
           </div>
         </div>
       </div>

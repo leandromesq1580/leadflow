@@ -731,13 +731,15 @@ export async function sendAppointmentNotificationEmail(
     const L = trad(loc)
 
     const date = new Date(scheduledAt)
+    // Server runs in UTC; the buyer reads Florida time.
     const formatted = date.toLocaleDateString(loc === 'en' ? 'en-US' : loc === 'es' ? 'es-US' : 'pt-BR', {
+      timeZone: 'America/New_York',
       weekday: 'long',
       day: '2-digit',
       month: 'long',
       hour: '2-digit',
       minute: '2-digit',
-    })
+    }) + L(' (horário da Flórida)', ' (Florida time, ET)', ' (hora de Florida)')
 
     await getResend().emails.send({
       from: 'Lead4Producers <onboarding@resend.dev>',

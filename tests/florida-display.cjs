@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- CommonJS test harness (same convention as the other *.cjs suites) */
 const test = require('node:test')
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
@@ -10,7 +11,7 @@ const root = path.resolve(__dirname, '..')
 function load(relative, dependencies = {}) {
   const filename = path.join(root, relative)
   const code = ts.transpileModule(fs.readFileSync(filename, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true, target: ts.ScriptTarget.ES2022 } }).outputText
-  const module = { exports: {} }
+  const mod = { exports: {} }
   const localRequire = name => {
     if (Object.hasOwn(dependencies, name)) return dependencies[name]
     if (name.startsWith('@/') || name.startsWith('.')) {
@@ -21,19 +22,19 @@ function load(relative, dependencies = {}) {
     }
     return require(name)
   }
-  new Function('require', 'module', 'exports', code)(localRequire, module, module.exports)
-  return module.exports
+  new Function('require', 'module', 'exports', code)(localRequire, mod, mod.exports)
+  return mod.exports
 }
 // All records here are synthetic test fixtures; no real user or network access.
 const lead = { id: 'synthetic-test-lead', name: 'Synthetic Test', phone: '', email: '', city: '', state: 'FL', status: 'assigned', type: 'hot', created_at: '2026-07-15T10:47:25Z', assigned_at: '2026-07-15T10:48:43Z' }
-function deps(locale = 'pt') {
+function deps(locale = 'pt', record = lead) {
   return {
     '@/lib/i18n-client': { useT: () => ({ _locale: locale }) },
     '@/lib/privacy-mode': { usePrivacy: () => ({ enabled: false, mask: value => value }) },
     '@/lib/locale': { getLocale: async () => locale },
     '@/lib/supabase/server': { createServerSupabase: async () => ({ auth: { getUser: async () => ({ data: { user: { id: 'test-auth' } } }) } }) },
     '@/lib/supabase/admin': { createAdminClient: () => ({ from: table => {
-      const query = { select: () => query, eq: () => query, single: async () => ({ data: lead }), order: async () => ({ data: table === 'lead_activity' ? [{ id: 'test-activity', action: 'Synthetic action', created_at: '2026-07-15T10:49:00Z' }] : [] }) }
+      const query = { select: () => query, eq: () => query, single: async () => ({ data: record }), order: async () => ({ data: table === 'lead_activity' ? [{ id: 'test-activity', action: 'Synthetic action', created_at: '2026-07-15T10:49:00Z' }] : [] }) }
       return query
     } }) },
     'next/link': ({ children, ...props }) => React.createElement('a', props, children),
@@ -53,12 +54,23 @@ test('desktop detail renders origin and CRM delivery separately in Florida time'
   assert.doesNotMatch(html, /10:4[789]|Recebido em/)
 })
 
+test('desktop detail prefers the WhatsApp delivery instant (notified_at) over CRM assignment', async () => {
+  const Page = load('src/app/dashboard/leads/[id]/page.tsx', deps('pt', { ...lead, notified_at: '2026-07-15T10:52:10Z' })).default
+  const html = renderToStaticMarkup(await Page({ params: Promise.resolve({ id: lead.id }) }))
+  assert.match(html, /Entregue no WhatsApp/)
+  assert.match(html, /15\/07\/2026, 06:52/)
+  assert.doesNotMatch(html, /Entregue ao cliente \(CRM\)|06:48/)
+})
+
 test('received-leads list uses CRM assignment, not original creation timestamp', () => {
   const List = load('src/app/dashboard/leads/leads-list.tsx', deps()).LeadsList
   const html = renderToStaticMarkup(React.createElement(List, { leads: [lead], isAgency: false, teamMembers: [] }))
   assert.match(html, /Entregue ao cliente \(CRM\)/)
   assert.match(html, /15\/07\/2026, 06:48/)
   assert.doesNotMatch(html, /06:47|10:47/)
+  const delivered = renderToStaticMarkup(React.createElement(List, { leads: [{ ...lead, notified_at: '2026-07-15T10:52:10Z' }], isAgency: false, teamMembers: [] }))
+  assert.match(delivered, /Entregue no WhatsApp: 15\/07\/2026, 06:52/)
+  assert.doesNotMatch(delivered, /CRM|06:48/)
 })
 
 function clientDeps(values, locale = 'pt') {
@@ -89,6 +101,15 @@ test('mobile received list displays exact delivery time', () => {
   const html = renderToStaticMarkup(React.createElement(Page))
   assert.match(html, /15\/07\/2026, 06:48/)
   assert.doesNotMatch(html, /06:47|10:47/)
+  const Delivered = load('src/app/m/leads/page.tsx', clientDeps([[{ ...lead, notified_at: '2026-07-15T10:52:10Z' }], false, 'all', '', false, [], null])).default
+  const delivered = renderToStaticMarkup(React.createElement(Delivered))
+  assert.match(delivered, /Entregue no WhatsApp: 15\/07\/2026, 06:52/)
+  assert.doesNotMatch(delivered, /CRM|06:48/)
+  const Detail = load('src/app/m/leads/[id]/page.tsx', clientDeps([{ ...lead, notified_at: '2026-07-15T10:52:10Z' }, false, null, false, [], [], [], ''])).default
+  const detail = renderToStaticMarkup(React.createElement(Detail))
+  assert.match(detail, /Entregue no WhatsApp/)
+  assert.match(detail, /15\/07\/2026, 06:52/)
+  assert.doesNotMatch(detail, /CRM/)
 })
 
 test('mobile conversation formats actual sent_at in account locale and Florida time', () => {
@@ -148,11 +169,10 @@ test('timestamp display expressions across dashboard admin mobile pipeline and h
         const expression = node.expression.getText(source)
         const receiver = ts.isPropertyAccessExpression(node.expression) ? node.expression.expression.getText(source) : ''
         const method = ts.isPropertyAccessExpression(node.expression) ? node.expression.name.text : ''
-        // Calendar navigation anchors and synthetic revenue month buckets are dates, not instants.
-        const calendarAnchor = file === 'app/dashboard/appointments/page.tsx' && /anchor|rangeFrom/.test(receiver)
+        // Synthetic revenue month buckets are dates, not instants.
         const monthBucket = file === 'app/admin/revenue/page.tsx' && receiver === 'd'
         const nativeDate = /^toLocale(DateString|TimeString|String)$/.test(method) && (/^new Date\(/.test(receiver) || /^(d|dt|startDate)$/.test(receiver))
-        if (!calendarAnchor && !monthBucket && (nativeDate || expression === 'formatFloridaDateTime')) {
+        if (!monthBucket && (nativeDate || expression === 'formatFloridaDateTime')) {
           const args = node.arguments.map(a => a.getText(source))
           const code = nativeDate ? `VALUE.${method}(${args.join(', ')})` : `formatFloridaDateTime(VALUE, ${args.slice(1).join(', ')})`
           const evaluate = new Function('VALUE', 'formatFloridaDateTime', 'locale', 'loc', 'dateLocale', 't', 'LEAD_TZ', `const FLORIDA_TIME_ZONE = LEAD_TZ; return ${code}`)
@@ -230,15 +250,18 @@ test('desktop calendar places records in Florida day/hour cells independent of b
           { id: 'instant', title: 'Synthetic midnight event', kind: 'event', start: '2026-07-15T03:47:00Z', color: '#6366f1' },
           { id: 'literal', title: 'Synthetic literal date', kind: 'task', start: '2026-07-14', color: '#6366f1' },
         ]
-        const Page = load('src/app/dashboard/appointments/page.tsx', clientDeps(['fixture', events, false, view, new Date(2026, 6, 14), null, null, false])).default
+        // The anchor is a Florida calendar day, never a browser Date.
+        const Page = load('src/app/dashboard/appointments/page.tsx', clientDeps(['fixture', events, false, view, '2026-07-14', null, null, false])).default
         return renderToStaticMarkup(React.createElement(Page))
       }
       const florida = render('America/New_York')
       const utc = render('UTC')
+      const brazil = render('America/Sao_Paulo')
       assert.match(utc, /Synthetic midnight event/, view)
       assert.match(utc, /Synthetic literal date/, view)
       assert.match(utc, /11:47 PM/, view)
       assert.equal(utc, florida, `${view}: calendar cells must match, not just formatted times`)
+      assert.equal(brazil, florida, `${view}: a Brazil browser must render the same cells as a Florida one`)
     }
   } finally { if (originalTZ == null) delete process.env.TZ; else process.env.TZ = originalTZ }
 })

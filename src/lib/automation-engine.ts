@@ -390,7 +390,7 @@ async function executeAction(auto: Automation, target: Target): Promise<void> {
 
     // Evento da agenda sem cliente: o aviso fala do compromisso, não de um lead.
     const hora = target.quando
-      ? new Date(target.quando).toLocaleString(loc === 'en' ? 'en-US' : loc === 'es' ? 'es-US' : 'pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+      ? new Date(target.quando).toLocaleString(loc === 'en' ? 'en-US' : loc === 'es' ? 'es-US' : 'pt-BR', { timeZone: 'America/New_York', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) + T(' (horário da Flórida)', ' (Florida time, ET)', ' (hora de Florida)')
       : null
     const corpo = target.lead_id
       ? T(

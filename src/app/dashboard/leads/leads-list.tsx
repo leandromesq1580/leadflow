@@ -22,6 +22,7 @@ interface Lead extends LeadLanguageFields {
   status: string
   created_at: string
   assigned_at?: string | null
+  notified_at?: string | null
   assigned_to_member?: string | null
   member?: { id: string; name: string } | null
 }
@@ -124,7 +125,9 @@ export function LeadsList({ leads, isAgency, teamMembers }: Props) {
                   )}
 
                   <Badge status={lead.status} />
-                  <span className="text-[12px] whitespace-nowrap hidden md:block" style={{ color: 'var(--fg-muted)' }}>{L('Entregue ao cliente (CRM)', 'Delivered to client (CRM)', 'Entregado al cliente (CRM)')}: {formatFloridaDateTime(lead.assigned_at, t._locale)}</span>
+                  <span className="text-[12px] whitespace-nowrap hidden md:block" style={{ color: 'var(--fg-muted)' }}>{lead.notified_at
+                    ? `${L('Entregue no WhatsApp', 'Delivered on WhatsApp', 'Entregado en WhatsApp')}: ${formatFloridaDateTime(lead.notified_at, t._locale)}`
+                    : `${L('Entregue ao cliente (CRM)', 'Delivered to client (CRM)', 'Entregado al cliente (CRM)')}: ${formatFloridaDateTime(lead.assigned_at, t._locale)}`}</span>
                 </div>
               )
             })}

@@ -11,7 +11,7 @@ import { getInitials, statusLabel } from '@/lib/utils'
 import { LeadLanguageBadge } from '@/components/lead-language-badge'
 import type { LeadLanguageFields } from '@/lib/lead-message-locale'
 
-interface Lead extends LeadLanguageFields { id: string; name: string; phone: string; city: string; state: string; status: string; interest: string; type: string; created_at: string; assigned_at?: string | null; assigned_to_member?: string | null }
+interface Lead extends LeadLanguageFields { id: string; name: string; phone: string; city: string; state: string; status: string; interest: string; type: string; created_at: string; assigned_at?: string | null; notified_at?: string | null; assigned_to_member?: string | null }
 interface Member { id: string; name: string }
 
 function avatarBg(name: string) {
@@ -98,7 +98,7 @@ export default function MobileLeads() {
                   <p style={{ margin: 0, fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.name}</p>
                   <div style={{ marginTop: 5 }}><LeadLanguageBadge lead={l} /></div>
                   <p className="m-muted" style={{ margin: '2px 0 0', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {[[l.city, l.state].filter(Boolean).join(', '), statusLabel(l.status, loc), `${L('Entregue (CRM)', 'Delivered (CRM)', 'Entregado (CRM)')}: ${formatFloridaDateTime(l.assigned_at, loc)}`].filter(Boolean).join(' · ')}
+                    {[[l.city, l.state].filter(Boolean).join(', '), statusLabel(l.status, loc), l.notified_at ? `${L('Entregue no WhatsApp', 'Delivered on WhatsApp', 'Entregado en WhatsApp')}: ${formatFloridaDateTime(l.notified_at, loc)}` : `${L('Entregue (CRM)', 'Delivered (CRM)', 'Entregado (CRM)')}: ${formatFloridaDateTime(l.assigned_at, loc)}`].filter(Boolean).join(' · ')}
                   </p>
                 </div>
               </Link>

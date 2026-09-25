@@ -18,6 +18,7 @@ interface Lead extends LeadLanguageFields {
   id: string; name: string; email: string; phone: string; city: string; state: string
   status: string; interest: string; type: string; campaign_name: string; created_at: string
   assigned_at?: string | null
+  notified_at?: string | null
   assigned_to_member?: string | null
   activities?: Array<{ id: string; action: string; notes?: string; created_at: string }>
 }
@@ -146,7 +147,9 @@ export default function MobileLeadDetail() {
               [L('Interesse', 'Interest', 'Interés'), lead.interest || '—'],
               [L('Origem', 'Source', 'Origen'), lead.campaign_name || '—'],
               [L('Entrada do lead', 'Lead entry', 'Entrada del lead'), formatFloridaDateTime(lead.created_at, loc)],
-              [L('Entregue ao cliente (CRM)', 'Delivered to client (CRM)', 'Entregado al cliente (CRM)'), formatFloridaDateTime(lead.assigned_at, loc)],
+              lead.notified_at
+                ? [L('Entregue no WhatsApp', 'Delivered on WhatsApp', 'Entregado en WhatsApp'), formatFloridaDateTime(lead.notified_at, loc)]
+                : [L('Entregue ao cliente (CRM)', 'Delivered to client (CRM)', 'Entregado al cliente (CRM)'), formatFloridaDateTime(lead.assigned_at, loc)],
             ].map(([k, v], i, arr) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 0', borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
                 <span className="m-muted" style={{ fontSize: 13 }}>{k}</span>
