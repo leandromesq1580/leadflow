@@ -248,8 +248,13 @@ export function LeadRoutingCard() {
         <div className="p-3 mb-3 rounded-xl border border-indigo-200 bg-indigo-50">
           <button type="button" role="switch" aria-checked={routing.priority_only === true}
             disabled={!loaded || prioritySaving || saving || (priorityDraft && !routing.priority_only)} onClick={togglePriorityOnly}
-            className="font-semibold text-sm text-indigo-900 disabled:opacity-50">
-            Entregar somente aos prioritários — {prioritySaving ? 'Salvando…' : routing.priority_only ? 'Ligado' : 'Desligado'}
+            className="flex w-full items-center gap-3 text-left disabled:opacity-50">
+            <span aria-hidden="true" className={`relative inline-flex h-7 w-12 shrink-0 rounded-full border transition-colors ${routing.priority_only ? 'bg-indigo-600 border-indigo-600' : 'bg-gray-300 border-gray-300'}`}>
+              <span className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${routing.priority_only ? 'translate-x-5' : ''}`} />
+            </span>
+            <span className="font-semibold text-sm text-indigo-900">
+              Entregar somente aos prioritários — {prioritySaving ? 'Salvando…' : routing.priority_only ? 'Ligado' : 'Desligado'}
+            </span>
           </button>
           <p className="text-xs text-indigo-800 mt-2">Salva imediatamente. Ligado: todos os leads automáticos do sistema (PT e ES) ficam restritos aos destinatários da prioridade salvos, com crédito do próprio idioma, conta ativa, licença, horário e limite diário. Sem elegível, ficam pendentes; não há fallback. A proporção “1 a cada N” fica suspensa, sem apagar a seleção ou as regras anteriores.</p>
           <p className="text-xs text-indigo-800 mt-1">Salve alterações nos destinatários antes de ligar. Ao desligar, volta o roteamento anterior. Leads históricos, manuais e agendamentos não são reatribuídos.</p>
