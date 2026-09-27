@@ -15,7 +15,7 @@ function getResend(): Resend {
  * Send WhatsApp notification via wa-bridge (whatsapp-web.js).
  * Supports both direct (phone number) and groups (JID@g.us).
  */
-async function sendWhatsApp(phone: string, message: string, bridge?: { url: string; key: string } | null): Promise<boolean> {
+async function sendWhatsApp(phone: string, message: string, bridge?: { url: string; key: string } | null, opts?: { noFallback?: boolean }): Promise<boolean> {
   const clean = (s: string) => String(s).trim().replace(/\\n/g, '').replace(/\s+$/, '').replace(/\/$/, '')
   const bridgeUrl = clean(bridge?.url || process.env.WA_BRIDGE_URL || 'http://62.146.229.13:3457')
   const bridgeKey = (bridge?.key || process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026').trim()
@@ -55,7 +55,23 @@ async function sendWhatsApp(phone: string, message: string, bridge?: { url: stri
   // Retry 1x: os flaps da bridge ("Promise was collected") são transitórios.
   if (await attempt()) return true
   await new Promise(r => setTimeout(r, 1500))
-  return await attempt()
+  if (await attempt()) return true
+
+  // BRIDGE RESERVA (2026-09-27): o bridge escolhido está fora (deslogado/QR/morto).
+  // Tenta 1x por outro bridge de conta admin que esteja ready — o aviso chega
+  // por outro número em vez de sumir. Sem recursão: a reserva não tem reserva.
+  if (opts?.noFallback) return false
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const { pickFallbackBridge } = await import('@/lib/wa-bridge')
+    const fb = await pickFallbackBridge(createAdminClient(), bridgeUrl)
+    if (!fb) { console.error(`[WhatsApp] ${cleanNumber} — bridge ${bridgeUrl} fora e NENHUM bridge reserva pronto`); return false }
+    console.warn(`[WhatsApp] ${cleanNumber} — bridge ${bridgeUrl} fora; reenviando pela reserva ${fb.ownerName} (${fb.phone})`)
+    return await sendWhatsApp(phone, message, { url: fb.url, key: fb.key }, { noFallback: true })
+  } catch (e) {
+    console.error('[WhatsApp] fallback err:', (e as any)?.message)
+    return false
+  }
 }
 
 /**
@@ -263,8 +279,27 @@ export async function notifyAdmins(msg: string): Promise<{ groupOk: boolean; dir
       console.warn('[Notify] backup direto do admin falhou:', e?.message)
     }
   }
-  if (!groupOk && !directOk) console.error('[Notify] alerta NAO chegou nem no grupo nem no direto:', msg.slice(0, 60))
+  if (!groupOk && !directOk) {
+    console.error('[Notify] alerta NAO chegou nem no grupo nem no direto:', msg.slice(0, 60))
+    // ÚLTIMO RECURSO (2026-09-27): WhatsApp inteiro fora (inclusive a reserva) → SMS
+    // pro admin pela Twilio. Alarme de incêndio tem que chegar por algum caminho.
+    await smsAdmin(msg)
+  }
   return { groupOk, directOk }
+}
+
+/** SMS pro admin (Twilio) — usado só quando o WhatsApp não entregou o alarme. */
+async function smsAdmin(msg: string): Promise<boolean> {
+  try {
+    const { sendSms, toE164, twilioConfigured } = await import('@/lib/twilio')
+    if (!twilioConfigured()) return false
+    const to = toE164(process.env.ADMIN_WHATSAPP || '18632808023')
+    if (!to) return false
+    const plain = msg.replace(/\*/g, '').replace(/\s+/g, ' ').trim().slice(0, 300)
+    const r = await sendSms(to, `Lead4Pro: ${plain}`)
+    console.log(`[Notify] SMS de alarme pro admin: ${r.ok ? 'OK ' + r.sid : 'FALHOU ' + r.error}`)
+    return r.ok
+  } catch (e) { console.error('[Notify] SMS de alarme falhou:', (e as any)?.message); return false }
 }
 
 export async function notifyGroupPurchase(p: {
@@ -502,16 +537,22 @@ export async function checkBridgeHealthAndAlert(): Promise<boolean> {
   // Fora do ar: alerta no máximo 1x a cada 30min
   const recent = alertedAt && (Date.now() - new Date(alertedAt).getTime()) < 30 * 60_000
   if (recent) return false
+  // O alarme vai por TODOS os caminhos (2026-09-27): e-mail do domínio verificado,
+  // WhatsApp (grupo + direto — pela bridge reserva, já que a principal caiu) e,
+  // se nem isso chegar, SMS. Antes era só um e-mail de "onboarding@resend.dev".
+  try {
+    await notifyAdmins(`🚨 *O WhatsApp de AVISOS do Lead4Pro (786-744-2126) CAIU* — está pedindo QR.\n\nEnquanto isso os avisos de lead saem pela linha reserva. Pra religar: Regiane abre Lead4Pro → Configurações → WhatsApp → escaneia o QR em até 40 s.`)
+  } catch (e) { console.error('[Watchdog] alerta WhatsApp/SMS err:', (e as any)?.message) }
   try {
     await getResend().emails.send({
-      from: 'Lead4Producers <onboarding@resend.dev>',
-      to: (process.env.ALERT_EMAIL || 'leandromesq@gmail.com').trim(),
-      subject: '🚨 WhatsApp do Lead4Pro CAIU — leads sem notificação',
+      from: (process.env.RESEND_FROM_EMAIL || 'Lead4Pro <contato@lead4producers.com>').trim(),
+      to: (process.env.ALERT_EMAIL || process.env.ADMIN_EMAIL || 'leandromesq@gmail.com').trim(),
+      subject: '🚨 WhatsApp de AVISOS do Lead4Pro caiu — está pedindo QR',
       html: `<div style="font-family:sans-serif">
         <h2>⚠️ A bridge de WhatsApp está desconectada</h2>
         <p>O número de notificações (Regiane) está <b>fora do ar</b> (ready:false). Enquanto isso, os avisos de lead <b>não chegam no grupo nem nos compradores</b>.</p>
         <p><b>Como resolver:</b> a Regiane abre o Lead4Pro → <b>Configurações → WhatsApp</b> → escaneia o QR.</p>
-        <p>Os leads que chegarem nesse meio-tempo são <b>reenviados automaticamente</b> assim que a bridge voltar — ninguém fica sem aviso.</p>
+        <p>Enquanto isso os avisos saem pela <b>linha reserva</b> (outro número admin conectado). Leads sem aviso são <b>reenviados automaticamente</b> por até 72 horas depois que a bridge voltar.</p>
       </div>`,
     })
     await db.from('settings').upsert({ key: 'bridge_down_alerted_at', value: { at: new Date().toISOString() }, updated_at: new Date().toISOString() })

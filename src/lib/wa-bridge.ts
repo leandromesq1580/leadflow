@@ -92,3 +92,53 @@ export async function resolveSendBridge(
   if (!key) key = process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026'
   return { url: clean(url), key: String(key).trim(), phone }
 }
+
+
+// ============================================================================
+// BRIDGE RESERVA (2026-09-27)
+// Por que: o canal de avisos (piroli, 786-744-2126) foi deslogado pelo WhatsApp em
+// 25/09 e ficou 2 dias em QR. Todo aviso (comprador, grupo admin, e o PRÓPRIO alarme
+// de "bridge caiu") saía por ele → tudo sumiu em silêncio. Agora, quando o envio por
+// um bridge falha, tenta por outro bridge de conta ADMIN que esteja ready (ex.: a
+// linha de vendas 863-280-8696). Resultado em cache por 60 s pra não martelar /status.
+// ============================================================================
+export interface ReadyBridge { url: string; key: string; phone: string; ownerName: string }
+let fallbackCache: { at: number; list: ReadyBridge[] } | null = null
+
+async function bridgeIsReady(url: string, key: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${url}/status`, { headers: { apikey: key }, signal: AbortSignal.timeout(4000) })
+    const s: any = await res.json().catch(() => null)
+    return !!(s && s.ready === true)
+  } catch { return false }
+}
+
+/** Bridges de contas admin que respondem ready:true agora (cache 60 s). */
+export async function readyAdminBridges(db: Db): Promise<ReadyBridge[]> {
+  if (fallbackCache && Date.now() - fallbackCache.at < 60_000) return fallbackCache.list
+  const { data } = await db.from('buyers')
+    .select('name, wa_bridge_url, wa_bridge_key, wa_bridge_phone')
+    .eq('is_admin', true).not('wa_bridge_url', 'is', null).not('wa_bridge_key', 'is', null)
+  const list: ReadyBridge[] = []
+  for (const b of data || []) {
+    const url = String(b.wa_bridge_url).trim().replace(/\/$/, '')
+    const key = String(b.wa_bridge_key).trim()
+    if (!url || !key) continue
+    if (await bridgeIsReady(url, key)) list.push({ url, key, phone: String(b.wa_bridge_phone || ''), ownerName: String(b.name || '') })
+  }
+  fallbackCache = { at: Date.now(), list }
+  return list
+}
+
+/** Primeiro bridge admin pronto que NÃO seja o que acabou de falhar. */
+export async function pickFallbackBridge(db: Db, failedUrl: string): Promise<ReadyBridge | null> {
+  const norm = (u: string) => String(u || '').trim().replace(/\/$/, '')
+  const failed = norm(failedUrl)
+  // :3457 é o nginx na frente do :3456 (piroli) — trata como o mesmo bridge
+  const same = (a: string, b: string) => a === b || a.replace(':3457', ':3456') === b.replace(':3457', ':3456')
+  const list = await readyAdminBridges(db)
+  return list.find(b => !same(norm(b.url), failed)) || null
+}
+
+/** Só pra testes: zera o cache. */
+export function _resetFallbackCache() { fallbackCache = null }

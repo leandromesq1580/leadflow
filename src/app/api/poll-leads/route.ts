@@ -274,8 +274,10 @@ export async function GET(request: Request) {
 
     // 🔒 WATCHDOG + RECONCILIAÇÃO (rede de segurança das notificações).
     // 1) Checa a saúde da bridge; se cair, alerta o admin por email (1x/30min).
-    // 2) Se a bridge está OK, reenvia os leads atribuídos nas últimas 6h que NÃO
+    // 2) Se a bridge está OK, reenvia os leads atribuídos nas últimas 72h que NÃO
     //    foram notificados (notified_at IS NULL) — pega o que falhou por flap/queda.
+    //    Era 6h: na queda de 25–27/09 (2 dias em QR) 29 leads ficaram sem aviso pra
+    //    sempre e tiveram que ser reenviados à mão. 25 por rodada, a cada 2 min.
     //    Só roda quando a bridge está pronta (não adianta reenviar pra bridge fora).
     let renotified = 0
     let missedCount = 0
@@ -295,7 +297,7 @@ export async function GET(request: Request) {
     }
     if (bridgeReady) {
       try {
-        const cutoff = new Date(Date.now() - 6 * 3600_000).toISOString()
+        const cutoff = new Date(Date.now() - 72 * 3600_000).toISOString()
         // Sem embed (evita ambiguidade do PostgREST entre a coluna assigned_to e o
         // embed de mesmo nome). Busca os leads pendentes e os buyers à parte.
         const { data: missed, error: mErr } = await supabase
