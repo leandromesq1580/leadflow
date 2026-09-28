@@ -1,26 +1,32 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, JetBrains_Mono, Playfair_Display } from 'next/font/google'
+// Fontes embutidas (28/09/2026) — next/font/google quebrava o build (vercel/next.js#99114).
+import localFont from 'next/font/local'
 
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700', '800', '900'],
+const inter = localFont({
+  src: '../../fonts/inter-latin.woff2',
+  weight: '100 900',
   variable: '--font-inter',
   display: 'swap',
+  fallback: ['system-ui', 'arial'],
 })
 
-const mono = JetBrains_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+const mono = localFont({
+  src: '../../fonts/jetbrains-mono-latin.woff2',
+  weight: '100 800',
   variable: '--font-mono',
   display: 'swap',
+  fallback: ['ui-monospace', 'monospace'],
 })
 
-const playfair = Playfair_Display({
-  subsets: ['latin'],
-  weight: ['500', '600', '700', '800'],
-  style: ['normal', 'italic'],
+const playfair = localFont({
+  src: [
+    { path: '../../fonts/playfair-display-latin.woff2', weight: '400 900', style: 'normal' },
+    { path: '../../fonts/playfair-display-italic-latin.woff2', weight: '400 900', style: 'italic' },
+  ],
   variable: '--font-playfair',
   display: 'swap',
+  fallback: ['Georgia', 'serif'],
+  adjustFontFallback: 'Times New Roman',
 })
 
 export const metadata: Metadata = {
