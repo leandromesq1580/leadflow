@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { updateLeadRouting } from '@/lib/lead-routing-settings'
 
 /**
  * POST /api/admin/queue-order  { order: 'credito'|'antiguidade'|'hibrido'|'rodizio' }
@@ -22,12 +23,10 @@ export async function POST(request: NextRequest) {
   const order = String(body.order || '')
   if (!VALID.includes(order)) return NextResponse.json({ error: 'Invalid order' }, { status: 400 })
 
-  const { data: cur } = await db.from('settings').select('value').eq('key', 'lead_routing').maybeSingle()
-  const value = { ...((cur?.value as any) || {}), queue_order: order }
-  const { error } = await db.from('settings').upsert(
-    { key: 'lead_routing', value, updated_at: new Date().toISOString() },
-    { onConflict: 'key' },
-  )
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  try {
+    await updateLeadRouting(db, current => ({ ...current, queue_order: order }))
+  } catch {
+    return NextResponse.json({ error: 'Não foi possível salvar a ordem.' }, { status: 503 })
+  }
   return NextResponse.json({ ok: true, order })
 }

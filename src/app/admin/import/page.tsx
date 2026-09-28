@@ -163,7 +163,7 @@ export default function ImportPage() {
                       <td className="px-4 py-2 text-[13px] font-semibold" style={{ color: '#1a1a2e' }}>{lead.full_name}</td>
                       <td className="px-4 py-2 text-[13px]" style={{ color: '#64748b' }}>{(lead.phone || '').replace(/^p:/, '')}</td>
                       <td className="px-4 py-2 text-[12px]" style={{ color: '#94a3b8' }}>{lead.email}</td>
-                      <td className="px-4 py-2 text-[12px]" style={{ color: '#64748b' }}>{lead.created_time ? new Date(lead.created_time).toLocaleDateString('pt-BR') : '—'}</td>
+                      <td className="px-4 py-2 text-[12px]" style={{ color: '#64748b' }}>{lead.created_time ? new Date(lead.created_time).toLocaleDateString('pt-BR', { timeZone: 'America/New_York' }) : '—'}</td>
                       <td className="px-4 py-2">
                         <span className="px-2 py-0.5 rounded text-[11px] font-bold" style={{ background: age.color + '20', color: age.color }}>
                           {age.days}d

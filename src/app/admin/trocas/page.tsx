@@ -78,7 +78,7 @@ export default function TrocasPage() {
                         {r.lead?.name || '?'} <span className="font-medium" style={{ color: '#94a3b8' }}>({r.lead?.state || '?'})</span>
                       </p>
                       <p className="text-[12px] mt-0.5" style={{ color: '#64748b' }}>
-                        Pedido por <b>{r.buyer?.name || r.buyer?.email}</b> em {new Date(r.requested_at).toLocaleDateString('pt-BR')}
+                        Pedido por <b>{r.buyer?.name || r.buyer?.email}</b> em {new Date(r.requested_at).toLocaleDateString('pt-BR', { timeZone: 'America/New_York' })}
                       </p>
                       <p className="text-[12px] mt-2 font-semibold" style={{ color: '#3730a3' }}>
                         ⚠️ Declarado inválido: {e.invalidContact === 'both' ? 'telefone e e-mail' : e.invalidContact === 'email' ? 'e-mail' : 'telefone'}
@@ -108,7 +108,7 @@ export default function TrocasPage() {
                 <span>{r.status === 'approved' ? '✅' : '❌'}</span>
                 <span className="font-semibold" style={{ color: '#334155' }}>{r.lead?.name || '?'}</span>
                 <span style={{ color: '#94a3b8' }}>{r.buyer?.name || r.buyer?.email}</span>
-                <span className="ml-auto" style={{ color: '#94a3b8' }}>{r.decided_at ? new Date(r.decided_at).toLocaleDateString('pt-BR') : ''}</span>
+                <span className="ml-auto" style={{ color: '#94a3b8' }}>{r.decided_at ? new Date(r.decided_at).toLocaleDateString('pt-BR', { timeZone: 'America/New_York' }) : ''}</span>
               </div>
             ))}
           </div>

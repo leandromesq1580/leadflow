@@ -5,6 +5,39 @@ import { notifyGroupSmsReply, notifySmsReplyToOwner } from '@/lib/notifications'
 import { pushToBuyer } from '@/lib/push-notify'
 import { localeDoBuyer, trad } from '@/lib/buyer-locale'
 
+type LeadCandidate = { id: string; name: string | null; assigned_to: string | null; created_at: string }
+
+/**
+ * Escolhe QUAL cadastro de lead recebe a resposta quando o telefone bate em
+ * mais de um (duplicidade legítima entre contas diferentes). Nunca "o mais
+ * recente" — isso mistura a conversa de um cliente na caixa de outro. Prefere
+ * o lead que já tem uma mensagem OUTBOUND (a pergunta que está sendo
+ * respondida); sem ambiguidade real, cai no único candidato ou no mais antigo.
+ */
+async function resolveLeadForInboundSms(
+  db: ReturnType<typeof createAdminClient>, candidates: LeadCandidate[]
+): Promise<LeadCandidate | null> {
+  if (candidates.length <= 1) return candidates[0] || null
+  const { data: outbound } = await db.from('sms_messages')
+    .select('lead_id, created_at')
+    .eq('direction', 'out')
+    .in('lead_id', candidates.map(c => c.id))
+    .order('created_at', { ascending: false })
+  const conversed = new Set((outbound || []).map((r: { lead_id: string }) => r.lead_id))
+  const withHistory = candidates.filter(c => conversed.has(c.id))
+  if (withHistory.length === 1) return withHistory[0]
+  if (withHistory.length > 1) {
+    // Mais de um teve conversa: fica com quem mandou o SMS mais recente (o que
+    // está sendo respondido agora), não com o cadastro mais recentemente criado.
+    const mostRecentOutboundLeadId = (outbound || [])[0]?.lead_id
+    return candidates.find(c => c.id === mostRecentOutboundLeadId) || candidates[0]
+  }
+  // Nenhum tem histórico de SMS enviado — sem sinal pra desambiguar; usa o
+  // cadastro mais antigo (o comportamento anterior favorecia o mais novo, que
+  // é exatamente o padrão do bug: duplicata recém-criada rouba a conversa).
+  return [...candidates].sort((a, b) => a.created_at.localeCompare(b.created_at))[0] || null
+}
+
 /**
  * POST /api/webhook/twilio-sms — resposta de SMS chegando (configurar este URL
  * no número Twilio em "A message comes in").
@@ -41,15 +74,20 @@ export async function POST(request: NextRequest) {
   const { data: dup } = await db.from('sms_messages').select('id').eq('twilio_sid', sid).maybeSingle()
   if (dup) return twiml()
 
-  // Casa o lead pelos últimos 10 dígitos (mesmo padrão do webhook do WhatsApp)
+  // Casa o lead pelos últimos 10 dígitos (mesmo padrão do webhook do WhatsApp).
+  // Um mesmo telefone pode ter MAIS DE UM cadastro de lead (duplicidade legítima:
+  // reimportação, novo formulário, etc.), cada um com um dono (assigned_to)
+  // diferente. Pegar sempre "o mais recente" (bug real, 2026-09-22) faz a
+  // resposta do cliente cair no dono ERRADO quando o cadastro mais novo nunca
+  // trocou mensagem com esse contato — mistura a conversa entre duas contas.
   const digits = from.replace(/\D/g, '')
   const last10 = digits.slice(-10)
   const { data: candidates } = await db.from('leads')
     .select('id, name, assigned_to, created_at')
     .or(`phone.ilike.%${last10},phone.eq.${digits},phone.eq.+${digits}`)
     .order('created_at', { ascending: false })
-    .limit(1)
-  const lead = candidates?.[0] || null
+    .limit(10)
+  const lead = await resolveLeadForInboundSms(db, candidates || [])
 
   await db.from('sms_messages').insert({
     lead_id: lead?.id || null,

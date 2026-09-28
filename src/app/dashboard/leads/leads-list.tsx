@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { getInitials } from '@/lib/utils'
+import { formatFloridaDateTime } from '@/lib/florida-time'
 import { AssignButton } from './assign-button'
 import { usePrivacy } from '@/lib/privacy-mode'
 import { useT } from '@/lib/i18n-client'
@@ -20,6 +21,8 @@ interface Lead extends LeadLanguageFields {
   interest?: string | null
   status: string
   created_at: string
+  assigned_at?: string | null
+  notified_at?: string | null
   assigned_to_member?: string | null
   member?: { id: string; name: string } | null
 }
@@ -41,23 +44,9 @@ function digits(s: string) {
   return s.replace(/\D/g, '')
 }
 
-function timeAgoLocalized(date: string, L: (pt: string, en: string, es: string) => string, dateLocale: string): string {
-  const diff = Date.now() - new Date(date).getTime()
-  const minutes = Math.floor(diff / 60000)
-  if (minutes < 1) return L('agora', 'now', 'ahora')
-  if (minutes < 60) return `${minutes} ${L('min atras', 'min ago', 'min atrás')}`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}${L('h atras', 'h ago', 'h atrás')}`
-  const days = Math.floor(hours / 24)
-  if (days === 1) return L('ontem', 'yesterday', 'ayer')
-  if (days < 7) return `${days} ${L('dias atras', 'days ago', 'días atrás')}`
-  return new Intl.DateTimeFormat(dateLocale, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(date))
-}
-
 export function LeadsList({ leads, isAgency, teamMembers }: Props) {
   const t = useT()
   const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
-  const dateLocale = t._locale === 'en' ? 'en-US' : t._locale === 'es' ? 'es-US' : 'pt-BR'
   const privacy = usePrivacy()
   const [query, setQuery] = useState('')
 
@@ -136,7 +125,9 @@ export function LeadsList({ leads, isAgency, teamMembers }: Props) {
                   )}
 
                   <Badge status={lead.status} />
-                  <span className="text-[12px] whitespace-nowrap hidden md:block" style={{ color: 'var(--fg-muted)' }}>{timeAgoLocalized(lead.created_at, L, dateLocale)}</span>
+                  <span className="text-[12px] whitespace-nowrap hidden md:block" style={{ color: 'var(--fg-muted)' }}>{lead.notified_at
+                    ? `${L('Entregue no WhatsApp', 'Delivered on WhatsApp', 'Entregado en WhatsApp')}: ${formatFloridaDateTime(lead.notified_at, t._locale)}`
+                    : `${L('Entregue ao cliente (CRM)', 'Delivered to client (CRM)', 'Entregado al cliente (CRM)')}: ${formatFloridaDateTime(lead.assigned_at, t._locale)}`}</span>
                 </div>
               )
             })}

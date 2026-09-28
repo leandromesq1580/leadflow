@@ -4,6 +4,7 @@ import { Sidebar } from '@/components/dashboard/sidebar'
 import { PolicyAcceptanceGate } from '@/components/policy-acceptance-gate'
 import { hasAcceptedCurrentPolicy } from '@/lib/policies'
 import { getLocale } from '@/lib/locale'
+import { FloridaTimeNotice } from '@/components/florida-time-notice'
 import { I18nProvider } from '@/lib/i18n-client'
 import { redirect } from 'next/navigation'
 import { AccessAuditBeacon } from '@/components/access-audit-beacon'
@@ -45,7 +46,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <Sidebar type="admin" userName={buyer?.name || user!.email || ''} />
       </div>
       <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-auto">
-        {children}
+        <FloridaTimeNotice locale={locale} />
+              {children}
       </main>
     </div>
   )

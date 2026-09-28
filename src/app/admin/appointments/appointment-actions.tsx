@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { floridaWallClockToISO } from '@/lib/florida-time'
 
 interface Buyer {
   id: string
@@ -28,12 +29,16 @@ export function AppointmentActions({ leadId, buyers }: Props) {
 
   async function schedule() {
     if (!selectedBuyer || !dateTime) return
+    // datetime-local carries no offset; interpret it as Florida wall clock, never as UTC/browser time.
+    const [date, time] = dateTime.split('T')
+    const scheduled_at = floridaWallClockToISO(date, time)
+    if (!scheduled_at) return
     setSaving(true)
 
     await fetch('/api/appointments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lead_id: leadId, buyer_id: selectedBuyer, scheduled_at: dateTime, notes }),
+      body: JSON.stringify({ lead_id: leadId, buyer_id: selectedBuyer, scheduled_at, notes }),
     })
 
     window.location.reload()
@@ -54,7 +59,7 @@ export function AppointmentActions({ leadId, buyers }: Props) {
           </select>
         </div>
         <div>
-          <label className="block text-[11px] font-bold mb-1" style={{ color: '#94a3b8' }}>Data/Hora</label>
+          <label className="block text-[11px] font-bold mb-1" style={{ color: '#94a3b8' }}>Data/Hora (horário da Flórida)</label>
           <input type="datetime-local" value={dateTime} onChange={(e) => setDateTime(e.target.value)}
             className="w-full px-3 py-2.5 rounded-xl text-[13px] font-medium"
             style={{ background: '#f8f9fc', border: '1px solid #e8ecf4', color: '#1a1a2e' }} />

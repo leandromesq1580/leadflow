@@ -1,4 +1,5 @@
 'use client'
+import { floridaDayRange, floridaToday, floridaWallClockToISO, formatFloridaDateTime } from '@/lib/florida-time'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -21,9 +22,9 @@ export default function MobileAppointments() {
   const [busy, setBusy] = useState(false)
 
   const load = (bid: string) => {
-    const from = new Date(); from.setHours(0, 0, 0, 0)
-    const to = new Date(from.getTime() + 30 * 86400000)
-    return fetch(`/api/appointments/calendar?buyer_id=${bid}&from=${from.toISOString()}&to=${to.toISOString()}`, { cache: 'no-store' })
+    // Florida midnight today → 30 Florida days ahead, whatever the phone's timezone.
+    const { fromIso, toIso } = floridaDayRange(floridaToday(), 30)
+    return fetch(`/api/appointments/calendar?buyer_id=${bid}&from=${fromIso}&to=${toIso}`, { cache: 'no-store' })
       .then(r => (r.ok ? r.json() : null)).then(d => { if (d) setEvents((d.events || []).filter((e: Ev) => !e.completed)) }).catch(() => setErr(true))
   }
 
@@ -32,14 +33,15 @@ export default function MobileAppointments() {
   }, [])
 
   const locale = loc === 'en' ? 'en-US' : loc === 'es' ? 'es' : 'pt-BR'
-  const hhmm = (iso: string) => { try { return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) } catch { return '' } }
-  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const hhmm = (iso: string) => /^\d{4}-\d{2}-\d{2}$/.test(iso) ? '' : formatFloridaDateTime(iso, locale, { hour: '2-digit', minute: '2-digit' })
+  // Display grouping only; never reuse these calendar keys to schedule or persist events.
+  const dayKey = (iso: string | Date) => formatFloridaDateTime(iso, 'en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' })
+  const today = Date.parse(dayKey(new Date()))
   const dayLabel = (iso: string) => {
-    const d = new Date(iso); const dd = new Date(d); dd.setHours(0, 0, 0, 0)
-    const diff = Math.round((dd.getTime() - today.getTime()) / 86400000)
+    const diff = (Date.parse(dayKey(iso)) - today) / 86400000
     if (diff === 0) return L('Hoje', 'Today', 'Hoy')
     if (diff === 1) return L('Amanhã', 'Tomorrow', 'Mañana')
-    return d.toLocaleDateString(locale, { weekday: 'short', day: '2-digit', month: '2-digit' })
+    return formatFloridaDateTime(iso, locale, { weekday: 'short', day: '2-digit', month: '2-digit' })
   }
   const kindIcon = (k: string) => k === 'followup' ? 'refresh' : k === 'calendar_item' ? 'calendar' : 'calendar'
 
@@ -56,7 +58,7 @@ export default function MobileAppointments() {
     if (!creating || busy || !creating.title.trim() || !creating.date || !creating.time) return
     setBusy(true)
     try {
-      const start_at = new Date(`${creating.date}T${creating.time}:00`).toISOString()
+      const start_at = floridaWallClockToISO(creating.date, creating.time)
       await fetch('/api/calendar-items', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'event', title: creating.title, start_at, color: creating.color }) })
       if (buyerId) await load(buyerId)
       setCreating(null)
@@ -113,7 +115,7 @@ export default function MobileAppointments() {
             <input className="m-input" value={creating.title} onChange={e => setCreating({ ...creating, title: e.target.value })} placeholder={L('Título', 'Title', 'Título')} style={{ marginBottom: 12 }} />
             <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
               <div style={{ flex: 1 }}><p className="m-muted" style={{ fontSize: 12, fontWeight: 600, margin: '0 0 6px' }}>{L('Data', 'Date', 'Fecha')}</p><input type="date" value={creating.date} onChange={e => setCreating({ ...creating, date: e.target.value })} className="m-input" style={{ colorScheme: 'dark', height: 44 }} /></div>
-              <div style={{ flex: 1 }}><p className="m-muted" style={{ fontSize: 12, fontWeight: 600, margin: '0 0 6px' }}>{L('Hora', 'Time', 'Hora')}</p><input type="time" value={creating.time} onChange={e => setCreating({ ...creating, time: e.target.value })} className="m-input" style={{ colorScheme: 'dark', height: 44 }} /></div>
+              <div style={{ flex: 1 }}><p className="m-muted" style={{ fontSize: 12, fontWeight: 600, margin: '0 0 6px' }}>{L('Hora', 'Time', 'Hora')} · {L('horário da Flórida', 'Florida time', 'hora de Florida')}</p><input type="time" value={creating.time} onChange={e => setCreating({ ...creating, time: e.target.value })} className="m-input" style={{ colorScheme: 'dark', height: 44 }} /></div>
             </div>
             <div style={{ marginBottom: 16 }}>
               <p className="m-muted" style={{ fontSize: 12, fontWeight: 600, margin: '0 0 8px' }}>{L('Cor', 'Color', 'Color')}</p>

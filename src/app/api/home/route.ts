@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { floridaDayRange, floridaToday } from '@/lib/florida-time'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,9 +19,8 @@ export async function GET() {
   const { data: buyer } = await db.from('buyers').select('id, name, crm_plan').eq('auth_user_id', user.id).single()
   if (!buyer) return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
 
-  const start = new Date(); start.setHours(0, 0, 0, 0)
-  const end = new Date(); end.setHours(23, 59, 59, 999)
-  const sIso = start.toISOString(), eIso = end.toISOString()
+  // "Hoje" é o dia da Flórida, não a meia-noite do servidor (Vercel = UTC).
+  const { fromIso: sIso, toIso: eIso } = floridaDayRange(floridaToday())
 
   let leadsToday = 0, newLeads = 0, totalLeads = 0, converted = 0, remaining = 0, totalPurchased = 0, apptsToday = 0
 
@@ -38,9 +38,9 @@ export async function GET() {
 
   try {
     const [a, f, c] = await Promise.all([
-      db.from('appointments').select('id', { count: 'exact', head: true }).eq('buyer_id', buyer.id).gte('scheduled_at', sIso).lte('scheduled_at', eIso).in('status', ['scheduled', 'confirmed']),
-      db.from('follow_ups').select('id', { count: 'exact', head: true }).eq('buyer_id', buyer.id).not('scheduled_at', 'is', null).gte('scheduled_at', sIso).lte('scheduled_at', eIso).is('completed_at', null),
-      db.from('calendar_items').select('id', { count: 'exact', head: true }).eq('buyer_id', buyer.id).eq('kind', 'event').gte('start_at', sIso).lte('start_at', eIso).is('completed_at', null),
+      db.from('appointments').select('id', { count: 'exact', head: true }).eq('buyer_id', buyer.id).gte('scheduled_at', sIso).lt('scheduled_at', eIso).in('status', ['scheduled', 'confirmed']),
+      db.from('follow_ups').select('id', { count: 'exact', head: true }).eq('buyer_id', buyer.id).not('scheduled_at', 'is', null).gte('scheduled_at', sIso).lt('scheduled_at', eIso).is('completed_at', null),
+      db.from('calendar_items').select('id', { count: 'exact', head: true }).eq('buyer_id', buyer.id).eq('kind', 'event').gte('start_at', sIso).lt('start_at', eIso).is('completed_at', null),
     ])
     apptsToday = (a.count || 0) + (f.count || 0) + (c.count || 0)
   } catch {}

@@ -83,7 +83,7 @@ export default async function RevenuePage() {
   } catch {}
   // MRR = soma do equivalente MENSAL de cada pagante (trimestral $237 = ~$79/mes; anual $718.80 = ~$59.90/mes).
   const mrr = Math.round(crmPayers.reduce((acc: number, b: any) => acc + (subDates[b.id]?.mensal ?? CRM_PRICE), 0))
-  const fmtTs = (ts: number | null) => ts ? new Date(ts * 1000).toLocaleDateString('pt-BR') : null
+  const fmtTs = (ts: number | null) => ts ? new Date(ts * 1000).toLocaleDateString('pt-BR', { timeZone: 'America/New_York' }) : null
   // Sempre do mais recente pro mais antigo: pagantes pelo ultimo pagamento, cortesias pela criacao
   crmPayers.sort((a: any, b: any) => (subDates[b.id]?.paid ?? 0) - (subDates[a.id]?.paid ?? 0) || new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
   crmCourtesy.sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
@@ -237,7 +237,7 @@ export default async function RevenuePage() {
                 </div>
                 <span className="text-[12px] font-medium" style={{ color: '#64748b' }}>{p.product_type === 'crm' ? '💳 CRM Pro' : `${p.quantity}x ${p.product_type === 'lead' ? 'Lead' : p.product_type === 'appointment' ? 'Appt' : p.product_type}`}{['lead', 'cold_lead'].includes(p.product_type) && ` · ${leadLanguageLabel(purchaseLeadLanguage(p.lead_language) || 'pt')}`}</span>
                 <span className="text-[14px] font-bold" style={{ color: '#10b981' }}>${Number(p.amount).toFixed(0)}</span>
-                <span className="text-[11px]" style={{ color: '#94a3b8' }}>{new Date(p.created_at).toLocaleDateString('pt-BR')}</span>
+                <span className="text-[11px]" style={{ color: '#94a3b8' }}>{new Date(p.created_at).toLocaleDateString('pt-BR', { timeZone: 'America/New_York' })}</span>
               </div>
             ))}
           </div>

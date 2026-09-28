@@ -1,4 +1,5 @@
 import { type ClassValue, clsx } from 'clsx'
+import { formatFloridaDateTime, type DisplayDate } from './florida-time'
 
 // Simple cn utility without tailwind-merge for now
 export function cn(...inputs: ClassValue[]) {
@@ -15,15 +16,8 @@ export function formatCurrency(cents: number): string {
 // Locale das funcoes compartilhadas de UI (web passa; /m fica no default 'pt' ate a Onda 3)
 export type UiLocale = 'pt' | 'en' | 'es'
 
-export function formatDate(date: string | Date, locale: UiLocale = 'pt'): string {
-  const tag = locale === 'en' ? 'en-US' : locale === 'es' ? 'es-US' : 'pt-BR'
-  return new Intl.DateTimeFormat(tag, {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(date))
+export function formatDate(date: DisplayDate, locale: UiLocale = 'pt'): string {
+  return formatFloridaDateTime(date, locale)
 }
 
 export function timeAgo(date: string | Date, locale: UiLocale = 'pt'): string {

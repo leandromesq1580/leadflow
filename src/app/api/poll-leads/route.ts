@@ -19,6 +19,7 @@ import { stateFromPhone } from '@/lib/us-area-codes'
 import { acquireMetaPollLease, fetchMetaFormLeads, releaseMetaPollLease } from '@/lib/meta-poll'
 import { randomUUID } from 'node:crypto'
 import { META_FORM_LANGUAGES } from '@/lib/lead-language'
+import { updateLeadRouting } from '@/lib/lead-routing-settings'
 
 export const maxDuration = 300
 
@@ -211,15 +212,19 @@ export async function GET(request: Request) {
       buyer = await tryAdminRule(newLead, routing?.admin_rule)
       const target = buyer ? null : resolveRoutingTarget(routing)
       if (target && target.emails.length > 0) {
-        buyer = await forceAssignRoundRobin(newLead, target.emails)
-        // Sequential: conta o lead entregue nessa etapa e persiste no banco
-        if (buyer && routing?.mode === 'sequential' && target.stepIndex != null && routing.steps?.[target.stepIndex]) {
+        const routedBuyer = await forceAssignRoundRobin(newLead, target.emails)
+        buyer = routedBuyer
+        // ONLY suspends the previous schedule, even when it delivers to the same buyer.
+        if (routedBuyer && routedBuyer.assignmentPolicy !== 'priority_only' && routing?.mode === 'sequential' && target.stepIndex != null && routing.steps?.[target.stepIndex]) {
           routing.steps[target.stepIndex].delivered = (routing.steps[target.stepIndex].delivered || 0) + 1
           // try/catch: falha ao persistir a contagem NUNCA pode interromper a distribuição
           try {
-            await supabase
-              .from('settings')
-              .upsert({ key: 'lead_routing', value: routing as any, updated_at: new Date().toISOString() })
+            await updateLeadRouting(supabase, current => {
+              const steps = (current.steps as RoutingStep[] | undefined) || []
+              return { ...current, steps: steps.map((step, i) =>
+                i === target.stepIndex && step.email === routing?.steps?.[i]?.email
+                  ? { ...step, delivered: (step.delivered || 0) + 1 } : step) }
+            })
           } catch (e) {
             console.error('[Poll] falha ao persistir delivered (lead já atribuído ok):', (e as any)?.message)
           }

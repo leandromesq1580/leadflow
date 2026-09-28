@@ -3,7 +3,7 @@ import { sendLeadNotificationEmail, sendTeamMemberNotification } from './notific
 import { buyerTimezone, isAvailableNow } from './availability'
 import { placeLeadInMemberPipeline } from './place-member-lead'
 import { resolveSendBridge } from './wa-bridge'
-import { adminRuleTurn, easternDayStartISO, evaluateAdminRule, type AdminRule } from './admin-rule'
+import { adminDailyBlock, adminRuleTurn, easternDayStartISO, evaluateAdminRule, type AdminRule } from './admin-rule'
 import { readAdminRuleState } from './admin-rule-state'
 import { readBuyerPolicy, withoutStaff } from './buyer-policy'
 import { leadLanguageForLead } from './lead-language'
@@ -63,21 +63,17 @@ async function assignLeadToBuyer(
   lead: Lead,
   buyer: { id: string; name: string; email: string; phone?: string; notification_email?: boolean; notification_sms?: boolean },
 ): Promise<EligibleBuyer | null> {
-  const { error } = await supabase
-    .from('leads')
-    .update({
-      assigned_to: buyer.id,
-      assigned_at: new Date().toISOString(),
-      status: 'assigned',
-      delivery_credit_id: null,
-    })
-    .eq('id', lead.id)
-    .is('assigned_to', null)
-
+  // Both callers are automatic (staff priority / fallback), never manual.
+  // A stale OFF snapshot must not bypass an ON policy saved before this write.
+  const { data: assigned, error } = await supabase.rpc('assign_automatic_free_lead', {
+    p_lead_id: lead.id,
+    p_buyer_id: buyer.id,
+  })
   if (error) {
     console.error(`[Distribute] free assignment failed for lead=${lead.id}:`, error.message)
     return null
   }
+  if (!assigned) return null
   return finishLeadAssignment(supabase, lead, buyer)
 }
 
@@ -119,7 +115,11 @@ async function assignPaidLeadToBuyer(
 export async function forceAssignRoundRobin(
   lead: Lead & { meta_lead_id?: string | null },
   emails: string[]
-): Promise<EligibleBuyer | null> {
+): Promise<(EligibleBuyer & { assignmentPolicy?: 'priority_only' }) | null> {
+  const priorityResult = await tryPriorityOnly(lead)
+  // Preserve the policy that produced this result, even if the switch changes
+  // again before the caller accounts for a sequential step (including A = B).
+  if (priorityResult !== undefined) return priorityResult ? { ...priorityResult, assignmentPolicy: 'priority_only' } : null
   if (emails.length === 0) return null
   const language = leadLanguageForLead(lead)
   if (!language) return null
@@ -226,7 +226,9 @@ export async function tryAdminRule(
   rule?: AdminRule | null,
   dryRun = false
 ): Promise<EligibleBuyer | null> {
-  // A regra de prioridade configurada existe somente no produto BR.
+  const priorityResult = await tryPriorityOnly(lead, dryRun)
+  if (priorityResult !== undefined) return priorityResult
+  // A regra proporcional anterior existe somente no produto BR.
   if (leadLanguageForLead(lead) !== 'pt') return null
   if (!adminRuleTurn(rule, 0).N || !rule?.admin_emails?.length) return null
   const supabase = createAdminClient()
@@ -322,6 +324,46 @@ async function assignToFallback(
   return await assignLeadToBuyer(supabase, lead, fb as any)
 }
 
+/** undefined means disabled/out of scope; null is terminal pending, NEVER a fallback signal. */
+async function tryPriorityOnly(lead: Lead, dryRun = false): Promise<EligibleBuyer | null | undefined> {
+  if (!lead.meta_lead_id || lead.product_type === 'appointment') return undefined
+  const language = leadLanguageForLead(lead)
+  if (!language) return null
+  const supabase = createAdminClient()
+  {
+    const { data, error } = await supabase.from('settings').select('value').eq('key', 'lead_routing').maybeSingle()
+    if (error) throw error
+    if (data?.value?.priority_only === true) {
+      if (!lead.state) {
+        console.log(`[Distribute] lead ${lead.id} pendente: estado ausente, licença não verificável; sem fallback`)
+        return null
+      }
+      const rule = data.value.admin_rule as AdminRule | undefined
+      const snapshot = await readAdminRuleState(supabase, rule, language)
+      const emails = (rule?.admin_emails || []).map(e => e.trim().toLowerCase())
+      const candidates = snapshot.candidates.filter(b => b.is_active && b.priorityCredits > 0
+        && b.states.includes(lead.state.toUpperCase())
+        && !adminDailyBlock(rule, b.receivedToday))
+        .sort((a, b) => a.receivedToday - b.receivedToday || emails.indexOf(a.email.toLowerCase()) - emails.indexOf(b.email.toLowerCase()))
+      const available = []
+      for (const candidate of candidates) {
+        const { data: windows, error: availabilityError } = await supabase.from('buyer_availability')
+          .select('day_type, period, hours').eq('buyer_id', candidate.id)
+        if (availabilityError) throw availabilityError
+        if (isAvailableNow(windows || [], buyerTimezone(candidate.states))) available.push(candidate)
+      }
+      if (dryRun) return (available[0] as unknown as EligibleBuyer) || null
+      for (const candidate of available) {
+        const assigned = await assignPaidLeadToBuyer(supabase, lead, candidate)
+        if (assigned) return assigned
+      }
+      console.log(`[Distribute] lead ${lead.id} pendente: somente prioritários, nenhum elegível; sem fallback`)
+      return null
+    }
+  }
+  return undefined
+}
+
 export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuyer | null> {
   // Appointments go to admin queue, not auto-distributed
   if (lead.product_type === 'appointment') {
@@ -332,6 +374,8 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
   if (!language) return null
 
   const supabase = createAdminClient()
+  const priorityResult = await tryPriorityOnly(lead)
+  if (priorityResult !== undefined) return priorityResult
 
   // Get eligible buyers filtered by state + sorted by remaining credits (weighted)
   const { staffIds } = await readBuyerPolicy(supabase)
@@ -474,7 +518,7 @@ export async function distributeLeadToNextBuyer(lead: Lead): Promise<EligibleBuy
  * lead chegou. Chamado pelo cron (poll-leads). Quando a janela de alguém abre,
  * o lead é finalmente entregue. Ignora leads muito antigos pra não acumular.
  */
-export async function redistributePendingLeads(routingEmails?: string[] | null, maxAgeHours = 72): Promise<number> {
+export async function redistributePendingLeads(routingEmails?: string[] | null, maxAgeHours = 168): Promise<number> {
   const supabase = createAdminClient()
   const cutoff = new Date(Date.now() - maxAgeHours * 3600_000).toISOString()
   const { data: pending } = await supabase

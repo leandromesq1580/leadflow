@@ -30,7 +30,7 @@ export async function CrmSubscribersPanel() {
     }))
     for (const r of rows) subDates[r.id] = { paid: r.paid, renews: r.renews }
   } catch {}
-  const fmtTs = (ts: number | null) => ts ? new Date(ts * 1000).toLocaleDateString('pt-BR') : null
+  const fmtTs = (ts: number | null) => ts ? new Date(ts * 1000).toLocaleDateString('pt-BR', { timeZone: 'America/New_York' }) : null
 
   // Sempre do mais recente pro mais antigo
   payers.sort((a, b) => (subDates[b.id]?.paid ?? 0) - (subDates[a.id]?.paid ?? 0) || new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())

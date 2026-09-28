@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { floridaWallClockToISO } from '@/lib/florida-time'
 
 interface Client { id: string; name: string; remaining: number }
 interface Props {
@@ -30,7 +31,7 @@ export function AppointmentModal({ leadId, leadName, clients }: Props) {
     if (!buyerId) { setErr('Escolha o cliente que vai receber.'); return }
     setSaving(true)
     try {
-      const scheduled_at = new Date(`${date}T${time}:00`).toISOString()
+      const scheduled_at = floridaWallClockToISO(date, time)
       const r = await fetch('/api/admin/create-appointment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -87,7 +88,7 @@ export function AppointmentModal({ leadId, leadName, clients }: Props) {
                 </div>
                 <p className="text-[12px] mb-4" style={{ color: '#64748b' }}>Entregar <strong>{leadName}</strong> como appointment pra um cliente</p>
 
-                <label className="block text-[12px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>Data e hora *</label>
+                <label className="block text-[12px] font-bold uppercase tracking-wider mb-1" style={{ color: '#94a3b8' }}>Data e hora (horário da Flórida) *</label>
                 <div className="flex gap-2 mb-4">
                   <input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputCls} style={{ ...inputStyle, flex: 1 }} />
                   <input type="time" value={time} onChange={e => setTime(e.target.value)} className={inputCls} style={{ ...inputStyle, width: 120 }} />

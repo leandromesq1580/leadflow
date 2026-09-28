@@ -54,7 +54,7 @@ function ago(iso: string, locale: string = 'pt') {
   if (s < 3600) return `${Math.floor(s / 60)}min`
   if (s < 86400) return `${Math.floor(s / 3600)}h`
   if (s < 604800) return `${Math.floor(s / 86400)}d`
-  return new Date(iso).toLocaleDateString(locale === 'en' ? 'en-US' : locale === 'es' ? 'es-US' : 'pt-BR')
+  return new Date(iso).toLocaleDateString(locale === 'en' ? 'en-US' : locale === 'es' ? 'es-US' : 'pt-BR', { timeZone: 'America/New_York' })
 }
 function money(n?: number) {
   if (!n) return ''

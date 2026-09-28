@@ -15,7 +15,7 @@ export interface AdminRuleCandidate {
   priorityCredits: number
 }
 
-export type AdminRuleBlock = 'disabled' | 'inactive' | 'no_license' | 'no_credit' | 'daily_paused' | 'daily_limit'
+export type AdminRuleBlock = 'disabled' | 'inactive' | 'no_license' | 'no_credit' | 'daily_paused' | 'daily_limit' | 'outside_hours'
 
 export function easternDayStartISO(now = new Date()): string {
   const p = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(now)

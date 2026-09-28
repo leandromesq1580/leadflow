@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { floridaWallClockToISO } from '@/lib/florida-time'
 
 export function FollowupSheet({
   leadId, buyerId, locale, onClose, onDone,
@@ -33,8 +34,8 @@ export function FollowupSheet({
     if (type === 'meeting' && (!date || !time)) { setErr(L('Reunião precisa de data e hora.', 'Meeting needs date and time.', 'La reunión necesita fecha y hora.')); return }
     setBusy(true); setErr('')
     let scheduled_at: string | null = null
-    if (date && time) scheduled_at = new Date(`${date}T${time}:00`).toISOString()
-    else if (date) scheduled_at = new Date(`${date}T09:00:00`).toISOString()
+    // The typed wall clock is Florida time (what the agenda displays), not the phone's zone.
+    if (date) scheduled_at = floridaWallClockToISO(date, time || '09:00')
     try {
       const r = await fetch(`/api/leads/${leadId}/follow-ups`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ buyer_id: buyerId, type, description: desc, scheduled_at }) })
       if (!r.ok) { const d = await r.json().catch(() => ({})); setErr(d.error || L('Não consegui agendar.', "Couldn't schedule.", 'No pude agendar.')); setBusy(false); return }
@@ -66,7 +67,7 @@ export function FollowupSheet({
             <input type="date" value={date} onChange={e => setDate(e.target.value)} className="m-input" style={{ colorScheme: 'dark', height: 44 }} />
           </div>
           <div style={{ flex: 1 }}>
-            <p className="m-muted" style={{ fontSize: 12, fontWeight: 600, margin: '0 0 6px' }}>{L('Hora', 'Time', 'Hora')}{type === 'meeting' ? ' *' : ''}</p>
+            <p className="m-muted" style={{ fontSize: 12, fontWeight: 600, margin: '0 0 6px' }}>{L('Hora', 'Time', 'Hora')}{type === 'meeting' ? ' *' : ''} · {L('Flórida', 'Florida', 'Florida')}</p>
             <input type="time" value={time} onChange={e => setTime(e.target.value)} className="m-input" style={{ colorScheme: 'dark', height: 44 }} />
           </div>
         </div>
