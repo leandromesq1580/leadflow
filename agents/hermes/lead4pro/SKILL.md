@@ -268,3 +268,5 @@ caminho antes de reportar.
   (`availability.ts`) e em SQL (migration 051, `automatic_buyer_available`).
 - **priority_only** (`lead_routing.priority_only`, 24/09): entrega só aos prioritários, sem fallback.
 - Migrations aplicadas: 047 · 048 · 049 · 050 (trava de `is_admin`) · 051.
+
+<!-- sync automático validado ponta a ponta em 28/09/2026 -->
