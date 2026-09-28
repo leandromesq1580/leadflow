@@ -2,6 +2,9 @@
 
 > Deploy em produção **sempre exige autorização explícita do Leandro** ("sim" no chat).
 > Ler, editar código local, rodar lint/test/build são verdes; deploy é amarelo.
+> **Mesclar um PR na `main` JÁ É deploy**: a integração Git da Vercel publica cada commit da
+> `main` em produção (comprovado 28/09/2026 pelo `githubCommitSha` dos deploys). O merge,
+> portanto, também exige o "sim".
 
 ## Fluxo completo
 
@@ -19,18 +22,28 @@
    ```
    Colar a saída real. Teste que não rodou = "NÃO VERIFICADO".
 4. Commit em PT-BR no padrão do repositório (`fix(escopo): ...`, `feat(escopo): ...`).
-5. `git push -u origin <branch>`. Push direto na `main`: nunca.
-6. Com o "sim" explícito do Leandro — **só depois do PR mesclado e com a cópia na `main`**:
+5. `git push -u origin <branch>` e `gh pr create --fill --base main`. Push direto na `main`:
+   nunca — e desde 28/09/2026 o GitHub **rejeita** (`GH013`): a `main` é protegida, só entra por
+   PR com o check "Vercel" verde. `gh` precisa estar logado (`gh auth status`); no hermes-srv o
+   login é passo do Leandro (`gh auth login --web --git-protocol ssh --skip-ssh-key`).
+6. Mesclar (amarelo, com o "sim"): `gh pr merge <n> --squash --auto` — mescla quando o check
+   passar e apaga a branch (`delete_branch_on_merge`). `BLOCKED`/`REVIEW_REQUIRED` em `gh pr view`
+   = a proteção está pedindo revisão que a conta única não pode dar → avisar o Leandro
+   (Settings → Branches → main → "Require approvals" = 0), nunca contornar.
+7. Depois do merge, esperar o deploy automático (~40 s): `l4p-vercel ls leadflow --prod` mostra
+   deploy novo `● Ready`. **Deploy manual só como reserva** (deploy automático não apareceu em
+   5 min), com o "sim" explícito do Leandro — **só com a cópia exatamente na `main`**:
    ```bash
    cd ~/DEV-APPS/leadflow-agent && git checkout main && git pull --ff-only
    git fetch origin && test "$(git rev-list --count HEAD..origin/main)" = 0 || echo "❌ NÃO PUBLIQUE: HEAD está atrás de origin/main"
    /home/hermes/.hermes/profiles/lead4pro/bin/l4p-vercel deploy --prod --yes
    ```
-   (Fora do Hermes, `scripts/deploy-prod.sh` faz a mesma trava e o fast-forward da `main`.)
+   (Fora do Hermes, `scripts/deploy-prod.sh` faz a mesma trava — HEAD tem que ser EXATAMENTE
+   `origin/main`; ele não faz mais push, porque a `main` é protegida.)
    **Nunca publicar de uma branch `fix/*`/`feat/*`**: o que está no ar tem que ser exatamente a `main`.
    **Nunca** `~/.local/bin/vercel` direto — o scanner de segurança do Hermes bloqueia
    caminhos relativos e chamadas diretas.
-7. Verificar:
+8. Verificar:
    ```bash
    curl -sI https://lead4producers.com   # confirmar "server: Vercel" e x-vercel-id mudou
    ```

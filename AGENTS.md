@@ -82,12 +82,14 @@ diagnósticos exige consultar mais de uma camada, não só uma.
 
 ## Regras de Git
 
-- Nunca commitar/push direto na `main`. Sempre branch `fix/<assunto>` ou `feat/<assunto>`.
+- Nunca commitar/push direto na `main`. Sempre branch `fix/<assunto>` ou `feat/<assunto>`,
+  depois `gh pr create --fill --base main`. A `main` é **protegida** (28/09/2026): PR obrigatório
+  + check "Vercel"; push direto é rejeitado (`GH013`). Mesclar: `gh pr merge <n> --squash --auto`.
 - **O que está em produção é a `main`, sempre.** Deploy só de uma cópia cuja `HEAD` contém
   `origin/main` (`git rev-list --count HEAD..origin/main` = 0). Publicar de uma branch
   divergente apaga o trabalho dos outros (aconteceu em 27/09/2026 — ver
   `docs/incidents/2026-09-27-deploy-branches-divergentes.md`). Fora do Hermes, use
-  `scripts/deploy-prod.sh`, que recusa publicar nesse caso e faz o fast-forward da `main`.
+  `scripts/deploy-prod.sh`, que só publica se HEAD for exatamente `origin/main`.
 - Commits coerentes: não misturar código + documentação não relacionada + outras mudanças.
 - Mensagens de commit em PT-BR, padrão `fix(escopo): ...` / `feat(escopo): ...`.
 - `.env*` é git-ignored — nunca commitar segredo.
