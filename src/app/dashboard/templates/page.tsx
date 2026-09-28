@@ -18,6 +18,7 @@ export default function TemplatesPage() {
   const [editing, setEditing] = useState<Template | null>(null)
   const [showNew, setShowNew] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   useEffect(() => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -33,39 +34,57 @@ export default function TemplatesPage() {
   }, [])
 
   async function fetchBuyer(authId: string) {
-    const r = await fetch(`/api/settings?auth_user_id=${authId}`)
-    const buyer = await r.json()
-    setBuyerId(buyer.id)
-    load(buyer.id)
+    try {
+      const r = await fetch(`/api/settings?auth_user_id=${authId}`)
+      if (!r.ok) throw new Error('Buyer settings unavailable')
+      const buyer = await r.json()
+      setBuyerId(buyer.id)
+      await load(buyer.id)
+    } catch {
+      setSaveError(L('Não foi possível carregar os modelos. Recarregue a página.', 'Could not load templates. Reload the page.', 'No se pudieron cargar las plantillas. Recarga la página.'))
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function load(bid: string) {
     setLoading(true)
-    const r = await fetch(`/api/templates?buyer_id=${bid}`)
-    const d = await r.json()
-    setTemplates(d.templates || [])
-    setLoading(false)
+    try {
+      const r = await fetch(`/api/templates?buyer_id=${bid}`)
+      if (!r.ok) throw new Error('Template list unavailable')
+      const d = await r.json()
+      setTemplates(d.templates || [])
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function save(data: Partial<Template>) {
     setSaving(true)
-    if (editing && !editing.is_system) {
-      await fetch(`/api/templates/${editing.id}`, {
-        method: 'PATCH',
+    setSaveError('')
+    try {
+      const isUpdate = Boolean(editing?.id && !editing.is_system)
+      const response = await fetch(isUpdate ? `/api/templates/${editing!.id}` : '/api/templates', {
+        method: isUpdate ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(isUpdate ? data : { ...data, buyer_id: buyerId }),
       })
-    } else {
-      await fetch('/api/templates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, buyer_id: buyerId }),
-      })
+      if (!response.ok) {
+        setSaveError(L('Não foi possível salvar. Sua mensagem foi mantida; tente novamente.', 'Could not save. Your message was kept; please try again.', 'No se pudo guardar. Tu mensaje se conservó; inténtalo de nuevo.'))
+        return
+      }
+      setEditing(null)
+      setShowNew(false)
+      try {
+        await load(buyerId)
+      } catch {
+        setSaveError(L('Modelo salvo, mas não foi possível atualizar a lista. Recarregue a página.', 'Template saved, but the list could not be refreshed. Reload the page.', 'Plantilla guardada, pero no se pudo actualizar la lista. Recarga la página.'))
+      }
+    } catch {
+      setSaveError(L('Não foi possível salvar. Sua mensagem foi mantida; tente novamente.', 'Could not save. Your message was kept; please try again.', 'No se pudo guardar. Tu mensaje se conservó; inténtalo de nuevo.'))
+    } finally {
+      setSaving(false)
     }
-    setEditing(null)
-    setShowNew(false)
-    setSaving(false)
-    load(buyerId)
   }
 
   async function remove(id: string) {
@@ -83,17 +102,18 @@ export default function TemplatesPage() {
           <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{t.sidebar.templates}</h1>
           <p className="text-[14px] mt-1" style={{ color: 'var(--fg-secondary)' }}>{L('Mensagens prontas pra WhatsApp e Email', 'Ready-made messages for WhatsApp and Email', 'Mensajes listos para WhatsApp y Email')}</p>
         </div>
-        <button onClick={() => { setEditing(null); setShowNew(true) }}
+        <button onClick={() => { setSaveError(''); setEditing(null); setShowNew(true) }}
           className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-white"
           style={{ background: 'var(--accent)' }}>
           + {L('Novo modelo', 'New template', 'Nueva plantilla')}
         </button>
       </div>
 
+      {saveError && <p role="alert" className="mb-3 text-[13px]" style={{ color: 'var(--err, #ef4444)' }}>{saveError}</p>}
       {(showNew || editing) && (
         <TemplateForm
           template={editing}
-          onCancel={() => { setShowNew(false); setEditing(null) }}
+          onCancel={() => { setSaveError(''); setShowNew(false); setEditing(null) }}
           onSave={save}
           saving={saving}
         />
@@ -120,7 +140,7 @@ export default function TemplatesPage() {
             <div className="flex gap-2 flex-shrink-0">
               {!t.is_system && (
                 <>
-                  <button onClick={() => { setEditing(t); setShowNew(false) }}
+                  <button onClick={() => { setSaveError(''); setEditing(t); setShowNew(false) }}
                     className="text-[11px] font-bold px-3 py-1.5 rounded-lg"
                     style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>
                     {L('Editar', 'Edit', 'Editar')}
@@ -133,7 +153,7 @@ export default function TemplatesPage() {
                 </>
               )}
               {t.is_system && (
-                <button onClick={() => { setEditing({ ...t, is_system: false, id: '', buyer_id: buyerId }); setShowNew(true) }}
+                <button onClick={() => { setSaveError(''); setEditing({ ...t, is_system: false, id: '', buyer_id: buyerId }); setShowNew(true) }}
                   className="text-[11px] font-bold px-3 py-1.5 rounded-lg"
                   style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>
                   {L('Duplicar', 'Duplicate', 'Duplicar')}
@@ -178,7 +198,7 @@ function TemplateForm({ template, onCancel, onSave, saving }: {
         </div>
         <div>
           <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--fg-muted)' }}>{L('Tipo', 'Type', 'Tipo')}</label>
-          <select value={type} onChange={e => setType(e.target.value as any)}
+          <select value={type} onChange={e => setType(e.target.value as 'whatsapp' | 'email')}
             className="w-full px-3 py-2 rounded-lg text-[13px] cursor-pointer"
             style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
             <option value="whatsapp">WhatsApp</option>
