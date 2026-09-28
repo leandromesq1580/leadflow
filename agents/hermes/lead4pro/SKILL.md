@@ -175,7 +175,17 @@ Regras adicionais:
 ## Código — cópia de trabalho e fluxo de mudança
 
 Repositório: `github.com/leandromesq1580/leadflow` (produção = branch `main`, executada
-pela **Vercel**; o deploy NÃO é automático — veja abaixo).
+pela **Vercel**, que publica em produção SOZINHA a cada merge na `main` — integração Git
+comprovada em 28/09/2026: cada push na `main` gerou um deploy `Production` com o mesmo
+`githubCommitSha`. Logo **mesclar PR = colocar em produção**; trate o merge como deploy).
+
+🔒 **A `main` é protegida no GitHub (desde 28/09/2026):** só entra por Pull Request e só
+com o check **"Vercel"** verde. `git push origin main` é REJEITADO (`GH013: Changes must be
+made through a pull request`) — não é falha sua nem de rede; não insista, não force.
+Sua chave de deploy só serve para `git push -u origin <branch>`. PR abrir/mesclar é pelo
+`gh` (`~/.local/bin/gh`, já no PATH do gateway). Antes de usar: `gh auth status`. Se disser
+"not logged into any GitHub hosts", **pare e informe o Leandro** — o login (`gh auth login`)
+é passo dele, você não tem token.
 
 **Cópia de trabalho do agente: `~/DEV-APPS/leadflow-agent`** (clone limpo, Node 20.9,
 Next 16.2.3). Não use `/tmp/lf*` (some no reboot) nem `~/Documents/leadflow` (centenas
@@ -193,13 +203,21 @@ leia o guia relevante em `node_modules/next/dist/docs/` (regra do próprio repos
 3. Editar. Rodar `npm run lint` e `npm test`; para mudança em página/API, `npm run build`.
    Colar a saída real. Teste que não rodou = "NÃO VERIFICADO".
 4. Commit com mensagem em PT-BR no padrão do repositório (`fix(escopo): ...`, `feat(...)`).
-5. `git push -u origin <branch>` e `gh pr create --fill --base main`. **Push direto na `main`: nunca.**
-6. **Deploy só com autorização explícita do Leandro**, depois do PR MESCLADO na `main`:
-   `git checkout main && git pull --ff-only`, conferir `git rev-list --count HEAD..origin/main` = 0,
-   então `l4p-vercel deploy --prod --yes`. Nunca de uma branch `fix/*`/`feat/*`. Confirmar com
-   `curl -sI https://lead4producers.com` (`server: Vercel`) e conferir o `x-vercel-id` mudou.
-   Reportar o que foi verificado e o que não foi.
-7. Migration de banco: escrever o SQL no PR (`supabase/migrations/`) e **pedir ao Leandro**
+5. `git push -u origin <branch>` e `gh pr create --fill --base main`. **Push direto na `main`:
+   nunca (e o GitHub rejeita).** Cole o link do PR na resposta.
+6. **Mesclar só com autorização explícita do Leandro** (amarelo). Com o "sim":
+   `gh pr merge <n> --squash --auto` — mescla sozinho quando o check "Vercel" ficar verde e apaga
+   a branch. Confirmar com `gh pr view <n> --json state,mergedAt`. Se `gh pr view` mostrar
+   `BLOCKED`/`REVIEW_REQUIRED`, a proteção está exigindo revisão que ninguém pode dar (conta
+   única) — informe o Leandro, não tente contornar.
+7. Depois do merge a Vercel publica sozinha (~40 s). Confirmar: `l4p-vercel ls leadflow --prod`
+   mostra deploy novo `● Ready` e `curl -sI https://lead4producers.com` (`server: Vercel`) tem
+   `x-vercel-id` diferente do anterior. **Deploy manual só se, 5 min após o merge, o deploy
+   automático não apareceu** — e só com autorização explícita do Leandro:
+   `git checkout main && git pull --ff-only`, conferir `git rev-list --count HEAD..origin/main` = 0
+   E `git rev-list --count origin/main..HEAD` = 0, então `l4p-vercel deploy --prod --yes`.
+   Nunca de uma branch `fix/*`/`feat/*`. Reportar o que foi verificado e o que não foi.
+8. Migration de banco: escrever o SQL no PR (`supabase/migrations/`) e **pedir ao Leandro**
    — a role do agente é somente-leitura por desenho.
 
 ### Baseline da `main` em 27/09/2026 — não culpe sua mudança por isso
