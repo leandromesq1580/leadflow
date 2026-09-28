@@ -25,7 +25,31 @@ ssh lead4pro-prod 'journalctl -u wa-bridge@<cliente> -n 40 --no-pager -o cat'
 
 `[QR] Generated` repetido no log = sessão expirada, precisa reescanear no aparelho —
 não há conserto por SSH. `READY` histórico não confirma conexão atual; sempre olhe o
-timestamp e o último evento.
+timestamp e o último evento. `DISCONNECTED LOGOUT` = o WhatsApp derrubou a sessão
+(o bridge apaga a sessão e pede QR novo; 3× em 27/09 — causa fica no celular:
+aparelhos conectados fantasmas / app desatualizado).
+
+**Reescanear sem "QR expirou":** o WhatsApp invalida o QR em ~40 s e o bridge só renova
+sozinho a cada 10 min. Antes do scan, force um QR novo: `POST /restart` do bridge
+(`curl -X POST -H "apikey: $K" http://127.0.0.1:<porta>/restart` — mesma ação do botão
+"gerar QR novo" do app) e escaneie em até 40 s.
+
+### 1b. "Desapareceram as notificações" (avisos de lead não chegam)
+Todos os avisos (comprador, grupo admin, alarmes) saem pelo **canal de avisos =
+`wa-bridge@piroli`** (número 786-744-2126, porta 3456; o nginx na **3457** aponta pra ele;
+`WA_BRIDGE_URL` na Vercel está vazio → default `:3457`). Diagnóstico:
+```bash
+ssh lead4pro-prod 'K=$(grep ^API_KEY= /etc/wa-bridge/piroli.env|cut -d= -f2); curl -s -H "apikey: $K" http://127.0.0.1:3456/status'
+ssh lead4pro-prod 'grep -aE "DISCONNECTED|READY|AUTH" /var/log/wa-bridge-piroli.log | tail'
+/home/hermes/.hermes/profiles/lead4pro/bin/l4p-sql "select count(*) from leads where assigned_at > now()-interval '3 days' and notified_at is null and meta_lead_id is not null"
+```
+Desde 27/09 (`src/lib/notifications.ts`): envio que falha 2× no bridge escolhido sai pela
+**bridge reserva** (qualquer conta `is_admin` com bridge `ready`, ex.: linha 863-280-8696,
+`pickFallbackBridge` em `src/lib/wa-bridge.ts`); alarme de queda vai por WhatsApp (reserva)
++ e-mail + **SMS Twilio** de último recurso; a reconciliação do `poll-leads` reenvia por
+**72 h** o que ficou com `notified_at IS NULL` (25 por rodada, a cada 2 min).
+Reenvio manual (rota do app, reenvia e-mail também): `POST /api/admin/resend-notifications?secret=<POLL_SECRET>`
+com `{ "lead_ids": [...] }` em lotes de 3.
 
 ⚠️ Canal comercial "regiane" é `wa-bridge.service` (sem `@`), **não** `wa-bridge@regiane`
 (fica disabled de propósito). Nunca dar `enable --now` nessa instância — sobe processo

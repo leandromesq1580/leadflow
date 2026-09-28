@@ -9,8 +9,13 @@
   (`62.146.229.13`, **sem Docker**). Uma instância `wa-bridge@<cliente>.service`
   por cliente (58 hoje), mais `wa-bridge.service` (canal comercial "regiane",
   porta 3466) e `wa-bridge-admin` (porta 3458, autoridade de portas).
-- App (Vercel) fala com wa-bridge via HTTP, `WA_BRIDGE_URL` (default no código
-  `http://62.146.229.13:3457`, ver `src/lib/wa-bridge.ts`, `src/lib/notifications.ts`).
+- App (Vercel) fala com wa-bridge via HTTP, `WA_BRIDGE_URL` (vazio na Vercel → default
+  `http://62.146.229.13:3457`, que é um **nginx apontando para `wa-bridge@piroli` :3456**,
+  número 786-744-2126 = canal de AVISOS; ver `src/lib/wa-bridge.ts`, `src/lib/notifications.ts`).
+- **Bridge reserva (27/09/2026):** se o envio falhar 2× no bridge escolhido, `sendWhatsApp`
+  reenvia 1× por outro bridge de conta `is_admin` que esteja `ready` (`pickFallbackBridge`,
+  cache 60 s; `:3457≡:3456`). Se nem a reserva entregar um alarme, `notifyAdmins` manda SMS
+  (Twilio) para `ADMIN_WHATSAPP`. Reserva hoje: "Lead4Pro" (863-280-8696, :3466).
 - **Envio**: `POST /api/whatsapp/messages` no app → chama a bridge do cliente
   (`resolveSendBridge`, `src/lib/wa-bridge.ts`) → wa-bridge envia via WhatsApp Web.
 - **Recebimento**: wa-bridge detecta mensagem → `POST /api/webhook/wa-bridge` no app
