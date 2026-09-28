@@ -1,17 +1,26 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+// Fontes embutidas no repositório (28/09/2026): next/font/google quebrava o build na Vercel
+// de forma intermitente quando o Google devolvia URL sem extensão (/l/font?kit=…&skey=…) —
+// bug aberto vercel/next.js#99114. Com next/font/local o build não depende de rede.
+import localFont from "next/font/local";
 import "./globals.css";
 import { I18nProvider } from "@/lib/i18n-client";
 import { getLocale } from "@/lib/locale";
 
-const geistSans = Geist({
+const geistSans = localFont({
+  src: "../fonts/geist-latin.woff2",
+  weight: "100 900",
   variable: "--font-geist-sans",
-  subsets: ["latin"],
+  display: "swap",
+  fallback: ["system-ui", "arial"],
 });
 
-const geistMono = Geist_Mono({
+const geistMono = localFont({
+  src: "../fonts/geist-mono-latin.woff2",
+  weight: "100 900",
   variable: "--font-geist-mono",
-  subsets: ["latin"],
+  display: "swap",
+  fallback: ["ui-monospace", "monospace"],
 });
 
 export const metadata: Metadata = {
