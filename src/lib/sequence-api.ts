@@ -1,6 +1,6 @@
 import type { createAdminClient } from './supabase/admin'
-import { nextSendAt, validateAIConfig } from './ai-sequence-config'
-import { generateSequenceCopy } from './ai-sequence-copy'
+import { nextSendAt, validateAIConfig, AISequenceConfigError } from './ai-sequence-config'
+import { generateSequenceCopy, AISequenceGenerationError } from './ai-sequence-copy'
 type Db=ReturnType<typeof createAdminClient>
 type Operation='list'|'save'|'remove'|'enroll'|'stop'|'enrollments'|'preview'
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -32,9 +32,22 @@ export function sequenceAPI(db:Db,caller:()=>Promise<{id:string;isAdmin:boolean}
     return Response.json({buyer_id:buyer,sequences:sequences.map(s=>({...s,sequence_steps:(s.sequence_steps || []).sort((a:{step_order:number},b:{step_order:number})=>a.step_order-b.step_order)})),pipelines,templates})
    }
    if(op==='preview'){
-    let config;try{config=validateAIConfig(body.ai_config)}catch(e){throw new ApiError(400,(e as Error).message)}
-    if(!['pt','es','en'].includes(String(body.locale)))throw new ApiError(400,'Idioma inválido.')
-    try{return Response.json({...await generate(config,{lead_language:String(body.locale)},[]),sent:false})}catch{throw new ApiError(503,'Não foi possível gerar o exemplo. Nenhuma mensagem enviada.')}
+    let config: ReturnType<typeof validateAIConfig> | undefined
+    try {
+     config=validateAIConfig(body.ai_config)
+     if(!['pt','es','en'].includes(String(body.locale)))throw new AISequenceGenerationError('AI_LOCALE_INVALID')
+     return Response.json({...await generate(config,{lead_language:String(body.locale)},[]),sent:false})
+    }catch(error){
+     if (error instanceof AISequenceConfigError) {
+      console.error('[ai-sequence-preview]',{code:error.code,status:error.status})
+      return Response.json({error:error.message,code:error.code,sent:false},{status:error.status})
+     }
+     const safe = error instanceof AISequenceGenerationError ? error : new AISequenceGenerationError('AI_INTERNAL_ERROR')
+     console.error('[ai-sequence-preview]', {code:safe.code,status:safe.status,...(config ? {model:config.model} : {}),
+      ...(safe.providerStatus === undefined ? {} : {provider_status:safe.providerStatus}),
+      ...(safe.requestId === undefined ? {} : {request_id:safe.requestId})})
+     return Response.json({error:safe.message,code:safe.code,sent:false},{status:safe.status})
+    }
    }
    if(op==='save'){
     const config:Record<string,unknown>={}
@@ -45,7 +58,7 @@ export function sequenceAPI(db:Db,caller:()=>Promise<{id:string;isAdmin:boolean}
     if(config.trigger_stage_id!==undefined && config.trigger_stage_id!==null)validId(config.trigger_stage_id)
     if(config.mode!==undefined&&!['legacy','ai_until_reply'].includes(String(config.mode)))throw new ApiError(400,'Modo inválido.')
     if(config.ai_config!==undefined||config.mode==='ai_until_reply'){
-     try{config.ai_config=validateAIConfig(config.ai_config)}catch(e){throw new ApiError(400,(e as Error).message)}
+     config.ai_config=validateAIConfig(config.ai_config)
     }
     let steps=null
     if(body.steps!==undefined){
@@ -96,6 +109,8 @@ export function sequenceAPI(db:Db,caller:()=>Promise<{id:string;isAdmin:boolean}
    }
    const enrollment=checked(await db.rpc('enroll_sequence',{p_buyer:buyer,p_sequence:body.sequence_id,p_lead:body.lead_id,p_due:due.toISOString()}))
    return Response.json({enrollment})
-  }catch(e){return Response.json({error:e instanceof ApiError?e.message:'Operação indisponível. Nenhuma confirmação de sucesso.'},{status:e instanceof ApiError?e.status:503})}
+  }catch(e){
+   if (e instanceof AISequenceConfigError) return Response.json({error:e.message,code:e.code},{status:e.status})
+   return Response.json({error:e instanceof ApiError?e.message:'Operação indisponível. Nenhuma confirmação de sucesso.'},{status:e instanceof ApiError?e.status:503})}
  }
 }

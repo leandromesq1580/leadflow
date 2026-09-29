@@ -23,9 +23,39 @@ test('AI writes original brief-informed copy in pt/en/es, with local disclosure 
   assert.ok(request.includes(brief))
   assert.ok(!/PRIVATE_FORM|PRIVATE_ID/.test(request))
   const payload = JSON.parse(request)
-  assert.equal(payload.model,'gpt-4o-mini')
+  assert.equal(payload.model,'gpt-6.1-sol')
   assert.match(payload.messages[0].content,/untrusted|não confi/i)
   assert.ok(!/openings|indices/.test(payload.messages[1].content))
+ }
+})
+
+test('each selected model uses its documented parameters, including legacy missing-model fallback', async () => {
+ for (const model of ['gpt-6.1-sol','gpt-6-astra','gpt-6-luna','gpt-4o-mini',undefined] as const) {
+  let payload:Record<string,unknown>={}
+  await generateSequenceCopy({...defaultAIConfig,model},{lead_language:'pt'},[],{key:'test',fetch:async(_url,init)=>{payload=JSON.parse(String(init?.body));return mock({locale:'pt',body:texts.pt})('https://mock.test')}})
+  assert.equal(payload.model,model ?? 'gpt-4o-mini')
+  assert.equal(payload.store,false)
+  if (!model || model === 'gpt-4o-mini') {
+   assert.equal(payload.temperature,0.7); assert.equal(payload.max_tokens,240); assert.equal(payload.reasoning_effort,undefined)
+  } else {
+   assert.equal(payload.temperature,undefined); assert.equal(payload.max_tokens,undefined)
+   assert.equal(payload.reasoning_effort,model === 'gpt-6-luna' ? 'none' : 'low')
+   assert.equal(payload.max_completion_tokens,model === 'gpt-6-luna' ? 400 : 2048)
+  }
+  assert.deepEqual(payload.response_format,{type:'json_object'})
+ }
+})
+
+test('Brazilian accented pronouns count as language evidence', async () => {
+ const body = 'Você quer uma ligação?'
+ assert.ok((await generateSequenceCopy(defaultAIConfig,{lead_language:'pt'},[],{key:'test',fetch:mock({locale:'pt',body})})).body.endsWith(body))
+})
+
+test('formal English modal May is not a calendar claim; dates still fail closed', async () => {
+ const body = 'May we arrange a call with your agent?'
+ assert.ok((await generateSequenceCopy(defaultAIConfig,{lead_language:'en'},[],{key:'test',fetch:mock({locale:'en',body})})).body.endsWith(body))
+ for (const body of ['In May we can talk. Would you like a call with your agent?', 'May we arrange a call in May with your agent?']) {
+  await assert.rejects(generateSequenceCopy(defaultAIConfig,{lead_language:'en'},[],{key:'test',fetch:mock({locale:'en',body})}))
  }
 })
 
