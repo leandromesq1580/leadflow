@@ -23,6 +23,15 @@ test('AI form renders scheduling, privacy, preview and human handoff controls',(
  const meeting=renderToStaticMarkup(React.createElement(AISequenceFields,{value:{...defaultAIConfig,goal:'meeting'},onChange:()=>{}}))
  assert.ok(meeting.includes('URL de agendamento'))
 })
+test('presentation renders optional bounded input, help, count, natural voice and legacy empty value', () => {
+ const legacy={...defaultAIConfig}; delete legacy.presentation
+ for (const value of [legacy, {...defaultAIConfig,presentation:'Oi, sou Ana.'}]) {
+  const html=renderToStaticMarkup(React.createElement(AISequenceFields,{value,onChange:()=>{}}))
+  for (const text of ['Como você gosta de se apresentar?', 'opcional', 'idioma do lead', 'não um texto fixo', 'dados de leads', 'em seu nome']) assert.ok(html.includes(text),text)
+  assert.ok(html.includes(`${value.presentation?.length ?? 0}/300`))
+  assert.ok(!html.includes('A assistente se identifica como IA'))
+ }
+})
 test('legacy model omission remains legacy rather than switching to the new default', () => {
  const legacy = {...defaultAIConfig}
  delete legacy.model

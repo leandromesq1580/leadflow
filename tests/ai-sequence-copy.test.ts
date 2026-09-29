@@ -5,11 +5,11 @@ import { defaultAIConfig } from '../src/lib/ai-sequence-config'
 
 const mock = (value: unknown): typeof fetch => async () => Response.json({choices:[{message:{content:JSON.stringify(value)}}]})
 const texts = {
- pt: 'Entender as opções de proteção familiar pode ser mais simples em uma conversa. Podemos combinar uma ligação com o corretor?',
+ pt: 'Entender as opções de proteção familiar pode ser mais simples em uma conversa. Podemos combinar uma ligação comigo?',
  en: 'A conversation can help clarify family protection options. Would you like to arrange a call with your agent?',
  es: 'Una conversación puede aclarar las opciones de protección familiar. ¿Te gustaría coordinar una llamada con tu agente?',
 }
-test('AI writes original brief-informed copy in pt/en/es, with local disclosure and no lead data', async () => {
+test('AI writes original brief-informed copy in pt/en/es, without a fixed disclosure or lead data', async () => {
  for (const locale of ['pt','en','es'] as const) {
   let request = ''
   const brief = 'Apresente proteção familiar com linguagem simples e acolhedora.'
@@ -17,7 +17,7 @@ test('AI writes original brief-informed copy in pt/en/es, with local disclosure 
    key:'test',fetch:async (_url,init) => {request=String(init?.body);return mock({locale,body:texts[locale]})('https://mock.test')},
   })
   assert.ok(result.body.includes(texts[locale]))
-  assert.match(result.body,/IA|AI/)
+  assert.equal(result.body,texts[locale])
   assert.equal(result.body.split('?').length,2)
   assert.ok(result.body.length<=450)
   assert.ok(request.includes(brief))
@@ -89,7 +89,7 @@ test('brief is commercial data only: reject PII, sensitive facts and obvious inj
 
 test('new drafts are not limited to a phrase bank and recent normalized drafts cannot repeat', async () => {
  const first = await generateSequenceCopy(defaultAIConfig,{lead_language:'pt'},[],{key:'test',fetch:mock({locale:'pt',body:texts.pt})})
- const alternative = 'Tirar dúvidas sobre proteção familiar pode ajudar a decidir com calma. Você gostaria de conversar por telefone com o corretor?'
+ const alternative = 'Tirar dúvidas sobre proteção familiar pode ajudar a decidir com calma. Você gostaria de conversar por telefone comigo?'
  let request = ''
  const second = await generateSequenceCopy(defaultAIConfig,{lead_language:'pt'},[first.choice,'0:0','private@example.test'],{key:'test',fetch:async(_url,init)=>{request=String(init?.body);return mock({locale:'pt',body:alternative})('https://mock.test')}})
  assert.ok(second.body.includes(alternative))
@@ -102,7 +102,7 @@ test('new drafts are not limited to a phrase bank and recent normalized drafts c
 
 test('booking link is validated and added locally only for meeting; full message stays within 450 chars', async () => {
  for (const locale of ['pt','es','en'] as const) {
-  const body = {pt:'Uma conversa ajuda a entender as opções. Podemos combinar uma reunião com o corretor?',es:'Una conversación ayuda a entender las opciones. ¿Te gustaría coordinar una reunión con tu agente?',en:'A conversation can help explain your options. Would you like to arrange a meeting with your agent?'}[locale]
+  const body = {pt:'Uma conversa ajuda a entender as opções. Podemos combinar uma reunião comigo?',es:'Una conversación ayuda a entender las opciones. ¿Te gustaría coordinar una reunión con tu agente?',en:'A conversation can help explain your options. Would you like to arrange a meeting with your agent?'}[locale]
   const booking_url = 'https://calendar.example.test/meeting?ref='+ 'x'.repeat(160)
   let request = ''
   const result = await generateSequenceCopy({...defaultAIConfig,goal:'meeting',booking_url},{lead_language:locale},[],{key:'test',fetch:async(_url,init)=>{request=String(init?.body);return mock({locale,body})('https://mock.test')}})

@@ -21,9 +21,9 @@ test('real transport adapter retains account bridge, readiness and delivery conf
  t.mock.method(globalThis,'fetch',async(url:string,init:RequestInit)=>{calls.push({url,body:String(init.body||'')});return Response.json(url.endsWith('/status')?{ready:true}:{id:'wa-confirmed'})})
  const ports=adapter()
  await ports.ready(enrollment)
- const result=await ports.send(enrollment,ctx,'Sou assistente virtual IA. Podemos ligar?')
+ const result=await ports.send(enrollment,ctx,'Quero ajudar com sua proteção. Podemos combinar uma ligação?')
  assert.equal(result.id,'wa-confirmed');assert.equal(calls[1].url,'https://bridge.invalid/send')
- assert.deepEqual(JSON.parse(calls[1].body!),{number:ctx.phone,message:'Sou assistente virtual IA. Podemos ligar?'})
+ assert.deepEqual(JSON.parse(calls[1].body!),{number:ctx.phone,message:'Quero ajudar com sua proteção. Podemos combinar uma ligação?'})
 })
 test('rate block never touches bridge; offline and missing send confirmation reject',async t=>{
  let calls=0

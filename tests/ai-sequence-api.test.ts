@@ -53,6 +53,33 @@ test('save preserves model in JSONB payload and preview uses the saved selection
  }
 })
 
+test('presentation survives save and preview independently per sequence; invalid input never reaches storage',async(t)=>{
+ t.mock.method(console,'error',()=>{})
+ const writes:Array<{p_buyer:string;p_config:{ai_config:{presentation:string}}}>=[]
+ const db={rpc:async(_name:string,args:typeof writes[number])=>{writes.push(args);return {data:args.p_config,error:null}}}
+ let received=''
+ const api=sequenceAPI(db as never,async()=>({id,isAdmin:false}),async(config)=>{received=config.presentation ?? '';return {body:'Fixture local',choice:'fixture'}})
+ for(const presentation of ['Oi, sou Ana, agente de life insurance.','Prefiro uma abertura breve e direta.','']){
+  const saved=await api('save',request({name:'AI',mode:'ai_until_reply',ai_config:{...defaultAIConfig,presentation:` ${presentation} `}}))
+  assert.equal(saved.status,200)
+  const config=(await saved.json()).sequence.ai_config
+  assert.equal(config.presentation,presentation)
+  const preview=await api('preview',request({ai_config:config,locale:'pt'}))
+  assert.equal(preview.status,200);assert.equal((await preview.json()).sent,false)
+  assert.equal(received,presentation)
+ }
+ assert.deepEqual(writes.map(value=>value.p_config.ai_config.presentation),['Oi, sou Ana, agente de life insurance.','Prefiro uma abertura breve e direta.',''])
+ assert.ok(writes.every(value=>value.p_buyer===id))
+ for(const presentation of [null,42,{},'x'.repeat(301)]){
+  for(const op of ['save','preview'] as const){
+   const invalid=await api(op,request({name:'AI',mode:'ai_until_reply',locale:'pt',ai_config:{...defaultAIConfig,presentation}}))
+   assert.equal(invalid.status,400)
+  }
+ }
+ assert.equal((await api('preview',request({buyer_id:other,locale:'pt',ai_config:{...defaultAIConfig,presentation:'Outro agente'}}))).status,403)
+ assert.equal(writes.length,3)
+})
+
 test('AI config errors return 400; create and preview use session identity and never transport',async()=>{
  const {api,calls}=fixture({id,isAdmin:false})
  assert.equal((await api('save',request({name:'AI',mode:'ai_until_reply',ai_config:{...defaultAIConfig,repeat_minutes:0}}))).status,400)
