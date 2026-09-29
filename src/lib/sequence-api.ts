@@ -45,8 +45,9 @@ export function sequenceAPI(db:Db,caller:()=>Promise<{id:string;isAdmin:boolean}
      const safe = error instanceof AISequenceGenerationError ? error : new AISequenceGenerationError('AI_INTERNAL_ERROR')
      console.error('[ai-sequence-preview]', {code:safe.code,status:safe.status,...(config ? {model:config.model} : {}),
       ...(safe.providerStatus === undefined ? {} : {provider_status:safe.providerStatus}),
-      ...(safe.requestId === undefined ? {} : {request_id:safe.requestId})})
-     return Response.json({error:safe.message,code:safe.code,sent:false},{status:safe.status})
+      ...(safe.requestId === undefined ? {} : {request_id:safe.requestId}),
+       ...(safe.reason === undefined ? {} : {reason:safe.reason})})
+     return Response.json({error:safe.message,code:safe.code,...(safe.reason === undefined ? {} : {reason:safe.reason}),sent:false},{status:safe.status})
     }
    }
    if(op==='save'){

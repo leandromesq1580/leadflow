@@ -63,6 +63,18 @@ test('malformed JSON, unsafe text, truncation and repetition are typed and never
  }
 })
 
+test('draft rejection exposes only fixed validation reason, never rejected content', async (t) => {
+ t.mock.method(console,'error',()=>{})
+ const api=sequenceAPI({} as never,async()=>({id,isAdmin:false}),(config,lead,recent)=>generateSequenceCopy(config,lead,recent,{key:'fixture',fetch:async()=>reply('Você quer uma ligação? Você quer conversar?')}))
+ const response=await api('preview',request())
+ const result=await response.json()
+ assert.equal(response.status,502)
+ assert.equal(result.code,'AI_INVALID_TEXT')
+ assert.equal(result.reason,'question_format')
+ assert.equal(result.sent,false)
+ assert.doesNotMatch(JSON.stringify(result),/Você quer conversar/)
+})
+
 test('body-stream timeout is classified instead of exposing its exception', async () => {
  await assert.rejects(generateSequenceCopy(defaultAIConfig,{lead_language:'pt'},[],{key:'fixture',fetch:async()=>Object.assign(new Response(),{json:async()=>{throw new DOMException(secretFixture,'TimeoutError')}})}),{code:'AI_TIMEOUT',status:504})
 })
