@@ -2,8 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendLeadNotificationEmail } from '@/lib/notifications'
-import { migrateWhatsAppOwnership } from '@/lib/lead-ownership'
 import { leadLanguageForLead, leadLanguageLabel } from '@/lib/lead-language'
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const isUuid = (value: unknown): value is string => typeof value === 'string' && UUID.test(value)
+
+// Preserve PostgreSQL microseconds; Date alone loses the last three digits.
+function timestampMicros(value: unknown): bigint | null {
+  if (typeof value !== 'string') return null
+  const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,6}))?(Z|[+-]\d{2}:\d{2})$/.exec(value)
+  if (!match || Number(match[2]) > 23 || Number(match[3]) > 59 || Number(match[4]) > 59) return null
+  const day = new Date(`${match[1]}T00:00:00Z`)
+  const ms = Date.parse(value)
+  if (!Number.isFinite(ms) || !Number.isFinite(day.getTime()) || day.toISOString().slice(0, 10) !== match[1]) return null
+  return BigInt(ms) * BigInt(1000) + BigInt((match[5] || '').padEnd(6, '0').slice(3))
+}
 
 /**
  * POST /api/admin/reassign-lead — repassa um lead pra outro agente (buyer).
@@ -20,14 +33,31 @@ export async function POST(request: NextRequest) {
   const { data: me } = await db.from('buyers').select('is_admin').eq('auth_user_id', user.id).single()
   if (!me?.is_admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const { lead_id, to_buyer_id } = await request.json()
-  if (!lead_id || !to_buyer_id) return NextResponse.json({ error: 'Missing lead_id ou to_buyer_id' }, { status: 400 })
+  let body: Record<string, unknown>
+  try {
+    const parsed = await request.json()
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Invalid body')
+    body = parsed
+  } catch {
+    return NextResponse.json({ error: 'Corpo JSON invalido' }, { status: 400 })
+  }
+  const { lead_id, to_buyer_id, refund_previous = true, notify_target = true,
+    expected_owner_id, expected_updated_at, reason } = body
+  if (!isUuid(lead_id) || !isUuid(to_buyer_id) || typeof refund_previous !== 'boolean' || typeof notify_target !== 'boolean') {
+    return NextResponse.json({ error: 'IDs ou opcoes invalidos' }, { status: 400 })
+  }
+  if (!refund_previous && (!isUuid(expected_owner_id) || timestampMicros(expected_updated_at) === null || typeof reason !== 'string' || !reason.trim())) {
+    return NextResponse.json({ error: 'Sem reembolso exige expected_owner_id, expected_updated_at e reason' }, { status: 400 })
+  }
 
   const { data: lead } = await db.from('leads').select('*').eq('id', lead_id).single()
   if (!lead) return NextResponse.json({ error: 'Lead nao encontrado' }, { status: 404 })
   const language = leadLanguageForLead(lead)
   if (!language) return NextResponse.json({ error: 'Confirme o idioma deste lead antes de reatribuir.' }, { status: 409 })
   if (lead.assigned_to === to_buyer_id) return NextResponse.json({ error: 'Lead ja pertence a esse agente' }, { status: 400 })
+  if (!refund_previous && (lead.assigned_to !== expected_owner_id || timestampMicros(lead.updated_at) !== timestampMicros(expected_updated_at))) {
+    return NextResponse.json({ error: 'Lead alterado desde a selecao', code: 'CONFLICT' }, { status: 409 })
+  }
 
   // `notification_phone_2` só existe após a migration 031. Sem a coluna, o PostgREST
   // devolve 400 → toBuyer vira null → "Agente destino nao encontrado" (o repasse
@@ -40,8 +70,11 @@ export async function POST(request: NextRequest) {
 
   // 💳 CHECA CRÉDITO ANTES de mover nada. Sem saldo de lead → bloqueia (avisa o admin).
   // EXCEÇÃO: agente ADMINISTRADOR (is_admin) é ISENTO da trava — não checa nem debita.
-  const isAdminAgent = !!toBuyer.is_admin
-  let debitRow: any = null, remaining = 0
+  const isAdminAgent = toBuyer.is_admin === true
+  if (!refund_previous && !isAdminAgent) {
+    return NextResponse.json({ error: 'Sem reembolso permitido somente para destino administrador' }, { status: 400 })
+  }
+  let debitRow: { id: string; total_purchased: number; total_used: number; expires_at: string | null } | null = null, remaining = 0
   if (!isAdminAgent) {
     const { data: creds } = await db.from('credits')
       .select('id, total_purchased, total_used, expires_at').eq('buyer_id', to_buyer_id).eq('type', 'lead')
@@ -61,46 +94,69 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  const { data: pipe, error: pipeError } = await db.from('pipelines')
+    .select('id, stages:pipeline_stages(id, position)')
+    .eq('buyer_id', to_buyer_id).eq('is_default', true).maybeSingle()
+  if (pipeError) return NextResponse.json({ error: 'Falha ao consultar pipeline' }, { status: 503 })
+  if (!pipe?.stages?.length) return NextResponse.json({ error: 'Destino sem pipeline padrao e estagio inicial' }, { status: 409 })
+  const firstStage = [...pipe.stages].sort((a, b) => a.position - b.position)[0]
+
+  let failedStep = 'leads.update'
+  let partial = false
+  const failure = () => NextResponse.json({
+    success: false, error: 'Repasse interrompido; conferir estado antes de repetir.',
+    failed_step: failedStep, partial, reconcile_required: true,
+  }, { status: 503 })
+  try {
   // 1) Reatribui o lead (limpa member tambem — repasse e entre agentes/buyers)
-  await db.from('leads').update({
+  let update = db.from('leads').update({
     assigned_to: to_buyer_id,
     assigned_to_member: null,
     assigned_at: new Date().toISOString(),
     status: 'assigned',
     delivery_credit_id: debitRow?.id || null,
   }).eq('id', lead_id)
+  update = lead.assigned_to === null ? update.is('assigned_to', null) : update.eq('assigned_to', lead.assigned_to)
+  const { data: moved, error: moveError } = await update.eq('updated_at', lead.updated_at).select('id').maybeSingle()
+  if (moveError) return failure()
+  if (!moved) return NextResponse.json({ error: 'Lead alterado durante o repasse', code: 'CONFLICT' }, { status: 409 })
 
+  partial = true
+  failedStep = 'pipeline_leads.delete'
   // 2) Sai de TODOS os pipelines atuais (remove do pipeline do dono antigo)
-  await db.from('pipeline_leads').delete().eq('lead_id', lead_id)
+  const { error: deleteError } = await db.from('pipeline_leads').delete().eq('lead_id', lead_id)
+  if (deleteError) return failure()
 
-  // 3) Entra no INICIO do pipeline padrao do novo agente (primeiro estagio)
-  const { data: pipe } = await db.from('pipelines')
-    .select('id, stages:pipeline_stages(id, position)')
-    .eq('buyer_id', to_buyer_id).eq('is_default', true).maybeSingle()
-  if (pipe?.stages?.length) {
-    const firstStage = (pipe.stages as any[]).sort((a, b) => a.position - b.position)[0]
-    await db.from('pipeline_leads').upsert({
-      lead_id, pipeline_id: pipe.id, stage_id: firstStage.id,
-      position: 0, moved_at: new Date().toISOString(),
-    }, { onConflict: 'lead_id,pipeline_id' })
-  }
+  // 3) Entra no inicio do pipeline previamente validado.
+  failedStep = 'pipeline_leads.upsert'
+  const { error: cardError } = await db.from('pipeline_leads').upsert({
+    lead_id, pipeline_id: pipe.id, stage_id: firstStage.id,
+    position: 0, moved_at: new Date().toISOString(),
+  }, { onConflict: 'lead_id,pipeline_id' })
 
-  // 4) Privacidade: thread do WhatsApp passa pro novo dono
-  try { await migrateWhatsAppOwnership(db, lead_id, to_buyer_id) } catch (e) { console.error('[Reassign] WA migrate:', (e as any)?.message) }
+  if (cardError) return failure()
+
+  // O helper compartilhado engole erros; aqui privacidade e sucesso exigem confirmação.
+  failedStep = 'whatsapp_messages.update'
+  const { error: waError } = await db.from('whatsapp_messages')
+    .update({ buyer_id: to_buyer_id }).eq('lead_id', lead_id).neq('buyer_id', to_buyer_id)
+  if (waError) return failure()
 
   // 5) Debita 1 crédito de lead do novo dono (reatribuição = entrega que cobra).
   //    Admin é ISENTO (debitRow fica null pra ele) → não debita.
   if (!isAdminAgent && debitRow) {
-    await db.from('credits').update({ total_used: (Number(debitRow.total_used) || 0) + 1 }).eq('id', debitRow.id)
+    failedStep = 'credits.debit'
+    const { error: debitError } = await db.from('credits').update({ total_used: (Number(debitRow.total_used) || 0) + 1 }).eq('id', debitRow.id)
+    if (debitError) return failure()
   }
 
   // 5b) REFUND ao dono ANTERIOR: ele perdeu o lead → o credito dele VOLTA (espelha o
   //     debito do novo dono). Sem isso, toda reatribuicao VAZA 1 credito do perdedor
   //     (caso Fabiany: o lead saiu dela e o saldo ficou 4 em vez de 5). So pra lead
   //     AUTOMATICO (manual nao debita) + dono anterior nao-admin; nunca abaixo de 0.
-  const prevOwner = (lead as any).assigned_to
-  const leadIsManual = (lead as any).raw_data?.source === 'manual' || lead.campaign_name === 'Manual' || lead.form_name === 'manual_entry'
-  if (prevOwner && prevOwner !== to_buyer_id && !leadIsManual) {
+  const prevOwner = lead.assigned_to
+  const leadIsManual = lead.raw_data?.source === 'manual' || lead.campaign_name === 'Manual' || lead.form_name === 'manual_entry'
+  if (refund_previous && prevOwner && prevOwner !== to_buyer_id && !leadIsManual) {
     const { data: prevAdmin } = await db.from('buyers').select('is_admin').eq('id', prevOwner).maybeSingle()
     if (!prevAdmin?.is_admin) {
       const { data: pc } = await db.from('credits')
@@ -108,14 +164,22 @@ export async function POST(request: NextRequest) {
         .eq('lead_language', language)
         .order('total_used', { ascending: false }).limit(1)
       if (pc && pc[0]) {
-        await db.from('credits').update({ total_used: Math.max(0, (Number(pc[0].total_used) || 0) - 1) }).eq('id', pc[0].id)
+        failedStep = 'credits.refund'
+        const { error: refundError } = await db.from('credits').update({ total_used: Math.max(0, (Number(pc[0].total_used) || 0) - 1) }).eq('id', pc[0].id)
+        if (refundError) return failure()
         console.log(`[Reassign] refund 1 credito ao dono anterior ${prevOwner} (perdeu o lead ${lead_id}).`)
       }
     }
   }
 
   // 6) Notifica o novo agente
-  try { await sendLeadNotificationEmail(toBuyer as any, lead) } catch (e) { console.error('[Reassign] notify:', (e as any)?.message) }
+  if (notify_target) {
+    try { await sendLeadNotificationEmail(toBuyer as Parameters<typeof sendLeadNotificationEmail>[0], lead) } catch (e) { console.error('[Reassign] notify:', e instanceof Error ? e.message : 'Falha na notificacao') }
+  }
 
-  return NextResponse.json({ success: true, to: (toBuyer.name || '').trim(), credito_debitado: !isAdminAgent, saldo_restante: isAdminAgent ? null : remaining - 1, admin_isento: isAdminAgent })
+  return NextResponse.json({ success: true, to: (toBuyer.name || '').trim(), credito_debitado: !isAdminAgent, saldo_restante: isAdminAgent ? null : remaining - 1, admin_isento: isAdminAgent, refund_previous })
+  } catch {
+    // Timeout de transporte pode ter ocorrido após commit: não repetir às cegas.
+    return failure()
+  }
 }
