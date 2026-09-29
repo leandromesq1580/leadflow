@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { durationSummary } from '@/lib/ai-sequence-form'
 import { AISequenceFields } from '@/components/ai-sequence-fields'
 import { SequenceEnrollmentPanel } from '@/components/sequence-enrollment-panel'
 import { defaultAIConfig, type AISequenceConfig } from '@/lib/ai-sequence-config'
@@ -84,14 +85,14 @@ export default function SequencesPage() {
   return (
     <div className="max-w-[1040px]">
       {error && <p role="alert" className="text-red-600">{error} <button onClick={() => reload().then(() => setError('')).catch(e => setError(e.message))}>Recarregar</button></p>}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
           <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{t.sidebar.sequences}</h1>
           <p className="text-[14px]" style={{ color: 'var(--fg-secondary)' }}>{L('Sequências de passos ou WhatsApp IA até a primeira resposta', 'Drip campaigns with multiple automated steps', 'Campañas de drip con múltiples pasos automatizados')}</p>
         </div>
         <button onClick={() => { setEditing(null); setShowNew(true) }}
           className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-white"
-          style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)' }}>
+          style={{ background: 'var(--accent)' }}>
           + {L('Nova sequência', 'New sequence', 'Nueva secuencia')}
         </button>
       </div>
@@ -122,7 +123,7 @@ export default function SequencesPage() {
               <button onClick={() => remove(s.id)} className="text-[12px] font-bold" style={{ color: '#ef4444' }}>{L('Deletar', 'Delete', 'Eliminar')}</button>
             </div>
 
-            {s.mode === 'ai_until_reply' && <p className="text-sm">IA · {s.ai_config?.goal === 'meeting' ? 'Reunião' : 'Ligação'} · até responder · {s.ai_config?.timezone}</p>}
+            {s.mode === 'ai_until_reply' && <p className="text-sm">IA · {s.ai_config?.goal === 'meeting' ? 'Reunião' : 'Ligação'} · a cada {durationSummary(s.ai_config?.repeat_minutes ?? 1440)} · até responder</p>}
             {expanded === s.id && <SequenceEnrollmentPanel sequenceId={s.id} enabled={s.enabled}/>}
             <div className="flex items-stretch gap-1 overflow-x-auto">
               {s.sequence_steps.map((step, i) => {
@@ -175,6 +176,28 @@ function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved
   const [error, setError] = useState('')
   const [mode, setMode] = useState<'legacy' | 'ai_until_reply'>(editing?.mode || 'legacy')
   const [aiConfig, setAIConfig] = useState<AISequenceConfig>(editing?.ai_config || defaultAIConfig)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const closeRef = useRef(onClose)
+  const savingRef = useRef(saving)
+  useEffect(() => { closeRef.current = onClose; savingRef.current = saving }, [onClose, saving])
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    dialogRef.current?.querySelector<HTMLInputElement>('#sequence-name')?.focus()
+    function keydown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !savingRef.current) { event.preventDefault(); closeRef.current() }
+      if (event.key !== 'Tab') return
+      const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), summary, [tabindex="0"]') || []).filter(element => element.getClientRects().length > 0)
+      const first = controls[0], last = controls[controls.length - 1]
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+    }
+    document.addEventListener('keydown', keydown)
+    return () => { document.body.style.overflow = overflow; document.removeEventListener('keydown', keydown); previous?.focus() }
+  }, [])
+  const validAI = Number.isInteger(aiConfig.initial_delay_minutes) && aiConfig.initial_delay_minutes >= 0 && aiConfig.initial_delay_minutes <= 43200 &&
+    Number.isInteger(aiConfig.repeat_minutes) && aiConfig.repeat_minutes >= 60 && aiConfig.repeat_minutes <= 43200 && aiConfig.days.length > 0 && aiConfig.start < aiConfig.end
 
   function updateStep(i: number, patch: Partial<Step>) {
     setSteps(prev => prev.map((s, idx) => idx === i ? { ...s, ...patch } : s))
@@ -187,7 +210,7 @@ function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved
   }
 
   async function save() {
-    if (!name.trim() || (mode === 'legacy' && steps.length === 0)) return
+    if (saving || !name.trim() || (mode === 'legacy' && steps.length === 0) || (mode === 'ai_until_reply' && !validAI)) return
     setSaving(true); setError('')
     const payload = { buyer_id: buyerId, name: name.trim(), description: description.trim(), trigger_stage_id: triggerStageId || null, mode, ...(mode === 'ai_until_reply' ? {ai_config: aiConfig} : {}), steps: mode === 'ai_until_reply' ? [] : steps }
     const url = editing ? `/api/sequences/${editing.id}` : '/api/sequences'
@@ -197,37 +220,34 @@ function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved
   }
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm overflow-y-auto p-6" onClick={onClose}>
-      <div className="mx-auto max-w-[680px] rounded-2xl p-6" style={{ background: 'var(--bg-card)' }} onClick={e => e.stopPropagation()}>
-        <h2 className="text-[18px] font-extrabold mb-4" style={{ color: 'var(--fg)' }}>{editing ? L('Editar sequência', 'Edit sequence', 'Editar secuencia') : L('Nova sequência', 'New sequence', 'Nueva secuencia')}</h2>
-
-        {error && <p role="alert" className="text-red-600">{error}</p>}
-        <label>Modo<select disabled={!!editing} value={mode} onChange={e => setMode(e.target.value as 'legacy' | 'ai_until_reply')} className="w-full border rounded p-2 mb-3"><option value="legacy">Passos tradicionais</option><option value="ai_until_reply">WhatsApp IA até responder</option></select></label>
-        {mode === 'ai_until_reply' && <AISequenceFields value={aiConfig} onChange={setAIConfig}/>}
-        <div className="space-y-3 mb-5">
-          <input value={name} onChange={e => setName(e.target.value)} placeholder={L('Nome (ex: Onboarding 14 dias)', 'Name (e.g. 14-day onboarding)', 'Nombre (ej: Onboarding 14 días)')}
-            className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }} />
-          <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder={L('Descrição (opcional)', 'Description (optional)', 'Descripción (opcional)')} rows={2}
-            className="w-full px-3 py-2 rounded-lg text-[13px] resize-none" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }} />
-
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--fg-muted)' }}>
-              {L('Estágio gatilho', 'Trigger stage', 'Etapa disparadora')} <span style={{ color: '#c0c8d4', fontWeight: 400 }}>{L('(inscreve o lead automaticamente ao entrar nesse estágio)', '(auto-enrolls the lead when it enters this stage)', '(inscribe al prospecto automáticamente al entrar a esta etapa)')}</span>
-            </label>
-            <select value={triggerStageId} onChange={e => setTriggerStageId(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg text-[13px] cursor-pointer"
-              style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--fg)' }}>
-              <option value="">{L('— Sem gatilho (só enrolla manualmente) —', '— No trigger (manual enrollment only) —', '— Sin disparador (solo inscripción manual) —')}</option>
-              {pipelines.map(p => (
-                <optgroup key={p.id} label={p.name}>
-                  {(p.stages || []).sort((a, b) => a.position - b.position).map(s => (
-                    <option key={s.id} value={s.id}>{s.name.trim()}</option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-2 sm:p-6">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="sequence-title" className={`flex max-h-[calc(100dvh-16px)] w-full flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] text-[var(--fg)] shadow-2xl sm:max-h-[calc(100dvh-48px)] ${mode === 'ai_until_reply' ? 'max-w-[1080px]' : 'max-w-[760px]'}`}>
+        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--border)] px-4 py-4 sm:px-6">
+          <div><h2 id="sequence-title" className="text-lg font-semibold tracking-tight">{editing ? L('Editar sequência', 'Edit sequence', 'Editar secuencia') : L('Nova sequência', 'New sequence', 'Nueva secuencia')}</h2>
+            <p className="mt-1 text-xs text-[var(--fg-secondary)]">{mode === 'ai_until_reply' ? 'Um objetivo, mensagens novas, até a primeira resposta.' : L('Organize os próximos contatos com seus leads.', 'Plan the next touchpoints with your leads.', 'Organiza los próximos contactos con tus leads.')}</p></div>
+          <button type="button" onClick={onClose} disabled={saving} aria-label={L('Fechar formulário', 'Close form', 'Cerrar formulario')} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] text-lg text-[var(--fg-secondary)] hover:text-[var(--fg)] disabled:opacity-50">×</button>
+        </header>
+        <div className="min-h-0 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6">
+          <div className="mb-5 grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <div className="min-w-0"><label htmlFor="sequence-name" className="mb-2 block text-sm font-medium">{L('Nome da sequência', 'Sequence name', 'Nombre de la secuencia')}</label>
+              <input id="sequence-name" value={name} onChange={e => setName(e.target.value)} placeholder={L('Ex.: Retomada de contato', 'E.g. Reconnect with leads', 'Ej.: Retomar contacto')}
+                className="w-full min-w-0 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15" /></div>
+            <div className="min-w-0"><label htmlFor="sequence-mode" className="mb-2 block text-sm font-medium">Modo</label><select id="sequence-mode" disabled={!!editing} value={mode} onChange={e => setMode(e.target.value as 'legacy' | 'ai_until_reply')} className="w-full min-w-0 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2.5 text-sm disabled:opacity-60"><option value="legacy">Passos tradicionais</option><option value="ai_until_reply">WhatsApp IA até responder</option></select></div>
           </div>
-        </div>
+          <details className="mb-5 rounded-lg border border-[var(--border)] text-sm">
+            <summary className="cursor-pointer px-3 py-2.5 font-medium">Inscrição e descrição <span className="ml-1 text-xs font-normal text-[var(--fg-secondary)]">· {triggerStageId ? 'por estágio' : 'inscrição manual'}</span></summary>
+            <div className="space-y-3 border-t border-[var(--border)] p-3">
+              <label className="block space-y-2 text-sm">{L('Descrição (opcional)', 'Description (optional)', 'Descripción (opcional)')}
+                <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm resize-y" /></label>
+              <label className="block space-y-2 text-sm">{L('Estágio gatilho', 'Trigger stage', 'Etapa disparadora')}
+                <select value={triggerStageId} onChange={e => setTriggerStageId(e.target.value)} className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm">
+                  <option value="">{L('Sem gatilho · inscrição manual', 'No trigger · manual enrollment', 'Sin disparador · inscripción manual')}</option>
+                  {pipelines.map(p => <optgroup key={p.id} label={p.name}>{[...(p.stages || [])].sort((a, b) => a.position - b.position).map(s => <option key={s.id} value={s.id}>{s.name.trim()}</option>)}</optgroup>)}
+                </select>
+              </label><p className="text-xs text-[var(--fg-secondary)]">Inscreve novos leads ao entrarem no estágio escolhido. Não inscreve leads que já estão nele.</p>
+            </div>
+          </details>
+          {mode === 'ai_until_reply' && <AISequenceFields value={aiConfig} onChange={setAIConfig}/>}
 
         {mode === 'legacy' && <>
         <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--fg-muted)' }}>{L('Passos', 'Steps', 'Pasos')}</p>
@@ -314,14 +334,20 @@ function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved
         </div>
 
         </>}
-        <div className="flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 text-[13px] font-semibold" style={{ color: 'var(--fg-secondary)' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
-          <button onClick={save} disabled={saving || !name.trim() || (mode === 'legacy' && steps.length === 0)}
-            className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)' }}>
-            {saving ? L('Salvando...', 'Saving...', 'Guardando...') : editing ? L('Atualizar', 'Update', 'Actualizar') : L('Criar', 'Create', 'Crear')}
-          </button>
         </div>
+        <footer className="shrink-0 border-t border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 sm:px-6">
+          {error && <p role="alert" className="mb-3 rounded-lg border border-red-500/25 bg-red-500/5 px-3 py-2 text-sm text-red-600">{error}</p>}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-[var(--fg-secondary)]">{mode === 'ai_until_reply' && !editing ? 'Criada desativada. Você decide quando ativar.' : 'Revise as configurações antes de salvar.'}</p>
+            <div className="ml-auto flex items-center gap-2">
+              <button onClick={onClose} disabled={saving} className="rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--fg-secondary)] disabled:opacity-50">{L('Cancelar', 'Cancel', 'Cancelar')}</button>
+              <button onClick={save} disabled={saving || !name.trim() || (mode === 'legacy' && steps.length === 0) || (mode === 'ai_until_reply' && !validAI)}
+                className="rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+                {saving ? L('Salvando...', 'Saving...', 'Guardando...') : editing ? L('Salvar alterações', 'Save changes', 'Guardar cambios') : L('Criar sequência', 'Create sequence', 'Crear secuencia')}
+              </button>
+            </div>
+          </div>
+        </footer>
       </div>
     </div>
   )

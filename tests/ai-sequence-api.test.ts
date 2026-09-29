@@ -19,6 +19,40 @@ test('every sequence operation requires session; admin cannot impersonate other 
  assert.equal((await admin.api('save',request({buyer_id:other,name:'AI',mode:'ai_until_reply',ai_config:defaultAIConfig,steps:[]}))).status,403)
  assert.equal(admin.calls.length,0)
 })
+test('preview reports missing provider configuration safely instead of an opaque 503',async(t)=>{
+ const { generateSequenceCopy } = await import('../src/lib/ai-sequence-copy')
+ const logs:unknown[][]=[]
+ t.mock.method(console,'error',(...args:unknown[])=>{logs.push(args)})
+ const api=sequenceAPI({} as never,async()=>({id,isAdmin:false}),(config,lead,recent)=>generateSequenceCopy(config,lead,recent,{key:''}))
+ const result=await api('preview',request({ai_config:defaultAIConfig,locale:'pt'}))
+ assert.equal(result.status,503)
+ const body=await result.json()
+ assert.equal(body.code,'AI_KEY_MISSING')
+ assert.match(body.error,/administrador/)
+ assert.equal(body.sent,false)
+ assert.equal(logs.length,1)
+ assert.deepEqual(logs[0],["[ai-sequence-preview]",{code:'AI_KEY_MISSING',status:503,model:'gpt-6.1-sol'}])
+})
+
+test('save preserves model in JSONB payload and preview uses the saved selection; legacy remains compatible',async()=>{
+ for (const model of ['gpt-6.1-sol','gpt-6-astra','gpt-6-luna','gpt-4o-mini',undefined] as const) {
+  const calls: Array<{p_config:{ai_config:unknown}}> = []
+  const db={rpc:async(_name:string,args:{p_config:{ai_config:unknown}})=>{calls.push(args);return {data:args.p_config,error:null}}}
+  let selected:unknown
+  const api=sequenceAPI(db as never,async()=>({id,isAdmin:false}),async(config)=>{selected=config.model;return {body:'Preview IA',choice:'fixture'}})
+  const saved=await api('save',request({name:'AI',mode:'ai_until_reply',ai_config:{...defaultAIConfig,model}}))
+  assert.equal(saved.status,200)
+  const config=(await saved.json()).sequence.ai_config
+  assert.equal(config.model,model ?? 'gpt-4o-mini')
+  assert.deepEqual(calls[0].p_config.ai_config,config)
+  assert.equal((await api('preview',request({ai_config:config,locale:'pt'}))).status,200)
+  assert.equal(selected,model ?? 'gpt-4o-mini')
+  const invalid=await api('save',request({name:'AI',mode:'ai_until_reply',ai_config:{...config,model:'arbitrary'}}))
+  assert.equal(invalid.status,400);assert.equal((await invalid.json()).code,'AI_CONFIG_INVALID')
+  assert.equal(calls.length,1)
+ }
+})
+
 test('AI config errors return 400; create and preview use session identity and never transport',async()=>{
  const {api,calls}=fixture({id,isAdmin:false})
  assert.equal((await api('save',request({name:'AI',mode:'ai_until_reply',ai_config:{...defaultAIConfig,repeat_minutes:0}}))).status,400)

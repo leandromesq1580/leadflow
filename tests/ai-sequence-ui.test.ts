@@ -13,5 +13,19 @@ test('enrollment panel exposes lead search and explicit stop/status scope',()=>{
 import {defaultAIConfig} from '../src/lib/ai-sequence-config'
 test('AI form renders scheduling, privacy, preview and human handoff controls',()=>{
  const html=renderToStaticMarkup(React.createElement(AISequenceFields,{value:defaultAIConfig,onChange:()=>{}}))
- for(const label of ['Objetivo','Brief','America/New_York','Dias','Gerar exemplo','não envia','humano','Intervalo','agendamento'])assert.ok(html.includes(label),label)
+ for(const label of ['Objetivo','Brief','America/New_York','Dias','Gerar exemplo','não envia','humano','Intervalo'])assert.ok(html.includes(label),label)
+ assert.ok(html.includes('Modelo de IA'))
+ assert.ok(html.includes('value="days"'))
+ assert.ok(html.includes('Nova York · Leste'))
+ assert.ok(html.includes('AM'))
+ assert.ok(html.includes('Prévia da mensagem'))
+ assert.ok(!html.includes('URL de agendamento'))
+ const meeting=renderToStaticMarkup(React.createElement(AISequenceFields,{value:{...defaultAIConfig,goal:'meeting'},onChange:()=>{}}))
+ assert.ok(meeting.includes('URL de agendamento'))
+})
+test('legacy model omission remains legacy rather than switching to the new default', () => {
+ const legacy = {...defaultAIConfig}
+ delete legacy.model
+ const html=renderToStaticMarkup(React.createElement(AISequenceFields,{value:legacy,onChange:()=>{}}))
+ assert.match(html, /value="gpt-4o-mini" selected=""/)
 })

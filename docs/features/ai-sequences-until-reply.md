@@ -14,13 +14,53 @@
 
 ## Geração e privacidade
 
-`src/lib/ai-sequence-copy.ts` usa `fetch`, OpenAI `gpt-4o-mini`, JSON e timeout. A IA **redige mensagens novas**, orientadas pelo brief comercial e objetivo ligação/reunião, em PT/ES/EN; não escolhe índices de frases. JSON exige `locale` e `body`. O corpo gerado tem até 300 caracteres e a mensagem completa até 450, incluindo identificação de assistente virtual IA inserida localmente em **todas** as mensagens e link opcional. Exige uma pergunta final referente ao objetivo. Erros, JSON inválido, truncamento e repetição retêm a geração, sem mensagem substituta.
+`src/lib/ai-sequence-copy.ts` usa `fetch`, o modelo OpenAI escolhido em `ai_config.model`, JSON e timeout de 20 segundos. A IA **redige mensagens novas**, orientadas pelo brief comercial e objetivo ligação/reunião, em PT/ES/EN; não escolhe índices de frases. JSON exige `locale` e `body`. O corpo gerado tem até 300 caracteres e a mensagem completa até 450, incluindo identificação de assistente virtual IA inserida localmente em **todas** as mensagens e link opcional. Exige uma pergunta final referente ao objetivo. Erros, JSON inválido, truncamento e repetição retêm a geração, sem mensagem substituta.
 
 O brief comercial explícito (até 300 caracteres) é enviado como dado não confiável, separado das instruções de sistema. Não inclua nomes nem dados pessoais/sensíveis: padrões reconhecíveis de contatos, renda, saúde, identificação pessoal e injeção são rejeitados antes da requisição. Nenhum campo do lead é enviado, exceto o idioma resolvido por `requireLeadMessageLocale`; não são enviados conversa crua nem URL de agendamento. O idioma do preview é ilustrativo. `recent_choices` guarda os últimos textos gerados sem personalização, marcados `draft:v1:`, revalidados antes de irem ao modelo; repetição normalizada (caixa, acentos, pontuação/espaços) é rejeitada. Índices antigos são ignorados.
 
 Validação local rejeita URLs/contatos/números, múltiplas perguntas, tamanho excedido e padrões óbvios de preços, promessas, disponibilidade, datas e identidade inventada; idioma/CTA têm checagem lexical. Esses filtros e instruções são defesa em profundidade, **não garantia semântica absoluta** nem anonimização geral: podem reter texto legítimo e não detectar toda paráfrase, nome ou mistura de idiomas. Não há personalização por dados do lead. A revisão humana do brief/exemplo continua necessária.
 
 Link é anexado localmente somente para objetivo reunião e quando informado explicitamente: HTTPS, domínio público sintaticamente válido, sem credenciais/IP/porta/whitespace/markup. A aplicação não busca o link nem confirma agenda/disponibilidade.
+
+## Modelos, compatibilidade e custo
+
+Catálogo público oficial consultado em **29/09/2026**: [GPT-6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol), [GPT-6 Astra](https://developers.openai.com/api/docs/models/gpt-6-astra), [GPT-6 Luna](https://developers.openai.com/api/docs/models/gpt-6-luna). A allowlist compartilhada fica em `src/lib/ai-sequence-models.ts`, com IDs, rótulos e descrições para o formulário. A presença no catálogo público **não comprova acesso da conta**: acesso real e qualidade/latência não foram testados nesta mudança local.
+
+- **Novas sequências:** `defaultAIConfig.model = gpt-6.1-sol`.
+- **Configuração antiga sem `model`:** validação resolve explicitamente para `gpt-4o-mini`, preservando envios existentes; editar/carregar não deve substituir esse legado pelo default novo.
+- Escolhas permitidas: `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-luna` e `gpt-4o-mini` (legado). IDs arbitrários, vazios ou `null` são rejeitados. O modelo validado é preservado no salvamento e usado sem substituição pelo gerador comum à prévia e ao engine.
+- Usa a mesma `OPENAI_API_KEY` já prevista na integração; não há nova credencial, outro provedor, fallback silencioso de modelo nem consulta à lista privada da conta.
+- **Sem nova migration para o seletor:** `ai_config` já é JSONB; a RPC `save_sequence` da migration 052 persiste o objeto inteiro. Não houve alteração/aplicação de SQL nesta mudança.
+
+Contrato do [guia GPT-6](https://developers.openai.com/api/docs/guides/latest-model) e da [referência Chat Completions](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create): Sol 6.1 e Astra usam `reasoning_effort: low` e `max_completion_tokens: 2048` (inclui raciocínio e saída), **sem `temperature`/`max_tokens`**; Luna usa `reasoning_effort: none` e limite 400, também sem temperatura. A página específica de Sol **6.1** prevalece sobre referências ao Sol 6 no guia: Sol 6.1 não aceita `none`. O legado conserva temperatura 0.7 e limite 240. Não há ferramentas nem function calling.
+
+Mantém `response_format: {type: 'json_object'}` e a exigência explícita de JSON no prompt, com validação local estrita de `locale` e `body`. JSON mode não garante schema nem segurança semântica; não é apresentado como Structured Outputs. `store: false` é explícito, sem prometer retenção zero pelo provedor.
+
+Cada geração faz **no máximo uma requisição**: não foi implementada segunda tentativa automática de formatação. Isso limita custo/latência e impede que falhas de segurança disparem gerações extras. O usuário pode pedir outra prévia conscientemente; as tentativas programadas existentes do engine continuam inalteradas. Sol/Astra podem gastar tokens de raciocínio dentro do limite e sofrer truncamento/timeout; não há garantia de que o orçamento seja suficiente para toda entrada. Astra tem custo maior conforme o catálogo público.
+
+## Diagnóstico da prévia
+
+A antiga captura de exceções devolvia um 503 genérico para causas distintas, sem diagnóstico. O 503 observado em produção **não permite determinar sua causa específica**. Fixtures locais reproduziram separadamente chave ausente, HTTP de provedor, rede/timeout, JSON inválido, texto rejeitado e repetição. Não houve chamada real ao provedor ou envio a leads para esta verificação.
+
+A prévia retorna `error` legível, `code` estável e `sent: false`. Códigos e status:
+
+| Código | HTTP | Ação indicada |
+| --- | --- | --- |
+| `AI_CONFIG_INVALID`, `AI_LOCALE_INVALID`, `AI_BRIEF_INVALID` | 400 | Corrigir configuração/idioma/brief, sem dados pessoais |
+| `AI_KEY_MISSING` | 503 | Administrador revisar configuração da chave |
+| `AI_PROVIDER_AUTH`, `AI_PROVIDER_FORBIDDEN` | 503 | Administrador revisar chave/permissões (não é expiração da sessão do usuário) |
+| `AI_MODEL_UNAVAILABLE` | 503 | Verificar acesso ao modelo ou escolher outro explicitamente |
+| `AI_QUOTA_EXCEEDED` | 503 | Administrador revisar créditos/cota |
+| `AI_RATE_LIMITED` | 429 | Aguardar antes de repetir |
+| `AI_TIMEOUT` | 504 | Repetir conscientemente ou selecionar outro modelo |
+| `AI_NETWORK_ERROR`, `AI_PROVIDER_UNAVAILABLE` | 503 | Tentar mais tarde |
+| `AI_PROVIDER_REQUEST` | 502 | Suporte revisar parâmetros da integração |
+| `AI_BAD_JSON`, `AI_INVALID_TEXT`, `AI_REPEATED_TEXT` | 502 | Revisar brief comercial/gerar outra prévia |
+| `AI_INTERNAL_ERROR` | 503 | Erro não classificado: suporte investigar |
+
+O log `[ai-sequence-preview]` contém apenas código, status HTTP local, modelo validado quando disponível, status do provedor e request ID sintaticamente seguro (`req_` com tamanho limitado). Não registra chave, brief, dados do lead, resposta gerada, exceção/stack bruta nem corpo de erro do provedor. Headers fora do padrão são omitidos. Falhas de sessão/propriedade continuam 401/403 antes de gerar.
+
+Dois falsos positivos foram comprovados por testes antes de corrigir: `\b` não reconhecia o fim acentuado de **você**, rejeitando “Você quer uma ligação?”; o mês inglês **May** também bloqueava “May we arrange a call with your agent?”. A correção usa fronteira Unicode apenas na evidência lexical PT e uma exceção estreita para pergunta de permissão inglesa no início. Referências a datas (`in May`), contatos, PII, promessas e disponibilidade continuam bloqueadas. Esses casos **não foram identificados como causa do incidente de produção**.
 
 ## Execução e falhas
 
@@ -38,7 +78,7 @@ Rotas `/api/sequences`, `/api/sequences/[id]`, `/api/sequences/enroll` e `/api/s
 
 Migration: `supabase/migrations/052_ai_sequences_until_reply.sql`. Aditiva: novos campos, supressões, índice, RPCs e triggers; nenhum backfill ou ativação. Mutação direta das tabelas de sequências é revogada para anon/authenticated; RPCs internos são exclusivos de service_role e têm search_path fixado. O painel usa API autenticada. Configuração+steps são salvos atomicamente, com rollback integral se um template/stage não pertencer ao dono.
 
-**Não aplicada em produção.** Deploy e migration dependem de autorização separada. As rotas novas exigem o schema novo; coordenar aplicação da migration antes da publicação. Supressões não devem ser limpas durante rollback. Clientes externos que escreviam direto nas tabelas via authenticated precisam usar as rotas.
+**Primeira versão publicada em 29/09/2026**, após autorização: migration 052 aplicada, PR #21 integrado em `11de1cf39a26ec2ae15d451b4ef3090d76808340` e deployment `dpl_A9jm1Mo5V5gpNx8GBU6K5UeJrVdp` confirmado naquele momento. O readback registrou 7 triggers, 30 sequências/582 inscrições antigas preservadas e nenhuma sequência/inscrição IA; são evidências históricas, não contagens atuais. **O redesenho, seletor de modelos e diagnóstico descritos acima ainda estão locais.** Essa evolução não altera SQL e sua publicação depende de autorização separada. Supressões não devem ser limpas durante rollback. Clientes externos que escreviam direto nas tabelas via authenticated precisam usar as rotas.
 
 ## Verificação local e limites
 
@@ -63,6 +103,17 @@ env -i PATH="$PATH" HOME="$HOME" node_modules/.bin/tsc --noEmit --incremental fa
 ```
 
 O teste PostgreSQL requer Python com `psycopg`, `TMPDIR` privado e `L4P_TEST_PG_ROOT` apontando a uma árvore local de binários com `usr/lib/postgresql/16/bin` e `usr/share/postgresql/16`. Execute `python tests/ai-sequence-pg-concurrency.py --label review` em ambiente limpo com essas variáveis. Ele cria somente cluster sintético, sem TCP ou credenciais externas, e encerra em `finally`; não conecta a banco existente. Snapshots ficam no scratch, nunca no Git.
+
+### Verificação local do seletor e diagnóstico (29/09/2026)
+
+- Ciclos RED→GREEN executados para default/allowlist, parâmetros reais de cada família, dois falsos positivos e diagnóstico de chave, HTTP, timeout/rede, JSON/texto/repetição e input.
+- Suíte `ai-sequence-*.test.ts`: **51/51** no snapshot verificado; inclui SQL local, opt-out/supressão e guarda antes do envio, sem alteração desses mecanismos.
+- `npm test`: **294 testes, 293 passam, 1 falha** (`lead distribution triggers automations immediately after pipeline placement`). A mesma falha foi reproduzida em snapshot separado de `11de1cf`.
+- ESLint dos oito arquivos TS do backend/testes alterados: exit 0. Typecheck: **17 diagnósticos na alteração e os mesmos 17 na base**, nenhum novo após normalizar linhas/colunas.
+- Evidências em `$TMPDIR/ai-experience-backend-{npm-test,base-test,tsc,base-tsc}.log`; base isolada em `$TMPDIR/ai-experience-backend-base-hNPDRV`, sem `.env*`.
+- Gate integrado independente posterior, em `ai-gate-adg1hte3/`, comparou snapshots atuais da alteração e da base `11de1cf`: **294/295** versus **278/279**, com a mesma falha de asserção textual `finishLeadAssignment` (não mock timers nesta rodada). Ambos os builds exit 0 e 129/129 páginas; typegen exit 0 e os mesmos 17 diagnósticos TypeScript. `comparison-normalized.json` registra zero diagnóstico novo e nenhuma divergência de código no manifesto de 717 arquivos (`f0affebfe6e091d1c7d3d96f6503394fba100b185edad835431fab614ec36874`).
+- Verificação conjunta da feature: pai e primeiro revisor executaram **53/53** testes; revisão visual local passou em desktop/mobile/escuro, com fixtures explícitas, preservação do modelo legado, modelo escolhido após salvar/reabrir, horários fora da grade, unidades exatas, cancelamento e prévias atrasadas. Novos horários são oferecidos em grade de 30 minutos; horários antigos fora dessa grade são preservados.
+- Primeira tentativa de gate em `ai-independent-gate-1hhr_pfp/` foi interrompida e não é aprovação. Gate final usou snapshots sem `.env`, ambiente limpo e bloqueador no runtime Node (5 probes externos bloqueados), não isolamento de rede pelo SO. Acesso real aos modelos e correção do incidente em produção continuam **não verificados**.
 
 ## Lições reutilizáveis
 
