@@ -122,6 +122,11 @@ export function AISequenceFields({ value: c, onChange }: { value: AISequenceConf
           <p id={`${id}-privacy`} className={help}>Conte à IA o que destacar e qual tom usar. Não inclua nomes, contatos, renda, saúde ou conversas de leads.</p>
         </div>
         <div className="space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2"><label htmlFor={`${id}-presentation`} className="text-sm font-medium">Como você gosta de se apresentar? <span className="font-normal text-[var(--fg-secondary)]">(opcional)</span></label><span className={help}>{(c.presentation ?? '').length}/300</span></div>
+          <textarea id={`${id}-presentation`} className={`${field} min-h-[96px] resize-y`} rows={3} maxLength={300} value={c.presentation ?? ''} onChange={e => update({ presentation: e.target.value })} aria-describedby={`${id}-presentation-help`} placeholder="Ex.: Oi, sou Ana, agente de life insurance. Gosto de conversar de forma simples e sem pressão." />
+          <p id={`${id}-presentation-help`} className={help}>Sugira seu próprio jeito, abordagem ou exemplo de abertura. Vale seu nome profissional. A IA usa como referência adaptada ao idioma do lead, não um texto fixo repetido. Não inclua dados de leads, contatos, saúde ou renda, nem licenças ou credenciais.</p>
+        </div>
+        <div className="space-y-2">
           <label htmlFor={`${id}-model`} className="block text-sm font-medium">Modelo de IA</label>
           <select id={`${id}-model`} className={field} value={modelId} onChange={e => update({ model: e.target.value as AISequenceConfig['model'] })}>
             {!selectedModel && modelId && <option value={modelId}>{modelId} · modelo salvo</option>}
@@ -161,7 +166,7 @@ export function AISequenceFields({ value: c, onChange }: { value: AISequenceConf
     <aside className="min-w-0 self-start rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4 lg:sticky lg:top-0" aria-label="Prévia e resumo">
       <div className="mb-4 flex items-center justify-between gap-2"><h3 className="text-sm font-semibold">Prévia da mensagem</h3><span className="rounded-full border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1 text-[10px] font-medium text-[var(--fg-secondary)]">WhatsApp</span></div>
       <div aria-live="polite" aria-busy={busy} className="mb-4 min-h-[174px] rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-        {busy ? <div role="status" className="space-y-3"><p className="text-sm font-medium">Gerando com IA…</p><p className={help}>Preparando um exemplo com o modelo e o brief escolhidos.</p><div className="h-2 w-4/5 animate-pulse rounded bg-[var(--border)]" /><div className="h-2 w-3/5 animate-pulse rounded bg-[var(--border)]" /></div>
+        {busy ? <div role="status" className="space-y-3"><p className="text-sm font-medium">Gerando com IA…</p><p className={help}>Preparando um exemplo com o modelo, o brief e sua sugestão de apresentação.</p><div className="h-2 w-4/5 animate-pulse rounded bg-[var(--border)]" /><div className="h-2 w-3/5 animate-pulse rounded bg-[var(--border)]" /></div>
           : error ? <div role="alert"><p className="mb-2 text-sm font-semibold">Não foi possível gerar</p><p className="break-words text-xs leading-relaxed text-red-600">{error}</p><p className={`${help} mt-3`}>Seu rascunho foi mantido. Nenhuma mensagem enviada.</p></div>
           : preview ? <><p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-secondary)]">Exemplo gerado · revise antes de ativar</p><blockquote className="whitespace-pre-wrap break-words text-sm leading-relaxed">{preview}</blockquote></>
           : <div className="py-3"><p className="mb-2 text-sm font-medium">Veja como a conversa começa</p><p className={help}>Defina o objetivo e o brief, depois gere uma mensagem para revisar. Nada será enviado a um lead.</p></div>}
@@ -169,7 +174,7 @@ export function AISequenceFields({ value: c, onChange }: { value: AISequenceConf
       <label className="mb-3 block space-y-2 text-xs font-medium">Idioma do exemplo<select aria-label="Idioma do exemplo" className={field} value={locale} onChange={e => { request.current += 1; controller.current?.abort(); setBusy(false); setPreview(''); setError(''); setLocale(e.target.value) }}><option value="pt">Português</option><option value="es">Español</option><option value="en">English</option></select></label>
       <button type="button" disabled={busy || !validSchedule} onClick={example} className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2.5 text-sm font-semibold transition-colors hover:border-[var(--accent)] disabled:opacity-50">{busy ? 'Gerando…' : error ? 'Tentar novamente (não envia)' : 'Gerar exemplo (não envia)'}</button>
       <p className={`${help} mt-2`}>Os envios reais seguem o idioma cadastrado do lead.</p>
-      <div className="mt-5 border-t border-[var(--border)] pt-4"><p className="mb-2 text-xs font-semibold">Seu plano de contato</p><p className="text-sm leading-relaxed">{c.initial_delay_minutes === 0 ? 'Começa na entrada' : `Começa após ${durationSummary(c.initial_delay_minutes)}`}. Depois, a cada {durationSummary(c.repeat_minutes)}, dentro da agenda.</p><p className={`${help} mt-3`}>A assistente se identifica como IA. Qualquer resposta encerra a sequência e o humano assume.</p></div>
+      <div className="mt-5 border-t border-[var(--border)] pt-4"><p className="mb-2 text-xs font-semibold">Seu plano de contato</p><p className="text-sm leading-relaxed">{c.initial_delay_minutes === 0 ? 'Começa na entrada' : `Começa após ${durationSummary(c.initial_delay_minutes)}`}. Depois, a cada {durationSummary(c.repeat_minutes)}, dentro da agenda.</p><p className={`${help} mt-3`}>A IA redige em seu nome, com sua abordagem e sem repetir a apresentação. Qualquer resposta encerra a sequência e o humano assume.</p></div>
     </aside>
   </section>
 }

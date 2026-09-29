@@ -31,6 +31,8 @@ try {
   let previewMode = 'error'
   let previewPayload
   let savePayload
+  let saveMode = 'error'
+  let stored = []
   let previewCalls = 0
   let externalRequests = 0
   await page.route('**/*', async route => {
@@ -39,11 +41,11 @@ try {
     if (url.pathname === '/api/sequences/preview') {
       previewPayload = route.request().postDataJSON(); previewCalls++
       if (previewMode === 'slow') { await new Promise(resolve => setTimeout(resolve, 650)); return route.fulfill({ json: { body: 'FIXTURE ANTIGA — não deve aparecer' } }).catch(() => {}) }
-      return route.fulfill(previewMode === 'error' ? { status: 503, json: { error: 'Modelo temporariamente indisponível. Tente novamente.' } } : { json: { body: 'Fixture local de teste. Sou uma assistente virtual IA. Podemos combinar uma ligação?' } })
+      return route.fulfill(previewMode === 'error' ? { status: 503, json: { error: 'Modelo temporariamente indisponível. Tente novamente.' } } : { json: { body: 'Fixture local de teste. Quero ajudar você com sua proteção. Podemos combinar uma ligação?' } })
     }
     if (url.pathname === '/api/sequences') {
-      if (route.request().method() === 'POST') { savePayload = route.request().postDataJSON(); return route.fulfill({ status: 503, json: { error: 'Falha local simulada ao salvar. Tente novamente.' } }) }
-      return route.fulfill({ json: { buyer_id: 'fixture-buyer', sequences: [], templates: [], pipelines: [] } })
+      if (route.request().method() === 'POST') { savePayload = route.request().postDataJSON(); if (saveMode === 'error') return route.fulfill({ status: 503, json: { error: 'Falha local simulada ao salvar. Tente novamente.' } }); stored = [{...savePayload, id:'fixture-sequence',enabled:false,sequence_steps:[]}]; return route.fulfill({json:{sequence:stored[0]}}) }
+      return route.fulfill({ json: { buyer_id: 'fixture-buyer', sequences: stored, templates: [], pipelines: [] } })
     }
     return route.continue()
   })
@@ -62,6 +64,11 @@ try {
   const briefBox = await page.getByLabel('Brief da conversa', { exact: true }).boundingBox()
   assert.ok(nameBox.y < briefBox.y, 'name appears before AI settings')
   await page.getByLabel('Brief da conversa', { exact: true }).fill('Apresente proteção familiar. Use um tom acolhedor e sem pressão.')
+  const presentation = page.getByLabel('Como você gosta de se apresentar? (opcional)', {exact:true})
+  assert.equal(await presentation.inputValue(), '')
+  assert.equal(await presentation.getAttribute('maxlength'), '300')
+  const opening = 'Oi, sou Ana, agente de life insurance. Tom leve e sem pressão.'
+  await presentation.fill(opening)
   const modelOptions = await page.getByLabel('Modelo de IA', { exact: true }).locator('option').evaluateAll(options => options.map(o => o.value))
   assert.ok(modelOptions.length >= 3)
   await page.getByLabel('Modelo de IA', { exact: true }).selectOption(modelOptions[1])
@@ -85,6 +92,8 @@ try {
   await page.screenshot({ path: path.join(output, 'desktop-schedule.png'), fullPage: true })
   await page.getByRole('button', { name: 'Gerar exemplo (não envia)' }).click()
   await page.getByText('Modelo temporariamente indisponível. Tente novamente.', { exact: true }).waitFor()
+  assert.equal(previewPayload.ai_config.presentation, opening)
+  assert.equal(await presentation.inputValue(), opening, 'preview failure preserves input')
   assert.equal(previewPayload.ai_config.repeat_minutes, 2880)
   assert.equal(previewPayload.ai_config.model, modelOptions[1])
   await page.screenshot({ path: path.join(output, 'desktop-preview-error.png'), fullPage: true })
@@ -92,6 +101,9 @@ try {
   await page.getByRole('button', { name: 'Tentar novamente (não envia)' }).click()
   await page.getByRole('status').waitFor()
   await page.screenshot({ path: path.join(output, 'desktop-preview-loading.png'), fullPage: true })
+  await page.getByRole('tab', {name:'Mensagem',exact:true}).click()
+  await presentation.fill(opening + ' Sem pressa.')
+  assert.equal(await page.getByRole('status').count(), 0, 'editing presentation invalidates in-flight preview')
   await page.getByLabel('Idioma do exemplo', { exact: true }).selectOption('en')
   previewMode = 'success'
   await page.getByRole('button', { name: 'Gerar exemplo (não envia)' }).click()
@@ -104,9 +116,12 @@ try {
   await page.getByText('Falha local simulada ao salvar. Tente novamente.', { exact: true }).first().waitFor()
   assert.equal(await page.getByLabel('Nome da sequência', { exact: true }).inputValue(), 'Retomada de contato')
   assert.equal(await page.getByLabel('Brief da conversa', { exact: true }).inputValue(), 'Apresente proteção familiar. Use um tom acolhedor e sem pressão.')
+  assert.equal(await presentation.inputValue(), opening + ' Sem pressa.', 'save failure preserves input')
+  assert.equal(savePayload.ai_config.presentation, opening + ' Sem pressa.')
   assert.equal(savePayload.ai_config.repeat_minutes, 2880)
   assert.equal(savePayload.ai_config.model, modelOptions[1])
   await page.setViewportSize({ width: 390, height: 844 })
+  await presentation.scrollIntoViewIfNeeded()
   await page.screenshot({ path: path.join(output, 'mobile-message.png'), fullPage: true })
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no horizontal overflow')
   const footer = await page.getByRole('button', { name: /Criar sequência/ }).boundingBox()
@@ -123,10 +138,28 @@ try {
   await page.screenshot({ path: path.join(output, 'mobile-schedule.png'), fullPage: true })
   await page.setViewportSize({ width: 320, height: 667 })
   assert.equal(await page.getByRole('dialog').evaluate(element => element.scrollWidth <= element.clientWidth), true, '320px dialog has no horizontal overflow')
+  await page.getByRole('tab', {name:'Mensagem',exact:true}).click()
+  await presentation.scrollIntoViewIfNeeded()
+  assert.equal(await page.getByRole('dialog').evaluate(element => element.scrollWidth <= element.clientWidth), true, '320px message has no overflow')
   await page.screenshot({ path: path.join(output, 'mobile-small.png'), fullPage: true })
   await page.evaluate(() => document.documentElement.dataset.theme = 'dark')
   await page.setViewportSize({ width: 1440, height: 1000 })
   await page.screenshot({ path: path.join(output, 'desktop-dark.png'), fullPage: true })
+  assert.equal(await page.getByRole('dialog').evaluate(element => element.scrollWidth <= element.clientWidth), true, 'dark desktop no overflow')
+  saveMode = 'success'
+  await page.getByRole('button', {name:/Criar sequência/}).click()
+  await page.getByRole('dialog').waitFor({state:'detached'})
+  await page.getByRole('button', {name:'Editar',exact:true}).click()
+  assert.equal(await presentation.inputValue(), opening + ' Sem pressa.', 'reopened local fixture retains presentation')
+  assert.equal(await page.getByLabel('Modelo de IA', {exact:true}).inputValue(), modelOptions[1])
+  await page.screenshot({path:path.join(output,'reopened-fixture.png'),fullPage:true})
+  await page.getByRole('button', {name:'Fechar formulário'}).click()
+  delete stored[0].ai_config.presentation
+  delete stored[0].ai_config.model
+  await page.reload()
+  await page.getByRole('button', {name:'Editar',exact:true}).click()
+  assert.equal(await presentation.inputValue(), '', 'old missing presentation renders empty')
+  assert.equal(await page.getByLabel('Modelo de IA', {exact:true}).inputValue(), 'gpt-4o-mini')
   assert.deepEqual(consoleErrors, [])
   assert.equal(externalRequests, 0)
   console.log(JSON.stringify({ result: 'PASS', previewCalls, durationMinutes: savePayload.ai_config.repeat_minutes, model: savePayload.ai_config.model, output, externalRequests }, null, 2))
