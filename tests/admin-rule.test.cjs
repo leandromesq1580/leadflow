@@ -9,7 +9,7 @@ function loadTs(relative, mocks = {}) {
   const filename = path.join(__dirname, '..', relative)
   const code = ts.transpileModule(fs.readFileSync(filename, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText
   const module = { exports: {} }
-  vm.runInNewContext(code, { module, exports: module.exports, require: name => name in mocks ? mocks[name] : name.endsWith('/lead-language') ? loadTs('src/lib/lead-language.ts') : name === '@/lib/availability' ? loadTs('src/lib/availability.ts') : require(name), console, Date, Intl, process }, { filename })
+  vm.runInNewContext(code, { module, exports: module.exports, require: name => name in mocks ? mocks[name] : name.endsWith('/lead-language') ? loadTs('src/lib/lead-language.ts') : name.endsWith('/buyer-email') ? loadTs('src/lib/buyer-email.ts') : name === '@/lib/availability' ? loadTs('src/lib/availability.ts') : require(name), console, Date, Intl, process }, { filename })
   return module.exports
 }
 
@@ -172,7 +172,7 @@ test('queue API does not announce capped/inactive/unlicensed accounts and report
         : table === 'buyers' ? { data: [candidate] }
         : table === 'buyer_states' ? { data: scenario.states.map(state_code => ({ buyer_id: jen.id, state_code })) }
         : { data: [] }
-      const q = { select() { return q }, eq() { return q }, in() { return q }, not() { return q }, gte() { return q },
+      const q = { select() { return q }, eq() { return q }, in() { return q }, or() { return q }, not() { return q }, gte() { return q },
         single: async () => ({ data: { is_admin: true } }), maybeSingle: async () => result,
         then(resolve) { return Promise.resolve(result).then(resolve) },
       }

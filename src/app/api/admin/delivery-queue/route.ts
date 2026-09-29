@@ -6,6 +6,7 @@ import { readAdminRuleState } from '@/lib/admin-rule-state'
 import { readBuyerPolicy } from '@/lib/buyer-policy'
 import { isLeadLanguage } from '@/lib/lead-language'
 import { buyerTimezone, isAvailableNow } from '@/lib/availability'
+import { emailIlikeOrFilter, keepEmails, sameEmail } from '@/lib/buyer-email'
 
 /**
  * GET /api/admin/delivery-queue — Fila ÚNICA com integridade total.
@@ -86,7 +87,9 @@ export async function GET(request?: NextRequest) {
   const allAdminEmails = [...new Set([...adminEmails, ...(fallbackEmail ? [fallbackEmail] : [])])]
   const admins: any[] = []
   if (allAdminEmails.length) {
-    const { data: ab } = await db.from('buyers').select('id, name, email, is_active').in('email', allAdminEmails)
+    // Sem diferenciar maiúsculas (cadastro pode ter e-mail em MAIÚSCULAS — caso Anne, 29/09).
+    const { data: abRaw } = await db.from('buyers').select('id, name, email, is_active').or(emailIlikeOrFilter(allAdminEmails)!)
+    const ab = keepEmails(abRaw, allAdminEmails)
     const stMap = await statesOf((ab || []).map((b: any) => b.id))
     for (const b of (ab || []).filter(b => !staffIds.has(b.id) || adminEmails.includes(b.email.toLowerCase()))) {
       const priority = snapshot.candidates.find(c => c.id === b.id)
@@ -94,7 +97,7 @@ export async function GET(request?: NextRequest) {
       id: b.id, nome: (b.name || '').trim(), email: b.email,
       estados: (stMap[b.id] || []).sort(),
       regraAdmin: adminEmails.includes(b.email.toLowerCase()) ? N : null,
-      isFallback: !staffIds.has(b.id) && b.email === fallbackEmail,
+      isFallback: !staffIds.has(b.id) && sameEmail(b.email, fallbackEmail),
       receivedToday: priority?.receivedToday || 0,
       dailyMax: ar.daily_max ?? null,
       priorityCredits: priority?.priorityCredits || 0,

@@ -9,7 +9,7 @@ function loadTs(relative, mocks = {}) {
   const filename = path.join(__dirname, '..', relative)
   const code = ts.transpileModule(fs.readFileSync(filename, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText
   const module = { exports: {} }
-  vm.runInNewContext(code, { module, exports: module.exports, require: name => name in mocks ? mocks[name] : name.endsWith('/lead-language') ? loadTs('src/lib/lead-language.ts') : name === '@/lib/availability' ? loadTs('src/lib/availability.ts') : require(name), console, Date, Intl, URL, process: { env: {} } }, { filename })
+  vm.runInNewContext(code, { module, exports: module.exports, require: name => name in mocks ? mocks[name] : name.endsWith('/lead-language') ? loadTs('src/lib/lead-language.ts') : name.endsWith('/buyer-email') ? loadTs('src/lib/buyer-email.ts') : name === '@/lib/availability' ? loadTs('src/lib/availability.ts') : require(name), console, Date, Intl, URL, process: { env: {} } }, { filename })
   return module.exports
 }
 
@@ -64,6 +64,8 @@ function fixture({ routing = {}, extra = {}, eligible = [gab, customer] } = {}) 
       eq(k, v) { filters.push(r => r[k] === v); return q },
       is(k, v) { filters.push(r => r[k] === v); return q },
       in(k, vs) { filters.push(r => vs.includes(r[k])); return q },
+      // PostgREST or=(email.ilike."x",…): ilike NÃO diferencia maiúsculas, como no Postgres.
+      or(expr) { const wanted = [...String(expr).matchAll(/email\.ilike\."((?:[^"\\]|\\.)*)"/g)].map(m => m[1].replace(/\\(.)/g, '$1').toLowerCase()); filters.push(r => wanted.includes(String(r.email || '').toLowerCase())); return q },
       not(k, op, v) { filters.push(r => v === null ? r[k] != null : r[k] !== v); return q },
       neq(k, v) { filters.push(r => r[k] !== v); return q },
       gte(k, v) { filters.push(r => r[k] >= v); return q },
