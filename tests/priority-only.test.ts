@@ -84,6 +84,11 @@ export function fixture(options: any = {}) {
           for (const [op, col, val] of q.ops) {
             if (op === 'eq') rows = rows.filter(r => r[col] === val)
             if (op === 'in') rows = rows.filter(r => val.includes(r[col]))
+            // PostgREST or=(email.ilike."x",…): ilike NÃO diferencia maiúsculas, como no Postgres.
+            if (op === 'or') {
+              const wanted = [...String(col).matchAll(/email\.ilike\."((?:[^"\\]|\\.)*)"/g)].map(m => m[1].replace(/\\(.)/g, '$1').toLowerCase())
+              rows = rows.filter(r => wanted.includes(String(r.email || '').toLowerCase()))
+            }
           }
           return { data: q.ops.some((o: any[]) => ['single', 'maybeSingle'].includes(o[0])) ? rows[0] || null : rows, error: null }
         }).then(ok, fail)
@@ -435,4 +440,33 @@ test('priority-only with an empty selection leaves a system lead pending instead
   assert.equal(result, null)
   assert.equal(db.calls.some((c: any) => c.rpc === 'assign_paid_lead_with_credit'), false)
   assert.equal(db.calls.some((c: any) => c.ops?.some((o: any[]) => o[0] === 'update')), false)
+})
+
+
+test('prioritário com e-mail em MAIÚSCULAS no cadastro aparece na fila e recebe o lead (caso Anne, 29/09/2026)', async () => {
+  // O admin marca pelo e-mail do cadastro (maiúsculas); o código normaliza a lista. Antes
+  // do conserto a busca `.in('email', lista-minúscula)` era exata e o prioritário sumia.
+  const upper = { ...priority, email: 'PRIORITY@EXAMPLE.INVALID' }
+  for (const saved of [upper.email, upper.email.toLowerCase(), ' Priority@Example.Invalid ']) {
+    const db = fixture({ buyers: [upper, outsider], settings: { admin_rule: { admin_emails: [saved], one_in: 0 } } })
+    const app = loadApp(db, { '@/lib/supabase/server': { createServerSupabase: async () => ({ auth: { getUser: async () => ({ data: { user: { id: 'admin' } } }) } }) } })
+    const assigned = await app().distributeLeadToNextBuyer(lead)
+    assert.equal(assigned?.id, upper.id, `lead vai pro prioritário (lista salva como ${JSON.stringify(saved)})`)
+    assert.ok(db.calls.some((c: any) => c.rpc === 'assign_paid_lead_with_credit' && c.args.p_buyer_id === upper.id), 'cobrança atômica no prioritário')
+    const body = await (await app('src/app/api/admin/delivery-queue/route.ts').GET({ nextUrl: new URL('http://localhost?language=pt') })).json()
+    assert.deepEqual(body.admins.map((a: any) => a.id), [upper.id], 'aparece na Fila de Entregas')
+    assert.equal(body.admins[0].isNext, true)
+  }
+})
+
+test('busca por e-mail ignora maiúsculas mas não amplia: _ e % do ilike não trazem outro comprador', async () => {
+  const mod = loadApp({})('src/lib/buyer-email.ts')
+  assert.equal(mod.emailIlikeOrFilter([]), null)
+  assert.equal(mod.emailIlikeOrFilter(['', '  ']), null)
+  assert.equal(mod.emailIlikeOrFilter(['A@X.COM', 'a@x.com']), 'email.ilike."a@x.com"', 'deduplica normalizado')
+  assert.equal(mod.emailIlikeOrFilter(['q"t\\@x.com']), 'email.ilike."q\\"t\\\\@x.com"', 'escapa aspas e barra do PostgREST')
+  const rows = [{ email: 'Ana_Silva@X.com' }, { email: 'anaXsilva@x.com' }, { email: null }]
+  assert.deepEqual(mod.keepEmails(rows, ['ana_silva@x.com']), [rows[0]], '_ não casa outro e-mail')
+  assert.equal(mod.sameEmail(' A@X.com', 'a@x.COM '), true)
+  assert.equal(mod.sameEmail('', ''), false)
 })

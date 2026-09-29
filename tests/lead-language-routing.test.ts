@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { transpileModule, ModuleKind, ScriptTarget } from 'typescript'
 import * as languages from '../src/lib/lead-language'
+import * as buyerEmail from '../src/lib/buyer-email'
 
 type Query = { table: string; calls: [string, ...any[]][] }
 function database(resolve: (query: Query) => any, rpc: (...args: any[]) => any) {
@@ -26,7 +27,7 @@ function distribution(db: any, notifications: any[]) {
     './supabase/admin': { createAdminClient: () => db },
     './notifications': { sendLeadNotificationEmail: async (...args: any[]) => notifications.push(args) },
     './availability': { buyerTimezone: () => 'America/New_York', isAvailableNow: () => true },
-    './place-member-lead': {}, './wa-bridge': {}, './lead-language': languages,
+    './place-member-lead': {}, './wa-bridge': {}, './lead-language': languages, './buyer-email': buyerEmail,
     './admin-rule': { adminRuleTurn: () => ({ N: 0 }), easternDayStartISO: () => '2026-01-01T00:00:00Z', evaluateAdminRule: () => ({}) },
     './admin-rule-state': { readAdminRuleState: async () => ({ assignedCount: 0, candidates: [] }) },
     './buyer-policy': { readBuyerPolicy: async () => ({ staffIds: new Set() }), withoutStaff: (rows: any[]) => rows },
@@ -48,7 +49,7 @@ test('Spanish leads use the configured operational fallback; unknown language an
   const fallback = { id: 'fallback', name: 'Regiane', email: 'regiane@example.invalid' }
   const db = database(q => {
     if (q.table === 'settings') return { data: { value: { fallback_email: fallback.email } }, error: null }
-    if (q.table === 'buyers') return { data: fallback, error: null }
+    if (q.table === 'buyers') return { data: q.calls.some(c => ['single', 'maybeSingle'].includes(c[0])) ? fallback : [fallback], error: null }
     if (q.table === 'leads') return { data: null, error: null }
     if (q.table === 'pipelines') return { data: null, error: null }
     throw new Error(`Unexpected fallback query: ${q.table}`)

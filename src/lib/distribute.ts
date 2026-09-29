@@ -5,6 +5,7 @@ import { placeLeadInMemberPipeline } from './place-member-lead'
 import { resolveSendBridge } from './wa-bridge'
 import { adminDailyBlock, adminRuleTurn, easternDayStartISO, evaluateAdminRule, type AdminRule } from './admin-rule'
 import { readAdminRuleState } from './admin-rule-state'
+import { emailIlikeOrFilter, keepEmails } from './buyer-email'
 import { readBuyerPolicy, withoutStaff } from './buyer-policy'
 import { leadLanguageForLead } from './lead-language'
 import { runAutomations } from './automation-engine'
@@ -126,11 +127,14 @@ export async function forceAssignRoundRobin(
   const supabase = createAdminClient()
 
   // Pega buyers dos emails, na ordem que veio — só ATIVOS (suspenso não recebe lead)
-  const { data: buyers } = await supabase
+  const emailFilter = emailIlikeOrFilter(emails)
+  if (!emailFilter) return null
+  const { data: rawBuyers } = await supabase
     .from('buyers')
     .select('id, name, email, phone, notification_email, notification_sms')
-    .in('email', emails)
+    .or(emailFilter)
     .eq('is_active', true)
+  const buyers = keepEmails(rawBuyers, emails)
 
   if (!buyers || buyers.length === 0) {
     console.error(`[Distribute] ROUND_ROBIN: nenhum buyer ATIVO encontrado para ${emails.join(',')}`)
@@ -305,12 +309,16 @@ async function assignToFallback(
     console.log(`[Distribute] lead ${lead.id} pendente (${reason}) — sem fallback configurado`)
     return null
   }
-  const { data: fb } = await supabase
-    .from('buyers')
-    .select('id, name, email, phone, notification_email, notification_sms')
-    .eq('email', fallbackEmail)
-    .eq('is_active', true)
-    .maybeSingle()
+  // Sem diferenciar maiúsculas (cadastro pode ter e-mail em MAIÚSCULAS — caso Anne, 29/09).
+  const fallbackFilter = emailIlikeOrFilter([fallbackEmail])
+  const { data: fbRows } = fallbackFilter
+    ? await supabase
+      .from('buyers')
+      .select('id, name, email, phone, notification_email, notification_sms')
+      .or(fallbackFilter)
+      .eq('is_active', true)
+    : { data: [] }
+  const fb = keepEmails(fbRows, [fallbackEmail])[0] || null
   if (!fb) {
     console.log(`[Distribute] lead ${lead.id} pendente (${reason}) — fallback ${fallbackEmail} inativo/inexistente`)
     return null

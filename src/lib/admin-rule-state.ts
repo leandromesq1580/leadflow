@@ -1,6 +1,7 @@
 import type { createAdminClient } from './supabase/admin'
 import { easternDayStartISO, type AdminRule } from './admin-rule'
 import { readBuyerPolicy } from './buyer-policy'
+import { emailIlikeOrFilter, keepEmails } from './buyer-email'
 
 interface CreditBalanceRow {
   buyer_id: string
@@ -26,10 +27,13 @@ export async function readAdminRuleState(db: ReturnType<typeof createAdminClient
   if (leadLanguage) countQuery = countQuery.eq('lead_language', leadLanguage)
   const { count, error: countError } = await countQuery
   if (countError) throw countError
-  const { data: buyers, error: buyerError } = emails.length
-    ? await db.from('buyers').select('id, name, email, phone, notification_email, notification_sms, is_active').in('email', emails)
+  // Sem diferenciar maiúsculas: cadastro pode ter o e-mail em MAIÚSCULAS (caso Anne, 29/09).
+  const emailFilter = emailIlikeOrFilter(emails)
+  const { data: rawBuyers, error: buyerError } = emailFilter
+    ? await db.from('buyers').select('id, name, email, phone, notification_email, notification_sms, is_active').or(emailFilter)
     : { data: [], error: null }
   if (buyerError) throw buyerError
+  const buyers = keepEmails(rawBuyers, emails)
   const ids = (buyers || []).map(b => b.id)
   const [{ data: states, error: stateError }, { data: credits, error: creditError }, policy] = await Promise.all([
     ids.length
