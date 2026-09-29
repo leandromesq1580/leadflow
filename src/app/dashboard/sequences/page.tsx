@@ -1,6 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { AISequenceFields } from '@/components/ai-sequence-fields'
+import { SequenceEnrollmentPanel } from '@/components/sequence-enrollment-panel'
+import { defaultAIConfig, type AISequenceConfig } from '@/lib/ai-sequence-config'
+import { sequenceJSON, saveSequenceDraft } from '@/lib/sequence-client'
 import { useT } from '@/lib/i18n-client'
 
 interface Step {
@@ -16,6 +20,8 @@ interface Sequence {
   name: string
   description: string | null
   enabled: boolean
+  mode?: 'legacy' | 'ai_until_reply'
+  ai_config?: AISequenceConfig
   trigger_stage_id?: string | null
   sequence_steps: Step[]
 }
@@ -42,62 +48,46 @@ export default function SequencesPage() {
   const [editing, setEditing] = useState<Sequence | null>(null)
   const [showNew, setShowNew] = useState(false)
 
-  useEffect(() => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const ref = supabaseUrl.replace('https://', '').split('.')[0]
-    const cookie = document.cookie.split('; ').find(c => c.startsWith(`sb-${ref}-auth-token=`))
-    if (cookie) {
-      try {
-        const token = JSON.parse(atob(decodeURIComponent(cookie.substring(cookie.indexOf('=') + 1))))
-        const payload = JSON.parse(atob(token.access_token.split('.')[1]))
-        fetchBuyer(payload.sub)
-      } catch {}
-    }
+  const [error, setError] = useState('')
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const reload = useCallback(async () => {
+    const result = await sequenceJSON('/api/sequences')
+    setBuyerId(result.buyer_id)
+    setSequences(result.sequences)
+    setTemplates(result.templates)
+    setPipelines(result.pipelines)
   }, [])
-
-  async function fetchBuyer(authId: string) {
-    const r = await fetch(`/api/settings?auth_user_id=${authId}`)
-    if (r.ok) {
-      const b = await r.json()
-      setBuyerId(b.id)
-      await reload(b.id)
-    }
-    setLoading(false)
-  }
-
-  async function reload(bid: string) {
-    const [seqRes, tmplRes, pipeRes] = await Promise.all([
-      fetch(`/api/sequences?buyer_id=${bid}`).then(r => r.json()),
-      fetch(`/api/templates?buyer_id=${bid}`).then(r => r.json()),
-      fetch(`/api/pipelines?buyer_id=${bid}`).then(r => r.json()),
-    ])
-    setSequences(seqRes.sequences || [])
-    setTemplates(tmplRes.templates || [])
-    setPipelines(pipeRes.pipelines || [])
-  }
+  useEffect(() => {
+    let active = true
+    sequenceJSON('/api/sequences').then(result => {
+      if (!active) return
+      setBuyerId(result.buyer_id); setSequences(result.sequences); setTemplates(result.templates); setPipelines(result.pipelines)
+    }).catch(e => { if (active) setError(e.message) }).finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [reload])
 
   async function toggle(s: Sequence) {
-    await fetch(`/api/sequences/${s.id}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ enabled: !s.enabled }),
-    })
-    await reload(buyerId)
+    setError('')
+    try {
+      await sequenceJSON(`/api/sequences/${s.id}`, {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({enabled:!s.enabled})})
+      await reload()
+    } catch (e) { setError((e as Error).message) }
   }
-
   async function remove(id: string) {
     if (!confirm(L('Excluir sequência? As inscrições ativas serão canceladas.', 'Delete sequence? Active enrollments will be canceled.', '¿Eliminar la secuencia? Las inscripciones activas se cancelarán.'))) return
-    await fetch(`/api/sequences/${id}`, { method: 'DELETE' })
-    await reload(buyerId)
+    try { await sequenceJSON(`/api/sequences/${id}`, {method:'DELETE'}); await reload() }
+    catch (e) { setError((e as Error).message) }
   }
 
   if (loading) return <div className="p-8 text-[13px]" style={{ color: 'var(--fg-secondary)' }}>{L('Carregando...', 'Loading...', 'Cargando...')}</div>
 
   return (
     <div className="max-w-[1040px]">
+      {error && <p role="alert" className="text-red-600">{error} <button onClick={() => reload().then(() => setError('')).catch(e => setError(e.message))}>Recarregar</button></p>}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{t.sidebar.sequences}</h1>
-          <p className="text-[14px]" style={{ color: 'var(--fg-secondary)' }}>{L('Campanhas de drip com múltiplos passos automatizados', 'Drip campaigns with multiple automated steps', 'Campañas de drip con múltiples pasos automatizados')}</p>
+          <p className="text-[14px]" style={{ color: 'var(--fg-secondary)' }}>{L('Sequências de passos ou WhatsApp IA até a primeira resposta', 'Drip campaigns with multiple automated steps', 'Campañas de drip con múltiples pasos automatizados')}</p>
         </div>
         <button onClick={() => { setEditing(null); setShowNew(true) }}
           className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-white"
@@ -127,10 +117,13 @@ export default function SequencesPage() {
                 <p className="text-[15px] font-bold" style={{ color: 'var(--fg)' }}>{s.name}</p>
                 {s.description && <p className="text-[12px]" style={{ color: 'var(--fg-secondary)' }}>{s.description}</p>}
               </div>
+              <button onClick={() => setExpanded(expanded === s.id ? null : s.id)} className="text-[12px] font-bold">Inscrições</button>
               <button onClick={() => { setEditing(s); setShowNew(true) }} className="text-[12px] font-bold" style={{ color: 'var(--accent)' }}>{L('Editar', 'Edit', 'Editar')}</button>
               <button onClick={() => remove(s.id)} className="text-[12px] font-bold" style={{ color: '#ef4444' }}>{L('Deletar', 'Delete', 'Eliminar')}</button>
             </div>
 
+            {s.mode === 'ai_until_reply' && <p className="text-sm">IA · {s.ai_config?.goal === 'meeting' ? 'Reunião' : 'Ligação'} · até responder · {s.ai_config?.timezone}</p>}
+            {expanded === s.id && <SequenceEnrollmentPanel sequenceId={s.id} enabled={s.enabled}/>}
             <div className="flex items-stretch gap-1 overflow-x-auto">
               {s.sequence_steps.map((step, i) => {
                 const tpl = templates.find(t => t.id === step.template_id)
@@ -159,15 +152,16 @@ export default function SequencesPage() {
         pipelines={pipelines}
         editing={editing}
         onClose={() => { setShowNew(false); setEditing(null) }}
-        onSaved={() => { setShowNew(false); setEditing(null); reload(buyerId) }}
+        onSaved={reload}
+        onError={setError}
       />}
     </div>
   )
 }
 
-function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved }: {
+function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved, onError }: {
   buyerId: string; templates: Template[]; pipelines: Pipeline[]; editing: Sequence | null
-  onClose: () => void; onSaved: () => void
+  onClose: () => void; onSaved: () => Promise<void>; onError: (message: string) => void
 }) {
   const t = useT()
   const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
@@ -178,6 +172,9 @@ function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved
     { delay_hours: 0, template_id: null, custom_body: null, step_type: 'send_template' },
   ])
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [mode, setMode] = useState<'legacy' | 'ai_until_reply'>(editing?.mode || 'legacy')
+  const [aiConfig, setAIConfig] = useState<AISequenceConfig>(editing?.ai_config || defaultAIConfig)
 
   function updateStep(i: number, patch: Partial<Step>) {
     setSteps(prev => prev.map((s, idx) => idx === i ? { ...s, ...patch } : s))
@@ -190,15 +187,13 @@ function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved
   }
 
   async function save() {
-    if (!name.trim() || steps.length === 0) return
-    setSaving(true)
-    const payload = { buyer_id: buyerId, name: name.trim(), description: description.trim(), trigger_stage_id: triggerStageId || null, steps }
+    if (!name.trim() || (mode === 'legacy' && steps.length === 0)) return
+    setSaving(true); setError('')
+    const payload = { buyer_id: buyerId, name: name.trim(), description: description.trim(), trigger_stage_id: triggerStageId || null, mode, ...(mode === 'ai_until_reply' ? {ai_config: aiConfig} : {}), steps: mode === 'ai_until_reply' ? [] : steps }
     const url = editing ? `/api/sequences/${editing.id}` : '/api/sequences'
-    const method = editing ? 'PATCH' : 'POST'
-    const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-    setSaving(false)
-    if (r.ok) onSaved()
-    else alert(L('Erro ao salvar', 'Error saving', 'Error al guardar'))
+    try { await saveSequenceDraft(url, payload, onClose, onSaved) }
+    catch (e) { const message = (e as Error).message; setError(message); onError(message) }
+    finally { setSaving(false) }
   }
 
   return (
@@ -206,6 +201,9 @@ function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved
       <div className="mx-auto max-w-[680px] rounded-2xl p-6" style={{ background: 'var(--bg-card)' }} onClick={e => e.stopPropagation()}>
         <h2 className="text-[18px] font-extrabold mb-4" style={{ color: 'var(--fg)' }}>{editing ? L('Editar sequência', 'Edit sequence', 'Editar secuencia') : L('Nova sequência', 'New sequence', 'Nueva secuencia')}</h2>
 
+        {error && <p role="alert" className="text-red-600">{error}</p>}
+        <label>Modo<select disabled={!!editing} value={mode} onChange={e => setMode(e.target.value as 'legacy' | 'ai_until_reply')} className="w-full border rounded p-2 mb-3"><option value="legacy">Passos tradicionais</option><option value="ai_until_reply">WhatsApp IA até responder</option></select></label>
+        {mode === 'ai_until_reply' && <AISequenceFields value={aiConfig} onChange={setAIConfig}/>}
         <div className="space-y-3 mb-5">
           <input value={name} onChange={e => setName(e.target.value)} placeholder={L('Nome (ex: Onboarding 14 dias)', 'Name (e.g. 14-day onboarding)', 'Nombre (ej: Onboarding 14 días)')}
             className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }} />
@@ -231,6 +229,7 @@ function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved
           </div>
         </div>
 
+        {mode === 'legacy' && <>
         <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--fg-muted)' }}>{L('Passos', 'Steps', 'Pasos')}</p>
         <div className="space-y-2 mb-4">
           {steps.map((step, i) => (
@@ -288,7 +287,7 @@ function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved
                 </div>
                 <div>
                   <label className="text-[10px] font-bold uppercase" style={{ color: 'var(--fg-muted)' }}>{L('Tipo', 'Type', 'Tipo')}</label>
-                  <select value={step.step_type} onChange={e => updateStep(i, { step_type: e.target.value as any })}
+                  <select value={step.step_type} onChange={e => updateStep(i, { step_type: e.target.value as Step['step_type'] })}
                     className="w-full mt-1 px-2 py-1 rounded text-[12px]" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
                     <option value="send_template">{L('Enviar modelo', 'Send template', 'Enviar plantilla')}</option>
                     <option value="wait">{L('Esperar', 'Wait', 'Esperar')}</option>
@@ -314,9 +313,10 @@ function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved
           </button>
         </div>
 
+        </>}
         <div className="flex justify-end gap-3">
           <button onClick={onClose} className="px-4 py-2 text-[13px] font-semibold" style={{ color: 'var(--fg-secondary)' }}>{L('Cancelar', 'Cancel', 'Cancelar')}</button>
-          <button onClick={save} disabled={saving || !name.trim() || steps.length === 0}
+          <button onClick={save} disabled={saving || !name.trim() || (mode === 'legacy' && steps.length === 0)}
             className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)' }}>
             {saving ? L('Salvando...', 'Saving...', 'Guardando...') : editing ? L('Atualizar', 'Update', 'Actualizar') : L('Criar', 'Create', 'Crear')}

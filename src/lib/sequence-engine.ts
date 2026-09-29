@@ -25,7 +25,7 @@ export async function autoEnrollByStage(
   const db = createAdminClient()
   const { data: matches } = await db
     .from('sequences')
-    .select('id')
+    .select('id, mode, ai_config')
     .eq('buyer_id', buyerId)
     .eq('enabled', true)
     .eq('trigger_stage_id', stageId)
@@ -33,6 +33,16 @@ export async function autoEnrollByStage(
 
   let enrolled = 0
   for (const s of matches) {
+    if (s.mode === 'ai_until_reply') {
+      try {
+        const { nextSendAt, validateAIConfig } = await import('@/lib/ai-sequence-config')
+        const c = validateAIConfig(s.ai_config)
+        const due = nextSendAt(new Date(Date.now() + c.initial_delay_minutes * 60000), c)
+        const { error } = await db.rpc('enroll_sequence', { p_buyer: buyerId, p_sequence: s.id, p_lead: leadId, p_due: due.toISOString() })
+        if (!error) enrolled++
+      } catch { console.warn('[sequence] AI enrollment withheld: invalid configuration') }
+      continue // Never reactivate stopped/replied AI enrollments.
+    }
     const { data: firstStep } = await db
       .from('sequence_steps')
       .select('delay_hours')
@@ -70,7 +80,7 @@ export async function autoEnrollByStage(
         sequence_id: s.id, lead_id: leadId, buyer_id: buyerId,
         current_step: 0, next_run_at: nextAt, status: 'active',
       })
-      if (!error || (error as any).code === '23505') enrolled++
+      if (!error || error.code === '23505') enrolled++
       else console.error('[autoEnroll] insert err:', error.message)
     }
   }
@@ -98,6 +108,14 @@ export async function processSequencesForLead(leadId: string): Promise<number> {
 
   let processed = 0
   for (const enr of due) {
+    if (enr.mode === 'ai_until_reply') {
+      try {
+        const { runAIEnrollment, aiEnginePorts } = await import('@/lib/ai-sequence-engine')
+        if (await runAIEnrollment(enr.id, aiEnginePorts(db))) processed++
+      }
+      catch { console.warn('[sequence] AI processing withheld: storage unavailable') }
+      continue
+    }
     try {
       const { data: steps } = await db
         .from('sequence_steps')
@@ -139,8 +157,8 @@ export async function processSequencesForLead(leadId: string): Promise<number> {
       }
       await executeStep(step, enr)
       processed++
-    } catch (err: any) {
-      const msg = err?.message || ''
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : ''
       console.error(`[processSequencesForLead ${enr.id}] err:`, msg)
       // Mesma regra do processSequences: erro permanente -> stop, transitorio -> retry
       if (/no\s*lid|nao\s*tem\s*whatsapp/i.test(msg)) {
@@ -173,11 +191,12 @@ export async function cancelEnrollmentsForStage(
   const db = createAdminClient()
   const { data: seqs } = await db
     .from('sequences')
-    .select('id')
+    .select('id, mode, ai_config')
     .eq('buyer_id', buyerId)
     .eq('trigger_stage_id', fromStageId)
   if (!seqs || seqs.length === 0) return 0
-  const ids = seqs.map(s => s.id)
+  const ids = seqs.filter(s => s.mode !== 'ai_until_reply' || s.ai_config?.stop_on_stage_exit === true).map(s => s.id)
+  if (!ids.length) return 0
 
   const { data: updated, error } = await db
     .from('sequence_enrollments')
@@ -214,6 +233,14 @@ export async function processSequences(): Promise<{ processed: number; failed: n
   let processed = 0, failed = 0
 
   for (const enr of due) {
+    if (enr.mode === 'ai_until_reply') {
+      try {
+        const { runAIEnrollment, aiEnginePorts } = await import('@/lib/ai-sequence-engine')
+        if (await runAIEnrollment(enr.id, aiEnginePorts(db))) processed++
+      }
+      catch { console.warn('[sequence] AI processing withheld: storage unavailable') }
+      continue
+    }
     try {
       // Get step at current_step index
       const { data: steps } = await db
@@ -251,8 +278,8 @@ export async function processSequences(): Promise<{ processed: number; failed: n
         await db.from('sequence_enrollments').update({ current_step: nextIdx, next_run_at: nextAt }).eq('id', enr.id)
       }
       processed++
-    } catch (err: any) {
-      const msg = err?.message || ''
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : ''
       console.error(`[Sequence ${enr.id}] Error:`, msg)
       // Erro PERMANENTE do wa-bridge (numero sem WhatsApp) -> stop, nao retry
       // infinito. Sem esse check, lead sem WhatsApp gera retry +1h forever
@@ -276,7 +303,7 @@ export async function processSequences(): Promise<{ processed: number; failed: n
   return { processed, failed }
 }
 
-async function executeStep(step: any, enr: any): Promise<void> {
+async function executeStep(step: { step_type: string; template_id?: string | null; custom_body?: string | null; step_order: number }, enr: { buyer_id: string; lead_id: string }): Promise<void> {
   const db = createAdminClient()
 
   if (step.step_type === 'wait') return
