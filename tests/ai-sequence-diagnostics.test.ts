@@ -75,6 +75,21 @@ test('draft rejection exposes only fixed validation reason, never rejected conte
  assert.doesNotMatch(JSON.stringify(result),/Você quer conversar/)
 })
 
+test('provider receives the explicit localized goal required in the final question', async () => {
+ const expected = {pt:{call:'ligação',meeting:'reunião'},es:{call:'llamada',meeting:'reunión'},en:{call:'call',meeting:'meeting'}} as const
+ for (const locale of ['pt','es','en'] as const) for (const goal of ['call','meeting'] as const) {
+  let payload: {messages: Array<{content:string}>} | undefined
+  const body = locale === 'pt' ? `Podemos combinar uma ${expected[locale][goal]}?` : locale === 'es' ? `Podemos coordinar una ${expected[locale][goal]}?` : `Could we arrange a ${expected[locale][goal]} with your agent?`
+  await generateSequenceCopy({...defaultAIConfig,goal},{lead_language:locale},[],{key:'fixture',fetch:async(_url,init)=>{
+   payload=JSON.parse(String(init?.body))
+   return Response.json({choices:[{finish_reason:'stop',message:{content:JSON.stringify({locale,body})}}]})
+  }})
+  const data=JSON.parse(payload!.messages[1].content)
+  assert.equal(data.required_goal_word,expected[locale][goal])
+  assert.match(payload!.messages[0].content,/required_goal_word.*final question/)
+ }
+})
+
 test('body-stream timeout is classified instead of exposing its exception', async () => {
  await assert.rejects(generateSequenceCopy(defaultAIConfig,{lead_language:'pt'},[],{key:'fixture',fetch:async()=>Object.assign(new Response(),{json:async()=>{throw new DOMException(secretFixture,'TimeoutError')}})}),{code:'AI_TIMEOUT',status:504})
 })
