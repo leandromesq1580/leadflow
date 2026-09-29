@@ -28,15 +28,19 @@ const generationErrors = {
   AI_REPEATED_TEXT: {status:502,message:'Resposta IA repetida. Gere outro exemplo ou revise o brief comercial.'},
   AI_INTERNAL_ERROR: {status:503,message:'Não foi possível gerar o exemplo. Tente novamente; se persistir, avise o suporte.'},
 } as const
+const rejectionReasons = ['finish_reason','schema','length','contact_or_markup','claim_or_identity','question_format','goal','multiple_intents','private_data','instruction','language'] as const
+type RejectionReason = typeof rejectionReasons[number]
 export type AISequenceErrorCode = keyof typeof generationErrors
 export class AISequenceGenerationError extends Error {
   readonly status: number
   readonly providerStatus?: number
   readonly requestId?: string
-  constructor(readonly code: AISequenceErrorCode, metadata: {status?:number;requestId?:string|null} = {}) {
+  readonly reason?: RejectionReason
+  constructor(readonly code: AISequenceErrorCode, metadata: {status?:number;requestId?:string|null;reason?:RejectionReason} = {}) {
     super(`${generationErrors[code].message} Nenhuma mensagem enviada.`)
     this.name = 'AISequenceGenerationError'
     this.status = generationErrors[code].status
+    if (metadata.reason && rejectionReasons.includes(metadata.reason)) this.reason = metadata.reason
     if (typeof metadata.status === 'number' && Number.isInteger(metadata.status) && metadata.status >= 100 && metadata.status <= 599) this.providerStatus = metadata.status
     // Provider request IDs only. Never echo arbitrary header values or error messages.
     if (metadata.requestId && /^req_[a-zA-Z0-9_-]{1,100}$/.test(metadata.requestId)) this.requestId = metadata.requestId
@@ -72,15 +76,23 @@ const languageWords = {
   es: /\b(?:puedes|podemos|coordinar|agente|protecci[oó]n|opciones|una|tu|conversaci[oó]n|gustar[ií]a|qu[eé])\b/giu,
   en: /\b(?:you|your|would|could|can|the|with|arrange|protection|options|conversation|like)\b/giu,
 }
-function validDraft(body: string, locale: keyof typeof disclosure, goal: AISequenceConfig['goal'], max: number): boolean {
+function draftRejection(body: string, locale: keyof typeof disclosure, goal: AISequenceConfig['goal'], max: number): RejectionReason | undefined {
   // English permission question, not the month. All other date/claim checks remain.
   const claims = locale === 'en' ? body.replace(/^May (?=(?:I|we) arrange\b)/i, '') : body
-  if (body.length < 15 || body.length > max || contact.test(body) || forbidden.test(claims) ||
-    (body.match(/\?/g) || []).length !== 1 || !body.endsWith('?')) return false
+  if (body.length < 15 || body.length > max) return 'length'
+  if (contact.test(body)) return 'contact_or_markup'
+  if (forbidden.test(claims)) return 'claim_or_identity'
+  if ((body.match(/\?/g) || []).length !== 1 || !body.endsWith('?')) return 'question_format'
   const question = body.split(/[.!]/).at(-1) || ''
-  if (!goalWords[locale][goal].test(question) || /\b(?:e voc[eê]|and (?:you|would|can)|y (?:t[uú]|quieres))(?=\s)/iu.test(question) || privateBrief.test(body) || injectedBrief.test(body)) return false
+  if (!goalWords[locale][goal].test(question)) return 'goal'
+  if (/\b(?:e voc[eê]|and (?:you|would|can)|y (?:t[uú]|quieres))(?=\s)/iu.test(question)) return 'multiple_intents'
+  if (privateBrief.test(body)) return 'private_data'
+  if (injectedBrief.test(body)) return 'instruction'
   const scores = Object.fromEntries(Object.entries(languageWords).map(([lang,words])=>[lang,(body.match(words)||[]).length]))
-  return scores[locale] >= 2 && Object.entries(scores).every(([lang,score])=>lang === locale || score <= scores[locale])
+  if (!(scores[locale] >= 2 && Object.entries(scores).every(([lang,score])=>lang === locale || score <= scores[locale]))) return 'language'
+}
+function validDraft(body: string, locale: keyof typeof disclosure, goal: AISequenceConfig['goal'], max: number): boolean {
+  return draftRejection(body, locale, goal, max) === undefined
 }
 
 export async function generateSequenceCopy(config: AISequenceConfig, lead: LeadLanguageFields, recent: string[],
@@ -132,13 +144,14 @@ export async function generateSequenceCopy(config: AISequenceConfig, lead: LeadL
     throw new AISequenceGenerationError(code,metadata)
   })
   const completion = data?.choices?.[0]
-  if (completion?.finish_reason && completion.finish_reason !== 'stop') throw new AISequenceGenerationError('AI_INVALID_TEXT',metadata)
+  if (completion?.finish_reason && completion.finish_reason !== 'stop') throw new AISequenceGenerationError('AI_INVALID_TEXT',{...metadata,reason:'finish_reason'})
   let result
   try { result = JSON.parse(completion?.message?.content || 'null') }
   catch { throw new AISequenceGenerationError('AI_BAD_JSON',metadata) }
-  if (!result || Object.keys(result).sort().join(',') !== 'body,locale' || result.locale !== locale || typeof result.body !== 'string') throw new AISequenceGenerationError('AI_INVALID_TEXT',metadata)
+  if (!result || Object.keys(result).sort().join(',') !== 'body,locale' || result.locale !== locale || typeof result.body !== 'string') throw new AISequenceGenerationError('AI_INVALID_TEXT',{...metadata,reason:'schema'})
   const draft = result.body.trim()
-  if (!validDraft(draft,locale,c.goal,maxBody)) throw new AISequenceGenerationError('AI_INVALID_TEXT',metadata)
+  const reason = draftRejection(draft,locale,c.goal,maxBody)
+  if (reason) throw new AISequenceGenerationError('AI_INVALID_TEXT',{...metadata,reason})
   const normalize = (text: string) => text.normalize('NFKD').replace(/\p{M}/gu,'').toLowerCase().replace(/[^\p{L}\p{N}]/gu,'')
   if (previous.some(value=>normalize(value) === normalize(draft))) throw new AISequenceGenerationError('AI_REPEATED_TEXT',metadata)
   return {body:`${disclosure[locale]} ${draft}${suffix}`,choice:`draft:v1:${draft}`}
