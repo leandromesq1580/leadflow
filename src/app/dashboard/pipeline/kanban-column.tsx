@@ -40,8 +40,9 @@ export function KanbanColumn({ stage, actions, returnTo, items, onLeadClick, unr
 
   return (
     <div className="flex-shrink-0 w-[290px]">
-      {/* Sticky header (title + accent bar) */}
+      {/* Sticky header (active actions + title + accent bar) */}
       <div className="sticky top-0 z-20 pt-1 pb-0" style={{ background: 'var(--bg)' }}>
+        <StageActionsStrip key={stage.id} stageId={stage.id} stageName={stage.name} locale={t._locale} state={actions.state} onRetry={actions.retry} returnTo={returnTo} />
         <div className="flex items-center justify-between mb-3 px-1">
           <div className="flex items-center gap-2.5">
             <div className="w-2.5 h-2.5 rounded-full" style={{ background: stage.color, boxShadow: `0 0 8px ${stage.color}40` }} />
@@ -53,7 +54,6 @@ export function KanbanColumn({ stage, actions, returnTo, items, onLeadClick, unr
           </span>
         </div>
 
-        <StageActionsStrip key={stage.id} stageId={stage.id} stageName={stage.name} locale={t._locale} state={actions.state} onRetry={actions.retry} returnTo={returnTo} />
         {/* Top accent bar */}
         <div className="h-[3px] rounded-t-xl" style={{ background: `linear-gradient(90deg, ${stage.color}, ${stage.color}60)` }} />
       </div>
