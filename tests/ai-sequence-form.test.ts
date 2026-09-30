@@ -1,6 +1,23 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { durationValue, durationMinutes, durationSummary } from '../src/lib/ai-sequence-form'
+import { durationValue, durationMinutes, durationSummary, preferredDurationUnit } from '../src/lib/ai-sequence-form'
+
+test('saved durations load in the simplest exact whole unit without fractions', () => {
+  assert.equal(preferredDurationUnit(1440),'days')
+  assert.equal(preferredDurationUnit(120),'hours')
+  assert.equal(preferredDurationUnit(1501),'minutes')
+  for (let minutes=0; minutes<=43200; minutes++) {
+    const unit=preferredDurationUnit(minutes)
+    const value=durationValue(minutes,unit)
+    assert.match(value,/^\d+$/)
+    assert.equal(durationMinutes(value,unit,0),minutes)
+  }
+  assert.equal(durationMinutes('10','minutes',1),10)
+  assert.equal(durationMinutes('1,5','hours',1),90)
+  assert.equal(durationMinutes('0.5','days',1),720)
+  assert.ok(Number.isNaN(durationMinutes('0','minutes',1)))
+  assert.ok(Number.isNaN(durationMinutes('1.00000000000000000001','minutes',1)))
+})
 
 test('duration units preserve exact minutes, including fractional days', () => {
   assert.equal(durationValue(2880, 'days'), '2')

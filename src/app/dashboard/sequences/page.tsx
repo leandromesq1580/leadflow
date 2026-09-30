@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { durationSummary } from '@/lib/ai-sequence-form'
 import { AISequenceFields } from '@/components/ai-sequence-fields'
 import { SequenceEnrollmentPanel } from '@/components/sequence-enrollment-panel'
-import { defaultAIConfig, type AISequenceConfig } from '@/lib/ai-sequence-config'
+import { defaultAIConfig, validAISchedule, type AISequenceConfig } from '@/lib/ai-sequence-config'
 import { sequenceJSON, saveSequenceDraft } from '@/lib/sequence-client'
 import { useT } from '@/lib/i18n-client'
 
@@ -196,8 +196,7 @@ function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved
     document.addEventListener('keydown', keydown)
     return () => { document.body.style.overflow = overflow; document.removeEventListener('keydown', keydown); previous?.focus() }
   }, [])
-  const validAI = Number.isInteger(aiConfig.initial_delay_minutes) && aiConfig.initial_delay_minutes >= 0 && aiConfig.initial_delay_minutes <= 43200 &&
-    Number.isInteger(aiConfig.repeat_minutes) && aiConfig.repeat_minutes >= 60 && aiConfig.repeat_minutes <= 43200 && aiConfig.days.length > 0 && aiConfig.start < aiConfig.end
+  const validAI = validAISchedule(aiConfig)
 
   function updateStep(i: number, patch: Partial<Step>) {
     setSteps(prev => prev.map((s, idx) => idx === i ? { ...s, ...patch } : s))

@@ -10,6 +10,15 @@ A edição invalida prévias anteriores; falha ao salvar/gerar mantém o rascunh
 
 A proteção de nomes reconhece algumas construções explícitas, não toda identidade possível em linguagem natural; não é verificação de licença/identidade. Bloqueia padrões reconhecíveis de apresentação repetida quando há rascunhos recentes válidos, mas permite acompanhamento em primeira pessoa sem nova apresentação. Não promete detectar todas as paráfrases. Prévia com resposta simulada não prova qualidade ou aceitação de geração real por modelo.
 
+## Agenda editável — correção local, sem publicação
+
+- Repetição aceita **1 a 43.200 minutos** (30 dias), incluindo 10 minutos; espera inicial aceita **0 a 43.200 minutos**. UI, salvamento e prévia/API usam a mesma validação de agenda, rejeitando zero na repetição, negativos, não finitos, frações de minuto e valores acima do limite. Default continua 1.440 minutos; nenhuma configuração existente é regravada automaticamente.
+- Número e unidade permanecem editáveis com rascunho vazio/inválido. **Trocar a unidade mantém o número digitado e muda a duração**: 2 dias → selecionar horas significa 2 horas, não 48 horas. Resumo explícito acompanha a edição. Na reabertura usa a maior unidade inteira exata (1.501 fica em minutos), sem exibir frações matemáticas geradas por conversão. Decimais exatos como 1,5 hora são aceitos sem arredondar minutos.
+- Atalhos: 10 min, 30 min, 1 h, 1 dia; espera inicial também oferece Agora. Intervalos menores que uma hora têm aviso não bloqueante sobre excesso de mensagens/custo. Agora significa sem espera inicial **dentro da agenda**, não promessa de envio imediato; polling, janela e processamento podem adiar o envio.
+- Horários usam hora 1–12, minuto 00–59 editável e AM/PM, preservando 09:17 e 18:23. 12 AM é meia-noite e 12 PM é meio-dia. Início deve ser anterior ao fim no mesmo dia; rascunho incompleto bloqueia salvar/gerar, nunca os controles de correção.
+- Sem migration: a 052 persiste `ai_config` como JSONB e valida apenas objeto presente no SQL, sem mínimo de repetição de 60 minutos. Busca em migrations não encontrou outro limite. Engines continuam calculando os minutos configurados sem clamp; propriedade, inbound stop, modelos, apresentação e regras de transporte não foram modificados.
+- Harness `tests/ai-sequence-browser.mjs` monta a página React real com CSS/fontes locais e fixtures de APIs. Bloqueia outras origens, exercita apagar→mudar unidade→corrigir, limites, atalhos, horários precisos, salvar/reabrir e legado, além de desktop, 390/320 px e tema escuro. Evidências são criadas em diretórios únicos; chamadas de prévia são simuladas, sem provedor/envio/ativação/inscrição.
+
 ## Contrato
 
 - `sequences.mode`: `legacy` (padrão) ou `ai_until_reply`, imutável após criação. Inscrições também guardam o modo; não há conversão ou inscrição retroativa.
