@@ -140,18 +140,19 @@ export function AISequenceFields({ value: c, onChange }: { value: AISequenceConf
           className={`border-b-2 px-1 pb-3 text-sm font-semibold ${tab === key ? 'border-[var(--accent)] text-[var(--accent)]' : 'border-transparent text-[var(--fg-secondary)]'}`}>{label}{key === 'schedule' && !validSchedule ? ' · Revisar' : ''}</button>)}
       </div>
       <div id={`${id}-message`} role="tabpanel" aria-labelledby={`${id}-message-tab`} hidden={tab !== 'message'} className="space-y-5">
-        <fieldset><legend className="mb-2 text-sm font-medium">Objetivo da conversa</legend>
+        <fieldset><legend className="mb-2 text-sm font-medium">Objetivo final</legend>
           <div className="grid grid-cols-2 gap-3">
-            {([['call', 'Obter ligação', 'Convide para conversar.'], ['meeting', 'Combinar reunião', 'Convide para agendar.']] as const).map(([goal, title, detail]) => <label key={goal} className={`flex cursor-pointer items-start gap-2.5 rounded-xl border p-3 ${c.goal === goal ? 'border-[var(--accent)] bg-[var(--accent)]/5' : 'border-[var(--border)]'}`}>
+            {([['call', 'Obter ligação', 'Ligação após despertar interesse.'], ['meeting', 'Combinar reunião', 'Reunião após despertar interesse.']] as const).map(([goal, title, detail]) => <label key={goal} className={`flex cursor-pointer items-start gap-2.5 rounded-xl border p-3 ${c.goal === goal ? 'border-[var(--accent)] bg-[var(--accent)]/5' : 'border-[var(--border)]'}`}>
               <input type="radio" name={`${id}-goal`} value={goal} checked={c.goal === goal} onChange={() => update({ goal })} className="mt-1 accent-[var(--accent)]" />
               <span><span className="block text-sm font-semibold">{title}</span><span className={help}>{detail}</span></span>
             </label>)}
           </div>
         </fieldset>
+        <p className={help}>Primeiro passo: conseguir uma resposta com uma pergunta curta e natural. Ao responder, a sequência para e você assume.</p>
         <div className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2"><label htmlFor={`${id}-instructions`} className="text-sm font-medium">Instruções da IA</label><span className={help}>{(c.instructions ?? '').length}/6000</span></div>
           <textarea id={`${id}-instructions`} className={`${field} min-h-[240px] resize-y`} rows={10} maxLength={6000} value={c.instructions ?? ''} onChange={e => update({ instructions: e.target.value })} aria-describedby={`${id}-instructions-help`} placeholder={'PROPÓSITO\nO que você deseja alcançar?\n\nMODO DE ATUAÇÃO\nExplique como funciona seu atendimento.\n\nABORDAGEM\nComo conduzir a conversa, sem pressão?\n\nTOM DE FALA\nEx.: acolhedor, simples e direto.'} />
-          <p id={`${id}-instructions-help`} className={help}>Opcional. Guia principal de propósito, funcionamento, abordagem e tom para esta sequência; não treina o modelo permanentemente. A IA segue o idioma do lead, o objetivo escolhido e as regras de segurança do app. Não inclua dados privados de leads nem conversas. Use o campo de apresentação abaixo para seu nome profissional.</p>
+          <p id={`${id}-instructions-help`} className={help}>Opcional. Oriente perguntas e voz: pergunte se já conhece o life insurance ou tem proteção familiar. Uma pergunta por mensagem, antes de pedir ligação/reunião. Para convite direto, escreva uma frase separada: Convide diretamente para uma ligação. (ou: Convide diretamente para uma reunião.) Guia principal de propósito, funcionamento, abordagem e tom para esta sequência; não treina o modelo permanentemente. A IA segue o idioma do lead, o objetivo escolhido e as regras de segurança do app. Não inclua dados privados de leads nem conversas. Use o campo de apresentação abaixo para seu nome profissional.</p>
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2"><label htmlFor={`${id}-brief`} className="text-sm font-medium">Brief da conversa</label><span className={help}>{c.brief.length}/300</span></div>

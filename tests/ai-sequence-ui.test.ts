@@ -42,3 +42,8 @@ test('legacy model omission remains legacy rather than switching to the new defa
  const html=renderToStaticMarkup(React.createElement(AISequenceFields,{value:legacy,onChange:()=>{}}))
  assert.match(html, /value="gpt-4o-mini" selected=""/)
 })
+
+test('engagement first help separates first reply from final goal',()=>{
+ const html=renderToStaticMarkup(React.createElement(AISequenceFields,{value:defaultAIConfig,onChange:()=>{}}))
+ for(const text of ['Objetivo final','Primeiro passo: conseguir uma resposta','Convide diretamente para uma ligação.']) assert.ok(html.includes(text),text)
+})
