@@ -56,7 +56,7 @@ export function validateAIConfig(value: unknown): AISequenceConfig & { model: AI
         !/^[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}$/i.test(u.hostname) || /\.(local|internal|localhost)$/i.test(u.hostname)) fail()
     } catch { fail() }
   }
-  return { model: c.model ?? LEGACY_AI_SEQUENCE_MODEL, goal: c.goal, brief: c.brief, instructions: c.instructions?.trim() ?? '', presentation: c.presentation?.trim() ?? '', initial_delay_minutes: c.initial_delay_minutes, repeat_minutes: c.repeat_minutes,
+  return { model: c.model ?? LEGACY_AI_SEQUENCE_MODEL, goal: c.goal, brief: c.brief.replace(/[ \t\r\n]+/g, ' ').replace(/^ +| +$/g, ''), instructions: c.instructions?.trim() ?? '', presentation: c.presentation?.trim() ?? '', initial_delay_minutes: c.initial_delay_minutes, repeat_minutes: c.repeat_minutes,
     timezone: c.timezone, days: c.days, start: c.start, end: c.end, stop_on_stage_exit: c.stop_on_stage_exit, booking_url: c.booking_url }
 }
 /** Walk UTC minutes, rather than constructing nonexistent/ambiguous DST wall times. Window end is exclusive. */

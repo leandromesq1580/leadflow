@@ -9,7 +9,7 @@ export const maxDuration = 300
 /**
  * GET /api/cron/run-all?secret=X
  *
- * Segundo slot de cron: dispara sequences + automations + reminders.
+ * Slot de cinco minutos: dispara sequências legacy + automations + reminders; IA tem cron dedicado.
  * O primeiro slot permanece dedicado à captura dos leads do Meta.
  * Sem dependencia externa (cron-job.org etc).
  *
@@ -22,13 +22,11 @@ export async function GET(request: NextRequest) {
   const headerSecret = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
   const expected = (process.env.POLL_SECRET || 'lead4producers-poll-2026').trim()
   const cronSecret = (process.env.CRON_SECRET || '').trim()
-  const isVercelCron = request.headers.get('user-agent')?.includes('vercel-cron') ?? false
 
   const authorized =
     secret === expected ||
     headerSecret === expected ||
-    (cronSecret && headerSecret === cronSecret) ||
-    (isVercelCron && !headerSecret)
+    (cronSecret && headerSecret === cronSecret)
 
   if (!authorized) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -38,7 +36,7 @@ export async function GET(request: NextRequest) {
   const startedAt = Date.now()
 
   const [seqResult, autoResult, remResult, policyResult] = await Promise.allSettled([
-    processSequences(),
+    processSequences({ mode: 'legacy' }),
     runAutomations(),
     fetch(`${base}/api/cron/reminders?secret=${expected}`, {
       headers: { 'user-agent': 'run-all-orchestrator' },

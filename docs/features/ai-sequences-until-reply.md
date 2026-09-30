@@ -89,11 +89,20 @@ O log `[ai-sequence-preview]` contém apenas código, status HTTP local, modelo 
 
 Dois falsos positivos foram comprovados por testes antes de corrigir: `\b` não reconhecia o fim acentuado de **você**, rejeitando “Você quer uma ligação?”; o mês inglês **May** também bloqueava “May we arrange a call with your agent?”. A correção usa fronteira Unicode apenas na evidência lexical PT e uma exceção estreita para pergunta de permissão inglesa no início. Referências a datas (`in May`), contatos, PII, promessas e disponibilidade continuam bloqueadas. Esses casos **não foram identificados como causa do incidente de produção**.
 
+## Correção de execução e cadência — implementação local, não publicada
+
+- `brief` normaliza espaços, tabulações e quebras de linha na validação compartilhada de salvar, prévia e engine. O caso exato `"\n"` vira vazio também ao ler configurações antigas, sem regravá-las. O limite original de 300 caracteres é verificado antes da normalização; filtros de conteúdo inseguro permanecem.
+- Falhas de geração persistem somente código e motivo de rejeição allowlisted no `stop_reason` existente. Nenhuma exceção, texto do provedor, credencial ou dado de lead entra nesse campo. O painel traduz os códigos, inclusive o antigo `generation_unavailable` (causa detalhada desconhecida), e mostra tentativas, último envio confirmado e próxima tentativa — não promessa de envio.
+- Falhas pré-transporte passam a adiar por cinco minutos, mantendo teto SQL de três tentativas e pausa depois. Entrega ambígua continua pausada e sem reenvio automático. Não há migration, reativação, reprogramação de vencimentos antigos, inscrição retroativa ou limpeza de supressões.
+- Cron dedicado `/api/cron/ai-sequences`: `* * * * *`, somente IA, autenticado exclusivamente por `Authorization: Bearer CRON_SECRET`; ausência/erro do segredo retorna 401, user-agent não autentica. `maxDuration=300` permite processamento, sem garantia de terminar um lote inteiro.
+- `run-all` também deixa de autenticar por user-agent (mantém os mecanismos existentes por segredo) e continua a cada cinco minutos com sequências **legacy**, automações e lembretes; captura Meta continua a cada dois minutos. Filtro de modo/active/due ocorre no banco **antes** do limite, ordenado pelo vencimento. Chamadas diretas sem filtro e inline mantêm compatibilidade; claims/leases SQL existentes protegem sobreposição e duplicidade IA.
+- Cadência é polling em minutos, não temporizador exato. Fila, janela, duração de geração, limites e disponibilidade podem adiar a tentativa. A alteração local não comprova publicação, execução do scheduler nem acesso real ao provedor.
+
 ## Execução e falhas
 
 - Cron e inline usam o mesmo claim SQL com row lock, `SKIP LOCKED`, token e lease de 2 minutos. Índice parcial permite somente uma inscrição IA ativa/pausada por comprador+lead, sem bloquear sequências legadas.
 - Geração e entrega têm status distintos. Somente `finish_ai_send` avança o contador, após ID de envio confirmado, e persiste outbound na mesma transação. Há dedupe com o webhook outbound da mesma conta/lead.
-- Bridge própria obrigatória, readiness e limitador existentes antes de gerar; nenhuma queda para bridge global. Falha pré-transporte retém o passo, aguarda uma hora e limita a três tentativas. Depois pausa.
+- Bridge própria obrigatória, readiness e limitador existentes antes de gerar; nenhuma queda para bridge global. Falha pré-transporte retém o passo, aguarda cinco minutos e limita a três tentativas. Depois pausa.
 - Depois da geração há nova checagem da janela e guarda SQL de propriedade/resposta/estado imediatamente antes do transporte.
 - Timeout, erro de transporte, resposta sem ID ou falha para persistir confirmação pausam como `delivery_unknown`; não repetem cegamente. Lease expirada em `sending` também pausa e bloqueia reentrada.
 - Próximo horário deriva do instante de envio confirmado, não do vencimento antigo: não descarrega atrasos acumulados.

@@ -4,6 +4,8 @@ import { readFileSync } from 'node:fs'
 import { PGlite } from '@electric-sql/pglite'
 import { runAIEnrollment, type AIEnginePorts, type AIEnrollment } from '../src/lib/ai-sequence-engine'
 import { defaultAIConfig } from '../src/lib/ai-sequence-config'
+import { generateSequenceCopy } from '../src/lib/ai-sequence-copy'
+import { enrollmentReason } from '../src/lib/ai-sequence-diagnostics'
 import { isWonStage } from '../src/lib/lead-stage'
 const buyer = '00000000-0000-4000-8000-000000000001'
 const other = '00000000-0000-4000-8000-000000000002'
@@ -33,6 +35,32 @@ async function enroll(db: PGlite) {
  await db.query('update sequences set enabled=true where id=$1',[s.id])
  return (await db.query<{id:string}>('select * from enroll_sequence($1,$2,$3,$4)',[buyer,s.id,lead,new Date(0).toISOString()])).rows[0]
 }
+test('newline config through real generator, SQL defer and human status; pauses at three without rearming',async()=>{
+ const db=await database()
+ try{
+  const e=await enroll(db)
+  const now=new Date('2026-09-29T15:00:00Z')
+  let sends=0
+  const ports:AIEnginePorts={now:()=>now,
+   claim:async id=>(await db.query<AIEnrollment>('select * from claim_ai_sequence($1)',[id])).rows[0]||null,
+   context:async()=>({config:{...defaultAIConfig,brief:'\n'},lead:{lead_language:'pt'},phone:'fixture'}),ready:async()=>{},
+   generate:(c,l,recent)=>generateSequenceCopy(c,l,recent,{key:'fixture',fetch:async()=>Response.json({choices:[{message:{content:JSON.stringify({locale:'pt',body:'Quero ajudar você com sua proteção. Podemos conversar?'})}}]})}),
+   begin:async()=>{assert.fail('must not begin transport')},send:async()=>{sends++;throw Error('must not send')},finish:async()=>{},
+   defer:async(c,reason,next,unknown)=>{await db.query('select defer_ai_sequence($1,$2,$3,$4,$5)',[c.id,c.lease_token,reason,next.toISOString(),unknown])},
+  }
+  for(let attempt=1;attempt<=3;attempt++) {
+   // Only this local fixture is made due between simulated scheduler ticks.
+   await db.query('update sequence_enrollments set next_run_at=$1 where id=$2',[new Date(0).toISOString(),e.id])
+   assert.equal(await runAIEnrollment(e.id,ports),false)
+   const row=(await db.query<{stop_reason:string;attempts:number;last_sent_at:unknown;next_run_at:string;status:string;delivery_status:string}>('select * from sequence_enrollments where id=$1',[e.id])).rows[0]
+   assert.equal(row.stop_reason,'AI_INVALID_TEXT:goal');assert.equal(row.attempts,attempt)
+   assert.equal(row.last_sent_at,null);assert.equal(new Date(row.next_run_at).toISOString(),'2026-09-29T15:05:00.000Z')
+   assert.equal(row.status,attempt===3?'paused':'active');assert.notEqual(row.delivery_status,'unknown')
+   assert.match(enrollmentReason(row.stop_reason),/objetivo/)
+  }
+  assert.equal(await runAIEnrollment(e.id,ports),false);assert.equal(sends,0)
+ }finally{await db.close()}
+})
 test('SQL preserves distinct optional instructions and presentations per sequence and rejects another buyer editing them',async()=>{
  const db=await database()
  try{

@@ -1,7 +1,8 @@
 'use client'
 import React,{useState,useEffect,useCallback} from 'react'
+import {enrollmentReason} from '@/lib/ai-sequence-diagnostics'
 import {sequenceJSON} from '@/lib/sequence-client'
-type Enrollment={id:string;lead_id:string;status:string;next_run_at:string;stop_reason:string|null;generation_status:string;delivery_status:string;current_step:number;leads:{name:string}|null}
+type Enrollment={id:string;lead_id:string;status:string;next_run_at:string;stop_reason:string|null;generation_status:string;delivery_status:string;current_step:number;attempts:number;last_sent_at:string|null;leads:{name:string}|null}
 export function SequenceEnrollmentPanel({sequenceId,enabled}:{sequenceId:string;enabled:boolean}){
  const [rows,setRows]=useState<Enrollment[]>([])
  const [leads,setLeads]=useState<{id:string;name:string;lead_language:string}[]>([])
@@ -22,7 +23,7 @@ export function SequenceEnrollmentPanel({sequenceId,enabled}:{sequenceId:string;
   <button disabled={busy||!lead||!enabled} onClick={()=>act(enroll)}>Inscrever</button><button disabled={busy} onClick={()=>act(load)}>Atualizar inscrições</button></div>
   {!enabled&&<p>Ative a sequência antes de inscrever. Ativar não inscreve leads retroativamente.</p>}
   {error&&<p role="alert" className="text-red-600">{error}</p>}
-  <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr><th>Lead</th><th>Status / motivo</th><th>Geração / entrega</th><th>Próximo envio (horário da Flórida)</th><th>Ação</th></tr></thead><tbody>{rows.map(e=><tr key={e.id}><td>{e.leads?.name||'Lead'}<br/>{e.current_step} enviados/passos</td><td>{e.status}<br/>{e.stop_reason||'—'}</td><td>{e.generation_status} / {e.delivery_status}</td><td>{e.status==='active'?new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',month:'2-digit',day:'2-digit',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date(e.next_run_at)):'—'}</td><td>{['active','paused'].includes(e.status)&&<button disabled={busy} onClick={()=>act(()=>stop(e.id))}>Parar</button>}</td></tr>)}</tbody></table></div>
-  <p className="text-xs">Entrega não confirmada exige conferência humana no WhatsApp; não há reenvio automático nem botão de retomada. Uma mensagem já em transporte não pode ser recolhida.</p>
+  <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr><th>Lead</th><th>Status / motivo</th><th>Geração / entrega</th><th>Tentativa / último envio (horário da Flórida)</th><th>Próxima tentativa (horário da Flórida)</th><th>Ação</th></tr></thead><tbody>{rows.map(e=><tr key={e.id}><td>{e.leads?.name||'Lead'}<br/>{e.current_step} enviados/passos</td><td>{e.status}<br/>{enrollmentReason(e.stop_reason)}</td><td>{e.generation_status} / {e.delivery_status}</td><td>Tentativa: {e.attempts ?? 0}/3<br/>Último envio: {e.last_sent_at ? new Intl.DateTimeFormat('pt-BR',{timeZone:'America/New_York',dateStyle:'short',timeStyle:'short'}).format(new Date(e.last_sent_at)) : 'Nenhum envio confirmado'}</td><td>{e.status==='active'?new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',month:'2-digit',day:'2-digit',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date(e.next_run_at)):'—'}</td><td>{['active','paused'].includes(e.status)&&<button disabled={busy} onClick={()=>act(()=>stop(e.id))}>Parar</button>}</td></tr>)}</tbody></table></div>
+  <p className="text-xs">O horário da próxima tentativa não garante envio: depende da janela, processamento e validações. Entrega não confirmada exige conferência humana no WhatsApp; não há reenvio automático nem botão de retomada. Uma mensagem já em transporte não pode ser recolhida.</p>
  </section>
 }
