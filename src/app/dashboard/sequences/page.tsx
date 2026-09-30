@@ -5,7 +5,7 @@ import { durationSummary } from '@/lib/ai-sequence-form'
 import { AISequenceFields } from '@/components/ai-sequence-fields'
 import { SequenceEnrollmentPanel } from '@/components/sequence-enrollment-panel'
 import { defaultAIConfig, validAISchedule, type AISequenceConfig } from '@/lib/ai-sequence-config'
-import { sequenceJSON, saveSequenceDraft } from '@/lib/sequence-client'
+import { sequenceJSON, saveSequenceDraft, duplicateSequenceDraft } from '@/lib/sequence-client'
 import { useT } from '@/lib/i18n-client'
 
 interface Step {
@@ -48,6 +48,7 @@ export default function SequencesPage() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<Sequence | null>(null)
   const [showNew, setShowNew] = useState(false)
+  const [duplicate, setDuplicate] = useState<ReturnType<typeof duplicateSequenceDraft> | null>(null)
 
   const [error, setError] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -90,7 +91,7 @@ export default function SequencesPage() {
           <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{t.sidebar.sequences}</h1>
           <p className="text-[14px]" style={{ color: 'var(--fg-secondary)' }}>{L('Sequências de passos ou WhatsApp IA até a primeira resposta', 'Drip campaigns with multiple automated steps', 'Campañas de drip con múltiples pasos automatizados')}</p>
         </div>
-        <button onClick={() => { setEditing(null); setShowNew(true) }}
+        <button onClick={() => { setEditing(null); setDuplicate(null); setShowNew(true) }}
           className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-white"
           style={{ background: 'var(--accent)' }}>
           + {L('Nova sequência', 'New sequence', 'Nueva secuencia')}
@@ -110,16 +111,17 @@ export default function SequencesPage() {
       <div className="space-y-3">
         {sequences.map(s => (
           <div key={s.id} className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', opacity: s.enabled ? 1 : 0.6 }}>
-            <div className="flex items-start gap-3 mb-3">
-              <button onClick={() => toggle(s)} className="w-11 h-6 rounded-full relative mt-1" style={{ background: s.enabled ? '#10b981' : '#cbd5e1' }}>
+            <div className="flex flex-wrap items-start gap-3 mb-3">
+              <button onClick={() => toggle(s)} className="w-11 h-6 shrink-0 rounded-full relative mt-1" style={{ background: s.enabled ? '#10b981' : '#cbd5e1' }}>
                 <span className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all" style={{ left: s.enabled ? '22px' : '2px' }} />
               </button>
-              <div className="flex-1">
+              <div className="min-w-0 flex-1 basis-[60%] sm:basis-0 break-words">
                 <p className="text-[15px] font-bold" style={{ color: 'var(--fg)' }}>{s.name}</p>
                 {s.description && <p className="text-[12px]" style={{ color: 'var(--fg-secondary)' }}>{s.description}</p>}
               </div>
               <button onClick={() => setExpanded(expanded === s.id ? null : s.id)} className="text-[12px] font-bold">Inscrições</button>
-              <button onClick={() => { setEditing(s); setShowNew(true) }} className="text-[12px] font-bold" style={{ color: 'var(--accent)' }}>{L('Editar', 'Edit', 'Editar')}</button>
+              <button onClick={() => { setEditing(s); setDuplicate(null); setShowNew(true) }} className="text-[12px] font-bold" style={{ color: 'var(--accent)' }}>{L('Editar', 'Edit', 'Editar')}</button>
+              <button onClick={() => { setEditing(null); setDuplicate(duplicateSequenceDraft(s, t._locale)); setShowNew(true) }} className="text-[12px] font-bold" style={{ color: 'var(--accent)' }}>{L('Duplicar', 'Duplicate', 'Duplicar')}</button>
               <button onClick={() => remove(s.id)} className="text-[12px] font-bold" style={{ color: '#ef4444' }}>{L('Deletar', 'Delete', 'Eliminar')}</button>
             </div>
 
@@ -152,7 +154,8 @@ export default function SequencesPage() {
         templates={templates}
         pipelines={pipelines}
         editing={editing}
-        onClose={() => { setShowNew(false); setEditing(null) }}
+        duplicate={duplicate}
+        onClose={() => { setShowNew(false); setEditing(null); setDuplicate(null) }}
         onSaved={reload}
         onError={setError}
       />}
@@ -160,22 +163,24 @@ export default function SequencesPage() {
   )
 }
 
-function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved, onError }: {
+function SequenceForm({ buyerId, templates, pipelines, editing, duplicate, onClose, onSaved, onError }: {
   buyerId: string; templates: Template[]; pipelines: Pipeline[]; editing: Sequence | null
+  duplicate: ReturnType<typeof duplicateSequenceDraft> | null
   onClose: () => void; onSaved: () => Promise<void>; onError: (message: string) => void
 }) {
   const t = useT()
   const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
-  const [name, setName] = useState(editing?.name || '')
-  const [description, setDescription] = useState(editing?.description || '')
-  const [triggerStageId, setTriggerStageId] = useState<string>(editing?.trigger_stage_id || '')
-  const [steps, setSteps] = useState<Step[]>(editing?.sequence_steps || [
+  const seed = editing ?? duplicate
+  const [name, setName] = useState(seed?.name || '')
+  const [description, setDescription] = useState(seed?.description || '')
+  const [triggerStageId, setTriggerStageId] = useState<string>(seed?.trigger_stage_id || '')
+  const [steps, setSteps] = useState<Step[]>(seed?.sequence_steps || [
     { delay_hours: 0, template_id: null, custom_body: null, step_type: 'send_template' },
   ])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [mode, setMode] = useState<'legacy' | 'ai_until_reply'>(editing?.mode || 'legacy')
-  const [aiConfig, setAIConfig] = useState<AISequenceConfig>(editing?.ai_config || defaultAIConfig)
+  const [mode, setMode] = useState<'legacy' | 'ai_until_reply'>(seed?.mode || 'legacy')
+  const [aiConfig, setAIConfig] = useState<AISequenceConfig>(seed?.ai_config || defaultAIConfig)
   const dialogRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef(onClose)
   const savingRef = useRef(saving)
@@ -209,29 +214,29 @@ function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved
   }
 
   async function save() {
-    if (saving || !name.trim() || (mode === 'legacy' && steps.length === 0) || (mode === 'ai_until_reply' && !validAI)) return
-    setSaving(true); setError('')
-    const payload = { buyer_id: buyerId, name: name.trim(), description: description.trim(), trigger_stage_id: triggerStageId || null, mode, ...(mode === 'ai_until_reply' ? {ai_config: aiConfig} : {}), steps: mode === 'ai_until_reply' ? [] : steps }
+    if (savingRef.current || !name.trim() || (mode === 'legacy' && steps.length === 0) || (mode === 'ai_until_reply' && !validAI)) return
+    savingRef.current = true; setSaving(true); setError('')
+    const payload = { ...(duplicate ? {enabled: false} : {}), buyer_id: buyerId, name: name.trim(), description: description.trim(), trigger_stage_id: triggerStageId || null, mode, ...(mode === 'ai_until_reply' ? {ai_config: aiConfig} : {}), steps: mode === 'ai_until_reply' ? [] : steps }
     const url = editing ? `/api/sequences/${editing.id}` : '/api/sequences'
     try { await saveSequenceDraft(url, payload, onClose, onSaved) }
     catch (e) { const message = (e as Error).message; setError(message); onError(message) }
-    finally { setSaving(false) }
+    finally { savingRef.current = false; setSaving(false) }
   }
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-2 sm:p-6">
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="sequence-title" className={`flex max-h-[calc(100dvh-16px)] w-full flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] text-[var(--fg)] shadow-2xl sm:max-h-[calc(100dvh-48px)] ${mode === 'ai_until_reply' ? 'max-w-[1080px]' : 'max-w-[760px]'}`}>
         <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--border)] px-4 py-4 sm:px-6">
-          <div><h2 id="sequence-title" className="text-lg font-semibold tracking-tight">{editing ? L('Editar sequência', 'Edit sequence', 'Editar secuencia') : L('Nova sequência', 'New sequence', 'Nueva secuencia')}</h2>
+          <div><h2 id="sequence-title" className="text-lg font-semibold tracking-tight">{duplicate ? L('Duplicar sequência', 'Duplicate sequence', 'Duplicar secuencia') : editing ? L('Editar sequência', 'Edit sequence', 'Editar secuencia') : L('Nova sequência', 'New sequence', 'Nueva secuencia')}</h2>
             <p className="mt-1 text-xs text-[var(--fg-secondary)]">{mode === 'ai_until_reply' ? 'Um objetivo, mensagens novas, até a primeira resposta.' : L('Organize os próximos contatos com seus leads.', 'Plan the next touchpoints with your leads.', 'Organiza los próximos contactos con tus leads.')}</p></div>
           <button type="button" onClick={onClose} disabled={saving} aria-label={L('Fechar formulário', 'Close form', 'Cerrar formulario')} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] text-lg text-[var(--fg-secondary)] hover:text-[var(--fg)] disabled:opacity-50">×</button>
         </header>
         <div className="min-h-0 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6">
           <div className="mb-5 grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             <div className="min-w-0"><label htmlFor="sequence-name" className="mb-2 block text-sm font-medium">{L('Nome da sequência', 'Sequence name', 'Nombre de la secuencia')}</label>
-              <input id="sequence-name" value={name} onChange={e => setName(e.target.value)} placeholder={L('Ex.: Retomada de contato', 'E.g. Reconnect with leads', 'Ej.: Retomar contacto')}
+              <input id="sequence-name" maxLength={120} value={name} onChange={e => setName(e.target.value)} placeholder={L('Ex.: Retomada de contato', 'E.g. Reconnect with leads', 'Ej.: Retomar contacto')}
                 className="w-full min-w-0 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15" /></div>
-            <div className="min-w-0"><label htmlFor="sequence-mode" className="mb-2 block text-sm font-medium">Modo</label><select id="sequence-mode" disabled={!!editing} value={mode} onChange={e => setMode(e.target.value as 'legacy' | 'ai_until_reply')} className="w-full min-w-0 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2.5 text-sm disabled:opacity-60"><option value="legacy">Passos tradicionais</option><option value="ai_until_reply">WhatsApp IA até responder</option></select></div>
+            <div className="min-w-0"><label htmlFor="sequence-mode" className="mb-2 block text-sm font-medium">Modo</label><select id="sequence-mode" disabled={!!seed} value={mode} onChange={e => setMode(e.target.value as 'legacy' | 'ai_until_reply')} className="w-full min-w-0 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2.5 text-sm disabled:opacity-60"><option value="legacy">Passos tradicionais</option><option value="ai_until_reply">WhatsApp IA até responder</option></select></div>
           </div>
           <details className="mb-5 rounded-lg border border-[var(--border)] text-sm">
             <summary className="cursor-pointer px-3 py-2.5 font-medium">Inscrição e descrição <span className="ml-1 text-xs font-normal text-[var(--fg-secondary)]">· {triggerStageId ? 'por estágio' : 'inscrição manual'}</span></summary>
@@ -337,7 +342,7 @@ function SequenceForm({ buyerId, templates, pipelines, editing, onClose, onSaved
         <footer className="shrink-0 border-t border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 sm:px-6">
           {error && <p role="alert" className="mb-3 rounded-lg border border-red-500/25 bg-red-500/5 px-3 py-2 text-sm text-red-600">{error}</p>}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs text-[var(--fg-secondary)]">{mode === 'ai_until_reply' && !editing ? 'Criada desativada. Você decide quando ativar.' : 'Revise as configurações antes de salvar.'}</p>
+            <p className="text-xs text-[var(--fg-secondary)]">{duplicate ? L('A cópia será criada desativada, sem contatos inscritos.', 'The copy will be created disabled, with no enrolled contacts.', 'La copia se creará desactivada, sin contactos inscritos.') : mode === 'ai_until_reply' && !editing ? 'Criada desativada. Você decide quando ativar.' : 'Revise as configurações antes de salvar.'}</p>
             <div className="ml-auto flex items-center gap-2">
               <button onClick={onClose} disabled={saving} className="rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--fg-secondary)] disabled:opacity-50">{L('Cancelar', 'Cancel', 'Cancelar')}</button>
               <button onClick={save} disabled={saving || !name.trim() || (mode === 'legacy' && steps.length === 0) || (mode === 'ai_until_reply' && !validAI)}
