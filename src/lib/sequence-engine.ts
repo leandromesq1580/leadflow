@@ -215,18 +215,20 @@ export async function cancelEnrollmentsForStage(
 
 /**
  * Process all due sequence enrollments.
- * Runs every 30min via cron (or on enrollment).
+ * Scheduled AI and legacy runs are disjoint; direct callers may process both.
  */
-export async function processSequences(): Promise<{ processed: number; failed: number }> {
+export async function processSequences(options: { mode?: 'legacy' | 'ai_until_reply' } = {}): Promise<{ processed: number; failed: number }> {
   const db = createAdminClient()
   const now = new Date().toISOString()
 
-  const { data: due } = await db
+  let query = db
     .from('sequence_enrollments')
     .select('*, sequences(*)')
     .eq('status', 'active')
     .lte('next_run_at', now)
-    .limit(200)
+  // Filter in SQL BEFORE the limit so a backlog of the other mode cannot starve this run.
+  if (options.mode) query = query.eq('mode', options.mode)
+  const { data: due } = await query.order('next_run_at').limit(200)
 
   if (!due || due.length === 0) return { processed: 0, failed: 0 }
 

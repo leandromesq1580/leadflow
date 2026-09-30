@@ -7,7 +7,7 @@ import {SequenceEnrollmentPanel} from '../src/components/sequence-enrollment-pan
 test('enrollment panel exposes lead search and explicit stop/status scope',()=>{
  const html=renderToStaticMarkup(React.createElement(SequenceEnrollmentPanel,{sequenceId:'fixture',enabled:true}))
  for(const label of ['Buscar lead','Inscrever','Atualizar inscrições','200','50'])assert.ok(html.includes(label),label)
- assert.ok(html.includes('Próximo envio (horário da Flórida)'))
+ assert.ok(html.includes('Próxima tentativa (horário da Flórida)'))
  assert.ok(!html.includes('Entrega unknown'))
 })
 import {defaultAIConfig} from '../src/lib/ai-sequence-config'

@@ -3,11 +3,12 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {transpileModule,ModuleKind,ScriptTarget} from 'typescript'
 import * as config from '../src/lib/ai-sequence-config'
+import * as copy from '../src/lib/ai-sequence-copy'
 import type {aiEnginePorts,AIEnrollment,AIEnginePorts,runAIEnrollment} from '../src/lib/ai-sequence-engine'
 function adapter(rate=true){
  const loaded={exports:{} as {aiEnginePorts:typeof aiEnginePorts;runAIEnrollment:typeof runAIEnrollment}}
  const dependencies:Record<string,unknown>={
-  './ai-sequence-config':config,'./ai-sequence-copy':{generateSequenceCopy:()=>{throw Error('Not used')}},
+  './ai-sequence-config':config,'./ai-sequence-copy':{...copy,generateSequenceCopy:()=>{throw Error('Not used')}},
   './wa-bridge':{getBridgeForBuyer:async()=>({url:'https://bridge.invalid',key:'fixture',ownerBuyerId:'buyer',phone:'fixture'})},
   './send-guard':{checkSendRate:async()=>({ok:rate})},
  }
@@ -23,6 +24,16 @@ test('engine transports validated instructions to generation without changing tr
 })
 const enrollment={id:'e',buyer_id:'buyer',lead_id:'lead',sequence_id:'seq',lease_token:'token',current_step:0,recent_choices:[]} as AIEnrollment
 const ctx={config:config.defaultAIConfig,lead:{lead_language:'pt'},phone:'14075550100'}
+test('old newline config reaches generator; generation diagnostics persist with five minute retry, never delivery unknown', async()=>{
+ const now=new Date('2026-09-29T15:00:00Z')
+ for(const failure of [new copy.AISequenceGenerationError('AI_INVALID_TEXT',{reason:'goal'}),new copy.AISequenceGenerationError('AI_KEY_MISSING'),new Error('PRIVATE RAW ERROR')]) {
+  let deferred:unknown[]=[];let calls=0
+  const ports:AIEnginePorts={now:()=>now,claim:async()=>enrollment,context:async()=>({...ctx,config:{...config.defaultAIConfig,brief:'\n'}}),ready:async()=>{},generate:async(c)=>{assert.equal(c.brief,'');throw failure},begin:async()=>{calls++;return true},send:async()=>{calls++;throw Error('must not send')},finish:async()=>{},defer:async(_e,...args)=>{deferred=args}}
+  assert.equal(await adapter().run('e',ports),false)
+  assert.equal(calls,0)
+  assert.deepEqual(deferred,[failure instanceof copy.AISequenceGenerationError ? failure.code+(failure.reason?':'+failure.reason:'') : 'AI_INTERNAL_ERROR',new Date('2026-09-29T15:05:00Z'),false])
+ }
+})
 test('real transport adapter retains account bridge, readiness and delivery confirmation contract',async t=>{
  const calls:{url:string;body?:string}[]=[]
  t.mock.method(globalThis,'fetch',async(url:string,init:RequestInit)=>{calls.push({url,body:String(init.body||'')});return Response.json(url.endsWith('/status')?{ready:true}:{id:'wa-confirmed'})})

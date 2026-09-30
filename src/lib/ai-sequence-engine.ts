@@ -1,5 +1,5 @@
 import { nextSendAt, validateAIConfig, type AISequenceConfig } from './ai-sequence-config'
-import { generateSequenceCopy } from './ai-sequence-copy'
+import { generateSequenceCopy, generationStopReason } from './ai-sequence-copy'
 import type { LeadLanguageFields } from './lead-message-locale'
 import type { createAdminClient } from './supabase/admin'
 import { getBridgeForBuyer, type BridgeConfig } from './wa-bridge'
@@ -43,8 +43,9 @@ export async function runAIEnrollment(id:string, io:AIEnginePorts):Promise<boole
     const next=nextSendAt(new Date(io.now().getTime()+c.repeat_minutes*60000),c)
     await io.finish(e,sent,generated.choice,next)
     return true
-  }catch{
-    await io.defer(e,sending?'delivery_unknown':phase,new Date(io.now().getTime()+3600000),sending)
+  }catch(error){
+    const reason = sending ? 'delivery_unknown' : phase === 'generation_unavailable' ? generationStopReason(error) : phase
+    await io.defer(e,reason,new Date(io.now().getTime()+5*60000),sending)
     return false
   }
 }

@@ -90,7 +90,7 @@ export function sequenceAPI(db:Db,caller:()=>Promise<{id:string;isAdmin:boolean}
      return Response.json({leads:checked(await query)||[]})
     }
     const sequence=url.searchParams.get('sequence_id');validId(sequence)
-    const rows=checked(await db.from('sequence_enrollments').select('id,lead_id,status,current_step,next_run_at,stop_reason,generation_status,delivery_status,last_sent_at,leads(name)').eq('buyer_id',buyer).eq('sequence_id',sequence).order('enrolled_at',{ascending:false}).limit(200))
+    const rows=checked(await db.from('sequence_enrollments').select('id,lead_id,status,current_step,next_run_at,stop_reason,generation_status,delivery_status,attempts,last_sent_at,leads(name)').eq('buyer_id',buyer).eq('sequence_id',sequence).order('enrolled_at',{ascending:false}).limit(200))
     return Response.json({enrollments:rows||[]})
    }
    if(op==='stop'){
