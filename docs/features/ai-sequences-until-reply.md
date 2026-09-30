@@ -47,6 +47,32 @@ Mecanismo leve: o prompt pede comparar internamente assuntos e intenções das �
 
 Novas perguntas continuam voluntárias e gerais: não coletar valores, renda, saúde, SSN, contatos, documentos ou status migratório. O filtro lexical acrescenta padrões de saldo/valores/documentos/imigração, sem afrouxar os filtros existentes. É defesa em profundidade, não detector semântico universal. Fixtures PT/ES/EN exercitam seis temas consecutivos e o contexto móvel; comprovam contrato/orientação e aceitação local, **não** diversidade real de um provedor. O teste `ai-sequence-protection-focus.test.ts` captura o payload real de `generateSequenceCopy` em PT/ES/EN para verificar foco, contexto outbound e contrato JSON; as respostas são fixtures, não prova de obediência semântica. Prévia sintética real após publicação pertence à validação de release.
 
+## Duplicar sequência (alteração local, ainda não publicada)
+
+O botão **Duplicar**, ao lado de Editar, abre um novo rascunho com título próprio e
+nome acrescido de `(cópia)` / `(copy)` / `(copia)`, limitado a 120 caracteres.
+É possível revisar o nome/configuração; cancelar não grava. A cópia é enviada por
+`POST /api/sequences` (RPC `save_sequence` existente), com `enabled:false` explícito
+para IA e legado. Novas sequências criadas normalmente mantêm seu comportamento.
+
+Somente configuração é copiada: descrição, modo, gatilho, `ai_config` integral e
+passos na ordem recebida (atraso, tipo, modelo, corpo). Deep clone e allowlist
+excluem ID da sequência/passos, inscrições, contatos, histórico, mensagens e leases.
+Modelo explícito é preservado; modelo ausente continua ausente no rascunho e usa a
+compatibilidade legada existente, nunca o padrão novo Sol. O original não é alterado.
+A interface avisa que a cópia nasce desativada e sem contatos inscritos.
+
+`saveSequenceDraft` fecha o formulário após POST bem-sucedido, antes do reload:
+falha de recarga não oferece retry do mesmo rascunho nem afirma que o save falhou.
+Erro no POST mantém o rascunho para nova tentativa; trava síncrona e botão disabled
+impedem duplo clique. Não há API nova, migration ou alteração do engine.
+
+Testes: `tests/sequence-duplicate.test.ts` (contrato/deep clone/localização) e
+`tests/sequence-duplicate-browser.mjs` (React real, desktop/mobile, fixtures somente
+localhost, cancelar, retry, duplo clique, falha de reload, IA completa e multisteps).
+O browser reutiliza o entry/harness da experiência IA e recebe `PLAYWRIGHT_MODULE`
+apontando para uma instalação local existente. Fixtures não comprovam produção.
+
 ## Contrato
 
 - `sequences.mode`: `legacy` (padrão) ou `ai_until_reply`, imutável após criação. Inscrições também guardam o modo; não há conversão ou inscrição retroativa.
