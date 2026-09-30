@@ -16,7 +16,7 @@ export default function MobileMais() {
     { icon: 'robot', label: L('Especialista AI', 'AI Specialist', 'Especialista IA'), href: '/m/ai' },
     { icon: 'notes', label: L('Notas', 'Notes', 'Notas'), href: '/m/notas' },
     { icon: 'template', label: t.sidebar.templates, href: '/m/templates' },
-    { icon: 'bolt', label: L('Automações', 'Automations', 'Automatizaciones'), href: '/m/automacoes' },
+    { icon: 'bolt', label: L('Automações', 'Automations', 'Automatizaciones'), href: '/m/automations' },
     { icon: 'refresh', label: t.sidebar.sequences, href: '/m/sequences' },
     { icon: 'bell', label: L('Avisos', 'Reminders', 'Avisos'), href: '/m/avisos' },
     { icon: 'users', label: L('Meu time', 'My team', 'Mi equipo'), href: '/m/time' },

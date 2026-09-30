@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useActionEditLink } from '@/lib/use-action-edit-link'
 import { StageSelect, rotuloDoEstagio, todosOsEstagios, type PipelineOpt } from '@/components/stage-select'
 import { useT } from '@/lib/i18n-client'
 
@@ -48,44 +49,33 @@ export default function AutomationsPage() {
   const [editing, setEditing] = useState<Automation | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const ref = supabaseUrl.replace('https://', '').split('.')[0]
-    const cookie = document.cookie.split('; ').find(c => c.startsWith(`sb-${ref}-auth-token=`))
-    if (cookie) {
-      try {
-        const token = JSON.parse(atob(decodeURIComponent(cookie.substring(cookie.indexOf('=') + 1))))
-        const payload = JSON.parse(atob(token.access_token.split('.')[1]))
-        fetchBuyer(payload.sub)
-      } catch {}
-    }
+  const [loadError, setLoadError] = useState(false)
+  const editLink = useActionEditLink(automations, !loading && !loadError, item => { setEditing(item); setShowNew(true) })
+  const reload = useCallback(async () => {
+    try {
+      const response = await fetch('/api/automations', {cache:'no-store'})
+      if (!response.ok) throw new Error('Read failed')
+      const autoRes = await response.json()
+      if (!autoRes.buyer_id || !Array.isArray(autoRes.automations)) throw new Error('Invalid response')
+      const bid = autoRes.buyer_id
+      const [tmplRes,pipeRes] = await Promise.all([
+        fetch(`/api/templates?buyer_id=${encodeURIComponent(bid)}`,{cache:'no-store'}),
+        fetch(`/api/pipelines?buyer_id=${encodeURIComponent(bid)}`,{cache:'no-store'}),
+      ])
+      if (!tmplRes.ok || !pipeRes.ok) throw new Error('Read failed')
+      const [templatesData,pipelinesData] = await Promise.all([tmplRes.json(),pipeRes.json()])
+      setBuyerId(bid)
+      setAutomations(autoRes.automations)
+      setTemplates(templatesData.templates || [])
+      const pipes: PipelineOpt[] = pipelinesData.pipelines || []
+      setPipelines(pipes)
+      setStages(todosOsEstagios(pipes))
+      setLoadError(false)
+    } catch { setLoadError(true) }
+    finally { setLoading(false) }
   }, [])
+  useEffect(() => { void reload() }, [reload])
 
-  async function fetchBuyer(authId: string) {
-    const r = await fetch(`/api/settings?auth_user_id=${authId}`)
-    if (r.ok) {
-      const buyer = await r.json()
-      setBuyerId(buyer.id)
-      await reload(buyer.id)
-    }
-    setLoading(false)
-  }
-
-  async function reload(bid: string) {
-    const [autoRes, tmplRes, pipeRes] = await Promise.all([
-      fetch(`/api/automations?buyer_id=${bid}`).then(r => r.json()),
-      fetch(`/api/templates?buyer_id=${bid}`).then(r => r.json()),
-      fetch(`/api/pipelines?buyer_id=${bid}`).then(r => r.ok ? r.json() : { pipelines: [] }),
-    ])
-    setAutomations(autoRes.automations || [])
-    setTemplates(tmplRes.templates || [])
-    // TODAS as pipelines entram. Quem tem "Vendas" e "Pós Vendas" precisa automatizar
-    // as duas — antes só a padrão aparecia e o resto do funil ficava inalcançável.
-    // (o motor já dispara em qualquer pipeline: automation-engine filtra por buyer, não por pipeline)
-    const pipes: PipelineOpt[] = pipeRes.pipelines || []
-    setPipelines(pipes)
-    setStages(todosOsEstagios(pipes))
-  }
 
   async function toggle(a: Automation) {
     await fetch(`/api/automations/${a.id}`, {
@@ -93,13 +83,13 @@ export default function AutomationsPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ enabled: !a.enabled }),
     })
-    await reload(buyerId)
+    await reload()
   }
 
   async function remove(id: string) {
     if (!confirm(L('Deletar automação?', 'Delete automation?', '¿Eliminar la automatización?'))) return
     await fetch(`/api/automations/${id}`, { method: 'DELETE' })
-    await reload(buyerId)
+    await reload()
   }
 
   function describe(a: Automation) {
@@ -128,6 +118,9 @@ export default function AutomationsPage() {
 
   return (
     <div className="max-w-[1040px]">
+      {editLink.returnTo && <a href={editLink.returnTo} className="mb-4 inline-block text-sm underline" style={{color:'var(--accent)'}}>{L('Voltar ao pipeline','Back to pipeline','Volver al pipeline')}</a>}
+      {editLink.missing && <p role="alert" className="mb-4 text-sm">{L('Item indisponível nesta conta.','Item unavailable in this account.','Elemento no disponible en esta cuenta.')}</p>}
+      {loadError && <p role="alert" className="mb-4 text-sm">{L('Não foi possível carregar as automações.','Unable to load automations.','No se pudieron cargar las automatizaciones.')} <button className="underline" onClick={reload}>{L('Tentar novamente','Try again','Reintentar')}</button></p>}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{L('Automações', 'Automations', 'Automatizaciones')}</h1>
@@ -140,7 +133,7 @@ export default function AutomationsPage() {
         </button>
       </div>
 
-      {automations.length === 0 && !showNew && (
+      {automations.length === 0 && !showNew && !loadError && (
         <div className="rounded-2xl p-8 text-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <p className="text-[40px] mb-3">⚡</p>
           <p className="text-[16px] font-bold mb-2" style={{ color: 'var(--fg)' }}>{L('Ainda sem automações', 'No automations yet', 'Aún sin automatizaciones')}</p>
@@ -184,7 +177,7 @@ export default function AutomationsPage() {
           stages={stages}
           editing={editing}
           onClose={() => { setShowNew(false); setEditing(null) }}
-          onSaved={() => { setShowNew(false); setEditing(null); reload(buyerId) }}
+          onSaved={() => { setShowNew(false); setEditing(null); reload() }}
         />
       )}
     </div>
@@ -210,6 +203,26 @@ function AutomationForm({ buyerId, templates, stages, pipelines, editing, onClos
   const [actionTemplateId, setActionTemplateId] = useState(editing?.action_config.template_id || '')
   const [actionStageId, setActionStageId] = useState(editing?.action_config.target_stage_id || '')
   const [saving, setSaving] = useState(false)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const closeRef = useRef(onClose)
+  const savingRef = useRef(saving)
+  useEffect(() => { closeRef.current=onClose; savingRef.current=saving }, [onClose,saving])
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    dialogRef.current?.querySelector('input')?.focus()
+    function keydown(event: KeyboardEvent) {
+      if (event.key==='Escape' && !savingRef.current) {event.preventDefault();closeRef.current()}
+      if (event.key!=='Tab') return
+      const controls=Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), [tabindex="0"]') || []).filter(element=>element.getClientRects().length>0)
+      const first=controls[0], last=controls[controls.length-1]
+      if(event.shiftKey && document.activeElement===first){event.preventDefault();last?.focus()}
+      else if(!event.shiftKey && document.activeElement===last){event.preventDefault();first?.focus()}
+    }
+    document.addEventListener('keydown',keydown)
+    return ()=>{document.body.style.overflow=overflow;document.removeEventListener('keydown',keydown);previous?.focus()}
+  }, [])
 
   async function save() {
     if (!name.trim()) return
@@ -238,9 +251,9 @@ function AutomationForm({ buyerId, templates, stages, pipelines, editing, onClos
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm" onClick={onClose}>
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[560px] max-h-[90vh] overflow-y-auto rounded-2xl p-6"
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="automation-form-title" className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-24px)] max-w-[560px] max-h-[90dvh] overflow-y-auto rounded-2xl p-4 sm:p-6"
         style={{ background: 'var(--bg-card)' }} onClick={e => e.stopPropagation()}>
-        <h2 className="text-[18px] font-extrabold mb-4" style={{ color: 'var(--fg)' }}>{editing ? L('Editar automação', 'Edit automation', 'Editar automatización') : L('Nova automação', 'New automation', 'Nueva automatización')}</h2>
+        <h2 id="automation-form-title" className="text-[18px] font-extrabold mb-4" style={{ color: 'var(--fg)' }}>{editing ? L('Editar automação', 'Edit automation', 'Editar automatización') : L('Nova automação', 'New automation', 'Nueva automatización')}</h2>
 
         <label className="block mb-3">
           <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Nome', 'Name', 'Nombre')}</span>

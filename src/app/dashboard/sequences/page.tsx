@@ -7,6 +7,7 @@ import { SequenceEnrollmentPanel } from '@/components/sequence-enrollment-panel'
 import { defaultAIConfig, validAISchedule, type AISequenceConfig } from '@/lib/ai-sequence-config'
 import { sequenceJSON, saveSequenceDraft, duplicateSequenceDraft } from '@/lib/sequence-client'
 import { useT } from '@/lib/i18n-client'
+import { useActionEditLink } from '@/lib/use-action-edit-link'
 
 interface Step {
   id?: string
@@ -51,6 +52,7 @@ export default function SequencesPage() {
   const [duplicate, setDuplicate] = useState<ReturnType<typeof duplicateSequenceDraft> | null>(null)
 
   const [error, setError] = useState('')
+  const editLink = useActionEditLink(sequences, !loading && !error, item => { setEditing(item); setDuplicate(null); setShowNew(true) })
   const [expanded, setExpanded] = useState<string | null>(null)
   const reload = useCallback(async () => {
     const result = await sequenceJSON('/api/sequences')
@@ -85,6 +87,8 @@ export default function SequencesPage() {
 
   return (
     <div className="max-w-[1040px]">
+      {editLink.returnTo && <a href={editLink.returnTo} className="mb-4 inline-block text-sm underline" style={{color:'var(--accent)'}}>{L('Voltar ao pipeline','Back to pipeline','Volver al pipeline')}</a>}
+      {editLink.missing && <p role="alert" className="mb-4 text-sm">{L('Item indisponível nesta conta.','Item unavailable in this account.','Elemento no disponible en esta cuenta.')}</p>}
       {error && <p role="alert" className="text-red-600">{error} <button onClick={() => reload().then(() => setError('')).catch(e => setError(e.message))}>Recarregar</button></p>}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>

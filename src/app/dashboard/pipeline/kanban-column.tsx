@@ -4,6 +4,8 @@ import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { LeadCard } from './lead-card'
 import { useT } from '@/lib/i18n-client'
+import { StageActionsStrip } from '@/components/pipeline-stage-actions'
+import type { useStageActions } from '@/lib/use-stage-actions'
 
 interface Stage {
   id: string; name: string; color: string; position: number
@@ -21,6 +23,8 @@ interface TeamMember { id: string; name: string }
 
 interface Props {
   stage: Stage
+  actions: ReturnType<typeof useStageActions>
+  returnTo?: string
   items: PipelineLead[]
   onLeadClick: (lead: PipelineLead) => void
   unreadCounts?: Record<string, number>
@@ -30,7 +34,7 @@ interface Props {
   viewedMemberId?: string | null
 }
 
-export function KanbanColumn({ stage, items, onLeadClick, unreadCounts = {}, teamMembers, onAssigned, onArchived, viewedMemberId }: Props) {
+export function KanbanColumn({ stage, actions, returnTo, items, onLeadClick, unreadCounts = {}, teamMembers, onAssigned, onArchived, viewedMemberId }: Props) {
   const t = useT()
   const { setNodeRef, isOver } = useDroppable({ id: stage.id })
 
@@ -49,6 +53,7 @@ export function KanbanColumn({ stage, items, onLeadClick, unreadCounts = {}, tea
           </span>
         </div>
 
+        <StageActionsStrip key={stage.id} stageId={stage.id} stageName={stage.name} locale={t._locale} state={actions.state} onRetry={actions.retry} returnTo={returnTo} />
         {/* Top accent bar */}
         <div className="h-[3px] rounded-t-xl" style={{ background: `linear-gradient(90deg, ${stage.color}, ${stage.color}60)` }} />
       </div>

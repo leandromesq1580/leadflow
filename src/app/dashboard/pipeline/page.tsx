@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { DndContext, DragEndEvent, DragOverEvent, PointerSensor, useSensor, useSensors, closestCorners, DragOverlay, DragStartEvent } from '@dnd-kit/core'
 import { KanbanColumn } from './kanban-column'
+import { useStageActions } from '@/lib/use-stage-actions'
 import { LeadCard } from './lead-card'
 import { LeadModal } from './lead-modal'
 import { useT } from '@/lib/i18n-client'
@@ -40,6 +41,8 @@ export default function PipelinePage() {
   // Espelho do pipeline de um membro do time
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
   const [memberPipeline, setMemberPipeline] = useState<Pipeline | null>(null)
+  const ownActions = useStageActions(activePipeline?.id ?? null)
+  const memberActions = useStageActions(view === 'team' ? memberPipeline?.id ?? null : null)
   const [memberLeads, setMemberLeads] = useState<PipelineLead[]>([])
   const [memberHasOwn, setMemberHasOwn] = useState(true)
   const [loadingMember, setLoadingMember] = useState(false)
@@ -131,7 +134,8 @@ export default function PipelinePage() {
     setPipelines(pipes)
 
     if (pipes.length > 0) {
-      const active = pipes.find((p: Pipeline) => p.is_default) || pipes[0]
+      const requested = new URLSearchParams(window.location.search).get('pipeline')
+      const active = pipes.find((p: Pipeline) => p.id === requested) || pipes.find((p: Pipeline) => p.is_default) || pipes[0]
       await loadLeads(active, true)
     }
     setLoading(false)
@@ -540,6 +544,8 @@ export default function PipelinePage() {
                     <KanbanColumn
                       key={stage.id}
                       stage={stage}
+                      actions={memberActions}
+                      returnTo={`/dashboard/pipeline?pipeline=${memberPipeline.id}`}
                       items={memberLeads.filter(l => l.stage_id === stage.id) as any}
                       onLeadClick={(item) => setSelectedLead(item as any)}
                       unreadCounts={unreadCounts}
@@ -666,6 +672,8 @@ export default function PipelinePage() {
               <KanbanColumn
                 key={stage.id}
                 stage={stage}
+                actions={ownActions}
+                returnTo={`/dashboard/pipeline?pipeline=${activePipeline.id}`}
                 items={getStageLeads(stage.id)}
                 onLeadClick={(item) => setSelectedLead(item)}
                 unreadCounts={unreadCounts}
