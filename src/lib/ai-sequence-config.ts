@@ -28,15 +28,20 @@ export const defaultAIConfig: AISequenceConfig = {
   timezone: 'America/New_York', days: [1, 2, 3, 4, 5], start: '09:00', end: '18:00',
   stop_on_stage_exit: true, booking_url: '',
 }
+/** Shared by save, preview and the API so an incomplete draft never becomes sendable. */
+export function validAISchedule(c: AISequenceConfig): boolean {
+  return Number.isInteger(c.initial_delay_minutes) && c.initial_delay_minutes >= 0 && c.initial_delay_minutes <= 43200 &&
+    Number.isInteger(c.repeat_minutes) && c.repeat_minutes >= 1 && c.repeat_minutes <= 43200 &&
+    Array.isArray(c.days) && c.days.length > 0 && c.days.every(d => Number.isInteger(d) && d >= 0 && d <= 6) &&
+    /^([01]\d|2[0-3]):[0-5]\d$/.test(c.start) && /^([01]\d|2[0-3]):[0-5]\d$/.test(c.end) && c.start < c.end
+}
+
 export function validateAIConfig(value: unknown): AISequenceConfig & { model: AISequenceModel } {
   const c = value as AISequenceConfig
   const fail = () => { throw new AISequenceConfigError() }
   if (!c || !['call', 'meeting'].includes(c.goal) || typeof c.brief !== 'string' || c.brief.length > 300 ||
-    !Number.isInteger(c.initial_delay_minutes) || c.initial_delay_minutes < 0 || c.initial_delay_minutes > 43200 ||
-    !Number.isInteger(c.repeat_minutes) || c.repeat_minutes < 60 || c.repeat_minutes > 43200 ||
-    !Array.isArray(c.days) || !c.days.length || c.days.some(d => !Number.isInteger(d) || d < 0 || d > 6) ||
+    !validAISchedule(c) ||
     typeof c.stop_on_stage_exit !== 'boolean' || typeof c.timezone !== 'string' ||
-    !/^([01]\d|2[0-3]):[0-5]\d$/.test(c.start) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(c.end) || c.start >= c.end ||
     typeof c.booking_url !== 'string') fail()
   if (c.presentation !== undefined && (typeof c.presentation !== 'string' || c.presentation.length > 300)) fail()
   if (c.model !== undefined && !AI_SEQUENCE_MODELS.some(option => option.id === c.model)) fail()

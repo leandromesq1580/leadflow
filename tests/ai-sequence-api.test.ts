@@ -11,6 +11,27 @@ function fixture(caller:{id:string;isAdmin:boolean}|null){
  return {api,calls}
 }
 const request=(body:unknown)=>new Request('http://local/api/sequences',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+test('minute intervals survive save and preview; invalid durations never reach storage', async(t) => {
+ t.mock.method(console, 'error', () => {})
+ const writes: Array<{p_config:{ai_config:typeof defaultAIConfig}}> = []
+ const db = {rpc: async(_name:string, args:typeof writes[number]) => { writes.push(args); return {data:args.p_config,error:null} }}
+ let received = 0
+ const api = sequenceAPI(db as never, async()=>({id,isAdmin:false}), async(config)=>{received=config.repeat_minutes;return {body:'Fixture',choice:'fixture'}})
+ for (const repeat_minutes of [1,10,59,60,1440,43200]) {
+  const config = {...defaultAIConfig,repeat_minutes,initial_delay_minutes:0,start:'09:17',end:'18:23'}
+  const result = await api('save',request({name:'AI',mode:'ai_until_reply',ai_config:config}))
+  assert.equal(result.status,200, `${repeat_minutes} minutes accepted`)
+  assert.deepEqual((await result.json()).sequence.ai_config,config)
+  assert.equal((await api('preview',request({ai_config:config,locale:'pt'}))).status,200)
+  assert.equal(received,repeat_minutes)
+ }
+ for (const repeat_minutes of [0,-1,NaN,Infinity,0.5,10.5,43201,null,'10']) {
+  for (const op of ['save','preview'] as const) assert.equal((await api(op,request({name:'AI',mode:'ai_until_reply',locale:'pt',ai_config:{...defaultAIConfig,repeat_minutes}}))).status,400)
+ }
+ assert.equal(writes.length,6)
+ assert.equal(defaultAIConfig.repeat_minutes,1440)
+})
+
 test('every sequence operation requires session; admin cannot impersonate other buyer',async()=>{
  const {api}=fixture(null)
  for(const op of ['list','save','remove','enroll','stop','enrollments','preview'] as const) assert.equal((await api(op,request({}),id)).status,401)
