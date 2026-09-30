@@ -24,6 +24,7 @@ CREATE TABLE sms_messages(id uuid primary key default gen_random_uuid(),lead_id 
   const base = readFileSync('supabase/migrations/006_inbox_sequences_ai_push.sql', 'utf8')
   await db.exec(base.slice(0, base.indexOf('-- AI LEAD SCORING')))
   await db.exec(readFileSync('supabase/migrations/052_ai_sequences_until_reply.sql', 'utf8'))
+  await db.exec(readFileSync('supabase/migrations/053_ai_suppression_resolution.sql', 'utf8'))
   await db.query('insert into buyers(id) values($1),($2)', [buyer, other])
   await db.query('insert into leads(id,assigned_to) values($1,$2)', [lead,buyer])
   return db
