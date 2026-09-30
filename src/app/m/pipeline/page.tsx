@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { FollowUpBadge } from '@/components/follow-up-badge'
 import type { LastFollowUp } from '@/lib/pipeline-follow-ups'
 import { useT } from '@/lib/i18n-client'
+import { StageActionsStrip } from '@/components/pipeline-stage-actions'
+import { useStageActions } from '@/lib/use-stage-actions'
 import { MIcon } from '@/components/mobile/icons'
 import { StageSheet } from '@/components/mobile/stage-sheet'
 import { getInitials, timeAgo } from '@/lib/utils'
@@ -30,6 +32,7 @@ export default function MobilePipeline() {
 
   const [buyerId, setBuyerId] = useState<string | null>(null)
   const [pipeline, setPipeline] = useState<{ id: string; stages: Stage[] } | null>(null)
+  const actions = useStageActions(pipeline?.id ?? null)
   const [cards, setCards] = useState<PLead[] | null>(null)
   const [activeStage, setActiveStage] = useState<string | null>(null)
   const [moveCard, setMoveCard] = useState<PLead | null>(null)
@@ -137,6 +140,7 @@ export default function MobilePipeline() {
           </div>
 
           <div className="m-pad">
+            {activeStage && <StageActionsStrip key={activeStage} stageId={activeStage} stageName={stages.find(s=>s.id===activeStage)?.name || ''} locale={loc} state={actions.state} onRetry={actions.retry} returnTo="/m/pipeline" />}
             {shown.length === 0
               ? <p className="m-muted" style={{ textAlign: 'center', paddingTop: 30, fontSize: 14 }}>{L('Nenhum lead nesta etapa.', 'No leads in this stage.', 'Sin leads en esta etapa.')}</p>
               : shown.map(c => (

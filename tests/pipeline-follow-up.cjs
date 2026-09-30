@@ -19,7 +19,9 @@ const lead = { id: 'synthetic-lead', name: 'Synthetic Test', phone: '', city: ''
 const pl = { id: 'synthetic-pl', stage_id: 'synthetic-stage', lead, last_follow_up: fu };
 const stage = { id: pl.stage_id, name: 'Synthetic Stage', color: '#000', position: 0 };
 const t = { _locale: 'pt', sidebar: { pipeline: 'Pipeline' }, card: {} };
-const common = { '@/lib/i18n-client': { useT: () => t }, '@/components/lead-language-badge': { LeadLanguageBadge: () => React.createElement('span', null, 'IDIOMA-SYNTHETIC') } };
+// Stage indicators have their own mounted/browser tests; keep this harness focused
+// on follow-up cards and board selection without adding metadata network effects.
+const common = { '@/lib/use-stage-actions': { useStageActions: pipelineId => ({ state: { status: 'loading', pipelineId }, retry() {} }) }, '@/components/pipeline-stage-actions': { StageActionsStrip: () => null }, '@/lib/i18n-client': { useT: () => t }, '@/components/lead-language-badge': { LeadLanguageBadge: () => React.createElement('span', null, 'IDIOMA-SYNTHETIC') } };
 const { LeadCard } = load('src/app/dashboard/pipeline/lead-card.tsx', { ...common,
   '@dnd-kit/sortable': { useSortable: () => ({ attributes: {}, listeners: {} }) },
   '@dnd-kit/utilities': { CSS: { Transform: { toString: () => undefined } } },

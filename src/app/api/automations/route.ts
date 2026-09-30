@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { callerBuyer } from '@/lib/api-auth'
 
 export async function GET(request: NextRequest) {
-  const url = new URL(request.url)
-  const buyerId = url.searchParams.get('buyer_id')
-  if (!buyerId) return NextResponse.json({ error: 'Missing buyer_id' }, { status: 400 })
-
-  const db = createAdminClient()
-  const { data: automations } = await db
-    .from('automations')
-    .select('*')
-    .eq('buyer_id', buyerId)
-    .order('created_at', { ascending: false })
-
-  return NextResponse.json({ automations: automations || [] })
+  const headers = { 'Cache-Control': 'private, no-store', Vary: 'Cookie' }
+  try {
+    const db = createAdminClient()
+    const caller = await callerBuyer(db)
+    if (!caller) return NextResponse.json({error:'Unauthorized'}, {status:401,headers})
+    const requested = new URL(request.url).searchParams.get('buyer_id')
+    if (requested && requested !== caller.id) return NextResponse.json({error:'Owner access required'}, {status:403,headers})
+    const { data: automations, error } = await db.from('automations').select('*')
+      .eq('buyer_id',caller.id).order('created_at', {ascending:false})
+    if (error) throw error
+    return NextResponse.json({buyer_id:caller.id,automations:automations || []},{headers})
+  } catch { return NextResponse.json({error:'Automations unavailable'}, {status:503,headers}) }
 }
 
 export async function POST(request: NextRequest) {
