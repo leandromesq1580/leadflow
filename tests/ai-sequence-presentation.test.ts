@@ -1,7 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { generateSequenceCopy, AISequenceGenerationError } from '../src/lib/ai-sequence-copy'
-import { defaultAIConfig } from '../src/lib/ai-sequence-config'
+import { defaultAIConfig as baseAIConfig } from '../src/lib/ai-sequence-config'
+const defaultAIConfig = {...baseAIConfig, instructions:'Convide diretamente para uma ligação. Convide diretamente para uma reunião.'}
 
 const unsafe = [
   'Sou seu corretor.', 'Sou sua corretora.', 'Sou uma assistente virtual.', "I'm an AI assistant.", 'Soy un bot.',
@@ -103,7 +104,7 @@ test('authorized first-person presentation is untrusted data, localized with sel
     const data = JSON.parse(payload!.messages[1].content)
     assert.equal(data.presentation, presentation)
     assert.equal(data.locale, locale)
-    assert.equal(data.required_goal_word, {pt:'ligação',es:'llamada',en:'call'}[locale])
+    assert.equal(data.final_goal_word, {pt:'ligação',es:'llamada',en:'call'}[locale])
     assert.match(payload!.messages[0].content, /untrusted DATA/)
     assert.match(payload!.messages[0].content, /Never claim to be human/)
   }

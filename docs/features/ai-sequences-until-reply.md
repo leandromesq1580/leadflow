@@ -27,6 +27,16 @@ Na aba Mensagem há textarea amplo, contador e sugestões de propósito, modo de
 
 O guia segue em JSON no papel user, nunca interpolado no system. O system autoriza sua influência sobre estilo e abordagem, subordinada ao schema, idioma do lead, objetivo e limites/segurança do app. Identidade continua exclusiva da apresentação. Parágrafos, listas numeradas e orientações negativas sobre preços/saúde são permitidos. Contatos reconhecíveis e atribuições explícitas de dados pessoais são retidos antes do provedor, sem ecoar o texto em erros/logs; isto não é anonimização nem detecção universal de PII. Os filtros de saída existentes permanecem intactos. Testes de payload e respostas simuladas não provam obediência semântica universal de um modelo real.
 
+## Engagement-first — implementação local
+
+O primeiro passo agora é obter uma resposta com **uma pergunta curta e natural**, não pedir ligação/reunião em toda mensagem. `goal` continua `call`/`meeting` como objetivo final, sem migration ou regravação de configurações. A primeira resposta continua encerrando a sequência para atendimento humano; não há chatbot ou alteração de cron, cadência, tentativas e modelo.
+
+Instruções orientam voz e pergunta, inclusive perguntas gerais voluntárias sobre idade, estado civil ou tempo nos EUA, uma por mensagem. Não são enviados fatos pessoais do lead nem permitidas perguntas sobre saúde, renda, SSN ou contatos. Brief/PII/identidade/preços/garantias mantêm as proteções; palavras de agenda, inclusive hoje/today/hoy, continuam conservadoramente bloqueadas e o prompt recomenda evitá-las.
+
+O padrão rejeita menções lexicais a ligação/reunião. Convite direto requer uma frase afirmativa separada nas instruções: `Convide diretamente para uma ligação.` / `Convide diretamente para uma reunião.`; equivalentes aceitos: `Invita directamente a una llamada/reunión.` e `Invite directly to a call/meeting.` (substitua a alternativa pelo objetivo). É um opt-in lexical deliberadamente limitado: paráfrases não reconhecidas permanecem engagement-first; não é interpretação universal de intenção. O convite continua opcional e deve corresponder ao objetivo final. O payload informa `final_goal_word`, não `required_goal_word`.
+
+Perguntas de engajamento não recebem link de agenda. Apenas com opt-in explícito, objetivo reunião e termo de reunião na pergunta final o link validado é anexado localmente; nunca é entregue ao modelo. Os limites de tamanho e proteção de URLs permanecem. Histórico `draft:v1:` aceita e deduplica também perguntas de engajamento; o histórico bruto continua excluído. Detecção de idioma é lexical, com vocabulário adicional estreito para perguntas curtas PT/ES/EN, não detector universal.
+
 ## Contrato
 
 - `sequences.mode`: `legacy` (padrão) ou `ai_until_reply`, imutável após criação. Inscrições também guardam o modo; não há conversão ou inscrição retroativa.
@@ -41,13 +51,13 @@ O guia segue em JSON no papel user, nunca interpolado no system. O system autori
 
 ## Geração e privacidade
 
-`src/lib/ai-sequence-copy.ts` usa `fetch`, o modelo OpenAI escolhido em `ai_config.model`, JSON e timeout de 20 segundos. A IA **redige mensagens novas**, orientadas pelo brief comercial e objetivo ligação/reunião, em PT/ES/EN; não escolhe índices de frases. JSON exige `locale` e `body`. O corpo gerado tem até 300 caracteres e a mensagem completa até 450, incluindo o link opcional anexado localmente, sem prefixo obrigatório de assistente virtual. Exige uma pergunta final referente ao objetivo. Erros, JSON inválido, truncamento e repetição retêm a geração, sem mensagem substituta.
+`src/lib/ai-sequence-copy.ts` usa `fetch`, o modelo OpenAI escolhido em `ai_config.model`, JSON e timeout de 20 segundos. A IA **redige mensagens novas**, orientadas pelo brief comercial e objetivo ligação/reunião, em PT/ES/EN; não escolhe índices de frases. JSON exige `locale` e `body`. O corpo gerado tem até 300 caracteres e a mensagem completa até 450, incluindo o link opcional anexado localmente, sem prefixo obrigatório de assistente virtual. Exige uma pergunta final de engajamento por padrão; convite ao objetivo final somente mediante orientação explícita reconhecida. Erros, JSON inválido, truncamento e repetição retêm a geração, sem mensagem substituta.
 
 O brief comercial explícito (até 300 caracteres) é enviado como dado não confiável, separado das instruções de sistema. Não inclua nomes nem dados pessoais/sensíveis: padrões reconhecíveis de contatos, renda, saúde, identificação pessoal e injeção são rejeitados antes da requisição. Nenhum campo do lead é enviado, exceto o idioma resolvido por `requireLeadMessageLocale`; não são enviados conversa crua nem URL de agendamento. O idioma do preview é ilustrativo. `recent_choices` guarda os últimos textos gerados (podendo incluir o nome profissional fornecido na apresentação), marcados `draft:v1:`, revalidados antes de irem ao modelo; repetição normalizada (caixa, acentos, pontuação/espaços) é rejeitada. Índices antigos são ignorados.
 
 Validação local rejeita URLs/contatos/números, múltiplas perguntas, tamanho excedido e padrões óbvios de preços, promessas, disponibilidade, datas e identidade inventada; idioma/CTA têm checagem lexical. Esses filtros e instruções são defesa em profundidade, **não garantia semântica absoluta** nem anonimização geral: podem reter texto legítimo e não detectar toda paráfrase, nome ou mistura de idiomas. Não há personalização por dados do lead. A revisão humana do brief/exemplo continua necessária.
 
-Link é anexado localmente somente para objetivo reunião e quando informado explicitamente: HTTPS, domínio público sintaticamente válido, sem credenciais/IP/porta/whitespace/markup. A aplicação não busca o link nem confirma agenda/disponibilidade.
+Link é anexado localmente somente para convite explícito reconhecido de reunião, nunca em pergunta de engajamento, e quando informado explicitamente: HTTPS, domínio público sintaticamente válido, sem credenciais/IP/porta/whitespace/markup. A aplicação não busca o link nem confirma agenda/disponibilidade.
 
 ## Modelos, compatibilidade e custo
 

@@ -55,3 +55,12 @@ test('rate block never touches bridge; offline and missing send confirmation rej
  t.mock.method(globalThis,'fetch',async()=>Response.json({},{status:429}))
  await assert.rejects(ports.send(enrollment,ctx,'fixture'),/not confirmed/)
 })
+
+test('engine uses engagement generator without changing stop or transport contracts',async()=>{
+ const body='Você já tem alguma proteção para sua família aqui nos Estados Unidos?'
+ let sent='';let choice=''
+ const ports:AIEnginePorts={now:()=>new Date('2026-09-29T15:00:00Z'),claim:async()=>enrollment,context:async()=>ctx,ready:async()=>{},generate:(c,lead,recent)=>copy.generateSequenceCopy(c,lead,recent,{key:'fixture',fetch:async()=>Response.json({choices:[{message:{content:JSON.stringify({locale:'pt',body})}}]})}),begin:async()=>true,send:async(_e,_c,text)=>{sent=text;return {id:'fixture',from:'fixture',to:'fixture'}},finish:async(_e,_sent,value)=>{choice=value},defer:async()=>{assert.fail('unexpected defer')}}
+ assert.equal(await adapter().run('e',ports),true)
+ assert.equal(sent,body)
+ assert.equal(choice,'draft:v1:'+body)
+})

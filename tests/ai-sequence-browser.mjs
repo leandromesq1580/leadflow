@@ -55,6 +55,8 @@ try {
   await page.getByLabel('Modo', { exact: true }).selectOption('ai_until_reply')
   await page.screenshot({ path: path.join(output, 'desktop-message.png'), fullPage: true })
   assert.equal(await page.getByRole('dialog').count(), 1, 'accessible modal')
+  await page.getByText('Objetivo final', {exact:true}).waitFor()
+  await page.getByText('Primeiro passo: conseguir uma resposta', {exact:false}).waitFor()
   await page.getByRole('tab', { name: 'Mensagem', exact: true }).focus()
   await page.keyboard.press('ArrowRight')
   assert.equal(await page.getByRole('tab', { name: 'Agenda de envio' }).getAttribute('aria-selected'), 'true', 'tabs support arrow-key navigation')

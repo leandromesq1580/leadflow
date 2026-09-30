@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { defaultAIConfig, validateAIConfig } from '../src/lib/ai-sequence-config'
 import { generateSequenceCopy } from '../src/lib/ai-sequence-copy'
 import { sequenceAPI } from '../src/lib/sequence-api'
-const body='Quero ajudar você com sua proteção. Podemos combinar uma ligação?'
+const body='Você já tem alguma proteção para sua família aqui nos Estados Unidos?'
 const generate=(c:typeof defaultAIConfig)=>generateSequenceCopy(c,{lead_language:'pt'},[],{key:'fixture',fetch:async()=>Response.json({choices:[{message:{content:JSON.stringify({locale:'pt',body})}}]})})
 test('blank newline brief normalizes at shared config, save, preview and old saved generation',async()=>{
  const config={...defaultAIConfig,brief:'\n'}

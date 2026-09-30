@@ -1,7 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { generateSequenceCopy } from '../src/lib/ai-sequence-copy'
-import { defaultAIConfig } from '../src/lib/ai-sequence-config'
+import { defaultAIConfig as baseAIConfig } from '../src/lib/ai-sequence-config'
+const defaultAIConfig = {...baseAIConfig, instructions:'Convide diretamente para uma ligação. Convide diretamente para uma reunião.'}
 
 const mock = (value: unknown): typeof fetch => async () => Response.json({choices:[{message:{content:JSON.stringify(value)}}]})
 const texts = {
@@ -73,7 +74,7 @@ test('unsafe or malformed generated copy is rejected, without replacement copy',
    'Sua reunião está confirmada amanhã. Podemos combinar uma ligação?',
    'Tenho disponibilidade na segunda-feira. Podemos combinar uma ligação?',
    'Sou Ana, sua corretora. Podemos combinar uma ligação?',
-   'Olá! Você gosta de seguros?',
+   'Olá! Você gosta de seguros? Você gostaria de conversar?',
   ].map(body=>({locale:'pt',body})),
  ]
  for (const value of invalid) await assert.rejects(generateSequenceCopy(defaultAIConfig,{lead_language:'pt'},[],{key:'test',fetch:mock(value)}),JSON.stringify(value))

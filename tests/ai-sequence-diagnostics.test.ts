@@ -1,7 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { generateSequenceCopy, AISequenceGenerationError } from '../src/lib/ai-sequence-copy'
-import { defaultAIConfig } from '../src/lib/ai-sequence-config'
+import { defaultAIConfig as baseAIConfig } from '../src/lib/ai-sequence-config'
+const defaultAIConfig = {...baseAIConfig, instructions:'Convide diretamente para uma ligação. Convide diretamente para uma reunião.'}
 import { sequenceAPI } from '../src/lib/sequence-api'
 
 const id = '00000000-0000-4000-8000-000000000001'
@@ -75,7 +76,7 @@ test('draft rejection exposes only fixed validation reason, never rejected conte
  assert.doesNotMatch(JSON.stringify(result),/Você quer conversar/)
 })
 
-test('provider receives the explicit localized goal required in the final question', async () => {
+test('provider receives the localized final goal without making it mandatory in every question', async () => {
  const expected = {pt:{call:'ligação',meeting:'reunião'},es:{call:'llamada',meeting:'reunión'},en:{call:'call',meeting:'meeting'}} as const
  for (const locale of ['pt','es','en'] as const) for (const goal of ['call','meeting'] as const) {
   let payload: {messages: Array<{content:string}>} | undefined
@@ -85,8 +86,8 @@ test('provider receives the explicit localized goal required in the final questi
    return Response.json({choices:[{finish_reason:'stop',message:{content:JSON.stringify({locale,body})}}]})
   }})
   const data=JSON.parse(payload!.messages[1].content)
-  assert.equal(data.required_goal_word,expected[locale][goal])
-  assert.match(payload!.messages[0].content,/required_goal_word.*final question/)
+  assert.equal(data.final_goal_word,expected[locale][goal])
+  assert.match(payload!.messages[0].content,/engagement-first/)
  }
 })
 

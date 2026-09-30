@@ -44,7 +44,7 @@ test('newline config through real generator, SQL defer and human status; pauses 
   const ports:AIEnginePorts={now:()=>now,
    claim:async id=>(await db.query<AIEnrollment>('select * from claim_ai_sequence($1)',[id])).rows[0]||null,
    context:async()=>({config:{...defaultAIConfig,brief:'\n'},lead:{lead_language:'pt'},phone:'fixture'}),ready:async()=>{},
-   generate:(c,l,recent)=>generateSequenceCopy(c,l,recent,{key:'fixture',fetch:async()=>Response.json({choices:[{message:{content:JSON.stringify({locale:'pt',body:'Quero ajudar você com sua proteção. Podemos conversar?'})}}]})}),
+   generate:(c,l,recent)=>generateSequenceCopy(c,l,recent,{key:'fixture',fetch:async()=>Response.json({choices:[{message:{content:JSON.stringify({locale:'pt',body:'Quero ajudar você com sua proteção. Podemos combinar uma ligação?'})}}]})}),
    begin:async()=>{assert.fail('must not begin transport')},send:async()=>{sends++;throw Error('must not send')},finish:async()=>{},
    defer:async(c,reason,next,unknown)=>{await db.query('select defer_ai_sequence($1,$2,$3,$4,$5)',[c.id,c.lease_token,reason,next.toISOString(),unknown])},
   }
