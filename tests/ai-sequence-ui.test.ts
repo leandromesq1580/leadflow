@@ -32,6 +32,10 @@ test('presentation renders optional bounded input, help, count, natural voice an
   assert.ok(!html.includes('A assistente se identifica como IA'))
  }
 })
+test('instructions render a large optional guide with four sections, count and honest privacy help', () => {
+ const html=renderToStaticMarkup(React.createElement(AISequenceFields,{value:{...defaultAIConfig,instructions:'Guia'},onChange:()=>{}}))
+ for (const text of ['Instruções da IA','4/6000','maxLength="6000"','PROPÓSITO','MODO DE ATUAÇÃO','ABORDAGEM','TOM DE FALA','não treina','dados privados']) assert.ok(html.includes(text),text)
+})
 test('legacy model omission remains legacy rather than switching to the new default', () => {
  const legacy = {...defaultAIConfig}
  delete legacy.model

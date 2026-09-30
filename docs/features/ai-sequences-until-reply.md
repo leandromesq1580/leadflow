@@ -19,6 +19,14 @@ A proteção de nomes reconhece algumas construções explícitas, não toda ide
 - Sem migration: a 052 persiste `ai_config` como JSONB e valida apenas objeto presente no SQL, sem mínimo de repetição de 60 minutos. Busca em migrations não encontrou outro limite. Engines continuam calculando os minutos configurados sem clamp; propriedade, inbound stop, modelos, apresentação e regras de transporte não foram modificados.
 - Harness `tests/ai-sequence-browser.mjs` monta a página React real com CSS/fontes locais e fixtures de APIs. Bloqueia outras origens, exercita apagar→mudar unidade→corrigir, limites, atalhos, horários precisos, salvar/reabrir e legado, além de desktop, 390/320 px e tema escuro. Evidências são criadas em diretórios únicos; chamadas de prévia são simuladas, sem provedor/envio/ativação/inscrição.
 
+## Instruções da IA — implementação local, sem publicação
+
+`ai_config.instructions` é um guia opcional por sequência, até 6000 caracteres, com trim; ausente vira vazio. Tipos inválidos e excesso são rejeitados antes de salvar/prévia. O Brief de 300 caracteres continua como contexto comercial e a apresentação de 300 como referência de identidade/abertura. Nenhuma migration: a RPC 052 persiste o JSONB completo.
+
+Na aba Mensagem há textarea amplo, contador e sugestões de propósito, modo de atuação, abordagem e tom. Salvar/reabrir preserva o guia; editar invalida prévias prontas e em andamento. Isto orienta cada geração, não treina permanentemente o modelo.
+
+O guia segue em JSON no papel user, nunca interpolado no system. O system autoriza sua influência sobre estilo e abordagem, subordinada ao schema, idioma do lead, objetivo e limites/segurança do app. Identidade continua exclusiva da apresentação. Parágrafos, listas numeradas e orientações negativas sobre preços/saúde são permitidos. Contatos reconhecíveis e atribuições explícitas de dados pessoais são retidos antes do provedor, sem ecoar o texto em erros/logs; isto não é anonimização nem detecção universal de PII. Os filtros de saída existentes permanecem intactos. Testes de payload e respostas simuladas não provam obediência semântica universal de um modelo real.
+
 ## Contrato
 
 - `sequences.mode`: `legacy` (padrão) ou `ai_until_reply`, imutável após criação. Inscrições também guardam o modo; não há conversão ou inscrição retroativa.

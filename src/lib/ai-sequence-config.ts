@@ -4,7 +4,7 @@ export class AISequenceConfigError extends Error {
   readonly code = 'AI_CONFIG_INVALID'
   readonly status = 400
   constructor() {
-    super('Configuração IA inválida: confira apresentação (até 300 caracteres), modelo, objetivo, intervalos, dias, fuso, janela e link.')
+    super('Configuração IA inválida: confira instruções (até 6000 caracteres), apresentação (até 300 caracteres), modelo, objetivo, intervalos, dias, fuso, janela e link.')
     this.name = 'AISequenceConfigError'
   }
 }
@@ -14,6 +14,7 @@ export interface AISequenceConfig {
   goal: 'call' | 'meeting'
   brief: string
   presentation?: string
+  instructions?: string
   initial_delay_minutes: number
   repeat_minutes: number
   timezone: string
@@ -24,7 +25,7 @@ export interface AISequenceConfig {
   booking_url: string
 }
 export const defaultAIConfig: AISequenceConfig = {
-  model: DEFAULT_AI_SEQUENCE_MODEL, goal: 'call', brief: '', presentation: '', initial_delay_minutes: 60, repeat_minutes: 1440,
+  model: DEFAULT_AI_SEQUENCE_MODEL, goal: 'call', brief: '', presentation: '', instructions: '', initial_delay_minutes: 60, repeat_minutes: 1440,
   timezone: 'America/New_York', days: [1, 2, 3, 4, 5], start: '09:00', end: '18:00',
   stop_on_stage_exit: true, booking_url: '',
 }
@@ -43,6 +44,7 @@ export function validateAIConfig(value: unknown): AISequenceConfig & { model: AI
     !validAISchedule(c) ||
     typeof c.stop_on_stage_exit !== 'boolean' || typeof c.timezone !== 'string' ||
     typeof c.booking_url !== 'string') fail()
+  if (c.instructions !== undefined && (typeof c.instructions !== 'string' || c.instructions.length > 6000)) fail()
   if (c.presentation !== undefined && (typeof c.presentation !== 'string' || c.presentation.length > 300)) fail()
   if (c.model !== undefined && !AI_SEQUENCE_MODELS.some(option => option.id === c.model)) fail()
   try { new Intl.DateTimeFormat('en', { timeZone: c.timezone }).format() } catch { fail() }
@@ -54,7 +56,7 @@ export function validateAIConfig(value: unknown): AISequenceConfig & { model: AI
         !/^[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}$/i.test(u.hostname) || /\.(local|internal|localhost)$/i.test(u.hostname)) fail()
     } catch { fail() }
   }
-  return { model: c.model ?? LEGACY_AI_SEQUENCE_MODEL, goal: c.goal, brief: c.brief, presentation: c.presentation?.trim() ?? '', initial_delay_minutes: c.initial_delay_minutes, repeat_minutes: c.repeat_minutes,
+  return { model: c.model ?? LEGACY_AI_SEQUENCE_MODEL, goal: c.goal, brief: c.brief, instructions: c.instructions?.trim() ?? '', presentation: c.presentation?.trim() ?? '', initial_delay_minutes: c.initial_delay_minutes, repeat_minutes: c.repeat_minutes,
     timezone: c.timezone, days: c.days, start: c.start, end: c.end, stop_on_stage_exit: c.stop_on_stage_exit, booking_url: c.booking_url }
 }
 /** Walk UTC minutes, rather than constructing nonexistent/ambiguous DST wall times. Window end is exclusive. */

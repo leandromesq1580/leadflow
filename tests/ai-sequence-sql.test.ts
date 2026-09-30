@@ -33,17 +33,17 @@ async function enroll(db: PGlite) {
  await db.query('update sequences set enabled=true where id=$1',[s.id])
  return (await db.query<{id:string}>('select * from enroll_sequence($1,$2,$3,$4)',[buyer,s.id,lead,new Date(0).toISOString()])).rows[0]
 }
-test('SQL preserves distinct optional presentations per sequence and rejects another buyer editing them',async()=>{
+test('SQL preserves distinct optional instructions and presentations per sequence and rejects another buyer editing them',async()=>{
  const db=await database()
  try{
-  const configs=[{...ai,presentation:'Oi, sou Ana, agente de life insurance.'},{...ai,presentation:'Prefiro uma abordagem direta.'},ai]
+  const configs=[{...ai,instructions:'1. Propósito: Explique como funciona.\nNão peça dados de saúde. '.repeat(8),presentation:'Oi, sou Ana, agente de life insurance.'},{...ai,instructions:'Tom direto e acolhedor.',presentation:'Prefiro uma abordagem direta.'},ai]
   const ids:string[]=[]
   for(const [index,config] of configs.entries()){
    const {rows:[saved]}=await db.query<{id:string;ai_config:typeof config;enabled:boolean}>('select * from save_sequence($1,null,$2,$3)',[buyer,{name:`Fixture ${index}`,mode:'ai_until_reply',ai_config:config},[]])
    ids.push(saved.id)
    assert.deepEqual(saved.ai_config,config);assert.equal(saved.enabled,false)
   }
-  const edited={...ai,presentation:'Quero começar com uma pergunta simples.'}
+  const edited={...ai,instructions:'Oriente com clareza, sem pressão.',presentation:'Quero começar com uma pergunta simples.'}
   await db.query('select * from save_sequence($1,$2,$3,null)',[buyer,ids[0],{ai_config:edited}])
   await assert.rejects(db.query('select * from save_sequence($1,$2,$3,null)',[other,ids[0],{ai_config:configs[1]}]),/sequence_not_owned/)
   for(const [index,id] of ids.entries()){
