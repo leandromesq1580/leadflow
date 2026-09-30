@@ -4,16 +4,17 @@ import {readFileSync} from 'node:fs'
 import {transpileModule,ModuleKind,ScriptTarget} from 'typescript'
 import * as config from '../src/lib/ai-sequence-config'
 import * as copy from '../src/lib/ai-sequence-copy'
+import * as batch from '../src/lib/sequence-batch'
 import type {aiEnginePorts,AIEnrollment,AIEnginePorts,runAIEnrollment} from '../src/lib/ai-sequence-engine'
 function adapter(rate=true){
  const loaded={exports:{} as {aiEnginePorts:typeof aiEnginePorts;runAIEnrollment:typeof runAIEnrollment}}
  const dependencies:Record<string,unknown>={
   './ai-sequence-config':config,'./ai-sequence-copy':{...copy,generateSequenceCopy:()=>{throw Error('Not used')}},
-  './wa-bridge':{getBridgeForBuyer:async()=>({url:'https://bridge.invalid',key:'fixture',ownerBuyerId:'buyer',phone:'fixture'})},
-  './send-guard':{checkSendRate:async()=>({ok:rate})},
+  './wa-bridge':{getBridgeForBuyer:async()=>({url:'https://bridge.invalid',key:'fixture',ownerBuyerId:'buyer',phone:'15555550100'})},
+  './send-guard':{checkSendRate:async()=>({ok:rate})}, './sequence-batch':batch,
  }
  new Function('require','module','exports',transpileModule(readFileSync('src/lib/ai-sequence-engine.ts','utf8'),{compilerOptions:{module:ModuleKind.CommonJS,target:ScriptTarget.ES2022}}).outputText)((name:string)=>{assert.ok(name in dependencies,name);return dependencies[name]},loaded,loaded.exports)
- return {...loaded.exports.aiEnginePorts({} as never), run:loaded.exports.runAIEnrollment}
+ return {...loaded.exports.aiEnginePorts({rpc:async()=>({data:true,error:null})} as never), run:loaded.exports.runAIEnrollment}
 }
 test('engine transports validated instructions to generation without changing transport body', async()=>{
  const instructions='1. Explique como funciona.\nNão prometa preços ou aprovação. '.repeat(8).trim()
@@ -36,7 +37,7 @@ test('old newline config reaches generator; generation diagnostics persist with 
 })
 test('real transport adapter retains account bridge, readiness and delivery confirmation contract',async t=>{
  const calls:{url:string;body?:string}[]=[]
- t.mock.method(globalThis,'fetch',async(url:string,init:RequestInit)=>{calls.push({url,body:String(init.body||'')});return Response.json(url.endsWith('/status')?{ready:true}:{id:'wa-confirmed'})})
+ t.mock.method(globalThis,'fetch',async(url:string,init:RequestInit)=>{calls.push({url,body:String(init.body||'')});return Response.json(url.endsWith('/status')?{ready:true,phone:'15555550100'}:{id:'wa-confirmed'})})
  const ports=adapter()
  await ports.ready(enrollment)
  const result=await ports.send(enrollment,ctx,'Quero ajudar com sua proteção. Podemos combinar uma ligação?')
@@ -49,7 +50,7 @@ test('rate block never touches bridge; offline and missing send confirmation rej
  await assert.rejects(adapter(false).ready(enrollment));assert.equal(calls,0)
  await assert.rejects(adapter().ready(enrollment));assert.equal(calls,1)
  const ports=adapter()
- t.mock.method(globalThis,'fetch',async()=>Response.json({ready:true}))
+ t.mock.method(globalThis,'fetch',async()=>Response.json({ready:true,phone:'15555550100'}))
  await ports.ready(enrollment)
  await assert.rejects(ports.send(enrollment,ctx,'fixture'),/Missing delivery confirmation/)
  t.mock.method(globalThis,'fetch',async()=>Response.json({},{status:429}))

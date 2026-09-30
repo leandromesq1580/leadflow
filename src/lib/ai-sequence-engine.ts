@@ -4,6 +4,7 @@ import type { LeadLanguageFields } from './lead-message-locale'
 import type { createAdminClient } from './supabase/admin'
 import { getBridgeForBuyer, type BridgeConfig } from './wa-bridge'
 import { checkSendRate } from './send-guard'
+import { SequenceWaiting, verifiedSequenceBridge } from './sequence-batch'
 export interface AIEnrollment { id:string; buyer_id:string; lead_id:string; sequence_id:string; lease_token:string; current_step:number; recent_choices:string[] }
 type Context = {config:AISequenceConfig;lead:LeadLanguageFields;phone:string}
 type Sent = {id:string;from:string;to:string}
@@ -44,7 +45,7 @@ export async function runAIEnrollment(id:string, io:AIEnginePorts):Promise<boole
     await io.finish(e,sent,generated.choice,next)
     return true
   }catch(error){
-    const reason = sending ? 'delivery_unknown' : phase === 'generation_unavailable' ? generationStopReason(error) : phase
+    const reason = sending ? 'delivery_unknown' : error instanceof SequenceWaiting ? 'batch_wait' : phase === 'generation_unavailable' ? generationStopReason(error) : phase
     await io.defer(e,reason,new Date(io.now().getTime()+5*60000),sending)
     return false
   }
@@ -71,14 +72,16 @@ export function aiEnginePorts(db:Db):AIEnginePorts {
     },
     ready:async e=>{
       const rate=await checkSendRate(db,e.buyer_id)
-      if(!rate.ok)throw new Error('Rate limited')
-      bridge=await getBridgeForBuyer(db,e.buyer_id)
-      if(!bridge)throw new Error('Own bridge unavailable')
-      const response=await fetch(`${bridge.url}/status`,{headers:{apikey:bridge.key},signal:AbortSignal.timeout(5000)})
-      if(!response.ok || (await response.json())?.ready!==true)throw new Error('Bridge offline')
+      if(!rate.ok)throw new SequenceWaiting()
+      bridge=await verifiedSequenceBridge(await getBridgeForBuyer(db,e.buyer_id))
+      const allowed=await rpc('preflight_sequence_batch',{p_id:e.id,p_token:e.lease_token,p_sender:bridge.phone})
+      if(!allowed)throw new SequenceWaiting()
     },
     generate:generateSequenceCopy,
-    begin:async(e,body)=>!!(await rpc('begin_ai_send',{p_id:e.id,p_token:e.lease_token,p_body:body}))?.length,
+    begin:async(e,body)=>{
+      bridge=await verifiedSequenceBridge(bridge)
+      return (await rpc('begin_sequence_batch',{p_id:e.id,p_token:e.lease_token,p_sender:bridge.phone,p_body:body}))?.allowed===true
+    },
     send:async(e,ctx,body)=>{
       if(!bridge || bridge.ownerBuyerId!==e.buyer_id)throw new Error('No own bridge')
       const to=ctx.phone.replace(/\D/g,'')
@@ -88,7 +91,10 @@ export function aiEnginePorts(db:Db):AIEnginePorts {
       if(typeof result.id!=='string'||!result.id)throw new Error('Missing delivery confirmation')
       return {id:result.id,from:bridge.phone || '',to}
     },
-    finish:async(e,sent,choice,next)=>{if(!await rpc('finish_ai_send',{p_id:e.id,p_token:e.lease_token,p_wa:sent.id,p_choice:choice,p_next:next.toISOString(),p_from:sent.from,p_to:sent.to}))throw new Error('Confirmation not persisted')},
-    defer:async(e,reason,next,unknown)=>{await rpc('defer_ai_sequence',{p_id:e.id,p_token:e.lease_token,p_reason:reason,p_next:next.toISOString(),p_unknown:unknown})},
+    finish:async(e,sent,choice,next)=>{if(!await rpc('finish_sequence_batch',{p_id:e.id,p_token:e.lease_token,p_wa:sent.id,p_choice:choice,p_next:next.toISOString(),p_from:sent.from,p_to:sent.to}))throw new Error('Confirmation not persisted')},
+    defer:async(e,reason,next,unknown)=>{
+      if(!unknown && (reason==='batch_wait'||reason==='outside_window')) await rpc('wait_sequence_batch',{p_id:e.id,p_token:e.lease_token,p_reason:reason,p_next:next.toISOString()})
+      else await rpc('defer_sequence_batch',{p_id:e.id,p_token:e.lease_token,p_reason:reason,p_next:next.toISOString(),p_unknown:unknown})
+    },
   }
 }
