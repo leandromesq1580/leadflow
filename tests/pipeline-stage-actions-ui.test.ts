@@ -21,12 +21,24 @@ function component() {
 }
 const item = (enabled: boolean,id='item') => ({id,name:'Named action',enabled})
 const ready = {status:'ready',pipelineId:'pipe',stages:[{id:'stage',sequences:[item(true,'a'),item(true,'b'),item(false,'c')],automations:[]}]}
+test('one inline lightning control for mixed active types, with an initially hidden popup and no status strip',()=>{
+ const C=component()
+ for(const [locale,label] of [['pt','Ações ativas de Novo'],['en','Active actions for Novo'],['es','Acciones activas de Novo']]) {
+  const state={...ready,stages:[{...ready.stages[0],automations:[item(true,'auto')]}]}
+  const html=renderToStaticMarkup(React.createElement(C,{stageId:'stage',stageName:'Novo',state,locale}))
+  assert.equal((html.match(/⚡/g)||[]).length,1)
+  assert.ok(html.includes(`aria-label="${label}"`))
+  assert.ok(html.includes('hidden=""')); assert.ok(html.includes('display:none'))
+  assert.ok(html.includes('aria-expanded="false"')); assert.ok(html.includes('role="dialog"'))
+  assert.ok(!html.includes('<details')); assert.ok(!html.includes('<summary'))
+ }
+})
 test('real strip renders only active counts, details and exact edit links in PT/EN/ES',()=>{
  const C=component()
  for (const [locale,count,none,inactive] of [['pt','2 ativas','Nenhuma','inativa'],['en','2 active','None','inactive'],['es','2 activas','Ninguna','inactiva']]) {
   const html=renderToStaticMarkup(React.createElement(C,{stageId:'stage',stageName:'Novo',state:ready,locale,returnTo:'/m/pipeline'}))
   assert.ok(html.includes(count));assert.ok(!html.includes(none));assert.ok(!html.includes(inactive))
-  assert.equal((html.match(/<summary/g)||[]).length,1,'empty automation group is absent')
+  assert.equal((html.match(/<section/g)||[]).length,1,'empty automation group is absent')
   assert.ok(html.includes('edit=a'));assert.ok(html.includes('edit=b'));assert.ok(!html.includes('edit=c'))
   assert.ok(html.includes('/m/sequences?'));assert.ok(html.includes('returnTo=%2Fm%2Fpipeline'));assert.ok(!html.includes('checkbox'))
  }
@@ -49,11 +61,12 @@ test('empty and inactive-only real strips render no element or reserved space',(
 })
 test('loading, failure, restricted and unknown stage are not empty states or edit links',()=>{
  const C=component()
- for (const status of ['loading','error','restricted','ready']) {
+ for (const status of ['loading','error','restricted','unavailable','ready']) {
   const html=renderToStaticMarkup(React.createElement(C,{stageId:'missing',stageName:'Novo',state:{...ready,status},locale:'pt'}))
   assert.ok(!html.includes('Nenhuma'));assert.ok(!html.includes('edit='));assert.ok(!html.includes('Named action'))
   assert.equal((html.match(/role="status"/g)||[]).length,1,'one compact metadata status, not fictional action groups')
-  assert.ok(!html.includes('Sequência ·'));assert.ok(!html.includes('Automação ·'))
+  assert.ok(!html.includes('Sequência ·'));assert.ok(!html.includes('Automação ·'));assert.ok(!html.includes('⚡'))
+  if(status==='loading') { assert.ok(html.includes('class="sr-only"'));assert.ok(html.includes('aria-busy="true"'));assert.ok(!html.includes('<button')) }
   assert.ok(html.includes(status==='loading'?'Carregando':status==='restricted'?'Somente o dono':'Indisponível'))
  }
 })
@@ -62,7 +75,7 @@ test('pseudo pipeline has an informational PT/EN/ES state, no empty counts, retr
  for(const [locale,message] of [['pt','Não se aplica'],['en','Not applicable'],['es','No aplica']]){
   const html=renderToStaticMarkup(React.createElement(C,{stageId:'pseudo-member',stageName:'Assigned',state:{status:'not-applicable',pipelineId:'pseudo-pipe-member'},locale,onRetry:()=>{}}))
   assert.ok(html.includes(message));assert.ok(!html.includes('Nenhuma'));assert.ok(!html.includes('None'));assert.ok(!html.includes('Ninguna'))
-  assert.ok(!html.includes('<button'));assert.ok(!html.includes('edit='));assert.ok(!html.includes('<summary'))
+  assert.ok(html.includes('ⓘ'));assert.ok(!html.includes('⚡'));assert.ok(!html.includes('Tentar novamente'));assert.ok(!html.includes('Try again'));assert.ok(!html.includes('Reintentar'));assert.ok(!html.includes('edit='));assert.ok(!html.includes('<summary'))
  }
 })
 test('safe return rejects arbitrary paths and only keeps known pipeline identity',()=>{

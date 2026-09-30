@@ -40,18 +40,20 @@ export function KanbanColumn({ stage, actions, returnTo, items, onLeadClick, unr
 
   return (
     <div className="flex-shrink-0 w-[290px]">
-      {/* Sticky header (active actions + title + accent bar) */}
+      {/* Sticky header: title, optional action control and count share one row. */}
       <div className="sticky top-0 z-20 pt-1 pb-0" style={{ background: 'var(--bg)' }}>
-        <StageActionsStrip key={stage.id} stageId={stage.id} stageName={stage.name} locale={t._locale} state={actions.state} onRetry={actions.retry} returnTo={returnTo} />
-        <div className="flex items-center justify-between mb-3 px-1">
-          <div className="flex items-center gap-2.5">
-            <div className="w-2.5 h-2.5 rounded-full" style={{ background: stage.color, boxShadow: `0 0 8px ${stage.color}40` }} />
-            <h3 className="text-[13px] font-bold tracking-tight" style={{ color: 'var(--fg)' }}>{stage.name}</h3>
+        <div className="flex h-6 items-center justify-between gap-2 mb-3 px-1">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="w-2.5 h-2.5 shrink-0 rounded-full" style={{ background: stage.color, boxShadow: `0 0 8px ${stage.color}40` }} />
+            <h3 title={stage.name} className="min-w-0 truncate text-[13px] font-bold tracking-tight" style={{ color: 'var(--fg)' }}>{stage.name}</h3>
+            <StageActionsStrip key={stage.id} stageId={stage.id} stageName={stage.name} locale={t._locale} state={actions.state} onRetry={actions.retry} returnTo={returnTo} />
           </div>
+          <div className="shrink-0">
           <span className="text-[11px] font-extrabold w-6 h-6 rounded-lg flex items-center justify-center"
             style={{ background: `${stage.color}15`, color: stage.color }}>
             {items.length}
           </span>
+          </div>
         </div>
 
         {/* Top accent bar */}
