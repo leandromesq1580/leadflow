@@ -7,6 +7,9 @@ import type { LastFollowUp } from '@/lib/pipeline-follow-ups'
 import { useT } from '@/lib/i18n-client'
 import { StageActionsStrip } from '@/components/pipeline-stage-actions'
 import { useStageActions } from '@/lib/use-stage-actions'
+import { usePipelineOrder } from '@/lib/use-pipeline-order'
+import { orderPipelineCards } from '@/lib/pipeline-ordering'
+import { PipelineOrderControl } from '@/components/pipeline-order-control'
 import { MIcon } from '@/components/mobile/icons'
 import { StageSheet } from '@/components/mobile/stage-sheet'
 import { getInitials, timeAgo } from '@/lib/utils'
@@ -33,6 +36,7 @@ export default function MobilePipeline() {
   const [buyerId, setBuyerId] = useState<string | null>(null)
   const [pipeline, setPipeline] = useState<{ id: string; stages: Stage[] } | null>(null)
   const actions = useStageActions(pipeline?.id ?? null)
+  const order = usePipelineOrder(pipeline?.id ?? null)
   const [cards, setCards] = useState<PLead[] | null>(null)
   const [activeStage, setActiveStage] = useState<string | null>(null)
   const [moveCard, setMoveCard] = useState<PLead | null>(null)
@@ -102,12 +106,13 @@ export default function MobilePipeline() {
     for (const c of cards || []) m[c.stage_id] = (m[c.stage_id] || 0) + 1
     return m
   }, [cards])
-  const shown = (cards || []).filter(c => c.stage_id === activeStage)
+  const shown = orderPipelineCards((cards || []).filter(c => c.stage_id === activeStage), order.effectiveMode, order.dates)
 
   return (
     <div>
-      <div className="m-pad" style={{ paddingTop: 8 }}>
-        <p style={{ margin: '0 0 14px', fontSize: 20, fontWeight: 800 }}>{t.sidebar.pipeline}</p>
+      <div className="m-pad" style={{ paddingTop: 8, paddingBottom: 14, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <p style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>{t.sidebar.pipeline}</p>
+        <PipelineOrderControl order={order} locale={loc} mobile />
       </div>
 
       {/* empty state */}

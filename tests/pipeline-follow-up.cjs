@@ -11,7 +11,7 @@ function load(file, mocks, globals = {}) {
   const loadedModule = { exports: {} };
   vm.runInNewContext(code, { module: loadedModule, exports: loadedModule.exports, console, URL, Response,
     fetch: () => { throw Error('NETWORK FORBIDDEN'); }, ...globals,
-    require: name => { if (Object.hasOwn(mocks, name)) return mocks[name]; if (name === '@/lib/privacy-mode') return { usePrivacy: () => ({ enabled: privacyEnabled }) }; if (['@/lib/pipeline-follow-ups', '@/components/follow-up-badge'].includes(name)) return load('src/' + name.slice(2) + (name.includes('components') ? '.tsx' : '.ts'), mocks); if (name === 'react/jsx-runtime') return req(name); throw Error('Unmocked import: ' + name); }
+    require: name => { if (Object.hasOwn(mocks, name)) return mocks[name]; if (name === '@/lib/privacy-mode') return { usePrivacy: () => ({ enabled: privacyEnabled }) }; if (['@/lib/pipeline-follow-ups', '@/components/follow-up-badge', '@/lib/pipeline-ordering', '@/lib/pipeline-drag-order'].includes(name)) return load('src/' + name.slice(2) + (name.includes('components') ? '.tsx' : '.ts'), mocks); if (name === 'react/jsx-runtime') return req(name); throw Error('Unmocked import: ' + name); }
   }, { filename: file }); return loadedModule.exports;
 }
 const fu = { type: 'call', description: 'Conversei sobre a cobertura.\nEnviar proposta amanhã.', status: 'pending', completed_at: null, scheduled_at: null, created_at: '2026-09-14T14:35:00Z' };
@@ -21,7 +21,7 @@ const stage = { id: pl.stage_id, name: 'Synthetic Stage', color: '#000', positio
 const t = { _locale: 'pt', sidebar: { pipeline: 'Pipeline' }, card: {} };
 // Stage indicators have their own mounted/browser tests; keep this harness focused
 // on follow-up cards and board selection without adding metadata network effects.
-const common = { '@/lib/use-stage-actions': { useStageActions: pipelineId => ({ state: { status: 'loading', pipelineId }, retry() {} }) }, '@/components/pipeline-stage-actions': { StageActionsStrip: () => null }, '@/lib/i18n-client': { useT: () => t }, '@/components/lead-language-badge': { LeadLanguageBadge: () => React.createElement('span', null, 'IDIOMA-SYNTHETIC') } };
+const common = { '@/lib/use-pipeline-order': { usePipelineOrder: () => ({ mode:'newest', effectiveMode:'newest', dates:{}, status:'idle' }) }, '@/components/pipeline-order-control': { PipelineOrderControl: () => null }, '@/lib/use-stage-actions': { useStageActions: pipelineId => ({ state: { status: 'loading', pipelineId }, retry() {} }) }, '@/components/pipeline-stage-actions': { StageActionsStrip: () => null }, '@/lib/i18n-client': { useT: () => t }, '@/components/lead-language-badge': { LeadLanguageBadge: () => React.createElement('span', null, 'IDIOMA-SYNTHETIC') } };
 const { LeadCard } = load('src/app/dashboard/pipeline/lead-card.tsx', { ...common,
   '@dnd-kit/sortable': { useSortable: () => ({ attributes: {}, listeners: {} }) },
   '@dnd-kit/utilities': { CSS: { Transform: { toString: () => undefined } } },
@@ -135,10 +135,10 @@ function loader(file, name, context) {
   const source = fs.readFileSync(root+'/'+file,'utf8');
   const ast = ts.createSourceFile(file,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
   let found;
-  function visit(n) { if(ts.isFunctionDeclaration(n) && n.name?.text===name) found=n; ts.forEachChild(n,visit) }
+  function visit(n) { if((ts.isFunctionDeclaration(n) || ts.isFunctionExpression(n)) && n.name?.text===name) found=n; ts.forEachChild(n,visit) }
   visit(ast); assert.ok(found,`loader ${name} exists`);
-  const code=ts.transpileModule(found.getText(ast),{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
-  return vm.runInNewContext(code+';'+name,context);
+  const code=ts.transpileModule('const '+name+' = '+found.getText(ast),{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
+  return vm.runInNewContext(code+';'+name,{dragOrder:new (load('src/lib/pipeline-drag-order.ts',{}).PipelineDragOrder)(),...context});
 }
 for (const file of ['src/app/m/pipeline/page.tsx','src/app/dashboard/pipeline/page.tsx']) {
   for (const failure of ['http','network','malformed']) test(`${file} preserves previous cards on ${failure} and recovers`, async()=>{
@@ -350,7 +350,7 @@ function pipelinePage() {
   const { default: Page } = load(file, {
     ...common, '@/lib/i18n-client': { useT: () => ({ ...t, pipeline: {} }) },
     react: {
-      useState(initial) { const name = names[si++]; if (!Object.hasOwn(state, name)) state[name] = initial; return [state[name], value => { state[name] = typeof value === 'function' ? value(state[name]) : value; }]; },
+      useState(initial) { const name = names[si++]; if (!Object.hasOwn(state, name)) state[name] = typeof initial === 'function' ? initial() : initial; return [state[name], value => { state[name] = typeof value === 'function' ? value(state[name]) : value; }]; },
       useRef(initial) { const i = ri++; return refs[i] ||= { current: initial }; },
       useEffect() {}, useCallback: fn => fn,
     },
