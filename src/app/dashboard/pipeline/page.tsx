@@ -5,6 +5,10 @@ import { DndContext, DragEndEvent, DragOverEvent, PointerSensor, useSensor, useS
 import { KanbanColumn } from './kanban-column'
 import { useStageActions } from '@/lib/use-stage-actions'
 import { LeadCard } from './lead-card'
+import { orderPipelineCards } from '@/lib/pipeline-ordering'
+import { PipelineDragOrder } from '@/lib/pipeline-drag-order'
+import { usePipelineOrder } from '@/lib/use-pipeline-order'
+import { PipelineOrderControl } from '@/components/pipeline-order-control'
 import { LeadModal } from './lead-modal'
 import { useT } from '@/lib/i18n-client'
 import { useRealtime } from '@/lib/use-realtime'
@@ -41,6 +45,9 @@ export default function PipelinePage() {
   // Espelho do pipeline de um membro do time
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
   const [memberPipeline, setMemberPipeline] = useState<Pipeline | null>(null)
+  const order = usePipelineOrder(view === 'team' ? memberPipeline?.id ?? null : activePipeline?.id ?? null)
+  const [dragOrder] = useState(() => new PipelineDragOrder())
+  const [movePending, setMovePending] = useState(false)
   const ownActions = useStageActions(activePipeline?.id ?? null)
   const memberActions = useStageActions(view === 'team' ? memberPipeline?.id ?? null : null)
   const [memberLeads, setMemberLeads] = useState<PipelineLead[]>([])
@@ -56,6 +63,8 @@ export default function PipelinePage() {
   const [showFilters, setShowFilters] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [pendingPipelineId, setPendingPipelineId] = useState<string | null>(null)
+  const [selectionGeneration, setSelectionGeneration] = useState(0)
+  const selectionGenerationRef = useRef(0)
   const memberRequest = useRef(0)
   const pipelineRequest = useRef<{ pipelineId: string; selecting: boolean } | null>(null)
   const committedPipelineId = useRef(activePipeline?.id ?? null)
@@ -141,7 +150,9 @@ export default function PipelinePage() {
     setLoading(false)
   }
 
-  async function loadLeads(pipeline: Pipeline, selecting = false) {
+  const loadLeads = useCallback(async function loadLeads(pipeline: Pipeline, selecting = false) {
+    const readVersion = dragOrder.requestVersion()
+    if (!dragOrder.accept(readVersion)) return
     // Poll/realtime/modal callbacks from the old board cannot cancel a selection
     // or switch back after it commits. Explicit selections always start a new token,
     // including A -> B -> A -> B: comparing pipeline IDs alone is not sufficient.
@@ -149,13 +160,22 @@ export default function PipelinePage() {
     if (!selecting && previous && (previous.selecting || previous.pipelineId !== pipeline.id)) return
     const request = { pipelineId: pipeline.id, selecting }
     pipelineRequest.current = request
-    if (selecting) setPendingPipelineId(pipeline.id)
+    if (selecting) {
+      // Invalidate even a pointer-down that has not activated its sensor yet.
+      setSelectionGeneration(++selectionGenerationRef.current)
+      setPendingPipelineId(pipeline.id)
+    }
     try {
       const r = await fetch(`/api/pipelines/${pipeline.id}/leads`, { cache: 'no-store' })
       if (!r.ok) throw new Error('Pipeline load failed')
       const d = await r.json()
       if (!Array.isArray(d.leads)) throw new Error('Pipeline load failed')
       if (request !== pipelineRequest.current) return
+      if (!dragOrder.accept(readVersion)) {
+        // A read begun before/during drag can never restore a deliberately moved stage.
+        if (!dragOrder.active) void loadLeads(pipeline, selecting)
+        return
+      }
       request.selecting = false
       committedPipelineId.current = pipeline.id
       // One state update keeps the column identity and its cards indivisible.
@@ -170,7 +190,7 @@ export default function PipelinePage() {
         setLoadError(true)
       }
     }
-  }
+  }, [dragOrder])
 
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({})
   async function loadUnreadCounts() {
@@ -210,7 +230,7 @@ export default function PipelinePage() {
       loadLeads(activePipeline)
     }, 60000)
     return () => clearInterval(iv)
-  }, [activePipeline, view, activeCard, selectedLead])
+  }, [activePipeline, view, activeCard, selectedLead, loadLeads])
 
   // Realtime: quando entra lead novo NA pipeline (INSERT em pipeline_leads),
   // recarrega imediatamente — nao precisa F5
@@ -306,22 +326,22 @@ export default function PipelinePage() {
   }).length
 
   const getStageLeads = useCallback((stageId: string) => {
-    // Ordem por IDADE DO LEAD — mais recente (lead.created_at) no topo.
-    return filteredLeads
-      .filter(l => l.stage_id === stageId)
-      .sort((a, b) => {
-        const ac = a.lead?.created_at ? new Date(a.lead.created_at).getTime() : 0
-        const bc = b.lead?.created_at ? new Date(b.lead.created_at).getTime() : 0
-        return bc - ac
-      })
-  }, [filteredLeads])
+    const cards = filteredLeads.filter(l => l.stage_id === stageId)
+    return dragOrder.sort(cards) ?? orderPipelineCards(cards, order.effectiveMode, order.dates)
+  }, [filteredLeads, dragOrder, order.effectiveMode, order.dates])
 
   function handleDragStart(event: DragStartEvent) {
     const item = leads.find(l => l.id === event.active.id)
-    setActiveCard(item || null)
+    // Refs close the pre-render gap; state/generation reject callbacks retained
+    // by an old sensor even if the selected board has already finished loading.
+    if (!item || movePending || pendingPipelineId || pipelineRequest.current?.selecting
+      || selectionGeneration !== selectionGenerationRef.current) return
+    dragOrder.start(orderPipelineCards(filteredLeads, order.effectiveMode, order.dates))
+    setActiveCard(item)
   }
 
   function handleDragOver(event: DragOverEvent) {
+    if (movePending || !activeCard) return
     const { active, over } = event
     if (!over) return
     const activeItem = leads.find(l => l.id === active.id)
@@ -339,16 +359,37 @@ export default function PipelinePage() {
     }
   }
 
-  async function handleDragEnd(event: DragEndEvent) {
+  function handleDragCancel() {
+    if (movePending) return
+    if (activeCard) setLeads(prev => prev.map(l => l.id === activeCard.id ? { ...l, stage_id: activeCard.stage_id } : l))
+    const refresh = dragOrder.release()
     setActiveCard(null)
-    const { active } = event
-    const item = leads.find(l => l.id === active.id)
-    if (!item) return
-    await fetch(`/api/pipeline-leads/${item.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stage_id: item.stage_id, position: 0 }),
-    })
+    if (refresh && activePipeline) void loadLeads(activePipeline)
+  }
+
+  async function handleDragEnd(event: DragEndEvent) {
+    if (movePending) return
+    const item = leads.find(l => l.id === event.active.id)
+    if (!event.over || !item || !activeCard || item.stage_id === activeCard.stage_id) { handleDragCancel(); return }
+    const original = activeCard
+    setActiveCard(null)
+    setMovePending(true)
+    try {
+      const response = await fetch(`/api/pipeline-leads/${item.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage_id: item.stage_id, position: 0 }),
+      })
+      if (!response.ok) throw new Error('Move failed')
+    } catch {
+      setLeads(prev => prev.map(l => l.id === original.id ? { ...l, stage_id: original.stage_id } : l))
+      setLoadError(true)
+    } finally {
+      // Do not apply deferred payloads: they precede the completed PATCH.
+      dragOrder.release()
+      setMovePending(false)
+      if (activePipeline) void loadLeads(activePipeline)
+    }
   }
 
   // Empty state — no pipelines
@@ -403,7 +444,7 @@ export default function PipelinePage() {
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{t.sidebar.pipeline}</h1>
             {pipelines.length > 1 && (
-              <select value={pendingPipelineId ?? activePipeline?.id ?? ''} onChange={e => {
+              <select disabled={!!activeCard || movePending} value={pendingPipelineId ?? activePipeline?.id ?? ''} onChange={e => {
                 const p = pipelines.find(pp => pp.id === e.target.value)
                 if (p) loadLeads(p, true)
               }}
@@ -473,8 +514,9 @@ export default function PipelinePage() {
       {/* Team view — espelho do pipeline do membro selecionado */}
       {view === 'team' && isAgency && (
         <div className="mb-6">
-          {/* Tabs dos membros */}
-          <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2">
+          {/* Tabs dos membros e ordenação compartilham a linha quando couber. */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pb-2">
             {teamMembers.filter(m => m.is_active).map(member => {
               const mLeadsCount = teamLeads.filter((l: any) => l.assigned_to_member === member.id).length
               const isSelected = selectedMemberId === member.id
@@ -506,6 +548,8 @@ export default function PipelinePage() {
                 {L('Nenhum membro ativo.', 'No active members.', 'Ningún miembro activo.')} <Link href="/dashboard/team" className="font-bold" style={{ color: 'var(--accent)' }}>{L('Adicionar membro →', 'Add member →', 'Agregar miembro →')}</Link>
               </p>
             )}
+          </div>
+          <PipelineOrderControl order={order} locale={t._locale} />
           </div>
 
           {/* Pipeline espelhado do membro */}
@@ -546,7 +590,7 @@ export default function PipelinePage() {
                       stage={stage}
                       actions={memberActions}
                       returnTo={`/dashboard/pipeline?pipeline=${memberPipeline.id}`}
-                      items={memberLeads.filter(l => l.stage_id === stage.id) as any}
+                      items={orderPipelineCards(memberLeads.filter(l => l.stage_id === stage.id), order.effectiveMode, order.dates) as any}
                       onLeadClick={(item) => setSelectedLead(item as any)}
                       unreadCounts={unreadCounts}
                       teamMembers={isAgency ? teamMembers : undefined}
@@ -568,14 +612,17 @@ export default function PipelinePage() {
 
       {view === 'mine' && <>
       {/* Filters */}
-      <div className="rounded-xl mb-5 overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-        <div className="flex items-center justify-between px-4 py-2.5">
+      <div className="rounded-xl mb-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
           <button onClick={() => setShowFilters(!showFilters)}
             className="flex items-center gap-2 text-[12px] font-bold" style={{ color: showFilters ? 'var(--accent)' : 'var(--fg-muted)' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
             {t.pipeline.filters}
             {hasFilters && <span className="w-2 h-2 rounded-full" style={{ background: 'var(--accent)' }} />}
           </button>
+          <PipelineOrderControl order={order} locale={t._locale} disabled={!!activeCard || movePending} />
+          </div>
           <div className="flex items-center gap-3">
             {hasFilters && (
               <button onClick={() => { setSearch(''); setFilterStage(''); setFilterDate(''); setFilterDateFrom(''); setFilterDateTo(''); setClosedOnly(false); setStaleOnly(false) }}
@@ -661,11 +708,13 @@ export default function PipelinePage() {
       {/* Kanban Board */}
       <div className="overflow-auto pb-2 -mx-4 px-4" style={{ scrollbarWidth: 'thin', height: 'calc(100vh - 260px)', minHeight: 500 }}>
         <DndContext
+          key={`${activePipeline?.id}:${selectionGeneration}:${pendingPipelineId ?? ''}`}
           sensors={sensors}
           collisionDetection={closestCorners}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
         >
           <div className="flex gap-4" style={{ minWidth: (activePipeline?.stages.length || 1) * 306 }}>
             {activePipeline?.stages.map(stage => (

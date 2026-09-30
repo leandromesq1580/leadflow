@@ -86,6 +86,7 @@ try {
    if(url.pathname==='/api/sequences')return route.fulfill({json:{buyer_id:'owner',sequences:[seq,activeSeq],templates:[],pipelines:[]}})
    if(url.pathname==='/api/automations')return route.fulfill({json:{buyer_id:'owner',automations:[auto]}})
    if(url.pathname==='/api/templates')return route.fulfill({json:{templates:[]}})
+   if(url.pathname==='/api/pipeline/conversation-order')return route.fulfill({json:{buyer_id:one}})
    if(url.pathname==='/api/m/team-context')return route.fulfill({json:{buyer_id:'owner'}})
    if(url.pathname==='/api/whatsapp/unread')return route.fulfill({json:{total:0,by_lead:{}}})
    if(url.pathname==='/api/settings')return route.fulfill({json:{id:'owner',is_agency:true}})
