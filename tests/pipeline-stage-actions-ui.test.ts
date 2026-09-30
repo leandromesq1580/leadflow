@@ -21,12 +21,30 @@ function component() {
 }
 const item = (enabled: boolean,id='item') => ({id,name:'Named action',enabled})
 const ready = {status:'ready',pipelineId:'pipe',stages:[{id:'stage',sequences:[item(true,'a'),item(true,'b'),item(false,'c')],automations:[]}]}
-test('real strip renders counts, explicit none and direct item edit links in PT/EN/ES',()=>{
+test('real strip renders only active counts, details and exact edit links in PT/EN/ES',()=>{
  const C=component()
- for (const [locale,count,none] of [['pt','2 ativas · 1 inativa','Nenhuma'],['en','2 active · 1 inactive','None'],['es','2 activas · 1 inactiva','Ninguna']]) {
+ for (const [locale,count,none,inactive] of [['pt','2 ativas','Nenhuma','inativa'],['en','2 active','None','inactive'],['es','2 activas','Ninguna','inactiva']]) {
   const html=renderToStaticMarkup(React.createElement(C,{stageId:'stage',stageName:'Novo',state:ready,locale,returnTo:'/m/pipeline'}))
-  assert.ok(html.includes(count));assert.ok(html.includes(none));assert.ok(html.includes('<summary'))
-  assert.ok(html.includes('edit=a'));assert.ok(html.includes('returnTo=%2Fm%2Fpipeline'));assert.ok(!html.includes('checkbox'))
+  assert.ok(html.includes(count));assert.ok(!html.includes(none));assert.ok(!html.includes(inactive))
+  assert.equal((html.match(/<summary/g)||[]).length,1,'empty automation group is absent')
+  assert.ok(html.includes('edit=a'));assert.ok(html.includes('edit=b'));assert.ok(!html.includes('edit=c'))
+  assert.ok(html.includes('/m/sequences?'));assert.ok(html.includes('returnTo=%2Fm%2Fpipeline'));assert.ok(!html.includes('checkbox'))
+ }
+})
+test('both groups exclude inactive details and preserve exact desktop IDs without mutating metadata',()=>{
+ const C=component()
+ const state={...ready,stages:[{id:'stage',sequences:[item(false,'disabled-seq')],automations:[item(false,'disabled-auto'),item(true,'active-auto')]}]}
+ const before=JSON.stringify(state)
+ const html=renderToStaticMarkup(React.createElement(C,{stageId:'stage',stageName:'Novo',state,locale:'en',returnTo:'/dashboard/pipeline?pipeline=11111111-1111-1111-1111-111111111111'}))
+ assert.ok(html.includes('Automation'));assert.ok(!html.includes('Sequence'))
+ assert.ok(html.includes('/dashboard/automations?edit=active-auto&amp;returnTo=%2Fdashboard%2Fpipeline%3Fpipeline%3D11111111-1111-1111-1111-111111111111'))
+ assert.ok(!html.includes('disabled-'));assert.equal(JSON.stringify(state),before)
+})
+test('empty and inactive-only real strips render no element or reserved space',()=>{
+ const C=component()
+ for (const locale of ['pt','en','es']) for(const items of [[],[item(false)]]) {
+  const state={...ready,stages:[{id:'stage',sequences:items,automations:items}]}
+  assert.equal(renderToStaticMarkup(React.createElement(C,{stageId:'stage',stageName:'Novo',state,locale})), '')
  }
 })
 test('loading, failure, restricted and unknown stage are not empty states or edit links',()=>{
@@ -34,6 +52,8 @@ test('loading, failure, restricted and unknown stage are not empty states or edi
  for (const status of ['loading','error','restricted','ready']) {
   const html=renderToStaticMarkup(React.createElement(C,{stageId:'missing',stageName:'Novo',state:{...ready,status},locale:'pt'}))
   assert.ok(!html.includes('Nenhuma'));assert.ok(!html.includes('edit='));assert.ok(!html.includes('Named action'))
+  assert.equal((html.match(/role="status"/g)||[]).length,1,'one compact metadata status, not fictional action groups')
+  assert.ok(!html.includes('Sequência ·'));assert.ok(!html.includes('Automação ·'))
   assert.ok(html.includes(status==='loading'?'Carregando':status==='restricted'?'Somente o dono':'Indisponível'))
  }
 })

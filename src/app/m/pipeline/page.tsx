@@ -129,6 +129,9 @@ export default function MobilePipeline() {
       {/* stage selector */}
       {!noPipeline && pipeline && cards && (
         <>
+          <div className="m-pad">
+            {activeStage && <StageActionsStrip key={activeStage} stageId={activeStage} stageName={stages.find(s=>s.id===activeStage)?.name || ''} locale={loc} state={actions.state} onRetry={actions.retry} returnTo="/m/pipeline" />}
+          </div>
           <div className="m-pad" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 14 }}>
             {stages.map(s => (
               <span key={s.id} className={`m-chip m-tap${activeStage === s.id ? ' on' : ''}`} onClick={() => setActiveStage(s.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
@@ -140,7 +143,6 @@ export default function MobilePipeline() {
           </div>
 
           <div className="m-pad">
-            {activeStage && <StageActionsStrip key={activeStage} stageId={activeStage} stageName={stages.find(s=>s.id===activeStage)?.name || ''} locale={loc} state={actions.state} onRetry={actions.retry} returnTo="/m/pipeline" />}
             {shown.length === 0
               ? <p className="m-muted" style={{ textAlign: 'center', paddingTop: 30, fontSize: 14 }}>{L('Nenhum lead nesta etapa.', 'No leads in this stage.', 'Sin leads en esta etapa.')}</p>
               : shown.map(c => (
