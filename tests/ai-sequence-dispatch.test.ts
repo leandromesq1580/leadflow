@@ -5,7 +5,7 @@ import { transpileModule,ModuleKind,ScriptTarget } from 'typescript'
 import { nextSendAt,validateAIConfig,defaultAIConfig } from '../src/lib/ai-sequence-config'
 function load(rows:unknown[],matches:unknown[]=[]){
  const updates:unknown[]=[];const ai:string[]=[];const rpc:string[]=[]
- const db={rpc:async(name:string)=>{rpc.push(name);return {data:{id:'new'},error:null}},from:(table:string)=>{
+ const db={rpc:async(name:string)=>{rpc.push(name);return {data:name==='claim_legacy_sequence'?[{id:'old',current_step:0,lease_token:'fixture'}]:name==='begin_sequence_batch'?{allowed:true}:name==='finish_sequence_batch'?true:{id:'new'},error:null}},from:(table:string)=>{
   const value=table==='sequence_enrollments'?rows:table==='sequences'?matches:table==='sequence_steps'?[{step_type:'wait',delay_hours:0}]:[]
   const q={select:()=>q,eq:()=>q,lte:()=>q,order:()=>q,limit:()=>q,maybeSingle:async()=>({data:value[0]}),update:(v:unknown)=>{updates.push(v);return q},insert:()=>{throw Error('Unexpected legacy insert')},then:(resolve:(v:unknown)=>void)=>resolve({data:value,error:null})};return q
  }}
@@ -24,7 +24,8 @@ test('cron and inline dispatch AI separately while legacy finite wait completes'
   const f=load([{id:'ai',mode:'ai_until_reply'},{id:'old',mode:'legacy',current_step:0,next_run_at:new Date(0).toISOString()}])
   await f.exports[fn]('lead')
   assert.deepEqual(f.ai,['ai'])
-  assert.ok(f.updates.some((v:unknown)=>(v as {status:string}).status==='completed'))
+  assert.deepEqual(f.rpc,['claim_legacy_sequence','begin_sequence_batch','finish_sequence_batch'])
+  assert.equal(f.updates.length,0)
  }
 })
 test('stage auto-enrollment uses guarded SQL for AI, never legacy reactivation',async()=>{

@@ -73,6 +73,73 @@ localhost, cancelar, retry, duplo clique, falha de reload, IA completa e multist
 O browser reutiliza o entry/harness da experiência IA e recebe `PLAYWRIGHT_MODULE`
 apontando para uma instalação local existente. Fixtures não comprovam produção.
 
+## Lotes compartilhados por remetente — implementação local 30/09/2026
+
+Migration aditiva `054_sequence_batch_pacing.sql`, para instalar **antes** do novo web.
+Não ativa, reprograma, inscreve ou limpa dados existentes. RPCs 052/053 permanecem
+compatíveis durante rollout; `resolved_at` e os bloqueios persistentes são preservados.
+O teto só vale quando **todos os executores antigos tiverem sido drenados**: a migration
+não pode impor cota ao web antigo que não conhece o protocolo. Não revogar RPCs em
+pleno rollout; deploy/rollback para executor antigo volta a não garantir este teto.
+
+- Até dez admissões de WhatsApp automático de sequências, somando IA e tradicional,
+  por telefone canônico retornado pelo `/status` autenticado da bridge própria.
+  URLs e compradores distintos com o mesmo telefone compartilham a linha SQL.
+  Identidade ausente/divergente aguarda sem fallback global. Cadastro sem telefone
+  é permitido somente quando `/status` identifica o telefone real.
+- Reserva e início ocorrem na mesma transação (`begin_sequence_batch`), com relógio
+  SQL, token/lease, estado, propriedade, suppressions/STOP e janela revalidados.
+  Lease/janela são rechecados também depois da espera pelo lock do remetente.
+- A décima admissão fecha o lote; cooldown mínimo de cinco minutos é prolongado
+  até cinco minutos após a última confirmação de membro ainda em voo desse lote.
+  Lote parcial reinicia depois de cinco minutos sem reservas, se nenhum envio está
+  em voo. Não é janela móvel de contagem histórica. Uma reserva ambígua não é devolvida.
+- `preflight_sequence_batch` evita geração IA durante cooldown conhecido, mas não
+  autoriza transporte. A autorização final repete a reserva atômica após gerar.
+- `wait_sequence_batch` mantém passo/estado, devolve a tentativa do claim, limpa lease,
+  mantém geração idle e persiste `next_run_at`, ajustando à próxima janela IA.
+  A fila é consultada por vencimento e ID; não há sleep nem promessa de ordem FIFO
+  estrita entre processos independentes ou entre os dois crons.
+- Cron, inline e `admin/force-sequence-step` convergem nos mesmos executores. Admin
+  não antecipa vencimento, não reativa parados, não ignora STOP. Legado ganha claim
+  único antes de qualquer transporte e avança somente no finish confirmado, inclusive
+  último passo. Email/wait/notify não consomem lote; manual, grupo e outras automações
+  não passam pela nova cota. `send-guard` histórico continua separado e inalterado.
+- Ledger durável usa `(enrollment_id, enrolled_at, current_step)` e token único.
+  `finish_sequence_batch` é idempotente para token já confirmado e não ressuscita STOP.
+  Timeout/ACK ausente/falha de persistência após begin vira unknown, sem retry automático.
+  Cada dispatch tem `expires_at` persistente de dois minutos. `preflight`/`begin`
+  colocam dispatches vencidos em unknown, inclusive após STOP ou exclusão, preservando
+  registros e impondo cinco minutos de quarentena ao remetente (também lote parcial).
+  Depois a fila dos demais contatos pode continuar; o contato ambíguo não é reenviado
+  nem reativado. Cleanup bloqueia ledger antes de sender e nunca altera enrollment
+  ou suppression; confirmação depois do deadline/quarentena não avança o passo.
+
+**Limite físico:** a bridge não recebe chave idempotente e `/send` não faz parte da
+transação SQL. O protocolo limita admissões, não prova exactly-once nem intervalo
+físico entre entregas WhatsApp: um processo pode parar depois da autorização e antes
+da chamada de rede. Timeout de transporte e lease reduzem a exposição, não eliminam
+esse intervalo. Nenhuma infraestrutura/bridge foi modificada ou reiniciada.
+
+**Contrato interno (service_role, RLS nos dois novos ledgers):**
+`claim_ai_sequence(id)` / `claim_legacy_sequence(id)` → lease;
+`preflight_sequence_batch(id,token,sender)` → boolean advisory;
+`begin_sequence_batch(id,token,sender,body)` → `{allowed,next?}`;
+`finish_sequence_batch(id,token,wa,choice,next,from,to)` → boolean;
+`wait_sequence_batch(id,token,next,reason)` e
+`defer_sequence_batch(id,token,reason,next,unknown)` → void.
+Sender null só para passos não WhatsApp; IA não pode usar null para furar a cota.
+Ordem de locks começa por enrollment, preservando enrollment→suppression.
+
+Testes locais: `tests/sequence-batch-sql.test.cjs` executa 006/052/053/054 em PGlite
+com fixtures, sem banco externo; cobre décimo primeiro, compradores compartilhados,
+dois números, cooldown/reset parcial, tentativa três em espera, finish duplo,
+STOP/ownership/lease expirada, unknown e último wait sem cota. Testes TypeScript
+exercitam executores e identidade com IO injetado. PGlite **não** comprova concorrência
+multissessão. Logs RED e GREEN preservados em
+`/home/hermes/.hermes/profiles/lead4pro/cache/scratch/batch-pacing/`.
+Revisão independente, PostgreSQL multissessão e gate de publicação pertencem ao pai.
+
 ## Contrato
 
 - `sequences.mode`: `legacy` (padrão) ou `ai_until_reply`, imutável após criação. Inscrições também guardam o modo; não há conversão ou inscrição retroativa.

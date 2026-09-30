@@ -6,6 +6,7 @@ import * as locale from '../src/lib/lead-message-locale'
 import * as templates from '../src/lib/lead-message-template'
 import * as systemTemplates from '../src/lib/system-template-i18n'
 import * as renderer from '../src/lib/template-render'
+import * as batch from '../src/lib/sequence-batch'
 
 type Query = { table: string; calls: [string, ...any[]][] }
 function database(resolve: (query: Query) => any) {
@@ -127,11 +128,13 @@ for (const engine of ['automation', 'sequence']) {
           if (q.table === 'follow_ups' || q.table === 'whatsapp_messages') return { data: null }
           throw new Error(`Unexpected query ${q.table}`)
         })
+        Object.assign(db,{rpc:async(name:string)=>({data:name==='claim_legacy_sequence'?[{...enr,lease_token:'fixture'}]:name==='begin_sequence_batch'?{allowed:true}:true,error:null})})
         const sends: any[] = []
         const oldKey = process.env.RESEND_API_KEY
         process.env.RESEND_API_KEY = 'fixture'
         t.after(() => { if (oldKey === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = oldKey })
         t.mock.method(globalThis, 'fetch', async (url: string, options: any) => {
+          if(url==='https://bridge.example.invalid/status')return Response.json({ready:true,phone:'14075550101'})
           assert.equal(url, 'https://bridge.example.invalid/send')
           sends.push(JSON.parse(options.body))
           return Response.json({ id: 'wa-fixture' })
@@ -142,7 +145,8 @@ for (const engine of ['automation', 'sequence']) {
           '@/lib/system-template-i18n': systemTemplates,
           '@/lib/lead-message-locale': locale,
           '@/lib/lead-message-template': templates,
-          '@/lib/wa-bridge': { resolveSendBridge: async () => ({ url: 'https://bridge.example.invalid', key: 'fixture', phone: '14075550101' }) },
+          './sequence-batch': batch,
+          '@/lib/wa-bridge': { getBridgeForBuyer: async () => ({ url: 'https://bridge.example.invalid', key: 'fixture', phone: '14075550101',ownerBuyerId:'buyer' }), resolveSendBridge: async () => ({ url: 'https://bridge.example.invalid', key: 'fixture', phone: '14075550101' }) },
           '@/lib/send-guard': { checkSendRate: async () => ({ ok: true }) },
           '@/lib/buyer-locale': { localeDoBuyer: async () => { throw new Error('Customer send must never consult producer locale') } },
           resend: { Resend: class { emails = { send: async (message: any) => { sends.push(message); return { data: { id: 'email-fixture' } } } } } },

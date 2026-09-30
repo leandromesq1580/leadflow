@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { renderTemplate } from '@/lib/template-render'
-import { resolveSendBridge } from '@/lib/wa-bridge'
+import { getBridgeForBuyer } from '@/lib/wa-bridge'
+import { SequenceWaiting, verifiedSequenceBridge } from './sequence-batch'
 import { checkSendRate } from '@/lib/send-guard'
 import { Resend } from 'resend'
 import { localeDoBuyer, trad } from '@/lib/buyer-locale'
@@ -102,6 +103,7 @@ export async function processSequencesForLead(leadId: string): Promise<number> {
     .eq('status', 'active')
     .eq('lead_id', leadId)
     .lte('next_run_at', now)
+    .order('next_run_at').order('id')
     .limit(50)
 
   if (!due || due.length === 0) return 0
@@ -116,61 +118,8 @@ export async function processSequencesForLead(leadId: string): Promise<number> {
       catch { console.warn('[sequence] AI processing withheld: storage unavailable') }
       continue
     }
-    try {
-      const { data: steps } = await db
-        .from('sequence_steps')
-        .select('*')
-        .eq('sequence_id', enr.sequence_id)
-        .order('step_order')
-      if (!steps || steps.length === 0) {
-        await db.from('sequence_enrollments').update({ status: 'completed', completed_at: now }).eq('id', enr.id)
-        continue
-      }
-      const step = steps[enr.current_step]
-      if (!step) {
-        await db.from('sequence_enrollments').update({ status: 'completed', completed_at: now }).eq('id', enr.id)
-        continue
-      }
-      // 🔒 AVANÇA O PONTEIRO ANTES DE ENVIAR (mesma corrida do automation-engine,
-      // provada em 2026-07-31): antes enviava e só depois marcava o passo — duas
-      // execuções paralelas do cron pegavam o mesmo enrollment e ambas enviavam.
-      // O update condicional (current_step = valor lido) é o lock: quem perder a
-      // corrida afeta 0 linhas e PULA sem enviar.
-      const nextIdx = enr.current_step + 1
-      const isLast = nextIdx >= steps.length
-      const patch = isLast
-        ? { status: 'completed', completed_at: now }
-        : (() => {
-            const nextStep = steps[nextIdx]
-            const prevScheduled = new Date(enr.next_run_at).getTime()
-            return { current_step: nextIdx, next_run_at: new Date(prevScheduled + nextStep.delay_hours * 3600_000).toISOString() }
-          })()
-      const { data: claimed } = await db.from('sequence_enrollments')
-        .update(patch)
-        .eq('id', enr.id)
-        .eq('current_step', enr.current_step)
-        .eq('status', 'active')
-        .select('id')
-      if (!claimed || claimed.length === 0) {
-        console.log(`[sequence] corrida evitada: enrollment ${enr.id} já processado por outra execução`)
-        continue
-      }
-      await executeStep(step, enr)
-      processed++
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : ''
-      console.error(`[processSequencesForLead ${enr.id}] err:`, msg)
-      // Mesma regra do processSequences: erro permanente -> stop, transitorio -> retry
-      if (/no\s*lid|nao\s*tem\s*whatsapp/i.test(msg)) {
-        await db.from('sequence_enrollments').update({
-          status: 'stopped',
-          completed_at: new Date().toISOString(),
-        }).eq('id', enr.id)
-      } else {
-        const retry = new Date(Date.now() + 3600_000).toISOString()
-        await db.from('sequence_enrollments').update({ next_run_at: retry }).eq('id', enr.id)
-      }
-    }
+    try { if (await runLegacyEnrollment(enr.id, db)) processed++ }
+    catch { console.warn('[sequence] Legacy execution withheld') }
   }
   return processed
 }
@@ -228,7 +177,7 @@ export async function processSequences(options: { mode?: 'legacy' | 'ai_until_re
     .lte('next_run_at', now)
   // Filter in SQL BEFORE the limit so a backlog of the other mode cannot starve this run.
   if (options.mode) query = query.eq('mode', options.mode)
-  const { data: due } = await query.order('next_run_at').limit(200)
+  const { data: due } = await query.order('next_run_at').order('id').limit(200)
 
   if (!due || due.length === 0) return { processed: 0, failed: 0 }
 
@@ -243,78 +192,58 @@ export async function processSequences(options: { mode?: 'legacy' | 'ai_until_re
       catch { console.warn('[sequence] AI processing withheld: storage unavailable') }
       continue
     }
-    try {
-      // Get step at current_step index
-      const { data: steps } = await db
-        .from('sequence_steps')
-        .select('*')
-        .eq('sequence_id', enr.sequence_id)
-        .order('step_order')
-
-      if (!steps || steps.length === 0) {
-        await db.from('sequence_enrollments').update({ status: 'completed', completed_at: now }).eq('id', enr.id)
-        continue
-      }
-
-      const step = steps[enr.current_step]
-      if (!step) {
-        await db.from('sequence_enrollments').update({ status: 'completed', completed_at: now }).eq('id', enr.id)
-        continue
-      }
-
-      await executeStep(step, enr)
-
-      // Move to next step.
-      // IMPORTANTE: `nextAt` e calculado a partir do `enr.next_run_at` ANTERIOR
-      // (horario que ESTE step estava agendado), NAO de Date.now(). Assim cada
-      // lead mantem sua propria linha do tempo baseada em quando entrou no stage,
-      // mesmo que o cron processe varios leads no mesmo run. Antes usava
-      // Date.now() e sincronizava todos os leads no mesmo horario.
-      const nextIdx = enr.current_step + 1
-      if (nextIdx >= steps.length) {
-        await db.from('sequence_enrollments').update({ status: 'completed', completed_at: now }).eq('id', enr.id)
-      } else {
-        const nextStep = steps[nextIdx]
-        const prevScheduled = new Date(enr.next_run_at).getTime()
-        const nextAt = new Date(prevScheduled + nextStep.delay_hours * 3600_000).toISOString()
-        await db.from('sequence_enrollments').update({ current_step: nextIdx, next_run_at: nextAt }).eq('id', enr.id)
-      }
-      processed++
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : ''
-      console.error(`[Sequence ${enr.id}] Error:`, msg)
-      // Erro PERMANENTE do wa-bridge (numero sem WhatsApp) -> stop, nao retry
-      // infinito. Sem esse check, lead sem WhatsApp gera retry +1h forever
-      // toda vez que o cron roda -> log poluido de failed:1 + carga no
-      // wa-bridge. Aplicado a 'No LID' e 'nao tem WhatsApp' (que e o que
-      // o wa-bridge retorna como 404 quando o numero nao esta no WhatsApp).
-      if (/no\s*lid|nao\s*tem\s*whatsapp/i.test(msg)) {
-        await db.from('sequence_enrollments').update({
-          status: 'stopped',
-          completed_at: now,
-        }).eq('id', enr.id)
-      } else {
-        // Erro transitório (timeout, bridge offline, etc) -> retry em 1h
-        const retry = new Date(Date.now() + 3600_000).toISOString()
-        await db.from('sequence_enrollments').update({ next_run_at: retry }).eq('id', enr.id)
-      }
-      failed++
-    }
+    try { if (await runLegacyEnrollment(enr.id, db)) processed++ }
+    catch { failed++ }
   }
 
   return { processed, failed }
 }
 
-async function executeStep(step: { step_type: string; template_id?: string | null; custom_body?: string | null; step_order: number }, enr: { buyer_id: string; lead_id: string }): Promise<void> {
-  const db = createAdminClient()
+type LegacyEnrollment = { id:string; buyer_id:string; lead_id:string; sequence_id:string; current_step:number; lease_token:string }
+type Receipt = {id:string;from:string;to:string}
+type Db = ReturnType<typeof createAdminClient>
+async function sequenceRpc(db:Db,name:string,args:Record<string,unknown>) {
+  const {data,error}=await db.rpc(name,args)
+  if(error)throw new Error('Sequence storage unavailable')
+  return data
+}
+/** Shared by cron, inline and administrative execution. Never advances on waiting. */
+export async function runLegacyEnrollment(id:string,db:Db=createAdminClient()):Promise<boolean> {
+  const e:LegacyEnrollment|undefined=(await sequenceRpc(db,'claim_legacy_sequence',{p_id:id}))?.[0]
+  if(!e)return false
+  let sending=false
+  try {
+    const {data:steps,error}=await db.from('sequence_steps').select('*').eq('sequence_id',e.sequence_id).order('step_order')
+    if(error)throw new Error('Steps unavailable')
+    const begin=async(sender:string|null,body:string)=>{
+      const result=await sequenceRpc(db,'begin_sequence_batch',{p_id:id,p_token:e.lease_token,p_sender:sender,p_body:body})
+      if(!result?.allowed)throw new SequenceWaiting()
+      sending=true
+    }
+    const step=steps?.[e.current_step]
+    const receipt=step ? await executeStep(step,e,begin,db) : (await begin(null,''),null)
+    if(!await sequenceRpc(db,'finish_sequence_batch',{p_id:id,p_token:e.lease_token,p_wa:receipt?.id||'',p_choice:'',p_next:new Date().toISOString(),p_from:receipt?.from||'',p_to:receipt?.to||''}))throw new Error('Confirmation not persisted')
+    return true
+  }catch(error){
+    const waiting=!sending && error instanceof SequenceWaiting
+    await sequenceRpc(db,waiting?'wait_sequence_batch':'defer_sequence_batch',{
+      p_id:id,p_token:e.lease_token,p_reason:sending?'delivery_unknown':waiting?'batch_wait':'execution_failed',
+      p_next:new Date(Date.now()+300000).toISOString(),...(waiting?{}:{p_unknown:sending}),
+    })
+    if(!waiting)throw error
+    return false
+  }
+}
+async function executeStep(step: { step_type: string; template_id?: string | null; custom_body?: string | null; step_order: number }, enr: LegacyEnrollment, begin:(sender:string|null,body:string)=>Promise<void>,db:Db): Promise<Receipt|null> {
 
-  if (step.step_type === 'wait') return
+  if (step.step_type === 'wait') { await begin(null,''); return null }
 
   if (step.step_type === 'notify_agent') {
     const { data: agent } = await db.from('buyers').select('email, name').eq('id', enr.buyer_id).single()
     const { data: lead } = await db.from('leads').select('name, phone, email').eq('id', enr.lead_id).single()
     const resendKey = (process.env.RESEND_API_KEY || '').trim()
-    if (!agent?.email || !resendKey) return
+    if (!agent?.email || !resendKey) throw new Error('Notification unavailable')
+    await begin(null,'')
     const resend = new Resend(resendKey)
     const loc = await localeDoBuyer(db, enr.buyer_id)
     const T = trad(loc)
@@ -328,7 +257,7 @@ async function executeStep(step: { step_type: string; template_id?: string | nul
         `<p>Es hora de llamar a <b>${lead?.name}</b> (${lead?.phone || lead?.email}).</p><p><a href="https://lead4producers.com/dashboard/pipeline">Abrir flujo de ventas →</a></p>`,
       ),
     })
-    return
+    return null
   }
 
   // send_template
@@ -337,7 +266,7 @@ async function executeStep(step: { step_type: string; template_id?: string | nul
   if (!lead || !agent) throw new Error('Lead or agent missing')
   const loc = requireLeadMessageLocale(lead)
   // Comprador suspenso: não dispara mensagem (sequência fica parada até reativar)
-  if (agent.is_active === false) { console.log(`[Sequence] buyer ${enr.buyer_id} suspenso — skip`); return }
+  if (agent.is_active === false) throw new SequenceWaiting()
 
   let body = ''
   let type: 'whatsapp' | 'email' = 'whatsapp'
@@ -357,37 +286,33 @@ async function executeStep(step: { step_type: string; template_id?: string | nul
     throw new Error('Step has no template or custom_body')
   }
 
+  let receipt:Receipt|null=null
   if (type === 'whatsapp') {
     if (!lead.phone) throw new Error('No phone')
     // Envia pela bridge do DONO do lead (não pela global/Regiane)
     // 🛑 LIMITADOR por conta — sequência também respeita o teto (2026-07-31)
     const rate = await checkSendRate(db, enr.buyer_id)
-    if (!rate.ok) { console.error('[sequence] envio bloqueado pelo limitador:', rate.reason); return }
-    const sb = await resolveSendBridge(db, enr.buyer_id)
+    if (!rate.ok) throw new SequenceWaiting()
+    const sb = await verifiedSequenceBridge(await getBridgeForBuyer(db, enr.buyer_id))
+    await begin(sb.phone,body)
     const cleanPhone = lead.phone.replace(/[\s\-()]/g, '').replace(/^\+/, '')
     const r = await fetch(`${sb.url}/send`, {
       method: 'POST',
+      signal: AbortSignal.timeout(15000),
       headers: { apikey: sb.key, 'Content-Type': 'application/json' },
       body: JSON.stringify({ number: cleanPhone, message: body }),
     })
     if (!r.ok) throw new Error(`wa-bridge ${r.status}`)
     const { id: waId } = await r.json()
-    await db.from('whatsapp_messages').insert({
-      buyer_id: enr.buyer_id,
-      lead_id: enr.lead_id,
-      direction: 'out',
-      from_phone: sb.phone,
-      to_phone: cleanPhone,
-      body,
-      wa_message_id: waId,
-      status: 'sent',
-    })
+    if(typeof waId!=='string'||!waId)throw new Error('Missing delivery confirmation')
+    receipt={id:waId,from:sb.phone,to:cleanPhone}
   } else {
     if (!lead.email) throw new Error('No email')
     const resendKey = (process.env.RESEND_API_KEY || '').trim()
     if (!resendKey) throw new Error('Resend not configured')
     const resend = new Resend(resendKey)
-    await resend.emails.send({
+    await begin(null,body)
+    const result=await resend.emails.send({
       from: `${agent.name} <onboarding@resend.dev>`,
       to: lead.email,
       subject: subject || (loc === 'en'
@@ -395,6 +320,7 @@ async function executeStep(step: { step_type: string; template_id?: string | nul
         : loc === 'es' ? `Mensaje de ${agent.name}` : `Mensagem de ${agent.name}`),
       html: body.replace(/\n/g, '<br/>'),
     })
+    if(result.error)throw new Error('Email not confirmed')
   }
 
   await db.from('follow_ups').insert({
@@ -404,4 +330,5 @@ async function executeStep(step: { step_type: string; template_id?: string | nul
     description: `${loc === 'pt' ? '[Sequência] passo' : loc === 'es' ? '[Secuencia] paso' : '[Sequence] step'} ${step.step_order + 1}`,
     completed_at: new Date().toISOString(),
   })
+  return receipt
 }

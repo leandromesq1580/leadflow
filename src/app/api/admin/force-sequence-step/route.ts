@@ -1,95 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { renderTemplate } from '@/lib/template-render'
-import { localizeLeadTemplate } from '@/lib/lead-message-template'
-import { requireLeadMessageLocale } from '@/lib/lead-message-locale'
+import { runLegacyEnrollment } from '@/lib/sequence-engine'
+import { runAIEnrollment, aiEnginePorts } from '@/lib/ai-sequence-engine'
 
-/**
- * POST /api/admin/force-sequence-step?secret=X&enrollment_id=Y
- *
- * Executa o step atual de 1 enrollment, capturando QUALQUER erro com stack.
- * Atualiza next_run_at apenas se sucesso. Pra debug exato de qual falha
- * esta acontecendo (dry-run nao captura erros de wa-bridge ou Resend).
- */
+/** Administrative execution uses the normal due/state/STOP/batch guards. No rearm. */
 export async function POST(request: NextRequest) {
-  const url = new URL(request.url)
-  const secret = url.searchParams.get('secret')
-  if (secret !== (process.env.POLL_SECRET || 'leadflow-poll-2026')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!process.env.POLL_SECRET || request.nextUrl.searchParams.get('secret') !== process.env.POLL_SECRET) {
+    return NextResponse.json({error:'Unauthorized'},{status:401})
   }
-  const enrollmentId = url.searchParams.get('enrollment_id')
-  if (!enrollmentId) return NextResponse.json({ error: 'Missing enrollment_id' }, { status: 400 })
-
-  const db = createAdminClient()
-
+  const id=request.nextUrl.searchParams.get('enrollment_id')
+  if(!id)return NextResponse.json({error:'Missing enrollment_id'},{status:400})
+  const db=createAdminClient()
+  const {data:e,error}=await db.from('sequence_enrollments').select('id,mode').eq('id',id).single()
+  if(error||!e)return NextResponse.json({error:'Enrollment not found'},{status:404})
   try {
-    const { data: enr } = await db
-      .from('sequence_enrollments')
-      .select('*')
-      .eq('id', enrollmentId)
-      .single()
-    if (!enr) return NextResponse.json({ error: 'Enrollment not found' }, { status: 404 })
-
-    const { data: steps } = await db
-      .from('sequence_steps')
-      .select('*')
-      .eq('sequence_id', enr.sequence_id)
-      .order('step_order')
-    const step = steps?.[enr.current_step]
-    if (!step) return NextResponse.json({ error: 'No step at current_step', current_step: enr.current_step, total_steps: steps?.length })
-
-    const { data: lead } = await db.from('leads').select('*').eq('id', enr.lead_id).single()
-    const { data: agent } = await db.from('buyers').select('*').eq('id', enr.buyer_id).single()
-    if (!lead) return NextResponse.json({ error: 'Lead not found' })
-    if (!agent) return NextResponse.json({ error: 'Agent not found' })
-
-    if (step.step_type === 'wait') {
-      return NextResponse.json({ result: 'wait_step_skipped' })
-    }
-
-    // send_template
-    const locale = requireLeadMessageLocale(lead)
-    let body = ''
-    let type: 'whatsapp' | 'email' = 'whatsapp'
-    let subject: string | null = null
-    if (step.template_id) {
-      const { data: tpl } = await db.from('templates').select('*').eq('id', step.template_id).single()
-      if (!tpl) return NextResponse.json({ error: 'Template not found', template_id: step.template_id })
-      const translated = await localizeLeadTemplate(db, tpl, lead)
-      body = renderTemplate(translated.body, lead, agent, locale)
-      type = tpl.type
-      subject = translated.subject ? renderTemplate(translated.subject, lead, agent, locale) : null
-    } else if (step.custom_body) {
-      const translated = await localizeLeadTemplate(db, { name: '', body: step.custom_body }, lead)
-      body = renderTemplate(translated.body, lead, agent, locale)
-    }
-
-    if (type === 'whatsapp') {
-      const bridgeUrl = (agent.wa_bridge_url || process.env.WA_BRIDGE_URL || 'http://62.146.229.13:3457').replace(/\/$/, '')
-      const bridgeKey = (agent.wa_bridge_key || process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026').trim()
-      const cleanPhone = String(lead.phone || '').replace(/[\s\-()]/g, '').replace(/^\+/, '')
-
-      const r = await fetch(`${bridgeUrl}/send`, {
-        method: 'POST',
-        headers: { apikey: bridgeKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ number: cleanPhone, message: body }),
-      })
-
-      const respText = await r.text()
-      let respJson: any = null
-      try { respJson = JSON.parse(respText) } catch {}
-
-      return NextResponse.json({
-        wa_bridge_request: { url: `${bridgeUrl}/send`, phone: cleanPhone, body_preview: body.slice(0, 100) },
-        wa_bridge_response: { status: r.status, ok: r.ok, body: respJson || respText.slice(0, 500) },
-      })
-    }
-
-    return NextResponse.json({ note: 'email path — not executed' })
-  } catch (e: any) {
-    return NextResponse.json({
-      exception: e?.message,
-      stack: e?.stack?.split('\n').slice(0, 5),
-    }, { status: 500 })
+    const processed=e.mode==='ai_until_reply' ? await runAIEnrollment(id,aiEnginePorts(db)) : await runLegacyEnrollment(id,db)
+    return NextResponse.json({processed})
+  }catch {
+    return NextResponse.json({error:'Sequence storage unavailable'},{status:503})
   }
 }
