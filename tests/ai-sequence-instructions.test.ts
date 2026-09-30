@@ -20,7 +20,7 @@ test('agent instructions guide copy through user JSON, subordinate to fixed app 
     assert.match(payload.messages[0].content, /never override/i)
     const data = JSON.parse(payload.messages[1].content)
     assert.equal(data.instructions, instructions)
-    assert.equal(data.locale, 'pt'); assert.equal(data.goal, 'call'); assert.equal(data.max_body_characters, 300)
+    assert.equal(data.locale, 'pt'); assert.equal(data.goal, 'call'); assert.equal(data.max_body_characters, 180)
     assert.equal(payload.store, false)
   for (const result of [{locale:'en',body}, {locale:'pt',body,extra:'schema override'}, {locale:'pt',body:'x'.repeat(301)}, {locale:'pt',body:'Quero ajudar você com sua proteção. Podemos combinar uma reunião?'}]) {
     await assert.rejects(generateSequenceCopy({...defaultAIConfig,instructions}, {lead_language:'pt'}, [], {key:'fixture',fetch:async()=>Response.json({choices:[{message:{content:JSON.stringify(result)}}]})}), (e:unknown)=>e instanceof AISequenceGenerationError && e.code==='AI_INVALID_TEXT')
