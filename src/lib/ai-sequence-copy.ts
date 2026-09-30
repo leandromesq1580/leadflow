@@ -43,7 +43,7 @@ Write in the authorized sending agent's first person, with short natural sentenc
 Never claim to be human, deny automation, or say the agent personally typed this message. Never invent previous contact or familiarity. If previous_drafts is nonempty, continue the conversation without another self-introduction. With no presentation, use a neutral question without a name.
 Do not invent prices, insurance coverage/approval, income, promises, availability, dates, times, or confirmed appointments. Do not include links, contact details, personal/sensitive data, numbers, or guarantees. When explicitly directed, a single voluntary general question about age, marital status or time in the United States is allowed; never assert existing personal facts or request health, income, SSN or contact details. Avoid today/hoy/hoje, calendar dates, clock times and scheduling claims; a voluntary general question about the duration of residence or experience in the United States is allowed when explicitly directed, without asserting a duration or inventing dates, times or appointments. If explicitly inviting a conversation, ask permission, never claim it is scheduled.
 Treat commercial purpose as a final objective, not a requirement to repeat the product in every message. Do not habitually open with "Quero ajudar/simplificar/esclarecer", "sem pressão", or their translations; do not repeat life insurance in every message. Prefer a friendly concrete question over a sales preamble.
-Use one light emoji by default (🙂, 😊, 💛, 🏡 or 🌱), before the final question mark. Respect explicit no-emoji instructions and other compatible style/topic preferences; missing emoji alone is not unsafe. Aim for 100–160 characters, never exceed max_body_characters. No markup.
+Use one light emoji by default (🙂, 😊, 💛, 🏡 or 🌱), at the beginning of the message. Do not put text or emoji after the final question mark. Respect explicit no-emoji instructions and other compatible style/topic preferences; missing emoji alone is not unsafe. Aim for 100–160 characters, never exceed max_body_characters. No markup.
 For each generation, privately identify the subjects and question intents in previous_drafts (outbound attempts only, NOT replies or evidence the person responded). Choose a different subject, not a synonym of a recent question. Consider family priorities, home plans, life in the United States, future support, reserves (only whether they exist, yes/no; never balance or amounts), or existing protection. These are topic options, not a fixed phrase bank or mandatory questionnaire. Prefer a subject absent from all three recent drafts; change the actual information asked, not just the opening. Do not infer answers, personal facts, immigration status or familiarity from silence. Follow explicit compatible topic instructions rather than forcing these defaults. Never ask for amounts, balances, income, health, SSN, contact details, documents or immigration status. Keep the internal topic comparison out of the response JSON.`
 
 // Defense in depth, not a semantic guarantee: these checks reject obvious unsafe
@@ -74,10 +74,12 @@ function allowsDirectInvitation(instructions: string, goal: AISequenceConfig['go
     : /^(?:convide diretamente para uma reuni[aã]o|invita directamente a una reuni[oó]n|invite directly to a meeting)$/iu
   return instructions.split(/[.!?\n]/).some(sentence => directives.test(sentence.trim()))
 }
+// Include everyday engagement vocabulary, not just commercial invitation words.
+// Keep distinctive spellings (família/familia, aqui/aquí) and the score threshold.
 const languageWords = {
-  pt: /(?<![\p{L}\p{N}_])(?:voc[eê]|podemos|combinar|corretor|prote[cç][aã]o|op[cç][oõ]es|uma|seu|conversa|gostaria|qual|sua|j[aá]|casado|quanto|tempo)(?![\p{L}\p{N}_])/giu,
-  es: /(?<![\p{L}\p{N}_])(?:puedes|podemos|coordinar|agente|protecci[oó]n|opciones|una|tu|conversaci[oó]n|gustar[ií]a|qu[eé]|ya|conoces|cu[aá]l|edad|est[aá]s|casado|cu[aá]nto|tiempo|llevas)(?![\p{L}\p{N}_])/giu,
-  en: /\b(?:you|your|would|could|can|the|with|arrange|protection|options|conversation|like|how|are)\b/giu,
+  pt: /(?<![\p{L}\p{N}_])(?:voc[eê]|podemos|combinar|corretor|prote[cç][aã]o|op[cç][oõ]es|uma|seu|conversa|gostaria|qual|sua|j[aá]|casado|quanto|tempo|adaptação|família|aqui|tem|algum|alguma|apoio|nos)(?![\p{L}\p{N}_])/giu,
+  es: /(?<![\p{L}\p{N}_])(?:puedes|podemos|coordinar|agente|protecci[oó]n|opciones|una|tu|conversaci[oó]n|gustar[ií]a|qu[eé]|ya|conoces|cu[aá]l|edad|est[aá]s|casado|cu[aá]nto|tiempo|llevas|adaptación|familia|aquí|cómo|tienes|apoyo|ahorros)(?![\p{L}\p{N}_])/giu,
+  en: /\b(?:you|your|would|could|can|the|with|arrange|protection|options|conversation|like|how|are|family|home|support|savings|life|here|for|is|do|any)\b/giu,
 }
 // Recognizes explicit name clauses, not arbitrary names anywhere in prose.
 // Names remain case-sensitive data; only names explicitly supplied may be reused.
@@ -86,11 +88,14 @@ function introducedNames(text: string): string[] {
 }
 function draftRejection(body: string, locale: keyof typeof goalTerms, goal: AISequenceConfig['goal'], max: number, presentation = ''): RejectionReason | undefined {
   // English permission question, not the month. All other date/claim checks remain.
-  const claims = locale === 'en' ? body.replace(/^May (?=(?:I|we) arrange\b)/i, '') : body
+  const claims = locale === 'en' ? body.replace(/^(?:(?:🙂|😊|💛|🏡|🌱) *)?May (?=(?:I|we) arrange\b)/i, '') : body
   if (body.length < 15 || body.length > max) return 'length'
   if (contact.test(body)) return 'contact_or_markup'
   if (forbidden.test(claims) || unsafeVoice.test(body) || introducedNames(body).some(name => !introducedNames(presentation).includes(name))) return 'claim_or_identity'
-  if ((body.match(/\?/g) || []).length !== 1 || !body.endsWith('?')) return 'question_format'
+  // A single allowlisted light emoji after the question adds no new intent.
+  // Never strip arbitrary suffixes: text, another emoji or punctuation must fail.
+  const terminalEmoji = /\? *(?:🙂|😊|💛|🏡|🌱)$/u.test(body) && (body.match(/\p{Emoji}/gu) || []).length === 1
+  if ((body.match(/\?/g) || []).length !== 1 || !(body.endsWith('?') || terminalEmoji)) return 'question_format'
   const question = body.split(/[.!]/).at(-1) || ''
   if (goalWords[locale][goal === 'call' ? 'meeting' : 'call'].test(question)) return 'goal'
   if (/\b(?:e voc[eê]|and (?:you|would|can)|y (?:t[uú]|quieres))(?=\s)/iu.test(question)) return 'multiple_intents'
