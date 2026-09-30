@@ -129,16 +129,16 @@ export default function MobilePipeline() {
       {/* stage selector */}
       {!noPipeline && pipeline && cards && (
         <>
-          <div className="m-pad">
-            {activeStage && <StageActionsStrip key={activeStage} stageId={activeStage} stageName={stages.find(s=>s.id===activeStage)?.name || ''} locale={loc} state={actions.state} onRetry={actions.retry} returnTo="/m/pipeline" />}
-          </div>
           <div className="m-pad" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 14 }}>
             {stages.map(s => (
-              <span key={s.id} className={`m-chip m-tap${activeStage === s.id ? ' on' : ''}`} onClick={() => setActiveStage(s.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-                <span style={{ width: 9, height: 9, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
-                {s.name}
-                <span style={{ opacity: 0.75 }}>{countByStage[s.id] || 0}</span>
-              </span>
+              <div key={s.id} className={`m-chip${activeStage === s.id ? ' on' : ''}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 34, padding: '0 10px', flexShrink: 0, maxWidth: 'calc(100vw - 60px)' }}>
+                <button type="button" className="m-tap" aria-pressed={activeStage === s.id} onClick={() => setActiveStage(s.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 0, height: 32, cursor: 'pointer', color: 'inherit' }}>
+                  <span style={{ width: 9, height: 9, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
+                  <span title={s.name} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
+                  <span style={{ opacity: 0.75, flexShrink: 0 }}>{countByStage[s.id] || 0}</span>
+                </button>
+                {activeStage === s.id && <StageActionsStrip key={s.id} stageId={s.id} stageName={s.name} locale={loc} state={actions.state} onRetry={actions.retry} returnTo="/m/pipeline" />}
+              </div>
             ))}
           </div>
 
