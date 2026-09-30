@@ -37,6 +37,16 @@ O padrão rejeita menções lexicais a ligação/reunião. Convite direto requer
 
 Perguntas de engajamento não recebem link de agenda. Apenas com opt-in explícito, objetivo reunião e termo de reunião na pergunta final o link validado é anexado localmente; nunca é entregue ao modelo. Os limites de tamanho e proteção de URLs permanecem. Histórico `draft:v1:` aceita e deduplica também perguntas de engajamento; o histórico bruto continua excluído. Detecção de idioma é lexical, com vocabulário adicional estreito para perguntas curtas PT/ES/EN, não detector universal.
 
+## Conversa curta e variada
+
+Prévia sintética administrativa: `POST /api/sequences/preview` aceita `sample_count` inteiro de 1 a 6. Omitido ou 1 preserva `{body, choice, sent:false}`; mais de 1 exige administrador e retorna `{samples:[{body,choice}], sent:false}`. A série é gerada sequencialmente, usando apenas as últimas três escolhas produzidas na própria requisição; histórico/dados de cliente enviados pelo chamador são ignorados. Não consulta leads, grava dados de negócio nem envia mensagens. Uma falha não retorna amostras parciais; a rota dispõe de até 180 segundos. Fixtures não certificam a qualidade real da redação.
+
+Corpo novo: teto de 180 caracteres, sugestão de 100–160 e um emoji leve por padrão, antes da pergunta final. Instrução explícita sem emoji e preferências compatíveis de assunto prevalecem; ausência de emoji não reprova texto seguro. O propósito comercial é objetivo final, não obrigação de repetir life insurance, “Quero ajudar/simplificar/esclarecer” ou “sem pressão”.
+
+Mecanismo leve: o prompt pede comparar internamente assuntos e intenções das últimas três drafts revalidadas e escolher assunto ausente, não uma pergunta sinônima. Sugere família, casa, vida nos EUA, apoio futuro, existência de reserva (sim/não, nunca saldo) e proteção existente. Não usa índice pelo tamanho do histórico, nova tabela nem campo JSON de resposta. Histórico antigo seguro até 300 caracteres permanece elegível; filtra antes de selecionar as últimas três. São tentativas outbound, nunca respostas ou evidência de conversa anterior. Modelos, configuração salva, parada ao responder, opt-in de convite e link local seguem intactos.
+
+Novas perguntas continuam voluntárias e gerais: não coletar valores, renda, saúde, SSN, contatos, documentos ou status migratório. O filtro lexical acrescenta padrões de saldo/valores/documentos/imigração, sem afrouxar os filtros existentes. É defesa em profundidade, não detector semântico universal. Fixtures PT/ES/EN exercitam seis temas consecutivos e o contexto móvel; comprovam contrato/orientação e aceitação local, **não** diversidade real de um provedor. Prévia sintética real após publicação pertence à validação de release.
+
 ## Contrato
 
 - `sequences.mode`: `legacy` (padrão) ou `ai_until_reply`, imutável após criação. Inscrições também guardam o modo; não há conversão ou inscrição retroativa.
@@ -51,7 +61,7 @@ Perguntas de engajamento não recebem link de agenda. Apenas com opt-in explíci
 
 ## Geração e privacidade
 
-`src/lib/ai-sequence-copy.ts` usa `fetch`, o modelo OpenAI escolhido em `ai_config.model`, JSON e timeout de 20 segundos. A IA **redige mensagens novas**, orientadas pelo brief comercial e objetivo ligação/reunião, em PT/ES/EN; não escolhe índices de frases. JSON exige `locale` e `body`. O corpo gerado tem até 300 caracteres e a mensagem completa até 450, incluindo o link opcional anexado localmente, sem prefixo obrigatório de assistente virtual. Exige uma pergunta final de engajamento por padrão; convite ao objetivo final somente mediante orientação explícita reconhecida. Erros, JSON inválido, truncamento e repetição retêm a geração, sem mensagem substituta.
+`src/lib/ai-sequence-copy.ts` usa `fetch`, o modelo OpenAI escolhido em `ai_config.model`, JSON e timeout de 20 segundos. A IA **redige mensagens novas**, orientadas pelo brief comercial e objetivo ligação/reunião, em PT/ES/EN; não escolhe índices de frases. JSON exige `locale` e `body`. O corpo gerado tem até 180 caracteres e a mensagem completa até 450, incluindo o link opcional anexado localmente, sem prefixo obrigatório de assistente virtual. Exige uma pergunta final de engajamento por padrão; convite ao objetivo final somente mediante orientação explícita reconhecida. Erros, JSON inválido, truncamento e repetição retêm a geração, sem mensagem substituta.
 
 O brief comercial explícito (até 300 caracteres) é enviado como dado não confiável, separado das instruções de sistema. Não inclua nomes nem dados pessoais/sensíveis: padrões reconhecíveis de contatos, renda, saúde, identificação pessoal e injeção são rejeitados antes da requisição. Nenhum campo do lead é enviado, exceto o idioma resolvido por `requireLeadMessageLocale`; não são enviados conversa crua nem URL de agendamento. O idioma do preview é ilustrativo. `recent_choices` guarda os últimos textos gerados (podendo incluir o nome profissional fornecido na apresentação), marcados `draft:v1:`, revalidados antes de irem ao modelo; repetição normalizada (caixa, acentos, pontuação/espaços) é rejeitada. Índices antigos são ignorados.
 

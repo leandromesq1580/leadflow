@@ -32,11 +32,21 @@ export function sequenceAPI(db:Db,caller:()=>Promise<{id:string;isAdmin:boolean}
     return Response.json({buyer_id:buyer,sequences:sequences.map(s=>({...s,sequence_steps:(s.sequence_steps || []).sort((a:{step_order:number},b:{step_order:number})=>a.step_order-b.step_order)})),pipelines,templates})
    }
    if(op==='preview'){
+    const sampleCount=body.sample_count===undefined?1:body.sample_count
+    if(typeof sampleCount!=='number'||!Number.isInteger(sampleCount)||sampleCount<1||sampleCount>6)throw new ApiError(400,'Quantidade de amostras inválida (1 a 6).')
+    if(sampleCount>1&&session.isAdmin!==true)throw new ApiError(403,'Acesso negado.')
     let config: ReturnType<typeof validateAIConfig> | undefined
     try {
      config=validateAIConfig(body.ai_config)
      if(!['pt','es','en'].includes(String(body.locale)))throw new AISequenceGenerationError('AI_LOCALE_INVALID')
-     return Response.json({...await generate(config,{lead_language:String(body.locale)},[]),sent:false})
+     const samples:Array<{body:string;choice:string}>=[]
+     let recentChoices:string[]=[]
+     for(let i=0;i<sampleCount;i++){
+      const result=await generate(config,{lead_language:String(body.locale)},recentChoices)
+      samples.push({body:result.body,choice:result.choice})
+      recentChoices=[...recentChoices,result.choice].slice(-3)
+     }
+     return Response.json(sampleCount===1?{...samples[0],sent:false}:{samples,sent:false})
     }catch(error){
      if (error instanceof AISequenceConfigError) {
       console.error('[ai-sequence-preview]',{code:error.code,status:error.status})
