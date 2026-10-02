@@ -205,6 +205,104 @@ def cooldown():
     log('cooldown', admission_deadline=before, first_confirmation_deadline=after, last_confirmation=b, remaining_seconds=remaining)
 
 
+def partial_slow_completion():
+    c, db = setup()
+    # 9 messages reserved at t0, delivered at t0+90s. At t0+301s the
+    # admissions are old but all nine deliveries are still in the last 5min.
+    es = [enrollment(c, 'ai_until_reply' if i % 2 else 'legacy', O if i % 3 else B) for i in range(9)]
+    assert all(parallel(db, [lambda x, e=e: begin(x, e) for e in es]))
+    assert all(parallel(db, [lambda x, e=e: finish(x, e) for e in es]))
+    q(c, "update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '301 seconds'")
+    q(c, "update sequence_batch_dispatches set started_at=clock_timestamp()-interval '301 seconds', expires_at=clock_timestamp()-interval '181 seconds'")
+    q(c, "update whatsapp_messages set sent_at=clock_timestamp()-interval '211 seconds' where direction='out'")
+    # The new completion clock, when installed, uses the same simulated time.
+    if q(c, "select 1 from information_schema.columns where table_name='sequence_sender_batches' and column_name='last_settled_at'"):
+        q(c, "update sequence_sender_batches set last_settled_at=clock_timestamp()-interval '211 seconds'")
+    fresh = [enrollment(c, 'ai_until_reply' if i % 2 else 'legacy', O if i % 3 else B) for i in range(12)]
+    out = parallel(db, [lambda x, e=e: begin(x, e) for e in fresh])
+    for e, allowed in zip(fresh, out):
+        if allowed: assert finish(c, e)
+    count = q(c, "select count(*) n from whatsapp_messages where direction='out' and sent_at>clock_timestamp()-interval '5 minutes'")[0]['n']
+    log('partial_slow_completion', recent_confirmed_deliveries=count, new_admissions=sum(out), batches=batch(c))
+    assert count <= 10, f'{count} confirmed fixture deliveries in a rolling 5min window'
+    assert sum(out) == 1
+
+
+def partial_completion_boundaries():
+    for age, expected_used in ((299, 2), (301, 1)):
+        c, db = setup()
+        e = enrollment(c)
+        assert begin(c, e) and finish(c, e)
+        settled = batch(c)[0]['last_settled_at']
+        assert finish(c, e)  # Idempotent finish must not change completion clock.
+        assert batch(c)[0]['last_settled_at'] == settled
+        q(c, "update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '400 seconds', last_settled_at=clock_timestamp()-(%s * interval '1 second')", [age])
+        assert begin(c, enrollment(c))
+        assert batch(c)[0]['used'] == expected_used
+        log('partial_boundary', age=age, used=batch(c)[0]['used'])
+
+
+def partial_finish_begin_serialization():
+    c, db = setup()
+    es = [enrollment(c) for _ in range(9)]
+    assert all(begin(c, e) for e in es)
+    assert all(finish(c, e) for e in es[:-1])
+    q(c, "update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '400 seconds', last_settled_at=clock_timestamp()-interval '400 seconds'")
+    a, b = connect(db), connect(db)
+    q(a, 'begin')
+    assert finish(a, es[-1])  # Holds ledger + sender until commit.
+    fresh = enrollment(c, 'ai_until_reply', O)
+    f = POOL.submit(begin, b, fresh)
+    assert observe(c, b, f)
+    q(a, 'commit')
+    assert f.result(8)
+    assert batch(c)[0]['used'] == 10, 'must re-read the committed completion after sender lock'
+    assert not begin(c, enrollment(c))
+
+
+def partial_unknown_completion(kind):
+    c, db = setup()
+    e = enrollment(c)
+    assert begin(c, e)
+    q(c, "update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '400 seconds',last_settled_at=clock_timestamp()-interval '400 seconds'")
+    before = q(c, 'select clock_timestamp() t')[0]['t']
+    if kind == 'lost_response':
+        q(c, "select defer_sequence_batch(%s,%s,'lost',clock_timestamp(),false)", [e['id'], e['lease_token']])
+    elif kind == 'claim_recovery':
+        q(c, "update sequence_enrollments set lease_until=clock_timestamp()-interval '1 second' where id=%s", [e['id']])
+        assert not q(c, 'select * from claim_legacy_sequence(%s)', [e['id']])
+    else:
+        if kind == 'deleted': q(c, 'delete from sequence_enrollments where id=%s', [e['id']])
+        if kind == 'stopped': mutation(c, e, 'stop')
+        q(c, "update sequence_batch_dispatches set expires_at=clock_timestamp()-interval '1 second' where token=%s", [e['lease_token']])
+        cleanup = parallel(db, [lambda x: q(x, 'select expire_sequence_batch_dispatches(%s) n',[SENDER])[0]['n']]*2)
+        assert sum(cleanup) == 1
+    b = batch(c)[0]
+    assert b['last_settled_at'] >= before
+    assert q(c, 'select state from sequence_batch_dispatches where token=%s',[e['lease_token']])[0]['state'] == 'unknown'
+    assert not begin(c, e) and not finish(c, e)
+    if kind != 'deleted':
+        assert state(c, e)['status'] in ('paused','stopped')
+    else:
+        assert not q(c, 'select id from sequence_enrollments where id=%s',[e['id']])
+    # Unknown permission never returns capacity, even after all clocks expire.
+    q(c, "update sequence_sender_batches set cooldown_until=null,last_reserved_at=clock_timestamp()-interval '1 day',last_settled_at=clock_timestamp()-interval '1 day'")
+    assert not begin(c, enrollment(c, 'ai_until_reply', O))
+    assert batch(c)[0]['used'] == 1
+    fresh = enrollment(c, 'ai_until_reply', O)
+    assert not q(c, 'select preflight_sequence_batch(%s,%s,%s) ok', [fresh['id'],fresh['lease_token'],SENDER])[0]['ok']
+    assert begin(c, enrollment(c), OTHER), 'independent sender must remain usable'
+    log('partial_unknown_completion', kind=kind, batches=batch(c))
+
+
+def completion_acl():
+    c, db = setup()
+    for role in ('anon','authenticated','service_role'):
+        for fn in ('settle_sequence_batch_dispatch()', 'begin_sequence_batch(uuid,uuid,text,text)'):
+            assert q(c, "select has_function_privilege(%s,%s,'execute') ok",[role, 'public.'+fn])[0]['ok'] == (role=='service_role')
+    assert all(r['relrowsecurity'] for r in q(c, "select relrowsecurity from pg_class where relname in ('sequence_sender_batches','sequence_batch_dispatches')"))
+
+
 def mutation(c, e, kind):
     if kind == 'stop':
         return q(c, 'select stop_sequence_enrollment(%s,%s)', [e['buyer_id'], e['id']])
@@ -348,7 +446,7 @@ def stopped_orphan_cleanup(mode):
     q(c, "update sequence_sender_batches set cooldown_until=clock_timestamp()-interval '1 second'")
     fresh = [enrollment(c) for _ in range(12)]
     out = parallel(db, [lambda x, e=e: begin(x, e) for e in fresh])
-    assert sum(out) == 10, 'sender must recover after quarantine without replaying orphan'
+    assert sum(out) == 0, 'unknown permission must retain capacity indefinitely'
     assert state(c, orphan)['status'] == 'stopped' and state(c, orphan)['current_step'] == 0
 
 
@@ -442,6 +540,9 @@ try:
     sources = [('fixture.sql', fixture), ('006-prefix.sql', base)]
     for name in ('052_ai_sequences_until_reply.sql', '053_ai_suppression_resolution.sql', '054_sequence_batch_pacing.sql'):
         sources.append((name, (REPO / 'supabase/migrations' / name).read_text()))
+    completion = REPO / 'supabase/migrations/055_sequence_batch_completion_clock.sql'
+    if completion.exists():
+        sources.append((completion.name, completion.read_text()))
     for name, sql in sources:
         (RUN / name).write_text(sql)
         HASHES[name] = hashlib.sha256(sql.encode()).hexdigest()
@@ -464,6 +565,12 @@ try:
     case('16_concurrent_begins_shared_AI_legacy_buyers_max10', race_budget)
     case('22_concurrent_begins_two_independent_numbers', independent)
     case('cooldown_tenth_admission_inflight_confirmation_and_reset', cooldown)
+    case('partial_slow_completion_rolling_5min_shared_modes_buyers', partial_slow_completion)
+    case('partial_completion_boundaries_and_idempotence', partial_completion_boundaries)
+    case('partial_finish_begin_serialization', partial_finish_begin_serialization)
+    case('completion_acl_rls_preserved', completion_acl)
+    for kind in ('lost_response','claim_recovery','deleted','stopped'):
+        case('partial_unknown_'+kind, lambda k=kind: partial_unknown_completion(k))
     case('preflight_wait_preserves_step_and_attempt', preflight_wait)
     case('sender_unavailable_no_fallback_no_attempt', sender_unavailable)
     for mode in ('legacy', 'ai_until_reply'):
