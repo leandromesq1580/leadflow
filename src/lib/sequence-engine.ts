@@ -168,6 +168,12 @@ export async function cancelEnrollmentsForStage(
  */
 export async function processSequences(options: { mode?: 'legacy' | 'ai_until_reply' } = {}): Promise<{ processed: number; failed: number }> {
   const db = createAdminClient()
+  // Both modes share the minute cron's durable reply outbox, even with no due sends.
+  // Lost/aborted responses are safe: SQL either commits an audited result or retains intent.
+  try {
+    const { error } = await db.rpc('drain_sequence_reply_moves', { p_limit: 25 }).abortSignal(AbortSignal.timeout(5000))
+    if (error) console.warn('[sequence] Reply movement retry pending')
+  } catch { console.warn('[sequence] Reply movement retry pending') }
   const now = new Date().toISOString()
 
   let query = db

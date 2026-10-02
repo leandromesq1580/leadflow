@@ -8,7 +8,7 @@ const other='00000000-0000-4000-8000-000000000002'
 const lead='00000000-0000-4000-8000-000000000003'
 const migration='supabase/migrations/053_ai_suppression_resolution.sql'
 async function applyPacing(db) {
- for (const migration of ['054_sequence_batch_pacing.sql', '055_sequence_batch_completion_clock.sql']) {
+ for (const migration of ['054_sequence_batch_pacing.sql', '055_sequence_batch_completion_clock.sql', '056_sequence_reply_stage.sql']) {
   await db.exec(readFileSync('supabase/migrations/' + migration, 'utf8'))
  }
 }
@@ -20,7 +20,7 @@ async function fixture() {
  CREATE TABLE leads(id uuid primary key, assigned_to uuid, assigned_to_member uuid, archived boolean default false, contract_closed boolean default false, sms_opted_out boolean default false);
  CREATE TABLE pipelines(id uuid primary key,buyer_id uuid);
  CREATE TABLE pipeline_stages(id uuid primary key,pipeline_id uuid,name text);
- CREATE TABLE pipeline_leads(id uuid primary key,lead_id uuid,pipeline_id uuid,stage_id uuid);
+ CREATE TABLE pipeline_leads(id uuid primary key,lead_id uuid,pipeline_id uuid,stage_id uuid,moved_at timestamptz default now());
  CREATE TABLE templates(id uuid primary key,buyer_id uuid,is_system boolean,type text default 'whatsapp');
  CREATE TABLE sms_messages(id uuid primary key default gen_random_uuid(),lead_id uuid,direction text,body text,created_at timestamptz default now());`)
  const base=readFileSync('supabase/migrations/006_inbox_sequences_ai_push.sql','utf8')

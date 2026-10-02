@@ -7,6 +7,19 @@ function load(path:string,req:(name:string)=>unknown,env:Record<string,string>={
  new Function('require','exports','process','fetch',transpileModule(readFileSync(path,'utf8'),{compilerOptions:{module:ModuleKind.CommonJS,target:ScriptTarget.ES2022}}).outputText)(req,exports,{env},async()=>Response.json({fixture:true}))
  return exports
 }
+
+test('minute processing drains durable reply intents even without due sends; accessory errors cannot stop sends',async(t)=>{
+ t.mock.method(console,'warn',()=>{})
+ for(const failure of ['none','error','throw']) {
+  const calls:string[]=[]
+  const q={select:()=>q,eq:()=>q,lte:()=>q,order:()=>q,limit:async()=>{calls.push('due');return {data:[]}}}
+  const db={from:()=>q,rpc:(name:string,args:unknown)=>{calls.push(name);assert.deepEqual(args,{p_limit:25});return {abortSignal:async(signal:AbortSignal)=>{assert.ok(signal);if(failure==='throw')throw Error('fixture');return {error:failure==='error'?{message:'fixture'}:null}}}}}
+  const e=load('src/lib/sequence-engine.ts',name=>name.includes('supabase/admin')?{createAdminClient:()=>db}:{})
+  assert.deepEqual(await e.processSequences({mode:'ai_until_reply'}),{processed:0,failed:0})
+  assert.deepEqual(calls,['drain_sequence_reply_moves','due'])
+ }
+})
+
 test('run-all rejects spoofed cron user-agent without credentials',async(t)=>{
  t.mock.method(console,'log',()=>{})
  const route=load('src/app/api/cron/run-all/route.ts',name=>name==='next/server'?{NextResponse:Response}:name.includes('sequence-engine')?{processSequences:async()=>({})}:name.includes('automation-engine')?{runAutomations:async()=>({})}:name.includes('supabase/admin')?{createAdminClient:()=>({})}:{importarPortaisPendentes:async()=>({})},{CRON_SECRET:'fixture'})

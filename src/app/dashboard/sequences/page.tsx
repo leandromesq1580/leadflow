@@ -25,6 +25,7 @@ interface Sequence {
   mode?: 'legacy' | 'ai_until_reply'
   ai_config?: AISequenceConfig
   trigger_stage_id?: string | null
+  reply_stage_id?: string | null
   sequence_steps: Step[]
 }
 
@@ -178,6 +179,12 @@ function SequenceForm({ buyerId, templates, pipelines, editing, duplicate, onClo
   const [name, setName] = useState(seed?.name || '')
   const [description, setDescription] = useState(seed?.description || '')
   const [triggerStageId, setTriggerStageId] = useState<string>(seed?.trigger_stage_id || '')
+  const [moveOnReply, setMoveOnReply] = useState(!!seed?.reply_stage_id)
+  const [replyStageId, setReplyStageId] = useState(seed?.reply_stage_id || '')
+  const triggerPipeline = pipelines.find(p => p.stages?.some(s => s.id === triggerStageId))
+  const replyPipelines = triggerStageId ? pipelines.filter(p => p.id === triggerPipeline?.id) : pipelines
+  const validReplyStage = replyPipelines.some(p => p.stages?.some(s => s.id === replyStageId))
+  const validReply = !moveOnReply || validReplyStage
   const [steps, setSteps] = useState<Step[]>(seed?.sequence_steps || [
     { delay_hours: 0, template_id: null, custom_body: null, step_type: 'send_template' },
   ])
@@ -218,9 +225,9 @@ function SequenceForm({ buyerId, templates, pipelines, editing, duplicate, onClo
   }
 
   async function save() {
-    if (savingRef.current || !name.trim() || (mode === 'legacy' && steps.length === 0) || (mode === 'ai_until_reply' && !validAI)) return
+    if (savingRef.current || !validReply || !name.trim() || (mode === 'legacy' && steps.length === 0) || (mode === 'ai_until_reply' && !validAI)) return
     savingRef.current = true; setSaving(true); setError('')
-    const payload = { ...(duplicate ? {enabled: false} : {}), buyer_id: buyerId, name: name.trim(), description: description.trim(), trigger_stage_id: triggerStageId || null, mode, ...(mode === 'ai_until_reply' ? {ai_config: aiConfig} : {}), steps: mode === 'ai_until_reply' ? [] : steps }
+    const payload = { ...(duplicate ? {enabled: false} : {}), buyer_id: buyerId, name: name.trim(), description: description.trim(), trigger_stage_id: triggerStageId || null, reply_stage_id: moveOnReply ? replyStageId : null, mode, ...(mode === 'ai_until_reply' ? {ai_config: aiConfig} : {}), steps: mode === 'ai_until_reply' ? [] : steps }
     const url = editing ? `/api/sequences/${editing.id}` : '/api/sequences'
     try { await saveSequenceDraft(url, payload, onClose, onSaved) }
     catch (e) { const message = (e as Error).message; setError(message); onError(message) }
@@ -247,14 +254,34 @@ function SequenceForm({ buyerId, templates, pipelines, editing, duplicate, onClo
             <div className="space-y-3 border-t border-[var(--border)] p-3">
               <label className="block space-y-2 text-sm">{L('Descrição (opcional)', 'Description (optional)', 'Descripción (opcional)')}
                 <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm resize-y" /></label>
-              <label className="block space-y-2 text-sm">{L('Estágio gatilho', 'Trigger stage', 'Etapa disparadora')}
-                <select value={triggerStageId} onChange={e => setTriggerStageId(e.target.value)} className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm">
+              <label htmlFor="sequence-trigger-stage" className="block space-y-2 text-sm">{L('Estágio gatilho', 'Trigger stage', 'Etapa disparadora')}
+                <select id="sequence-trigger-stage" value={triggerStageId} onChange={e => {
+                  const next = e.target.value
+                  setTriggerStageId(next)
+                  const pipeline = pipelines.find(p => p.stages?.some(s => s.id === next))
+                  if (next && !pipeline?.stages.some(s => s.id === replyStageId)) setReplyStageId('')
+                }} className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm">
                   <option value="">{L('Sem gatilho · inscrição manual', 'No trigger · manual enrollment', 'Sin disparador · inscripción manual')}</option>
                   {pipelines.map(p => <optgroup key={p.id} label={p.name}>{[...(p.stages || [])].sort((a, b) => a.position - b.position).map(s => <option key={s.id} value={s.id}>{s.name.trim()}</option>)}</optgroup>)}
                 </select>
               </label><p className="text-xs text-[var(--fg-secondary)]">Inscreve novos leads ao entrarem no estágio escolhido. Não inscreve leads que já estão nele.</p>
             </div>
           </details>
+          <div className="mb-5 space-y-3 rounded-lg border border-[var(--border)] p-3 text-sm">
+            <label className="flex cursor-pointer items-center gap-3 font-medium">
+              <input type="checkbox" role="switch" checked={moveOnReply} onChange={e => setMoveOnReply(e.target.checked)} className="h-4 w-4 shrink-0 accent-[var(--accent)]" />
+              {L('Ao responder, mover para…', 'On reply, move to…', 'Al responder, mover a…')}
+            </label>
+            {moveOnReply && <div className="space-y-2">
+              <label htmlFor="sequence-reply-stage" className="block text-xs text-[var(--fg-secondary)]">{L('Coluna destino (obrigatória)', 'Destination stage (required)', 'Columna destino (obligatoria)')}</label>
+              <select id="sequence-reply-stage" required aria-invalid={!validReplyStage} value={validReplyStage ? replyStageId : ''} onChange={e => setReplyStageId(e.target.value)} className="w-full min-w-0 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm">
+                <option value="">{L('Selecione uma coluna', 'Select a stage', 'Selecciona una columna')}</option>
+                {replyPipelines.map(p => <optgroup key={p.id} label={p.name}>{[...(p.stages || [])].sort((a, b) => a.position - b.position).map(s => <option key={s.id} value={s.id}>{s.name.trim()}</option>)}</optgroup>)}
+              </select>
+              <p className="text-xs text-[var(--fg-secondary)]">{L('Move apenas o cartão existente, sem iniciar ações na coluna destino. Pedidos de parada não movem o contato.', 'Moves only the existing card, without starting destination actions. Opt-out requests do not move the contact.', 'Mueve solo la tarjeta existente, sin iniciar acciones en el destino. Las solicitudes de baja no mueven al contacto.')}</p>
+              {!validReplyStage && <p className="text-xs text-amber-700">{L('Escolha uma coluna disponível ou desligue esta opção.', 'Choose an available stage or turn this option off.', 'Elige una columna disponible o desactiva esta opción.')}</p>}
+            </div>}
+          </div>
           {mode === 'ai_until_reply' && <AISequenceFields value={aiConfig} onChange={setAIConfig}/>}
 
         {mode === 'legacy' && <>
@@ -349,7 +376,7 @@ function SequenceForm({ buyerId, templates, pipelines, editing, duplicate, onClo
             <p className="text-xs text-[var(--fg-secondary)]">{duplicate ? L('A cópia será criada desativada, sem contatos inscritos.', 'The copy will be created disabled, with no enrolled contacts.', 'La copia se creará desactivada, sin contactos inscritos.') : mode === 'ai_until_reply' && !editing ? 'Criada desativada. Você decide quando ativar.' : 'Revise as configurações antes de salvar.'}</p>
             <div className="ml-auto flex items-center gap-2">
               <button onClick={onClose} disabled={saving} className="rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--fg-secondary)] disabled:opacity-50">{L('Cancelar', 'Cancel', 'Cancelar')}</button>
-              <button onClick={save} disabled={saving || !name.trim() || (mode === 'legacy' && steps.length === 0) || (mode === 'ai_until_reply' && !validAI)}
+              <button onClick={save} disabled={saving || !validReply || !name.trim() || (mode === 'legacy' && steps.length === 0) || (mode === 'ai_until_reply' && !validAI)}
                 className="rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
                 {saving ? L('Salvando...', 'Saving...', 'Guardando...') : editing ? L('Salvar alterações', 'Save changes', 'Guardar cambios') : L('Criar sequência', 'Create sequence', 'Crear secuencia')}
               </button>
