@@ -7,7 +7,7 @@ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]
 class ApiError extends Error { constructor(public status:number,message:string){super(message)} }
 function validId(id:unknown):asserts id is string {if(typeof id!=='string'||!uuid.test(id))throw new ApiError(400,'Identificador inválido.')}
 function checked<T>(result:{data:T;error:{code?:string}|null}):T {
- if(result.error)throw new ApiError(result.error.code==='42501'?403:['23505','23514'].includes(result.error.code||'')?409:503,'Operação não concluída. Confira propriedade, estado e configuração; tente recarregar.')
+ if(result.error)throw new ApiError(result.error.code==='42501'?403:result.error.code==='22023'?400:['23505','23514'].includes(result.error.code||'')?409:503,'Operação não concluída. Confira propriedade, estado e configuração; tente recarregar.')
  return result.data
 }
 /** Session identity is authoritative, including admin accounts. SQL rechecks references atomically. */
@@ -62,11 +62,12 @@ export function sequenceAPI(db:Db,caller:()=>Promise<{id:string;isAdmin:boolean}
    }
    if(op==='save'){
     const config:Record<string,unknown>={}
-    for(const key of ['name','description','enabled','trigger_stage_id','mode','ai_config'])if(body[key]!==undefined)config[key]=body[key]
+    for(const key of ['name','description','enabled','trigger_stage_id','reply_stage_id','mode','ai_config'])if(body[key]!==undefined)config[key]=body[key]
     if((!id||config.name!==undefined)&&(typeof config.name!=='string'||!config.name.trim()||config.name.length>120))throw new ApiError(400,'Nome obrigatório (até 120 caracteres).')
     if(config.enabled!==undefined&&typeof config.enabled!=='boolean')throw new ApiError(400,'Estado inválido.')
     if(config.description!==undefined&&config.description!==null&&(typeof config.description!=='string'||config.description.length>1000))throw new ApiError(400,'Descrição inválida.')
     if(config.trigger_stage_id!==undefined && config.trigger_stage_id!==null)validId(config.trigger_stage_id)
+    if(config.reply_stage_id!==undefined && config.reply_stage_id!==null)validId(config.reply_stage_id)
     if(config.mode!==undefined&&!['legacy','ai_until_reply'].includes(String(config.mode)))throw new ApiError(400,'Modo inválido.')
     if(config.ai_config!==undefined||config.mode==='ai_until_reply'){
      config.ai_config=validateAIConfig(config.ai_config)

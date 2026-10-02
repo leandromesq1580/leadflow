@@ -12,7 +12,7 @@ test('duplicate is a detached disabled draft with allowlisted steps and localize
     assert.equal(draft.enabled,false)
     assert.equal(draft.name.length,120)
     assert.ok(draft.name.endsWith(suffix))
-    assert.deepEqual(Object.keys(draft).sort(), ['name','description','enabled','mode','ai_config','trigger_stage_id','sequence_steps'].sort())
+    assert.deepEqual(Object.keys(draft).sort(), ['name','description','enabled','mode','ai_config','trigger_stage_id','reply_stage_id','sequence_steps'].sort())
     assert.deepEqual(draft.sequence_steps,[{delay_hours:12,step_type:'send_template',template_id:'tpl',custom_body:'Hello'}])
     assert.deepEqual(draft.ai_config,original.ai_config)
     draft.ai_config!.days.push(0)

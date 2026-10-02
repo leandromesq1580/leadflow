@@ -1,5 +1,7 @@
 # Sequências IA WhatsApp até resposta
 
+Opção compartilhada IA/tradicional: [Ao responder, mover para…](sequence-reply-stage.md) — migration 056, implementação local e publicação pendente.
+
 ## Apresentação personalizada — publicação autorizada em 29/09/2026
 
 Campo opcional **Como você gosta de se apresentar?**, na aba Mensagem, persistido como `ai_config.presentation` por sequência do comprador. Aceita até 300 caracteres; omitido vira string vazia e espaços externos são removidos. Não cria preferência global nem altera outras sequências. `save_sequence` já armazena o JSONB inteiro; nenhuma nova migration ou credencial é necessária.

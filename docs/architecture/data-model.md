@@ -31,6 +31,10 @@ Semântica que já custou erro no passado (não recalcule do zero):
 - **Idioma do lead** = `lead_language` (`pt`/`es`); mapeamento de formulário Meta
   conhecido em `src/lib/lead-language.ts` é autoritativo sobre o idioma da interface.
 
+## Destino opcional após resposta (migration 056, ainda local)
+
+`sequences.reply_stage_id` é UUID nullable, FK `pipeline_stages(id) ON DELETE SET NULL`; NULL desliga, PATCH omitido preserva. Destino pertence ao dono da sequência e, se houver gatilho, ao mesmo pipeline. `pipeline_leads.sequence_reply_moved_at` distingue movimento silencioso por resposta para excluir automações de estágio até movimento ordinário posterior. `sequence_reply_moves` é uma outbox service-only com snapshots, tentativas e resultados terminais; `ai_sequence_suppressions.reply_move_intent/reply_move_due_at` preservam intenção caso a materialização falhe. Revisões `reply_move_version` em lead/comprador/sequência/pipeline/estágio invalidam snapshots de configuração/propriedade alterados. Drenagem pelo cron existente a cada minuto, sem depender de nova resposta. Sem backfill nem inscrição/ativação. Contrato, conflitos, locks e rollout: [sequence-reply-stage](../features/sequence-reply-stage.md).
+
 ## Outras tabelas confirmadas em uso (não exaustivo — confira `information_schema`
 antes de assumir)
 

@@ -168,6 +168,7 @@ async function findTargets(auto: Automation): Promise<Target[]> {
       .from('pipeline_leads')
       .select('id, lead_id')
       .eq('stage_id', stageId)
+      .is('sequence_reply_moved_at', null) // Reply routing moves cards without starting destination automations.
       .in('pipeline_id', pipelineIds)
       .gte('moved_at', auto.created_at)
     return (data || []).map(r => ({ lead_id: r.lead_id, pipeline_lead_id: r.id }))
@@ -184,6 +185,7 @@ async function findTargets(auto: Automation): Promise<Target[]> {
       .from('pipeline_leads')
       .select('id, lead_id')
       .eq('stage_id', stageId)
+      .is('sequence_reply_moved_at', null) // Reply routing moves cards without starting destination automations.
       .in('pipeline_id', pipelineIds)
       .lte('moved_at', cutoff)
     return (data || []).map(r => ({ lead_id: r.lead_id, pipeline_lead_id: r.id }))

@@ -6,6 +6,7 @@ interface SequenceSeed {
  mode?: 'legacy' | 'ai_until_reply'
  ai_config?: AISequenceConfig
  trigger_stage_id?: string | null
+ reply_stage_id?: string | null
  sequence_steps: { delay_hours: number; template_id: string | null; custom_body: string | null; step_type: 'send_template' | 'wait' | 'notify_agent' }[]
 }
 /** Copy configuration only: never execution state or persisted identities. */
@@ -18,6 +19,7 @@ export function duplicateSequenceDraft(source: SequenceSeed, locale: string) {
   mode: source.mode ?? 'legacy',
   ai_config: source.ai_config,
   trigger_stage_id: source.trigger_stage_id,
+  reply_stage_id: source.reply_stage_id ?? null,
   sequence_steps: source.sequence_steps.map(({delay_hours, template_id, custom_body, step_type}) => ({delay_hours, template_id, custom_body, step_type})),
  })
 }

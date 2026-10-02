@@ -543,6 +543,9 @@ try:
     completion = REPO / 'supabase/migrations/055_sequence_batch_completion_clock.sql'
     if completion.exists():
         sources.append((completion.name, completion.read_text()))
+    reply = REPO / 'supabase/migrations/056_sequence_reply_stage.sql'
+    if reply.exists():
+        sources.append((reply.name, reply.read_text()))
     for name, sql in sources:
         (RUN / name).write_text(sql)
         HASHES[name] = hashlib.sha256(sql.encode()).hexdigest()
