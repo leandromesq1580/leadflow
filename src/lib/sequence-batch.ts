@@ -18,8 +18,12 @@ export async function verifiedSequenceBridge(bridge: BridgeConfig | null, reques
     if (!response.ok) throw new SequenceWaiting()
     const status=await response.json()
     if (status?.ready!==true) throw new SequenceWaiting()
-    const phone=canonicalSender(status.phone)
-    if (bridge.phone && canonicalSender(bridge.phone)!==phone) throw new SequenceWaiting()
+    // The deployed server returns `number`. Accept older phone-only bridges,
+    // but never hide an invalid primary field or a conflicting alternate identity.
+    const hasNumber=Object.hasOwn(status,'number')
+    const phone=canonicalSender(hasNumber ? status.number : status.phone)
+    if (hasNumber && Object.hasOwn(status,'phone') && canonicalSender(status.phone)!==phone) throw new SequenceWaiting()
+    if (bridge.phone!==undefined && canonicalSender(bridge.phone)!==phone) throw new SequenceWaiting()
     return {...bridge,phone}
   } catch {
     // Do not retain raw network/body errors, which may contain private details.

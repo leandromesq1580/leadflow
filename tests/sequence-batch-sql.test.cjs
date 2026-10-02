@@ -7,6 +7,11 @@ const buyer='00000000-0000-4000-8000-000000000001'
 const other='00000000-0000-4000-8000-000000000002'
 const lead='00000000-0000-4000-8000-000000000003'
 const migration='supabase/migrations/053_ai_suppression_resolution.sql'
+async function applyPacing(db) {
+ for (const migration of ['054_sequence_batch_pacing.sql', '055_sequence_batch_completion_clock.sql']) {
+  await db.exec(readFileSync('supabase/migrations/' + migration, 'utf8'))
+ }
+}
 async function fixture() {
  const db=new PGlite()
  await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role; CREATE SCHEMA auth; CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS 'select null::uuid';
@@ -36,7 +41,7 @@ async function fixture() {
 test('legacy cancellations serialize state, ignore outbound receipts, and preserve delete ambiguity',async()=>{
  const {db}=await fixture()
  try{
-  await db.exec(readFileSync('supabase/migrations/054_sequence_batch_pacing.sql','utf8'))
+  await applyPacing(db)
   for(const kind of ['media','stop','manual','owner','optout','receipt','delete']){
    const l=(await db.query('insert into leads(id,assigned_to) values(gen_random_uuid(),$1) returning id',[buyer])).rows[0]
    const s=(await db.query("insert into sequences(buyer_id,name) values($1,'legacy') returning id",[buyer])).rows[0]
@@ -69,7 +74,7 @@ test('lost begin response is quarantined even when caller reports sending false'
  for(const mode of ['legacy','ai_until_reply']){
   const {db,e}=await fixture()
   try{
-   await db.exec(readFileSync('supabase/migrations/054_sequence_batch_pacing.sql','utf8'))
+   await applyPacing(db)
    await db.query('update sequence_enrollments set mode=$1 where id=$2',[mode,e.id])
    await db.query("update sequences set ai_config=$1 where id=$2",[{timezone:'UTC',days:[0,1,2,3,4,5,6],start:'00:00',end:'23:59'},e.sequence_id])
    const c=(await db.query(`select * from ${mode==='legacy'?'claim_legacy_sequence':'claim_ai_sequence'}($1)`,[e.id])).rows[0]
@@ -84,10 +89,10 @@ test('lost begin response is quarantined even when caller reports sending false'
  }
 })
 
-test('expired orphan dispatch is quarantined without rearming STOP and releases other enrollments only after quarantine',async()=>{
+test('expired orphan dispatch holds sender indefinitely without rearming STOP',async()=>{
  const {db}=await fixture()
  try {
-  await db.exec(readFileSync('supabase/migrations/054_sequence_batch_pacing.sql','utf8'))
+  await applyPacing(db)
   async function make(){
    const l=(await db.query('insert into leads(id,assigned_to) values(gen_random_uuid(),$1) returning id',[buyer])).rows[0]
    const s=(await db.query("insert into sequences(buyer_id,name) values($1,'fixture') returning id",[buyer])).rows[0]
@@ -126,10 +131,10 @@ test('expired orphan dispatch is quarantined without rearming STOP and releases 
    assert.equal((await db.query('select cooldown_until from sequence_sender_batches where sender=$1',[sender])).rows[0].cooldown_until.getTime(),b.cooldown_until.getTime(),'cleanup is idempotent')
    await db.query("update sequence_sender_batches set cooldown_until=clock_timestamp()-interval '1 second' where sender=$1",[sender])
    const fresh=await make()
-   assert.equal((await db.query('select preflight_sequence_batch($1,$2,$3) ok',[fresh.id,fresh.lease_token,sender])).rows[0].ok,true)
-   assert.equal(await begin(fresh,sender),true)
-   assert.equal((await db.query('select used from sequence_sender_batches where sender=$1',[sender])).rows[0].used,1)
-   assert.equal((await db.query('select count(*)::int n from sequence_batch_dispatches where sender=$1',[sender])).rows[0].n,11)
+   assert.equal((await db.query('select preflight_sequence_batch($1,$2,$3) ok',[fresh.id,fresh.lease_token,sender])).rows[0].ok,false)
+   assert.equal(await begin(await make(),sender),false)
+   assert.equal((await db.query('select used from sequence_sender_batches where sender=$1',[sender])).rows[0].used,10)
+   assert.equal((await db.query('select count(*)::int n from sequence_batch_dispatches where sender=$1',[sender])).rows[0].n,10)
   }
   for(const role of ['anon','authenticated','service_role'])assert.equal((await db.query("select has_function_privilege($1,'public.expire_sequence_batch_dispatches(text)','execute') ok",[role])).rows[0].ok,role==='service_role')
  }finally{await db.close()}
@@ -140,7 +145,7 @@ test('shared sender grants ten, then durably waits without consuming attempt or 
  try {
   const path='supabase/migrations/054_sequence_batch_pacing.sql'
   assert.ok(existsSync(path),'batch pacing migration must exist')
-  await db.exec(readFileSync(path,'utf8'))
+  await applyPacing(db)
   for(let i=0;i<11;i++) {
    const leadId=`00000000-0000-4000-8001-${String(i).padStart(12,'0')}`
    await db.query('insert into leads(id,assigned_to) values($1,$2)',[leadId,buyer])
@@ -160,7 +165,7 @@ test('shared sender grants ten, then durably waits without consuming attempt or 
 test('preflight waits before generation; finish is idempotent, cancellation survives and numbers are independent',async()=>{
  const {db,e}=await fixture()
  try {
-  await db.exec(readFileSync('supabase/migrations/054_sequence_batch_pacing.sql','utf8'))
+  await applyPacing(db)
   await db.query("update sequences set ai_config=$1 where id=$2",[{timezone:'UTC',days:[0,1,2,3,4,5,6],start:'00:00',end:'23:59'},e.sequence_id])
   let c=(await db.query('select * from claim_ai_sequence($1)',[e.id])).rows[0]
   await db.exec("insert into sequence_sender_batches(sender,used,cooldown_until) values('15555550100',10,clock_timestamp()+interval '5 minutes')")
@@ -180,7 +185,7 @@ test('preflight waits before generation; finish is idempotent, cancellation surv
 test('AI cannot bypass pacing with null sender',async()=>{
  const {db,e}=await fixture()
  try {
-  await db.exec(readFileSync('supabase/migrations/054_sequence_batch_pacing.sql','utf8'))
+  await applyPacing(db)
   await db.query("update sequences set ai_config=$1 where id=$2",[{timezone:'UTC',days:[0,1,2,3,4,5,6],start:'00:00',end:'23:59'},e.sequence_id])
   const c=(await db.query('select * from claim_ai_sequence($1)',[e.id])).rows[0]
   assert.equal((await db.query("select begin_sequence_batch($1,$2,null,'fixture') r",[e.id,c.lease_token])).rows[0].r.allowed,false)
@@ -191,7 +196,7 @@ test('AI cannot bypass pacing with null sender',async()=>{
 test('full-batch cooldown starts after completion, partial idle reset, shared buyers, waits at attempt three and independent exclusions',async()=>{
  const {db}=await fixture()
  try {
-  await db.exec(readFileSync('supabase/migrations/054_sequence_batch_pacing.sql','utf8'))
+  await applyPacing(db)
   async function legacy(owner=buyer,kind='send_template'){
    const l=(await db.query('insert into leads(id,assigned_to) values(gen_random_uuid(),$1) returning id',[owner])).rows[0]
    const s=(await db.query("insert into sequences(buyer_id,name) values($1,'fixture') returning id",[owner])).rows[0]
@@ -211,7 +216,7 @@ test('full-batch cooldown starts after completion, partial idle reset, shared bu
   await db.exec("update sequence_sender_batches set cooldown_until=clock_timestamp()-interval '1 second' where sender='15555550300'")
   const fresh=await legacy();assert.equal(await begin(fresh,'15555550300'),true);await finish(fresh,'15555550300')
   assert.equal((await db.query("select used from sequence_sender_batches where sender='15555550300'")).rows[0].used,1)
-  await db.exec("update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '6 minutes' where sender='15555550300'")
+  await db.exec("update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '6 minutes',last_settled_at=clock_timestamp()-interval '6 minutes' where sender='15555550300'")
   const partial=await legacy();assert.equal(await begin(partial,'15555550300'),true);await finish(partial,'15555550300')
   assert.equal((await db.query("select used from sequence_sender_batches where sender='15555550300'")).rows[0].used,1)
   const wait=await legacy(buyer,'wait');assert.equal(await begin(wait,null),true);assert.equal(await finish(wait,''),true)
