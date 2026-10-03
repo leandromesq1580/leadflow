@@ -120,10 +120,10 @@ export function usePipelineOrder(pipelineId: string | null) {
 
   useEffect(()=>{
     if(mode!=='conversation'||!applicable||!identity.id)return
-    // One lightweight board metadata read per minute only while needed. Errors do
-    // not auto-retry forever; the user gets a bounded explicit retry instead.
+    // Short fallback through the owner-authorized API (no broader message subscription).
+    // Only ready reads poll: in-flight/error/restricted never cause retry loops.
     if(metadata.status!=='ready')return
-    const timer=setInterval(retry,60000)
+    const timer=setInterval(()=>{if(document.visibilityState==='visible')retry()},5000)
     return ()=>clearInterval(timer)
   },[mode,applicable,identity.id,metadata.status,retry])
 
