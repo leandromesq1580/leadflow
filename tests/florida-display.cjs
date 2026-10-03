@@ -26,7 +26,7 @@ function load(relative, dependencies = {}) {
   return mod.exports
 }
 // All records here are synthetic test fixtures; no real user or network access.
-const lead = { id: 'synthetic-test-lead', name: 'Synthetic Test', phone: '', email: '', city: '', state: 'FL', status: 'assigned', type: 'hot', created_at: '2026-07-15T10:47:25Z', assigned_at: '2026-07-15T10:48:43Z' }
+const lead = { id: 'synthetic-test-lead', assigned_to: 'fixture-owner', assigned_to_member: null, name: 'Synthetic Test', phone: '', email: '', city: '', state: 'FL', status: 'assigned', type: 'hot', created_at: '2026-07-15T10:47:25Z', assigned_at: '2026-07-15T10:48:43Z' }
 function deps(locale = 'pt', record = lead) {
   return {
     '@/lib/i18n-client': { useT: () => ({ _locale: locale }) },
@@ -34,7 +34,7 @@ function deps(locale = 'pt', record = lead) {
     '@/lib/locale': { getLocale: async () => locale },
     '@/lib/supabase/server': { createServerSupabase: async () => ({ auth: { getUser: async () => ({ data: { user: { id: 'test-auth' } } }) } }) },
     '@/lib/supabase/admin': { createAdminClient: () => ({ from: table => {
-      const query = { select: () => query, eq: () => query, single: async () => ({ data: record }), order: async () => ({ data: table === 'lead_activity' ? [{ id: 'test-activity', action: 'Synthetic action', created_at: '2026-07-15T10:49:00Z' }] : [] }) }
+      const query = { select: () => query, eq: () => query, maybeSingle: async () => ({ data: table === 'buyers' ? { id: 'fixture-owner', is_admin: false } : record }), single: async () => ({ data: record }), order: async () => ({ data: table === 'lead_activity' ? [{ id: 'test-activity', action: 'Synthetic action', created_at: '2026-07-15T10:49:00Z' }] : [] }) }
       return query
     } }) },
     'next/link': ({ children, ...props }) => React.createElement('a', props, children),
