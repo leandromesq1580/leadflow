@@ -12,10 +12,11 @@ async function api() {
  assert.equal(typeof m.conversationOrderAPI,'function','authenticated conversation metadata API must exist')
  return m.conversationOrderAPI
 }
-function fixture(overrides:Record<string,any[]>={}, fail='') {
+function fixture(overrides:Record<string,any[]>={}, fail='', beforeRead=(table:string,tables:Record<string,any[]>)=>{void table;void tables}) {
  const tables:Record<string,any[]>={pipelines:[{id:pipeline,buyer_id:buyer}],pipeline_leads:[{id:'p1',pipeline_id:pipeline,lead:{id:'l1',assigned_to:buyer,assigned_to_member:null}}],leads:[{id:'l1',assigned_to:buyer,assigned_to_member:null,whatsapp_messages:[{sent_at:'2026-09-30T12:00:00Z'}]}],...overrides}
  const calls:any[]=[]
  const db={from(table:string){const ops:any[]=[];calls.push({table,ops});const chain:any=new Proxy({}, {get:(_,key)=>key==='then'?(resolve:any)=>{
+  beforeRead(table,tables)
   let rows=structuredClone(tables[table]||[])
   for(const [op,col,val] of ops){
    if(op==='eq' && !col.includes('.'))rows=rows.filter(r=>r[col]===val)
@@ -29,6 +30,41 @@ function fixture(overrides:Record<string,any[]>={}, fail='') {
  }: (...args:any[])=>{assert.ok(!['insert','update','delete','rpc'].includes(String(key)));ops.push([key,...args]);return chain}});return chain}}
  return {db,calls}
 }
+test('mixed board omits delegated metadata before querying messages, including later pages',async()=>{
+ const make=await api()
+ for(const count of [2,80]) {
+  const parents=Array.from({length:count},(_,i)=>({id:'p'+String(i).padStart(4,'0'),pipeline_id:pipeline,lead:{id:'l'+i,assigned_to:buyer,assigned_to_member:i===count-1?'m':null}}))
+  const f=fixture({pipeline_leads:parents,leads:parents.map(p=>({...p.lead,whatsapp_messages:[]})),team_members:[{id:'m',auth_user_id:'member-auth'}],buyers:[{id:'foreign',auth_user_id:'member-auth'}]})
+  const r=await make(f.db,async()=>session)(req());assert.equal(r.status,200)
+  const body=await r.json();assert.equal(body.conversations.length,count-1)
+  assert.ok(!body.conversations.some((c:any)=>c.lead_id==='l'+(count-1)))
+  for(const c of f.calls.filter(c=>c.table==='leads'))assert.ok(!c.ops.find((o:any)=>o[0]==='in'&&o[1]==='id')[2].includes('l'+(count-1)))
+ }
+})
+test('member buyer mapping revoked during metadata read omits only inaccessible metadata',async()=>{
+ const make=await api()
+ const owner={id:'l1',assigned_to:buyer,assigned_to_member:'m'}
+ const f=fixture({pipeline_leads:[{id:'p1',pipeline_id:pipeline,lead:owner}],leads:[{...owner,whatsapp_messages:[]}],team_members:[{id:'m',auth_user_id:'member-auth'}],buyers:[]},'',(table,tables)=>{
+  if(table==='leads')tables.buyers=[{id:'foreign',auth_user_id:'member-auth'}]
+ })
+ const response=await make(f.db,async()=>session)(req())
+ assert.equal(response.status,200);assert.deepEqual((await response.json()).conversations,[])
+})
+test('concurrent lead delegation preserves unrelated authorized dates, not null for revoked metadata',async()=>{
+ const make=await api(),lead=(id:string)=>({id,assigned_to:buyer,assigned_to_member:null})
+ const f=fixture({pipeline_leads:['l1','l2'].map((id,i)=>({id:'p'+i,pipeline_id:pipeline,lead:lead(id)})),leads:[{...lead('l1'),assigned_to:'foreign',whatsapp_messages:[{sent_at:'2026-09-30'}]},{...lead('l2'),whatsapp_messages:[{sent_at:'2026-09-29'}]}]})
+ const r=await make(f.db,async()=>session)(req());assert.equal(r.status,200)
+ assert.deepEqual((await r.json()).conversations,[{lead_id:'l2',last_whatsapp_at:'2026-09-29'}])
+})
+test('database failure during post-metadata ownership recheck is 503, never empty success',async()=>{
+ const make=await api(),owner={id:'l1',assigned_to:buyer,assigned_to_member:'m'};let metadataRead=false
+ const f=fixture({pipeline_leads:[{id:'p1',pipeline_id:pipeline,lead:owner}],leads:[{...owner,whatsapp_messages:[]}],team_members:[{id:'m',auth_user_id:'member-auth'}],buyers:[]},'',table=>{
+  if(table==='leads')metadataRead=true
+  if(table==='team_members'&&metadataRead)throw Error('fixture unavailable')
+ })
+ const r=await make(f.db,async()=>session)(req());assert.equal(r.status,503)
+ assert.deepEqual(await r.json(),{error:'Conversations unavailable'})
+})
 test('auth before scope reads; identity comes only from validated session',async()=>{
  const make=await api();const f=fixture()
  assert.equal((await make(f.db,async()=>null)(req())).status,401);assert.equal(f.calls.length,0)
@@ -48,6 +84,7 @@ test('minimal dates and IDs, caller buyer filters embed top1 before order; ignor
  const r=await make(f.db,async()=>session)(req(`pipeline_id=${pipeline}&buyer_id=foreign`))
  assert.equal(r.status,200)
  assert.deepEqual(await r.json(),{auth_user_id:auth,pipeline_id:pipeline,conversations:[{lead_id:'l1',last_whatsapp_at:'2026-09-30T12:00:00Z'}]})
+ assert.ok(!f.calls.some(c=>c.table==='sms_messages'),'SMS never contributes to WhatsApp ordering')
  const c=f.calls.find(c=>c.table==='leads')
  assert.ok(c.ops.some((o:any)=>o[0]==='eq'&&o[1]==='whatsapp_messages.buyer_id'&&o[2]===buyer))
  assert.ok(c.ops.some((o:any)=>o[0]==='in'&&o[1]==='whatsapp_messages.direction'&&JSON.stringify(o[2])==='["in","out"]'))
@@ -59,12 +96,14 @@ test('current lead owner enforced in batches including assigned members and owne
  const make=await api()
  for(const at of ['parents','metadata']) {
   const f=fixture(at==='parents'?{pipeline_leads:[{id:'p1',pipeline_id:pipeline,lead:{id:'l1',assigned_to:'foreign'}}]}:{leads:[{id:'l1',assigned_to:'foreign',whatsapp_messages:[{sent_at:'secret'}]}]})
-  assert.equal((await make(f.db,async()=>session)(req())).status,403)
+  const r=await make(f.db,async()=>session)(req())
+  assert.equal(r.status,200);assert.deepEqual((await r.json()).conversations,[])
  }
  const member={id:'m',auth_user_id:'member-auth'}
  const parents=[{id:'p1',pipeline_id:pipeline,lead:{id:'l1',assigned_to:buyer,assigned_to_member:'m'}}]
  const f=fixture({pipeline_leads:parents,team_members:[member],buyers:[{id:'foreign',auth_user_id:'member-auth'}]})
- assert.equal((await make(f.db,async()=>session)(req())).status,403)
+ const delegated=await make(f.db,async()=>session)(req())
+ assert.equal(delegated.status,200);assert.deepEqual((await delegated.json()).conversations,[])
  assert.ok(!f.calls.some(c=>c.table==='leads'))
  const fallback=fixture({pipeline_leads:parents,team_members:[member],buyers:[],leads:[{id:'l1',assigned_to:buyer,assigned_to_member:'m',whatsapp_messages:[]}]})
  assert.equal((await make(fallback.db,async()=>session)(req())).status,200)

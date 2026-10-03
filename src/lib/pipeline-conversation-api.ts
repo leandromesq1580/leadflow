@@ -44,29 +44,36 @@ export function conversationOrderAPI(db: Db, caller: () => Promise<{id: string; 
         // Batch equivalent of getCurrentLeadOwner; a member without a buyer falls back
         // to assigned_to. Never call a per-lead auth helper (N+1).
         const members = [...new Set(owners.map(o=>o.assigned_to_member).filter((id): id is string => !!id))]
-        const memberOwners = new Map<string,string>()
-        if (members.length) {
-          for await (const memberBatch of pages(after=>{
-            let q=db.from('team_members').select('id,auth_user_id').in('id',members).order('id').limit(100)
-            if(after)q=q.gt('id',after)
-            return q
-          })) {
-            const authIds=[...new Set(memberBatch.map(m=>m.auth_user_id).filter(Boolean))]
-            if (!authIds.length) continue
-            for await (const buyers of pages(after=>{
-              let q=db.from('buyers').select('id,auth_user_id').in('auth_user_id',authIds).order('id').limit(100)
+        const readMemberOwners = async () => {
+          const memberOwners = new Map<string,string>()
+          if (members.length) {
+            for await (const memberBatch of pages(after=>{
+              let q=db.from('team_members').select('id,auth_user_id').in('id',members).order('id').limit(100)
               if(after)q=q.gt('id',after)
               return q
-            })) for (const member of memberBatch) {
-              const buyer=buyers.find(b=>b.auth_user_id===member.auth_user_id)
-              if(buyer)memberOwners.set(member.id,buyer.id)
+            })) {
+              const authIds=[...new Set(memberBatch.map(m=>m.auth_user_id).filter(Boolean))]
+              if (!authIds.length) continue
+              for await (const buyers of pages(after=>{
+                let q=db.from('buyers').select('id,auth_user_id').in('auth_user_id',authIds).order('id').limit(100)
+                if(after)q=q.gt('id',after)
+                return q
+              })) for (const member of memberBatch) {
+                const buyer=buyers.find(b=>b.auth_user_id===member.auth_user_id)
+                if(buyer)memberOwners.set(member.id,buyer.id)
+              }
             }
           }
+          return memberOwners
         }
+        const memberOwners = await readMemberOwners()
         const owns = (lead: Owner) => (lead.assigned_to_member ? memberOwners.get(lead.assigned_to_member) || lead.assigned_to : lead.assigned_to) === session.id
-        if (owners.some(o=>!owns(o))) throw new Restricted()
-        const ids=[...new Set(owners.map(o=>o.id))]
+        // Board visibility does not grant conversation access. Omit delegated IDs
+        // before touching messages; an empty authorized subset is a valid result.
+        const ids=[...new Set(owners.filter(owns).map(o=>o.id))]
+        if (!ids.length) continue
         const seen=new Set<string>()
+        const batchConversations: typeof conversations = []
         for await (const leads of pages(after=>{
           // PostgREST left embed: filter + ORDER/LIMIT apply PER LEAD. Only one
           // timestamp crosses the wire; idx_wa_msg_lead(lead_id,sent_at DESC) exists.
@@ -85,13 +92,24 @@ export function conversationOrderAPI(db: Db, caller: () => Promise<{id: string; 
           // Recheck ownership fields returned alongside the timestamp. An assignment
           // changed during this read must fail closed, not reuse an old permission.
           const original=owners.find(o=>o.id===lead.id)
-          if(!original || original.assigned_to!==lead.assigned_to || (original.assigned_to_member||null)!==(lead.assigned_to_member||null) || !owns(lead)) throw new Restricted()
-          if(!Array.isArray(lead.whatsapp_messages)) throw new Error('Missing relation')
+          if(!original || !ids.includes(lead.id)) throw new Error('Unexpected lead')
           seen.add(lead.id)
+          if(original.assigned_to!==lead.assigned_to || (original.assigned_to_member||null)!==(lead.assigned_to_member||null) || !owns(lead)) continue
+          if(!Array.isArray(lead.whatsapp_messages)) throw new Error('Missing relation')
           const date=lead.whatsapp_messages[0]?.sent_at
-          conversations.push({lead_id:lead.id,last_whatsapp_at:typeof date==='string'&&Number.isFinite(Date.parse(date))?date:null})
+          batchConversations.push({lead_id:lead.id,last_whatsapp_at:typeof date==='string'&&Number.isFinite(Date.parse(date))?date:null})
         }
         if(seen.size!==ids.length) throw new Error('Incomplete read')
+        // Member -> buyer may change without changing the lead fields. Re-resolve
+        // after the metadata read. Revoked metadata is omitted, never changed to
+        // an empty-thread date, and never invalidates unrelated authorized cards.
+        // Database errors still discard the WHOLE response through the 503 path.
+        const currentMemberOwners = await readMemberOwners()
+        for (const conversation of batchConversations) {
+          const owner=owners.find(o=>o.id===conversation.lead_id)!
+          if (owner.assigned_to_member && currentMemberOwners.get(owner.assigned_to_member)!==memberOwners.get(owner.assigned_to_member)) continue
+          conversations.push(conversation)
+        }
       }
       return reply({auth_user_id:session.authUserId,pipeline_id:pipelineId,conversations})
     } catch (error) {
