@@ -11,6 +11,7 @@ import { StatusSheet } from '@/components/mobile/status-sheet'
 import { FollowupSheet } from '@/components/mobile/followup-sheet'
 import { TagSheet } from '@/components/mobile/tag-sheet'
 import { getInitials, statusLabel, timeAgo } from '@/lib/utils'
+import { AddExistingLeadToPipeline } from '@/components/add-existing-lead-to-pipeline'
 import { LeadLanguageBadge } from '@/components/lead-language-badge'
 import type { LeadLanguageFields } from '@/lib/lead-message-locale'
 
@@ -102,6 +103,8 @@ export default function MobileLeadDetail() {
               <span style={{ color: '#c084fc', display: 'flex' }}><MIcon name="message" size={20} /></span>Email
             </a>
           </div>
+
+          <AddExistingLeadToPipeline key={lead.id} leadId={lead.id} />
 
           {/* Ações secundárias */}
           <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>

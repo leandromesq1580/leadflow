@@ -5,7 +5,10 @@ import { getInitials } from '@/lib/utils'
 import { formatFloridaDateTime } from '@/lib/florida-time'
 import { getLocale } from '@/lib/locale'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
+import { redirect, notFound } from 'next/navigation'
+import { atorDaSessao } from '@/lib/pipeline-guard'
+import { leadDetailOwner } from '@/lib/lead-detail-access'
+import { AddExistingLeadToPipeline } from '@/components/add-existing-lead-to-pipeline'
 import { LeadLanguageBadge } from '@/components/lead-language-badge'
 
 export const dynamic = 'force-dynamic'
@@ -20,12 +23,18 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   if (!user) redirect('/login')
 
   const db = createAdminClient()
+  const actor = await atorDaSessao(db)
+  if (!actor) notFound()
+  const owner = await leadDetailOwner(db, actor, id)
+  if (!owner) notFound()
 
-  const { data: lead } = await db
+  let leadQuery = db
     .from('leads')
     .select('*')
     .eq('id', id)
-    .single()
+    .eq('assigned_to', owner)
+  if (actor.memberId) leadQuery = leadQuery.eq('assigned_to_member', actor.memberId)
+  const { data: lead } = await leadQuery.single()
 
   if (!lead) {
     return (
@@ -63,6 +72,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         </div>
         <Badge status={lead.status} />
       </div>
+
+      <AddExistingLeadToPipeline key={lead.id} leadId={lead.id} />
 
       {/* Contact Info */}
       <div className="rounded-2xl p-6 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>

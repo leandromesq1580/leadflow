@@ -1,5 +1,7 @@
 'use client'
 
+import { AddExistingLeadToPipeline, type ConfirmedPipelineEntry } from '@/components/add-existing-lead-to-pipeline'
+
 import { useState, useEffect } from 'react'
 import { SendMessageModal } from '@/components/send-message-modal'
 import { ExchangeBox } from './exchange-box'
@@ -66,6 +68,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   const [showSendMsg, setShowSendMsg] = useState(false)
   const [pipelines, setPipelines] = useState<any[]>([])
   const [pipelineLead, setPipelineLead] = useState<any>(null)
+  const [pipelineEntryNotice, setPipelineEntryNotice] = useState('')
   const [pendingStageId, setPendingStageId] = useState<string | null>(null)
   const [pendingPipelineId, setPendingPipelineId] = useState<string | null>(null)
 
@@ -105,14 +108,33 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
     ))
   }, [fuType, fuSendConfirm, fuConfirmEdited, fuDate, fuTime, lead?.name, lead?.lead_language, lead?.form_name])
 
-  async function loadPipelineInfo() {
+  async function pipelineEntryAdded({ entry, pipeline }: ConfirmedPipelineEntry) {
+    // Use the confirmed card immediately; a later read failure cannot erase it.
+    setPipelineLead({ ...entry, pipeline, stage: pipeline.stages.find(s => s.id === entry.stage_id) })
+    setPipelines(current => current.some(p => p.id === pipeline.id) ? current : [...current, pipeline])
+    setPendingStageId(entry.stage_id)
+    setPendingPipelineId(entry.pipeline_id)
+    setPipelineEntryNotice('Lead incluído no funil. Nenhuma automação foi iniciada.')
+    try { await loadPipelineInfo(true) }
+    catch { setPipelineEntryNotice('Lead incluído no funil. Não foi possível atualizar a visualização; reabra o lead. Não é necessário incluir novamente.') }
+    finally { onSaved() }
+  }
+
+  async function loadPipelineInfo(confirmedEntry = false) {
     if (!buyerId) return
     const [pipesRes, plRes] = await Promise.all([
-      fetch(`/api/pipelines?buyer_id=${buyerId}`).then(r => r.json()),
-      fetch(`/api/leads/${leadId}/pipeline`).then(r => r.ok ? r.json() : { pipelineLead: null }),
+      fetch(`/api/pipelines?buyer_id=${buyerId}`).then(r => {
+        if (confirmedEntry && !r.ok) throw new Error('Pipeline refresh failed')
+        return r.json()
+      }),
+      fetch(`/api/leads/${leadId}/pipeline`).then(r => {
+        if (confirmedEntry && !r.ok) throw new Error('Card refresh failed')
+        return r.ok ? r.json() : { pipelineLead: null }
+      }),
     ])
     let pipes: any[] = pipesRes.pipelines || []
     const pl = plRes.pipelineLead || null
+    if (confirmedEntry && (!pl?.id || !pl?.stage_id || !pl?.pipeline?.id)) throw new Error('Unconfirmed card refresh')
 
     // Cross-buyer fix: lead pode estar em pipeline de outro buyer (ex: team member
     // vendo lead que ainda está na pipeline da agência). Se a pipeline atual do
@@ -567,6 +589,8 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
               </div>
 
               {/* Pipeline Stage selector */}
+              {pipelineEntryNotice && <p role="status">{pipelineEntryNotice}</p>}
+              {!pipelineLead && <AddExistingLeadToPipeline key={leadId} leadId={leadId} onAdded={pipelineEntryAdded} />}
               {pipelineLead && (
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--fg-muted)' }}>
