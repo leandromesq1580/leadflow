@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { ModuleKind, transpileModule } from 'typescript'
 import * as routing from '../src/lib/wa-conversation-routing'
+import * as messageContent from '../src/lib/wa-message-content'
 
 const bridgePhone = '17865550101'
 const otherPhone = '14425550102'
@@ -114,6 +115,7 @@ function loadWebhook(db: any, notifications: any[]) {
     '@/lib/supabase/admin': { createAdminClient: () => db },
     '@/lib/buyer-locale': { localeDoBuyer: async () => 'pt', trad: () => (pt: string) => pt },
     '@/lib/wa-conversation-routing': routing,
+    '@/lib/wa-message-content': messageContent,
     '@/lib/push-notify': { pushToBuyer: async (...args: any[]) => { notifications.push(args) } },
   }
   const js = transpileModule(readFileSync(new URL('../src/app/api/webhook/wa-bridge/route.ts', import.meta.url), 'utf8'), {
@@ -174,6 +176,17 @@ test('webhook persists duplicate-phone reply in the right lead and notifies only
   assert.equal(f.inserted[0].lead_id, 'current')
   assert.equal(f.inserted[0].body, 'Synthetic reply')
   assert.deepEqual(f.notifications.map(n => n[0]), ['agency'])
+})
+
+test('content-only media types remain visible after persistence without a download flag', async () => {
+  for (const type of ['ptt', 'image', 'location', 'vcard']) {
+    const f = fixture()
+    const response = await f.send({ body: '', type, has_media: false })
+    assert.equal(response.status, 200)
+    assert.equal(f.inserted.length, 1)
+    assert.equal(f.inserted[0].media_type, type)
+    assert.equal(messageContent.isCustomerReply(f.inserted[0]), true)
+  }
 })
 
 test('webhook respects the shared-bridge member conversation', async () => {

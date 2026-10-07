@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveSendBridge } from '@/lib/wa-bridge'
+import { readWhatsAppHistory, compareTimestamp } from '@/lib/wa-message-history'
 
 async function requireAdmin(db: ReturnType<typeof createAdminClient>, authUserId: string) {
   const { data: me } = await db.from('buyers').select('id, is_admin').eq('auth_user_id', authUserId).single()
@@ -19,12 +20,15 @@ export async function GET(request: NextRequest) {
   const buyerId = new URL(request.url).searchParams.get('buyer_id')
   if (!buyerId) return NextResponse.json({ error: 'Missing buyer_id' }, { status: 400 })
 
-  const { data: messages } = await db
-    .from('client_messages')
-    .select('id, direction, body, media_type, media_url, created_at, status')
-    .eq('client_buyer_id', buyerId)
-    .order('created_at', { ascending: true })
-    .limit(500)
+  const messages = await readWhatsAppHistory(after => {
+    let q = db.from('client_messages')
+      .select('id,direction,body,media_type,media_url,wa_message_id,created_at,status')
+      .eq('client_buyer_id', buyerId).order('id').limit(500)
+    if (after) q = q.gt('id', after)
+    return q
+  }).catch(() => null)
+  if (!messages) return NextResponse.json({ error: 'Conversation unavailable' }, { status: 503 })
+  messages.sort(compareTimestamp(m => m.created_at, 'asc'))
 
   return NextResponse.json({ messages: messages || [] })
 }
