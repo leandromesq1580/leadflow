@@ -1,4 +1,46 @@
 import type { createAdminClient } from './supabase/admin'
+import { hasWhatsAppContent, isCustomerReply } from './wa-message-content'
+
+const messageFields = 'id,sent_at,direction,body,media_type,media_url,wa_message_id'
+type Message = { id: string; sent_at: string; direction: string; body?: string | null; media_type?: string | null; media_url?: string | null; wa_message_id?: string | null }
+const isMessage = (row: Message) => row.direction === 'out' ? hasWhatsAppContent(row) : isCustomerReply(row)
+const before = (row: Message, cursor: Message) => row.sent_at < cursor.sent_at || (row.sent_at === cursor.sent_at && row.id < cursor.id)
+
+/** Only noisy top rows need history. Two simple keyset queries avoid an untested
+ * compound PostgREST expression: finish timestamp ties, then read older dates.
+ * Short pages are NOT exhaustion; max_rows may be smaller than our limit.
+ * A bounded, incomplete search is unavailable (503), never an empty thread. */
+async function previousMessage(db: Db, buyerId: string, leadId: string, first: Message, spend: () => void): Promise<string | null> {
+  let cursor = first
+  let ties = true
+  for (let page = 0; page < 24; page++) {
+    if (!cursor.id || !Number.isFinite(Date.parse(cursor.sent_at))) throw new Error('Invalid message cursor')
+    spend()
+    let q = db.from('whatsapp_messages').select(messageFields)
+      .eq('buyer_id', buyerId).eq('lead_id', leadId)
+      .in('direction', ['in','out']).in('status', ['sent','delivered','read'])
+      .not('sent_at', 'is', null).order('sent_at', {ascending:false}).order('id', {ascending:false}).limit(32)
+    q = ties ? q.eq('sent_at', cursor.sent_at).lt('id', cursor.id) : q.lt('sent_at', cursor.sent_at)
+    const {data,error} = await q
+    if (error || !data) throw new Error('History unavailable')
+    const rows = data as unknown as Message[]
+    if (!rows.length) {
+      if (!ties) return null
+      ties = false
+      continue
+    }
+    let previous = cursor
+    for (const row of rows) {
+      if (!row.id || !Number.isFinite(Date.parse(row.sent_at)) || !before(row, previous) || (ties && row.sent_at !== cursor.sent_at)) throw new Error('History pagination unavailable')
+      previous = row
+    }
+    const valid = rows.find(isMessage)
+    if (valid) return valid.sent_at
+    cursor = rows[rows.length - 1]
+    ties = true
+  }
+  throw new Error('History search budget exceeded')
+}
 type Db = ReturnType<typeof createAdminClient>
 type Owner = { id: string; assigned_to: string | null; assigned_to_member: string | null }
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -34,6 +76,8 @@ export function conversationOrderAPI(db: Db, caller: () => Promise<{id: string; 
       if (error) throw error
       if (!pipeline) throw new Restricted()
       const conversations: {lead_id:string; last_whatsapp_at:string|null}[] = []
+      let historyReads = 0
+      const spendHistoryRead = () => { if (++historyReads > 64) throw new Error('History request budget exceeded') }
       for await (const batch of pages(after => {
         let q = db.from('pipeline_leads').select('id,lead:leads!inner(id,assigned_to,assigned_to_member)').eq('pipeline_id',pipelineId).order('id').limit(100)
         if (after) q=q.gt('id',after)
@@ -74,17 +118,19 @@ export function conversationOrderAPI(db: Db, caller: () => Promise<{id: string; 
         if (!ids.length) continue
         const seen=new Set<string>()
         const batchConversations: typeof conversations = []
+        const historyIds: string[] = []
         for await (const leads of pages(after=>{
-          // PostgREST left embed: filter + ORDER/LIMIT apply PER LEAD. Only one
-          // timestamp crosses the wire; idx_wa_msg_lead(lead_id,sent_at DESC) exists.
+          // PostgREST left embed: filter + ORDER/LIMIT apply PER LEAD. One row
+          // crosses the wire on the clean fast path; only noise needs more reads.
           // Writers materialize inbound as delivered, outbound as sent; read is
           // an acknowledgement, but its original sent_at remains unchanged.
-          let q=db.from('leads').select('id,assigned_to,assigned_to_member,whatsapp_messages(sent_at)')
+          let q=db.from('leads').select(`id,assigned_to,assigned_to_member,whatsapp_messages(${messageFields})`)
             .in('id',ids).eq('whatsapp_messages.buyer_id',session.id)
             .in('whatsapp_messages.direction',['in','out'])
             .in('whatsapp_messages.status',['sent','delivered','read'])
             .not('whatsapp_messages.sent_at','is',null)
             .order('sent_at',{referencedTable:'whatsapp_messages',ascending:false,nullsFirst:true})
+            .order('id',{referencedTable:'whatsapp_messages',ascending:false})
             .limit(1,{referencedTable:'whatsapp_messages'}).order('id').limit(100)
           if(after)q=q.gt('id',after)
           return q
@@ -96,10 +142,32 @@ export function conversationOrderAPI(db: Db, caller: () => Promise<{id: string; 
           seen.add(lead.id)
           if(original.assigned_to!==lead.assigned_to || (original.assigned_to_member||null)!==(lead.assigned_to_member||null) || !owns(lead)) continue
           if(!Array.isArray(lead.whatsapp_messages)) throw new Error('Missing relation')
-          const date=lead.whatsapp_messages[0]?.sent_at
-          batchConversations.push({lead_id:lead.id,last_whatsapp_at:typeof date==='string'&&Number.isFinite(Date.parse(date))?date:null})
+          const latest = lead.whatsapp_messages[0] as Message | undefined
+          let date: string | null = null
+          if (latest && typeof latest.sent_at === 'string' && Number.isFinite(Date.parse(latest.sent_at))) {
+            if (isMessage(latest)) date = latest.sent_at
+            else {
+              historyIds.push(lead.id)
+              date = await previousMessage(db, session.id, lead.id, latest, spendHistoryRead)
+            }
+          }
+          batchConversations.push({lead_id:lead.id,last_whatsapp_at:date})
         }
         if(seen.size!==ids.length) throw new Error('Incomplete read')
+        // Direct history reads extend the authorization window. Recheck only
+        // those leads, in batches, AFTER history and before member revalidation.
+        const rechecked = new Map<string, Owner>()
+        if (historyIds.length) {
+          for await (const leads of pages(after => {
+            let q = db.from('leads').select('id,assigned_to,assigned_to_member').in('id',historyIds).order('id').limit(100)
+            if (after) q = q.gt('id',after)
+            return q
+          })) for (const lead of leads) {
+            if (!historyIds.includes(lead.id)) throw new Error('Unexpected lead')
+            rechecked.set(lead.id,lead)
+          }
+          if (rechecked.size !== historyIds.length) throw new Error('Incomplete ownership read')
+        }
         // Member -> buyer may change without changing the lead fields. Re-resolve
         // after the metadata read. Revoked metadata is omitted, never changed to
         // an empty-thread date, and never invalidates unrelated authorized cards.
@@ -107,6 +175,8 @@ export function conversationOrderAPI(db: Db, caller: () => Promise<{id: string; 
         const currentMemberOwners = await readMemberOwners()
         for (const conversation of batchConversations) {
           const owner=owners.find(o=>o.id===conversation.lead_id)!
+          const current = rechecked.get(owner.id)
+          if (current && (current.assigned_to !== owner.assigned_to || (current.assigned_to_member||null) !== (owner.assigned_to_member||null) || !owns(current))) continue
           if (owner.assigned_to_member && currentMemberOwners.get(owner.assigned_to_member)!==memberOwners.get(owner.assigned_to_member)) continue
           conversations.push(conversation)
         }

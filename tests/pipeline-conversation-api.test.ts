@@ -14,6 +14,9 @@ async function api() {
 }
 function fixture(overrides:Record<string,any[]>={}, fail='', beforeRead=(table:string,tables:Record<string,any[]>)=>{void table;void tables}) {
  const tables:Record<string,any[]>={pipelines:[{id:pipeline,buyer_id:buyer}],pipeline_leads:[{id:'p1',pipeline_id:pipeline,lead:{id:'l1',assigned_to:buyer,assigned_to_member:null}}],leads:[{id:'l1',assigned_to:buyer,assigned_to_member:null,whatsapp_messages:[{sent_at:'2026-09-30T12:00:00Z'}]}],...overrides}
+ // These tests model genuine messages. Include content now read by the shared
+ // classifier; the separate R1 transport tests exercise empty/own-echo rows.
+ for(const lead of tables.leads)if(Array.isArray(lead.whatsapp_messages))lead.whatsapp_messages=lead.whatsapp_messages.map((m:any,i:number)=>({id:'message-'+i,direction:'in',body:'fixture reply',media_type:null,media_url:null,wa_message_id:'false_fixture',...m}))
  const calls:any[]=[]
  const db={from(table:string){const ops:any[]=[];calls.push({table,ops});const chain:any=new Proxy({}, {get:(_,key)=>key==='then'?(resolve:any)=>{
   beforeRead(table,tables)
@@ -90,7 +93,8 @@ test('minimal dates and IDs, caller buyer filters embed top1 before order; ignor
  assert.ok(c.ops.some((o:any)=>o[0]==='in'&&o[1]==='whatsapp_messages.direction'&&JSON.stringify(o[2])==='["in","out"]'))
  assert.ok(c.ops.some((o:any)=>o[0]==='in'&&o[1]==='whatsapp_messages.status'&&JSON.stringify(o[2])==='["sent","delivered","read"]'))
  assert.ok(c.ops.some((o:any)=>o[0]==='limit'&&o[1]===1&&o[2]?.referencedTable==='whatsapp_messages'))
- assert.ok(c.ops.some((o:any)=>o[0]==='select'&&o[1]==='id,assigned_to,assigned_to_member,whatsapp_messages(sent_at)'))
+ assert.ok(c.ops.some((o:any)=>o[0]==='select'&&o[1]==='id,assigned_to,assigned_to_member,whatsapp_messages(id,sent_at,direction,body,media_type,media_url,wa_message_id)'))
+ assert.ok(c.ops.some((o:any)=>o[0]==='order'&&o[1]==='id'&&o[2]?.referencedTable==='whatsapp_messages'&&o[2].ascending===false))
 })
 test('current lead owner enforced in batches including assigned members and ownership changes',async()=>{
  const make=await api()
@@ -168,7 +172,7 @@ test('actual Supabase serializer emits per-parent nested order/limit, never glob
  assert.equal((await make(db,async()=>session)(req())).status,200)
  const u=urls.find(u=>u.pathname.endsWith('/leads'))!
  assert.equal(u.searchParams.get('whatsapp_messages.limit'),'1')
- assert.equal(u.searchParams.get('whatsapp_messages.order'),'sent_at.desc.nullsfirst')
+ assert.equal(u.searchParams.get('whatsapp_messages.order'),'sent_at.desc.nullsfirst,id.desc')
  assert.equal(u.searchParams.get('whatsapp_messages.buyer_id'),'eq.'+buyer)
  assert.equal(u.searchParams.get('whatsapp_messages.status'),'in.(sent,delivered,read)')
  assert.equal(u.searchParams.get('whatsapp_messages.sent_at'),'not.is.null')

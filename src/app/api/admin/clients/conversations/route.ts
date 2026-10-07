@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { readWhatsAppHistory, readConversationMetadata, compareTimestamp } from '@/lib/wa-message-history'
 
 /**
  * GET /api/admin/clients/conversations — lista os CLIENTES (compradores) com
@@ -15,16 +16,15 @@ export async function GET() {
   const { data: me } = await db.from('buyers').select('is_admin').eq('auth_user_id', user.id).single()
   if (!me?.is_admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const { data: msgs, error } = await db
-    .from('client_messages')
-    .select('client_buyer_id, direction, body, media_type, created_at, read_at')
-    .order('created_at', { ascending: false })
-    .limit(3000)
-  if (error) {
-    // migration 019 ainda não aplicada
-    if (/client_messages/i.test(error.message || '')) return NextResponse.json({ conversations: [], migrated: false })
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+  const msgs = await readWhatsAppHistory(after => {
+    let q = db.from('client_messages')
+      .select('id,client_buyer_id,direction,body,media_type,media_url,wa_message_id,created_at,read_at')
+      .order('id').limit(500)
+    if (after) q = q.gt('id', after)
+    return q
+  }).catch(() => null)
+  if (!msgs) return NextResponse.json({ error: 'Conversations unavailable' }, { status: 503 })
+  msgs.sort(compareTimestamp(m => m.created_at, 'desc'))
 
   const byBuyer: Record<string, { last: any; unread: number }> = {}
   for (const m of msgs || []) {
@@ -35,10 +35,14 @@ export async function GET() {
   const ids = Object.keys(byBuyer)
   if (ids.length === 0) return NextResponse.json({ conversations: [], migrated: true })
 
-  const { data: buyers } = await db
-    .from('buyers')
-    .select('id, name, email, phone, crm_plan')
-    .in('id', ids)
+  const buyers = await readConversationMetadata(ids, (block, after) => {
+    let q = db.from('buyers')
+      .select('id, name, email, phone, crm_plan')
+      .in('id', block).order('id', { ascending: true }).limit(100)
+    if (after) q = q.gt('id', after)
+    return q
+  }).catch(() => null)
+  if (!buyers) return NextResponse.json({ error: 'Conversations unavailable' }, { status: 503 })
   const bmap: Record<string, any> = {}
   for (const b of buyers || []) bmap[b.id] = b
 
@@ -59,7 +63,7 @@ export async function GET() {
       last_at: last.created_at,
       unread: byBuyer[id].unread,
     }
-  }).filter(Boolean).sort((a: any, b: any) => b.last_at.localeCompare(a.last_at))
+  }).filter(Boolean).sort(compareTimestamp((c: any) => c.last_at, 'desc'))
 
   return NextResponse.json({ conversations, migrated: true })
 }

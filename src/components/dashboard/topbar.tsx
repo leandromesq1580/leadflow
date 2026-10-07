@@ -6,6 +6,10 @@ import { usePathname } from 'next/navigation'
 import { useT } from '@/lib/i18n-client'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 
+const emptyCounts = { wa: null, comunidade: null, reunioes: null, semContato: null }
+type Counts = { [K in keyof typeof emptyCounts]: number | null }
+const validCount = (value: unknown): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
+
 /**
  * TOPBAR (reconcept Fase 3): contexto de onde estou + sino unificado.
  * O sino agrega o que já existe — WhatsApp não lido, novidades da comunidade,
@@ -17,8 +21,15 @@ export function TopBar({ buyerId }: { buyerId?: string }) {
   const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const pathname = usePathname()
   const [aberto, setAberto] = useState(false)
-  const [n, setN] = useState({ wa: 0, comunidade: 0, reunioes: 0, semContato: 0 })
-  const [creditos, setCreditos] = useState<number | null>(null)
+  const [notifications, setN] = useState<{buyerId?: string; counts: Counts; unavailable: boolean}>({counts: emptyCounts, unavailable: true})
+  // Scope visible state as well as effects: no old buyer badge during the render
+  // before cleanup, and no late response can overwrite the next buyer's counts.
+  const current = notifications.buyerId === buyerId ? notifications : {counts: emptyCounts, unavailable: true}
+  if (notifications.buyerId !== buyerId) setN({buyerId, counts: emptyCounts, unavailable: true})
+  const n = {wa: current.counts.wa ?? 0, comunidade: current.counts.comunidade ?? 0, reunioes: current.counts.reunioes ?? 0, semContato: current.counts.semContato ?? 0}
+  const unavailable = current.unavailable
+  const [balance, setCreditos] = useState<{buyerId: string; value: number} | null>(null)
+  const creditos = balance && balance.buyerId === buyerId ? balance.value : null
   const caixa = useRef<HTMLDivElement>(null)
 
   // saldo de créditos sempre à vista (reconcept): carrega, atualiza a cada 5 min
@@ -28,7 +39,7 @@ export function TopBar({ buyerId }: { buyerId?: string }) {
     let vivo = true
     const carregarSaldo = () => fetch('/api/home', { cache: 'no-store' })
       .then(r => (r.ok ? r.json() : null))
-      .then(d => { if (vivo && d && typeof d.remaining === 'number') setCreditos(d.remaining) })
+      .then(d => { if (vivo && d && typeof d.remaining === 'number') setCreditos({buyerId, value: d.remaining}) })
       .catch(() => {})
     carregarSaldo()
     const timer = setInterval(carregarSaldo, 5 * 60_000)
@@ -40,7 +51,10 @@ export function TopBar({ buyerId }: { buyerId?: string }) {
   useEffect(() => {
     if (!buyerId) return
     let vivo = true
+    let loading = false
     const carregar = async () => {
+      if (loading) return
+      loading = true
       try {
         const [wa, com, reu, spd] = await Promise.all([
           fetch(`/api/whatsapp/unread?buyer_id=${buyerId}`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null),
@@ -49,13 +63,24 @@ export function TopBar({ buyerId }: { buyerId?: string }) {
           fetch('/api/speed-to-lead', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null),
         ])
         if (!vivo) return
-        setN({
-          wa: wa?.total || 0,
-          comunidade: com?.unread || 0,
-          reunioes: Array.isArray(reu?.events) ? reu.events.length : 0,
-          semContato: Array.isArray(spd?.leads) ? spd.leads.length : 0,
+        const counts: Counts = {
+          wa: validCount(wa?.total) ? wa.total : null,
+          comunidade: validCount(com?.unread) ? com.unread : null,
+          reunioes: Array.isArray(reu?.events) ? reu.events.length : null,
+          semContato: Array.isArray(spd?.leads) ? spd.leads.length : null,
+        }
+        setN(previous => {
+          const last = previous.buyerId === buyerId ? previous.counts : emptyCounts
+          return {buyerId, unavailable: Object.values(counts).some(value => value === null), counts: {
+            wa: counts.wa ?? last.wa,
+            comunidade: counts.comunidade ?? last.comunidade,
+            reunioes: counts.reunioes ?? last.reunioes,
+            semContato: counts.semContato ?? last.semContato,
+          }}
         })
-      } catch {}
+      } catch {
+        if (vivo) setN(previous => ({...previous, unavailable: true}))
+      } finally { loading = false }
     }
     carregar()
     const timer = setInterval(carregar, 60_000)
@@ -141,13 +166,14 @@ export function TopBar({ buyerId }: { buyerId?: string }) {
 
       <div ref={caixa} className="relative">
         <button onClick={() => setAberto(v => !v)} aria-label={L('Notificações', 'Notifications', 'Notificaciones')}
+          title={unavailable ? L('Notificações: atualização indisponível', 'Notifications: update unavailable', 'Notificaciones: actualización no disponible') : undefined}
           className="relative w-9 h-9 rounded-xl flex items-center justify-center text-[16px] transition-transform hover:scale-105"
           style={{ background: 'var(--bg-soft)', border: '1px solid var(--border)' }}>
           🔔
-          {total > 0 && (
+          {(total > 0 || unavailable) && (
             <span className="absolute -top-1 -right-1 text-[9px] font-extrabold text-white rounded-full flex items-center justify-center"
-              style={{ background: '#ef4444', minWidth: 16, height: 16, padding: '0 4px' }}>
-              {total > 99 ? '99+' : total}
+              style={{ background: unavailable ? '#b45309' : '#ef4444', minWidth: 16, height: 16, padding: '0 4px' }}>
+              {total > 0 ? (total > 99 ? '99+' : total) : '…'}
             </span>
           )}
         </button>
@@ -156,11 +182,11 @@ export function TopBar({ buyerId }: { buyerId?: string }) {
           <div className="absolute right-0 top-11 w-[320px] rounded-2xl overflow-hidden shadow-2xl"
             style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: '0 16px 48px rgba(0,0,0,0.25)' }}>
             <p className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--fg-muted)', borderBottom: '1px solid var(--border)' }}>
-              {L('Notificações', 'Notifications', 'Notificaciones')}
+              {unavailable ? L('Notificações · atualização indisponível', 'Notifications · update unavailable', 'Notificaciones · actualización no disponible') : L('Notificações', 'Notifications', 'Notificaciones')}
             </p>
             {total === 0 ? (
               <p className="px-4 py-8 text-center text-[13px]" style={{ color: 'var(--fg-muted)' }}>
-                ✨ {L('Tudo em dia por aqui', 'All caught up', 'Todo al día por aquí')}
+                {unavailable ? L('Não foi possível atualizar agora', 'Unable to update right now', 'No se pudo actualizar ahora') : <>✨ {L('Tudo em dia por aqui', 'All caught up', 'Todo al día por aquí')}</>}
               </p>
             ) : (
               <>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { callerBuyer, canActAs } from '@/lib/api-auth'
 import { leadMessageLocale, type LeadMessageLocale } from '@/lib/lead-message-locale'
+import { readWhatsAppHistory, readConversationMetadata, compareTimestamp } from '@/lib/wa-message-history'
 
 interface Conversation {
   lead_id: string
@@ -32,16 +33,15 @@ export async function GET(request: NextRequest) {
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!canActAs(caller, buyerId)) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
 
-  // Pega TODAS as mensagens do buyer (limit alto, ordena do mais recente pro mais antigo)
-  const { data: messages, error } = await db
-    .from('whatsapp_messages')
-    .select('id, lead_id, direction, body, media_type, sent_at, read_at')
-    .eq('buyer_id', buyerId)
-    .not('lead_id', 'is', null)
-    .order('sent_at', { ascending: false })
-    .limit(2000)
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  const messages = await readWhatsAppHistory(after => {
+    let q = db.from('whatsapp_messages')
+      .select('id,lead_id,direction,body,media_type,media_url,wa_message_id,sent_at,read_at')
+      .eq('buyer_id', buyerId).not('lead_id', 'is', null).order('id').limit(500)
+    if (after) q = q.gt('id', after)
+    return q
+  }).catch(() => null)
+  if (!messages) return NextResponse.json({ error: 'Conversations unavailable' }, { status: 503 })
+  messages.sort(compareTimestamp(m => m.sent_at, 'desc'))
 
   // Agrupa por lead_id: pega a primeira msg (mais recente) + conta unread
   const byLead: Record<string, { last: any; unread: number }> = {}
@@ -55,10 +55,14 @@ export async function GET(request: NextRequest) {
   if (leadIds.length === 0) return NextResponse.json({ conversations: [] })
 
   // Busca dados dos leads pra exibir nome/telefone/estado/AI score
-  const { data: leads } = await db
-    .from('leads')
-    .select('id, name, phone, state, ai_score, lead_language, form_name, meta_lead_id')
-    .in('id', leadIds)
+  const leads = await readConversationMetadata(leadIds, (ids, after) => {
+    let q = db.from('leads')
+      .select('id, name, phone, state, ai_score, lead_language, form_name, meta_lead_id')
+      .in('id', ids).order('id', { ascending: true }).limit(100)
+    if (after) q = q.gt('id', after)
+    return q
+  }).catch(() => null)
+  if (!leads) return NextResponse.json({ error: 'Conversations unavailable' }, { status: 503 })
 
   const leadMap: Record<string, any> = {}
   for (const L of leads || []) leadMap[L.id] = L
@@ -89,7 +93,7 @@ export async function GET(request: NextRequest) {
       }
     })
     .filter((c): c is Conversation => c !== null)
-    .sort((a, b) => b.last_sent_at.localeCompare(a.last_sent_at))
+    .sort(compareTimestamp(c => c.last_sent_at, 'desc'))
 
   return NextResponse.json({ conversations })
 }

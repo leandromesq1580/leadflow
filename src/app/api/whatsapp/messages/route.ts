@@ -5,6 +5,7 @@ import { assertBuyerOwnsLead } from '@/lib/lead-ownership'
 import { getBridgeForBuyer } from '@/lib/wa-bridge'
 import { callerBuyer, canActAs } from '@/lib/api-auth'
 import { renderTemplate } from '@/lib/template-render'
+import { readWhatsAppHistory, compareTimestamp } from '@/lib/wa-message-history'
 
 /** GET /api/whatsapp/messages?lead_id=X&buyer_id=Y — thread pra lead (com validacao de ownership) */
 export async function GET(request: NextRequest) {
@@ -32,12 +33,15 @@ export async function GET(request: NextRequest) {
     if (!canActAs(caller, buyerId)) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
   }
 
-  let query = db.from('whatsapp_messages').select('*').order('sent_at', { ascending: true })
-  if (leadId) query = query.eq('lead_id', leadId)
-  if (buyerId && !leadId) query = query.eq('buyer_id', buyerId).is('read_at', null).eq('direction', 'in')
-
-  const { data, error } = await query.limit(500)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  const data = await readWhatsAppHistory(after => {
+    let q = db.from('whatsapp_messages').select('*').order('id').limit(500)
+    if (leadId) q = q.eq('lead_id', leadId)
+    if (buyerId && !leadId) q = q.eq('buyer_id', buyerId).is('read_at', null).eq('direction', 'in')
+    if (after) q = q.gt('id', after)
+    return q
+  }).catch(() => null)
+  if (!data) return NextResponse.json({ error: 'Conversation unavailable' }, { status: 503 })
+  data.sort(compareTimestamp(m => m.sent_at, 'asc'))
 
   // A conversa do lead inclui os SMS (caso Robson, 2026-08-10): o lead respondia o
   // SMS automático e a resposta ficava invisível — só o admin sabia, o dono do lead

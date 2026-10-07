@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { shouldIgnoreWhatsAppEvent, whatsAppMediaType } from '@/lib/wa-message-content'
 import { localeDoBuyer, trad } from '@/lib/buyer-locale'
 import { sameWhatsAppPhone, selectWhatsAppConversation, whatsappEventCutoff, type WhatsAppOutboundContext } from '@/lib/wa-conversation-routing'
 
@@ -35,6 +36,11 @@ export async function POST(request: NextRequest) {
     if (!wa_message_id || !from) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
     }
+    // Reject transport-only events before dedupe, persistence or notifications.
+    if (shouldIgnoreWhatsAppEvent({ wa_message_id, body, type, has_media, media_url, media_type, direction })) {
+      return NextResponse.json({ skipped: 'non_message' })
+    }
+    const storedMediaType = whatsAppMediaType({ media_type, type, has_media })
     // direction='out' = mensagem que o DONO enviou (do celular ou via backfill).
     // Inbound (default): o LEAD é quem mandou (from); bridge = to.
     // Outbound: o LEAD é o destinatário (to); bridge = from.
@@ -130,7 +136,7 @@ export async function POST(request: NextRequest) {
         from_phone: normalizedFrom,
         to_phone: to || '',
         body: body || '',
-        media_type: media_type || (has_media ? (type || 'media') : null),
+        media_type: storedMediaType,
         media_url: media_url || null,
         wa_message_id,
         status: isOut ? 'sent' : 'received',
@@ -170,7 +176,7 @@ export async function POST(request: NextRequest) {
           await db.from('whatsapp_messages').insert({
             buyer_id: NEW_CLIENT_BUYER, lead_id: dupeLead.id, direction: 'in',
             from_phone: normalizedFrom, to_phone: to || '', body: body || '',
-            media_type: media_type || (has_media ? (type || 'media') : null),
+            media_type: storedMediaType,
             media_url: media_url || null, wa_message_id, status: 'delivered',
           })
           return NextResponse.json({ success: true, existing_client_lead: dupeLead.id })
@@ -198,7 +204,7 @@ export async function POST(request: NextRequest) {
           await db.from('whatsapp_messages').insert({
             buyer_id: NEW_CLIENT_BUYER, lead_id: newLead.id, direction: 'in',
             from_phone: normalizedFrom, to_phone: to || '', body: body || '',
-            media_type: media_type || (has_media ? (type || 'media') : null),
+            media_type: storedMediaType,
             media_url: media_url || null, wa_message_id, status: 'delivered',
           })
           console.log(`[WA Inbox] NOVO CLIENTE → Lead4Pro: lead ${newLead.id} (${contactPhone})`)
@@ -328,7 +334,7 @@ export async function POST(request: NextRequest) {
       from_phone: normalizedFrom,
       to_phone: to || '',
       body: body || '',
-      media_type: media_type || (has_media ? (type || 'media') : null),
+      media_type: storedMediaType,
       media_url: media_url || null,
       wa_message_id,
       status: isOut ? 'sent' : 'delivered',
