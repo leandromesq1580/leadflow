@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { shouldIgnoreWhatsAppEvent, whatsAppMediaType } from '@/lib/wa-message-content'
 import { localeDoBuyer, trad } from '@/lib/buyer-locale'
-import { sameWhatsAppPhone, selectWhatsAppConversation, whatsappEventCutoff, type WhatsAppOutboundContext } from '@/lib/wa-conversation-routing'
+import { sameWhatsAppPhone, whatsAppPhoneVariants, whatsAppStoredPhoneVariants, selectWhatsAppConversation, whatsappEventCutoff, type WhatsAppOutboundContext } from '@/lib/wa-conversation-routing'
 
 /**
  * POST /api/webhook/wa-bridge
@@ -81,14 +81,27 @@ export async function POST(request: NextRequest) {
     // Resolve recipient buyer (so usado pra desempate em lead duplicado) — pelo nº do bridge do dono
     let recipientBuyerId: string | null = null
     if (ownBridgePhone) {
-      const last10To = ownBridgePhone.slice(-10)
-      const last11To = ownBridgePhone.slice(-11)
-      const { data: bridgeBuyers, error: bridgeError } = await db
-        .from('buyers')
-        .select('id')
-        .or(`wa_bridge_phone.eq.${ownBridgePhone},wa_bridge_phone.ilike.%${last10To},wa_bridge_phone.ilike.%${last11To}`)
-      if (bridgeError) throw bridgeError
-      recipientBuyerId = bridgeBuyers?.length === 1 ? bridgeBuyers[0].id : null
+      // Admin/legacy writers accept formatted phone text. An IN of textual
+      // aliases can hide another canonical owner and falsely grant access.
+      // Scan minimal fields once, in stable primary-key order; normalize only
+      // in memory. Keyset pagination continues through an EMPTY page, not a
+      // short one (PostgREST may cap responses below our requested page size).
+      const recipientIds = new Set<string>()
+      let afterId: string | null = null
+      while (true) {
+        let query = db.from('buyers').select('id, wa_bridge_phone')
+          .order('id', { ascending: true }).limit(250)
+        if (afterId) query = query.gt('id', afterId)
+        const { data: bridgeBuyers, error: bridgeError } = await query
+        if (bridgeError) throw bridgeError
+        if (!bridgeBuyers?.length) break
+        for (const buyer of bridgeBuyers) {
+          if (sameWhatsAppPhone(buyer.wa_bridge_phone, ownBridgePhone)) recipientIds.add(buyer.id)
+        }
+        afterId = bridgeBuyers[bridgeBuyers.length - 1].id
+      }
+      // Do not infer an owner or use partial results until EVERY page succeeds.
+      recipientBuyerId = recipientIds.size === 1 ? [...recipientIds][0] : null
     }
 
     if (!contactPhone) return NextResponse.json({ skipped: 'no_contact' })
@@ -146,12 +159,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, client_buyer_id: clientBuyer.id })
     }
 
-    // Acha leads pelo phone do CONTATO (o lead)
-    const last10 = contactPhone.slice(-10)
+    // Match exact country-aware aliases BEFORE LIMIT; suffixes can cross countries
+    // or miss Brazil's ninth digit. phone_digits already strips stored formatting.
+    const contactPhones = whatsAppPhoneVariants(contactPhone)
     const { data: candidates, error: candidatesError } = await db
       .from('leads')
       .select('id, assigned_to, assigned_to_member, phone, name, created_at, assigned_at')
-      .or(`phone_digits.eq.${contactPhone},phone_digits.ilike.%${last10}`)
+      .in('phone_digits', contactPhones)
       .order('created_at', { ascending: false })
       .limit(100)
     if (candidatesError) throw candidatesError
@@ -170,7 +184,7 @@ export async function POST(request: NextRequest) {
         // candidates roda antes; o lead irmao pode ter sido criado no meio). Se ja
         // existe lead na conta de vendas com esse telefone, anexa a msg e sai.
         const { data: dupeLead } = await db.from('leads')
-          .select('id').eq('assigned_to', NEW_CLIENT_BUYER).eq('phone_digits', contactPhone)
+          .select('id').eq('assigned_to', NEW_CLIENT_BUYER).in('phone_digits', contactPhones)
           .order('created_at', { ascending: true }).limit(1).maybeSingle()
         if (dupeLead) {
           await db.from('whatsapp_messages').insert({
@@ -275,7 +289,7 @@ export async function POST(request: NextRequest) {
           .select('lead_id, buyer_id, from_phone, sent_at')
           .eq('lead_id', c.id).eq('buyer_id', c.ownerBuyerId!)
           .eq('direction', 'out').in('status', ['sent', 'delivered', 'read'])
-          .or(`from_phone.eq.${ownBridgePhone},from_phone.eq.,from_phone.is.null`)
+          .or([...whatsAppStoredPhoneVariants(ownBridgePhone).map(phone => `from_phone.eq.${phone}`), 'from_phone.eq.', 'from_phone.is.null'].join(','))
           .lte('sent_at', cutoff).order('sent_at', { ascending: false }).limit(1)
         if (error) throw error
         return data || []

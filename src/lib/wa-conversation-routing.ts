@@ -16,14 +16,35 @@ export type WhatsAppOutboundContext = {
   sent_at: string
 }
 
-export function sameWhatsAppPhone(a: string | null | undefined, b: string | null | undefined) {
-  const canonical = (value: string | null | undefined) => {
-    const digits = String(value || '').replace(/\D/g, '')
-    // North American numbers are sometimes stored without the country code.
-    return digits.length === 10 ? `1${digits}` : digits
+/** Exact digit aliases, not suffix matching. Brazil aliases require an explicit
+ * country code, a valid DDD and a plausible legacy mobile (6–9 + seven digits).
+ * Only the ninth digit immediately after the DDD may be added/removed.
+ * Ten-digit NANP storage remains supported; Brazilian national-only input is
+ * intentionally not guessed because its country is ambiguous.
+ */
+export function whatsAppPhoneVariants(value: string | null | undefined): string[] {
+  const digits = String(value || '').replace(/\D/g, '')
+  if (!digits) return []
+  const variants = [digits]
+  if (digits.length === 10) variants.push(`1${digits}`)
+  else if (/^1\d{10}$/.test(digits)) variants.push(digits.slice(1))
+  const brazil = digits.match(/^55(1[1-9]|2[12478]|3[1-578]|4[1-9]|5[1345]|6[1-9]|7[134579]|8[1-9]|9[1-9])(9?[6-9]\d{7})$/)
+  if (brazil) {
+    const [, ddd, mobile] = brazil
+    variants.push(`55${ddd}${mobile.length === 9 ? mobile.slice(1) : `9${mobile}`}`)
   }
-  const left = canonical(a)
-  return left.length >= 11 && left === canonical(b)
+  return variants
+}
+
+/** Text phone columns are written as digits, sometimes with a leading '+'. */
+export function whatsAppStoredPhoneVariants(value: string | null | undefined): string[] {
+  return whatsAppPhoneVariants(value).flatMap(phone => [phone, `+${phone}`])
+}
+
+export function sameWhatsAppPhone(a: string | null | undefined, b: string | null | undefined) {
+  const left = whatsAppPhoneVariants(a)
+  const right = whatsAppPhoneVariants(b)
+  return left.some(phone => phone.length >= 11 && right.includes(phone))
 }
 
 export function whatsappEventCutoff(timestamp: unknown, now = Date.now()) {
