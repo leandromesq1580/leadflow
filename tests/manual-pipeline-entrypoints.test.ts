@@ -15,17 +15,19 @@ test('client and admin routes share one strict implementation and admin route ca
  await client.GET(req,ctx);await client.POST(req,ctx);await admin.POST(req,ctx)
  assert.deepEqual(calls.map(c=>c.slice(1)),[['fixture'],['fixture'],['fixture',true]])
 })
-test('final PII reads retain member scope against same-owner reassignment races',()=>{
+test('desktop and API/mobile details use the same fenced PII reader',()=>{
  for(const file of ['src/app/dashboard/leads/[id]/page.tsx','src/app/api/leads/[id]/route.ts']){
-  const source=readFileSync(file,'utf8');assert.match(source,/leadQuery\.eq\('assigned_to_member', actor\.memberId\)/)
+  const source=readFileSync(file,'utf8');assert.match(source,/await readLeadDetail\(/)
  }
+ assert.match(readFileSync('src/lib/lead-detail-access.ts','utf8'),/query\.eq\('assigned_to_member', scope\.memberId\)/)
+ assert.match(readFileSync('src/app/m/leads/[id]/page.tsx','utf8'),/fetch\(`\/api\/leads\/\$\{id\}`/)
 })
 test('reachable desktop/mobile details wire the repair; desktop refuses unauthorized PII before full query',async()=>{
  for(const file of ['src/app/dashboard/leads/[id]/page.tsx','src/app/m/leads/[id]/page.tsx','src/app/dashboard/pipeline/lead-modal.tsx'])assert.match(readFileSync(file,'utf8'),/<AddExistingLeadToPipeline/)
  let fullReads=0;const db={from:()=>{fullReads++;throw Error('PII must not be queried')}}
  const page=load('src/app/dashboard/leads/[id]/page.tsx',{
   '@/lib/supabase/server':{createServerSupabase:async()=>({auth:{getUser:async()=>({data:{user:{id:'auth'}}})}})},
-  '@/lib/supabase/admin':{createAdminClient:()=>db},'@/lib/pipeline-guard':{atorDaSessao:async()=>({buyerId:'owner'})},'@/lib/lead-detail-access':{leadDetailOwner:async()=>null},
+  '@/lib/supabase/admin':{createAdminClient:()=>db},'@/lib/pipeline-guard':{atorDaSessao:async()=>({buyerId:'owner'})},'@/lib/lead-detail-access':{readLeadDetail:async()=>null},
   '@/lib/locale':{getLocale:async()=>'pt'},'@/lib/florida-time':{},'@/lib/utils':{},'@/components/ui/badge':{},'@/components/lead-language-badge':{},'@/components/add-existing-lead-to-pipeline':{},
   'next/link':{},'next/navigation':{redirect:()=>{throw Error('redirect')},notFound:()=>{throw Error('not-found')}},
  }).default

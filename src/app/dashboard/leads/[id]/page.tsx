@@ -7,7 +7,7 @@ import { getLocale } from '@/lib/locale'
 import Link from 'next/link'
 import { redirect, notFound } from 'next/navigation'
 import { atorDaSessao } from '@/lib/pipeline-guard'
-import { leadDetailOwner } from '@/lib/lead-detail-access'
+import { readLeadDetail } from '@/lib/lead-detail-access'
 import { AddExistingLeadToPipeline } from '@/components/add-existing-lead-to-pipeline'
 import { LeadLanguageBadge } from '@/components/lead-language-badge'
 
@@ -25,31 +25,11 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const db = createAdminClient()
   const actor = await atorDaSessao(db)
   if (!actor) notFound()
-  const owner = await leadDetailOwner(db, actor, id)
-  if (!owner) notFound()
+  const lead = await readLeadDetail(db, actor, id)
+  if (!lead) notFound()
 
-  let leadQuery = db
-    .from('leads')
-    .select('*')
-    .eq('id', id)
-    .eq('assigned_to', owner)
-  if (actor.memberId) leadQuery = leadQuery.eq('assigned_to_member', actor.memberId)
-  const { data: lead } = await leadQuery.single()
-
-  if (!lead) {
-    return (
-      <div className="max-w-3xl">
-        <Link href="/dashboard/leads" className="text-[13px] font-medium" style={{ color: 'var(--accent)' }}>{L('← Voltar', '← Back', '← Volver')}</Link>
-        <p className="text-center py-20" style={{ color: 'var(--fg-muted)' }}>{L('Lead nao encontrado', 'Lead not found', 'Lead no encontrado')}</p>
-      </div>
-    )
-  }
-
-  const { data: activities } = await db
-    .from('lead_activity')
-    .select('*')
-    .eq('lead_id', id)
-    .order('created_at', { ascending: false })
+  const activities = [...(lead.activities || [])].sort((a, b) =>
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
   return (
     <div className="max-w-3xl">

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { atorDaSessao } from '@/lib/pipeline-guard'
-import { leadDetailOwner } from '@/lib/lead-detail-access'
+import { readLeadDetail } from '@/lib/lead-detail-access'
 import { migrateWhatsAppOwnership } from '@/lib/lead-ownership'
 
 /**
@@ -23,21 +23,9 @@ export async function GET(
 
   const adminDb = createAdminClient()
   const actor = await atorDaSessao(adminDb)
-  const owner = actor && await leadDetailOwner(adminDb, actor, id)
-  if (!actor || !owner) return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
-  let leadQuery = adminDb
-    .from('leads')
-    .select(`
-      *,
-      buyer:buyers!assigned_to(name, email),
-      activities:lead_activity(*, buyer:buyers(name))
-    `)
-    .eq('id', id)
-    .eq('assigned_to', owner)
-  if (actor.memberId) leadQuery = leadQuery.eq('assigned_to_member', actor.memberId)
-  const { data: lead, error } = await leadQuery.single()
+  const lead = actor && await readLeadDetail(adminDb, actor, id)
 
-  if (error || !lead) {
+  if (!lead) {
     return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
   }
 
