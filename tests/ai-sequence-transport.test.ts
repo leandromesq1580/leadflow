@@ -37,12 +37,12 @@ test('old newline config reaches generator; generation diagnostics persist with 
 })
 test('real transport adapter retains account bridge, readiness and delivery confirmation contract',async t=>{
  const calls:{url:string;body?:string}[]=[]
- t.mock.method(globalThis,'fetch',async(url:string,init:RequestInit)=>{calls.push({url,body:String(init.body||'')});return Response.json(url.endsWith('/status')?{ready:true,phone:'15555550100'}:{id:'wa-confirmed'})})
+ t.mock.method(globalThis,'fetch',async(url:string,init:RequestInit)=>{calls.push({url,body:String(init.body||'')});return Response.json(url.endsWith('/status')?{ready:true,phone:'15555550100'}:{success:true,id:'wa-confirmed',sequence:{version:2,operation_id:enrollment.lease_token,sender:'15555550100',outcome:'confirmed'}})})
  const ports=adapter()
  await ports.ready(enrollment)
  const result=await ports.send(enrollment,ctx,'Quero ajudar com sua proteção. Podemos combinar uma ligação?')
  assert.equal(result.id,'wa-confirmed');assert.equal(calls[1].url,'https://bridge.invalid/send')
- assert.deepEqual(JSON.parse(calls[1].body!),{number:ctx.phone,message:'Quero ajudar com sua proteção. Podemos combinar uma ligação?'})
+ assert.deepEqual(JSON.parse(calls[1].body!),{number:ctx.phone,message:'Quero ajudar com sua proteção. Podemos combinar uma ligação?',sequence:{version:2,operation_id:enrollment.lease_token,sender:'15555550100'}})
 })
 test('rate block never touches bridge; offline and missing send confirmation reject',async t=>{
  let calls=0
@@ -52,7 +52,9 @@ test('rate block never touches bridge; offline and missing send confirmation rej
  const ports=adapter()
  t.mock.method(globalThis,'fetch',async()=>Response.json({ready:true,phone:'15555550100'}))
  await ports.ready(enrollment)
- await assert.rejects(ports.send(enrollment,ctx,'fixture'),/Missing delivery confirmation/)
+ // A bare 200 with no sequence proof is UNKNOWN, never a confirmation — same
+ // safe rejection as a non-200, since neither carries a correlated v2 outcome.
+ await assert.rejects(ports.send(enrollment,ctx,'fixture'),/not confirmed/)
  t.mock.method(globalThis,'fetch',async()=>Response.json({},{status:429}))
  await assert.rejects(ports.send(enrollment,ctx,'fixture'),/not confirmed/)
 })

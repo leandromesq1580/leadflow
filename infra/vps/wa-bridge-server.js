@@ -750,6 +750,46 @@ async function tryGetChatId(digits) {
 }
 
 app.post("/send", async (req, res) => {
+  // Opt-in text-only sequence contract. Authentication is the existing API-key
+  // middleware; sender is checked against THIS session, never echoed as identity.
+  // Keep manual/media consumers on the unchanged path below.
+  if (req.body && Object.hasOwn(req.body, "sequence")) {
+    const c = req.body.sequence;
+    const sender = myNumber();
+    if (!c || c.version !== 2 || typeof c.operation_id !== "string" ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(c.operation_id) ||
+        typeof c.sender !== "string" || !/^[1-9]\d{7,14}$/.test(c.sender) || c.sender !== sender) {
+      return res.status(400).json({ error: "Invalid sequence contract or identity" });
+    }
+    const reply = (status, outcome, code, id = null) => res.status(status).json({
+      success: outcome === "confirmed", id,
+      sequence: { version: 2, operation_id: c.operation_id, sender, outcome, ...(code ? { code } : {}) },
+    });
+    const { number, message } = req.body;
+    if (typeof number !== "string" || !/^[1-9]\d{7,14}$/.test(number) ||
+        typeof message !== "string" || !message.trim() ||
+        ["mediaUrl", "mediaMimetype", "mediaFilename"].some(key => Object.hasOwn(req.body, key))) {
+      return reply(400, "rejected_before_send", "invalid_payload");
+    }
+    if (!isReady) return reply(503, "rejected_before_send", "bridge_not_ready");
+    try {
+      const chatId = await tryGetChatId(number);
+      // Lookup yields to the event loop: do not send on a replaced session.
+      if (myNumber() !== sender) return reply(409, "unknown", "identity_changed");
+      if (!isReady) return reply(503, "rejected_before_send", "bridge_not_ready");
+      if (!chatId) return reply(404, "rejected_before_send", "recipient_unavailable");
+      // After this invocation EVERY failure/absence of ID is ambiguous. Never
+      // use lastMessage or retry: an older/concurrent message is not its receipt.
+      const sent = await withTimeout(client.sendMessage(chatId, message), 45000, "SEND");
+      const id = sent?.id?._serialized;
+      if (typeof id !== "string" || !id || id.length > 512 || /\s/.test(id)) return reply(200, "unknown", "missing_receipt");
+      markBridgeSend(id);
+      return reply(200, "confirmed", null, id);
+    } catch {
+      // No raw body/exception in the sequence response or logs.
+      return reply(500, "unknown", "transport_unconfirmed");
+    }
+  }
   console.log(`[${INSTANCE_NAME}][SEND]`, JSON.stringify({ ...req.body, mediaUrl: req.body.mediaUrl ? "(url)" : undefined }).slice(0, 120));
   if (!isReady) return res.status(503).json({ error: "Not connected" });
   try {

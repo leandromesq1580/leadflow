@@ -4,8 +4,8 @@ import type { LeadLanguageFields } from './lead-message-locale'
 import type { createAdminClient } from './supabase/admin'
 import { getBridgeForBuyer, type BridgeConfig } from './wa-bridge'
 import { checkSendRate } from './send-guard'
-import { SequenceWaiting, verifiedSequenceBridge } from './sequence-batch'
-export interface AIEnrollment { id:string; buyer_id:string; lead_id:string; sequence_id:string; lease_token:string; current_step:number; recent_choices:string[] }
+import { SequenceWaiting, SequenceRejectedSettled, sendSequenceMessage, verifiedSequenceBridge } from './sequence-batch'
+export interface AIEnrollment { id:string; buyer_id:string; lead_id:string; sequence_id:string; lease_token:string; current_step:number; recent_choices:string[]; enrolled_at?:string }
 type Context = {config:AISequenceConfig;lead:LeadLanguageFields;phone:string}
 type Sent = {id:string;from:string;to:string}
 export interface AIEnginePorts {
@@ -45,6 +45,7 @@ export async function runAIEnrollment(id:string, io:AIEnginePorts):Promise<boole
     await io.finish(e,sent,generated.choice,next)
     return true
   }catch(error){
+    if(error instanceof SequenceRejectedSettled)return false
     const reason = sending ? 'delivery_unknown' : error instanceof SequenceWaiting ? 'batch_wait' : phase === 'generation_unavailable' ? generationStopReason(error) : phase
     await io.defer(e,reason,new Date(io.now().getTime()+5*60000),sending)
     return false
@@ -53,7 +54,7 @@ export async function runAIEnrollment(id:string, io:AIEnginePorts):Promise<boole
 
 type Db=ReturnType<typeof createAdminClient>
 export function aiEnginePorts(db:Db):AIEnginePorts {
-  let bridge:BridgeConfig|null=null
+  let bridge:(BridgeConfig & {phone:string})|null=null
   async function rpc(name:string,args:Record<string,unknown>) {
     const {data,error}=await db.rpc(name,args)
     if(error)throw new Error(`Sequence storage unavailable: ${error.code}`)
@@ -85,11 +86,8 @@ export function aiEnginePorts(db:Db):AIEnginePorts {
     send:async(e,ctx,body)=>{
       if(!bridge || bridge.ownerBuyerId!==e.buyer_id)throw new Error('No own bridge')
       const to=ctx.phone.replace(/\D/g,'')
-      const response=await fetch(`${bridge.url}/send`,{method:'POST',headers:{apikey:bridge.key,'Content-Type':'application/json'},signal:AbortSignal.timeout(20000),body:JSON.stringify({number:to,message:body})})
-      if(!response.ok)throw new Error('Delivery not confirmed')
-      const result=await response.json()
-      if(typeof result.id!=='string'||!result.id)throw new Error('Missing delivery confirmation')
-      return {id:result.id,from:bridge.phone || '',to}
+      const id=await sendSequenceMessage(bridge,e,to,body,rpc,20000)
+      return {id,from:bridge.phone,to}
     },
     finish:async(e,sent,choice,next)=>{if(!await rpc('finish_sequence_batch',{p_id:e.id,p_token:e.lease_token,p_wa:sent.id,p_choice:choice,p_next:next.toISOString(),p_from:sent.from,p_to:sent.to}))throw new Error('Confirmation not persisted')},
     defer:async(e,reason,next,unknown)=>{
