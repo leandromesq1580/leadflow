@@ -1,7 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { renderTemplate } from '@/lib/template-render'
 import { getBridgeForBuyer } from '@/lib/wa-bridge'
-import { SequenceWaiting, verifiedSequenceBridge } from './sequence-batch'
+import { SequenceWaiting, SequenceRejectedSettled, sendSequenceMessage, verifiedSequenceBridge } from './sequence-batch'
 import { checkSendRate } from '@/lib/send-guard'
 import { Resend } from 'resend'
 import { localeDoBuyer, trad } from '@/lib/buyer-locale'
@@ -205,7 +205,7 @@ export async function processSequences(options: { mode?: 'legacy' | 'ai_until_re
   return { processed, failed }
 }
 
-type LegacyEnrollment = { id:string; buyer_id:string; lead_id:string; sequence_id:string; current_step:number; lease_token:string }
+type LegacyEnrollment = { id:string; buyer_id:string; lead_id:string; sequence_id:string; current_step:number; lease_token:string; enrolled_at?:string }
 type Receipt = {id:string;from:string;to:string}
 type Db = ReturnType<typeof createAdminClient>
 async function sequenceRpc(db:Db,name:string,args:Record<string,unknown>) {
@@ -231,6 +231,7 @@ export async function runLegacyEnrollment(id:string,db:Db=createAdminClient()):P
     if(!await sequenceRpc(db,'finish_sequence_batch',{p_id:id,p_token:e.lease_token,p_wa:receipt?.id||'',p_choice:'',p_next:new Date().toISOString(),p_from:receipt?.from||'',p_to:receipt?.to||''}))throw new Error('Confirmation not persisted')
     return true
   }catch(error){
+    if(error instanceof SequenceRejectedSettled)return false
     const waiting=!sending && error instanceof SequenceWaiting
     await sequenceRpc(db,waiting?'wait_sequence_batch':'defer_sequence_batch',{
       p_id:id,p_token:e.lease_token,p_reason:sending?'delivery_unknown':waiting?'batch_wait':'execution_failed',
@@ -300,17 +301,10 @@ async function executeStep(step: { step_type: string; template_id?: string | nul
     const rate = await checkSendRate(db, enr.buyer_id)
     if (!rate.ok) throw new SequenceWaiting()
     const sb = await verifiedSequenceBridge(await getBridgeForBuyer(db, enr.buyer_id))
+    if(sb.ownerBuyerId!==enr.buyer_id)throw new SequenceWaiting()
     await begin(sb.phone,body)
     const cleanPhone = lead.phone.replace(/[\s\-()]/g, '').replace(/^\+/, '')
-    const r = await fetch(`${sb.url}/send`, {
-      method: 'POST',
-      signal: AbortSignal.timeout(15000),
-      headers: { apikey: sb.key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ number: cleanPhone, message: body }),
-    })
-    if (!r.ok) throw new Error(`wa-bridge ${r.status}`)
-    const { id: waId } = await r.json()
-    if(typeof waId!=='string'||!waId)throw new Error('Missing delivery confirmation')
+    const waId=await sendSequenceMessage(sb,enr,cleanPhone,body,(name,args)=>sequenceRpc(db,name,args),15000)
     receipt={id:waId,from:sb.phone,to:cleanPhone}
   } else {
     if (!lead.email) throw new Error('No email')
