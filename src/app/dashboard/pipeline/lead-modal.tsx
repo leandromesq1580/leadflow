@@ -40,7 +40,12 @@ interface Attachment {
   id: string; file_name: string; file_path: string; file_size: number; file_type: string; created_at: string
 }
 
-export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
+export function LeadModal(props: Props) {
+  // A new selection must never render the previous lead or its auxiliary state.
+  return <LeadModalContent key={`${props.buyerId}:${props.leadId}`} {...props} />
+}
+
+function LeadModalContent({ leadId, buyerId, onClose, onSaved }: Props) {
   const t = useT()
   const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const FOLLOW_UP_TYPES = followUpTypes(L)
@@ -48,6 +53,8 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   const privacy = usePrivacy()
   const [tab, setTab] = useState<'details' | 'inbox' | 'followups' | 'attachments' | 'forms'>('details')
   const [lead, setLead] = useState<any>(null)
+  const [loadError, setLoadError] = useState(false)
+  const [loadAttempt, setLoadAttempt] = useState(0)
   const [followUps, setFollowUps] = useState<FollowUp[]>([])
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [saving, setSaving] = useState(false)
@@ -73,14 +80,27 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
   const [pendingPipelineId, setPendingPipelineId] = useState<string | null>(null)
 
   useEffect(() => {
-    // Só troca o lead por uma resposta VÁLIDA: um erro (ou corpo vazio) sobrescrevia o
-    // objeto e derrubava o corpo do modal, levando junto o que estava sendo editado.
-    fetch(`/api/leads/${leadId}`).then(r => r.json())
-      .then(d => { const l = d?.lead || d; if (l?.id) setLead(l) })
-      .catch(() => { /* mantém o que já está na tela */ })
-    loadFollowUps()
-    loadAttachments()
-    loadPipelineInfo()
+    const controller = new AbortController()
+    let current = true
+    fetch(`/api/leads/${leadId}`, { signal: controller.signal })
+      .then(r => {
+        if (!r.ok) throw new Error('Lead request failed')
+        return r.json()
+      })
+      .then(d => {
+        const loaded = d?.lead || d
+        if (loaded?.id !== leadId) throw new Error('Invalid lead response')
+        if (current) setLead(loaded)
+      })
+      .catch(() => { if (current) setLoadError(true) })
+    return () => { current = false; controller.abort() }
+  }, [leadId, loadAttempt])
+
+  useEffect(() => {
+    // Auxiliary failures cannot leave unhandled rejections or block detail retry.
+    void loadFollowUps().catch(() => {})
+    void loadAttachments().catch(() => {})
+    void loadPipelineInfo().catch(() => {})
   }, [leadId, buyerId])
 
   // Reunião: assim que tem data, assume 09:00 como hora padrão se o user nao mexeu no
@@ -404,8 +424,16 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
     <>
       <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[92vw] max-w-[540px] max-h-[90vh] rounded-2xl" style={{ background: 'var(--bg-card)', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
-        <div className="flex items-center justify-center h-[200px]">
-          <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
+        <div className="flex flex-col items-center justify-center gap-4 min-h-[200px] p-6">
+          {loadError ? <>
+            <p role="alert" className="text-center" style={{ color: 'var(--fg)' }}>
+              {L('Não foi possível carregar o lead. Verifique sua conexão e se você ainda tem acesso.', 'Could not load the lead. Check your connection and whether you still have access.', 'No se pudo cargar el lead. Verifica tu conexión y si aún tienes acceso.')}
+            </p>
+            <button type="button" onClick={() => { setLoadError(false); setLoadAttempt(attempt => attempt + 1) }} className="px-4 py-2 rounded-lg bg-indigo-600 text-white">
+              {L('Tentar novamente', 'Try again', 'Intentar de nuevo')}
+            </button>
+          </> : <div role="status" aria-label={L('Carregando lead', 'Loading lead', 'Cargando lead')} className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />}
+          <button type="button" onClick={onClose} style={{ color: 'var(--fg-muted)' }}>{L('Fechar', 'Close', 'Cerrar')}</button>
         </div>
       </div>
     </>
@@ -687,7 +715,7 @@ export function LeadModal({ leadId, buyerId, onClose, onSaved }: Props) {
                   className="w-full px-3.5 py-2.5 rounded-xl text-[13px] font-medium resize-none transition-all focus:outline-none focus:ring-2 focus:ring-indigo-200"
                   style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--fg)' }} />
                 {(() => {
-                  const text = lead.observation || ''
+                  const text = String(lead.observation || '')
                   const urls = Array.from(text.matchAll(/https?:\/\/[^\s)]+/g)).map(m => m[0])
                   if (urls.length === 0) return null
                   return (

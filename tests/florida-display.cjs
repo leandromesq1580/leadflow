@@ -34,7 +34,9 @@ function deps(locale = 'pt', record = lead) {
     '@/lib/locale': { getLocale: async () => locale },
     '@/lib/supabase/server': { createServerSupabase: async () => ({ auth: { getUser: async () => ({ data: { user: { id: 'test-auth' } } }) } }) },
     '@/lib/supabase/admin': { createAdminClient: () => ({ from: table => {
-      const query = { select: () => query, eq: () => query, maybeSingle: async () => ({ data: table === 'buyers' ? { id: 'fixture-owner', is_admin: false } : record }), single: async () => ({ data: record }), order: async () => ({ data: table === 'lead_activity' ? [{ id: 'test-activity', action: 'Synthetic action', created_at: '2026-07-15T10:49:00Z' }] : [] }) }
+      const activities = [{ id: 'test-activity', action: 'Synthetic action', created_at: '2026-07-15T10:49:00Z' }]
+      let selection = ''
+      const query = { select: columns => { selection = columns; return query }, eq: () => query, maybeSingle: async () => ({ data: table === 'buyers' ? { id: 'fixture-owner', is_admin: false } : record }), single: async () => ({ data: table === 'leads' && selection.includes('activities:lead_activity(') ? { ...record, activities } : record }), order: async () => ({ data: table === 'lead_activity' ? activities : [] }) }
       return query
     } }) },
     'next/link': ({ children, ...props }) => React.createElement('a', props, children),
