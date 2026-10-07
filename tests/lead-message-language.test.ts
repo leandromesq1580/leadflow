@@ -110,6 +110,8 @@ for (const engine of ['automation', 'sequence']) {
   for (const language of ['pt', 'es', 'en', null] as const) {
     for (const channel of ['whatsapp', 'email']) {
       test(`${engine} ${channel}: lead=${language} overrides producer locale`, async t => {
+        const sequenceWhatsApp = engine === 'sequence' && channel === 'whatsapp'
+        const leaseToken = '8b4dd6f2-597d-4c73-9a62-a812db59e104'
         const lead = { id: 'lead', name: 'Maria Fixture', phone: '+14075550100', email: 'maria@example.invalid', lead_language: language }
         const agent = { id: 'buyer', name: 'Agent Fixture', email: 'agent@example.invalid', is_active: true }
         const template = { id: 'b525b260-6b83-4a21-bcae-745064d019bf', name: 'Email boas-vindas', body: 'Oi {nome}', subject: null as string | null, type: channel, is_system: true }
@@ -128,15 +130,30 @@ for (const engine of ['automation', 'sequence']) {
           if (q.table === 'follow_ups' || q.table === 'whatsapp_messages') return { data: null }
           throw new Error(`Unexpected query ${q.table}`)
         })
-        Object.assign(db,{rpc:async(name:string)=>({data:name==='claim_legacy_sequence'?[{...enr,lease_token:'fixture'}]:name==='begin_sequence_batch'?{allowed:true}:true,error:null})})
+        Object.assign(db,{rpc:async(name:string)=>({data:name==='claim_legacy_sequence'?[{...enr,lease_token:sequenceWhatsApp ? leaseToken : 'fixture'}]:name==='begin_sequence_batch'?{allowed:true}:true,error:null})})
         const sends: any[] = []
         const oldKey = process.env.RESEND_API_KEY
         process.env.RESEND_API_KEY = 'fixture'
         t.after(() => { if (oldKey === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = oldKey })
         t.mock.method(globalThis, 'fetch', async (url: string, options: any) => {
-          if(url==='https://bridge.example.invalid/status')return Response.json({ready:true,phone:'14075550101'})
+          if(url==='https://bridge.example.invalid/status')return Response.json({ready:true,number:'14075550101'})
           assert.equal(url, 'https://bridge.example.invalid/send')
-          sends.push(JSON.parse(options.body))
+          const request = JSON.parse(options.body)
+          if (sequenceWhatsApp) {
+            assert.equal(options.method, 'POST')
+            assert.deepEqual(request.sequence, { version: 2, operation_id: leaseToken, sender: '14075550101' })
+            assert.equal(request.number, '14075550100')
+            assert.equal(typeof request.message, 'string')
+            assert.ok(request.message.trim())
+            assert.deepEqual(Object.keys(request).sort(), ['message', 'number', 'sequence'])
+            sends.push(request)
+            return Response.json({
+              success: true,
+              id: 'wa-fixture',
+              sequence: { version: 2, operation_id: leaseToken, sender: '14075550101', outcome: 'confirmed' },
+            }, { status: 200 })
+          }
+          sends.push(request)
           return Response.json({ id: 'wa-fixture' })
         })
         const dependencies = {
