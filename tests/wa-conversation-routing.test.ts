@@ -140,8 +140,12 @@ function fixture(options: { shared?: boolean; failContext?: boolean; failInsert?
       ] }
       if (has(q, 'eq', 'is_active')) return { data: [] }
       if (has(q, 'eq', 'id')) return { data: { is_admin: false } }
-      // Production bridge is intentionally shared; no arbitrary first-row choice.
-      return { data: [{ id: 'agency' }, { id: 'shared-colleague' }] }
+      // Production bridge is intentionally shared; apply the recipient keyset
+      // query too, rather than returning the same canned page forever.
+      const after = has(q, 'gt', 'id')?.[2]
+      const limit = has(q, 'limit')?.[1] ?? Infinity
+      return { data: [{ id: 'agency', wa_bridge_phone: bridgePhone }, { id: 'shared-colleague', wa_bridge_phone: bridgePhone }]
+        .filter(b => !after || b.id > after).sort((a, b) => a.id.localeCompare(b.id)).slice(0, limit) }
     }
     if (q.table === 'leads') return { data: has(q, 'update') ? null : options.leads || [old, current] }
     if (q.table === 'team_members') return { data: [{ id: 'team-member', auth_user_id: 'member-auth' }] }
