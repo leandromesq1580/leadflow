@@ -1,11 +1,17 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 
 const source = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 
+test('CURRENT_POLICY_SHA256 matches the published policy document (dossiê de chargeback cita esse hash)', () => {
+  const sha = createHash('sha256').update(source('src/components/localized-policy-page.tsx')).digest('hex')
+  assert.match(source('src/lib/policies.ts'), new RegExp(`CURRENT_POLICY_SHA256 = '${sha}'`))
+})
+
 test('current policy version forces a renewed acceptance in every authenticated app shell', () => {
-  assert.match(source('src/lib/policies.ts'), /CURRENT_POLICY_VERSION = '2026-09-07\.1'/)
+  assert.match(source('src/lib/policies.ts'), /CURRENT_POLICY_VERSION = '2026-10-08\.1'/)
   for (const file of [
     'src/app/dashboard/layout.tsx',
     'src/app/m/layout.tsx',
