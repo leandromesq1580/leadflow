@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { callerBuyer } from '@/lib/api-auth'
 import { SCRIPT_IUL_PADRAO, type CallScript } from '@/lib/call-script'
+import { hasCallIA } from '@/lib/buyer-features'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,15 +42,14 @@ export async function GET() {
   try {
     const mes = new Date().toISOString().slice(0, 7)
     const { data } = await db.from('settings').select('key, value')
-      .in('key', ['ia_ligacao_addon', 'call_transcription', `ia_uso:${caller.id}:${mes}`])
+      .in('key', [`ia_uso:${caller.id}:${mes}`])
     const mapa = Object.fromEntries((data || []).map(r => [r.key, r.value as any]))
-    const cortesia: string[] = mapa.call_transcription?.buyers || []
-    ia.ativa = !!mapa.ia_ligacao_addon?.[caller.id]?.active || cortesia.includes(caller.id)
     const uso = mapa[`ia_uso:${caller.id}:${mes}`] || {}
     ia.minutos = uso.minutos || 0
     ia.ligacoes = uso.ligacoes || 0
   } catch { /* painel degrada sem quebrar o roteiro */ }
 
+  ia.ativa = await hasCallIA(db, caller.id)
   return NextResponse.json({ ...(await ler(db, caller.id)), ia })
 }
 

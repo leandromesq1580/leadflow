@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { formatDate, getInitials } from '@/lib/utils'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { readBuyerFeatures } from '@/lib/buyer-features'
 import { AdminActions } from './admin-actions'
 import { CRM_PLAN_LIST } from '@/lib/crm-plans'
 import { buildPurchaseHistory } from '@/lib/purchase-history'
@@ -29,6 +30,7 @@ export default async function BuyerDetailPage({ params }: { params: Promise<{ id
   const { staffIds } = await readBuyerPolicy(db)
   const isStaff = staffIds.has(id)
   const salesTeamPricing = await readSalesTeamPricing(db, id)
+  const buyerFeatures = await readBuyerFeatures(db, id).catch(() => null)
   // ❄️ compras de lead frio: entregue/restante por pagamento + estoque (entrega com recibo)
   const coldPurchases = await coldPurchaseStatuses(db, id).catch(() => [])
   const coldStock = coldPurchases.length ? await coldStockByLanguage(db).catch(() => ({ pt: 0, es: 0 })) : { pt: 0, es: 0 }
@@ -88,7 +90,7 @@ export default async function BuyerDetailPage({ params }: { params: Promise<{ id
       </div>
 
       {/* Admin Actions */}
-      <AdminActions buyerId={buyer.id} isActive={!!buyer.is_active} plan={buyer.crm_plan || 'free'} buyerName={buyer.name} />
+      <AdminActions buyerId={buyer.id} isActive={!!buyer.is_active} plan={buyer.crm_plan || 'free'} buyerName={buyer.name} buyerFeatures={buyerFeatures} />
       <SalesTeamCard buyerId={buyer.id} initial={salesTeamPricing} />
       <ColdDeliveryCard buyerId={buyer.id} purchases={coldPurchases} stock={coldStock} />
 

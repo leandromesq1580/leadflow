@@ -3,12 +3,15 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { LEAD_LANGUAGES, leadLanguageLabel, type LeadLanguage } from '@/lib/lead-language'
+import { BuyerFeatureControls } from './feature-controls'
+import type { BuyerFeatureState } from '@/lib/buyer-features'
 
 interface Props {
   buyerId: string
   isActive: boolean
   plan: string
   buyerName: string
+  buyerFeatures: BuyerFeatureState[] | null
 }
 
 // Appointment NÃO é mais ofertado como plano — botão removido da seleção.
@@ -19,7 +22,7 @@ const TIERS = [
   { v: 'pro', label: '⚡ CRM Pro' },
 ]
 
-export function AdminActions({ buyerId, isActive, plan, buyerName }: Props) {
+export function AdminActions({ buyerId, isActive, plan, buyerName, buyerFeatures }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
   const [impBusy, setImpBusy] = useState(false)
@@ -159,6 +162,7 @@ export function AdminActions({ buyerId, isActive, plan, buyerName }: Props) {
           </div>
         </div>
       )}
+      <BuyerFeatureControls key={buyerId} buyerId={buyerId} initialFeatures={buyerFeatures} />
     </div>
   )
 }
