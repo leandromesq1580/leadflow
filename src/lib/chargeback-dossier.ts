@@ -95,7 +95,7 @@ export function dossierLines(d: ChargebackDossier): string[] {
     `Idioma do aceite: ${d.consent?.locale || 'nao disponivel'}`,
     `Checkbox de termos da Stripe: ${d.consent?.stripe_terms_accepted ? 'ACEITO' : 'nao registrado'}`,
     'Politica publicada: https://lead4producers.com/politicas',
-    'Termos materiais: assinatura recorrente; leads vendidos separadamente; lead e oportunidade, nao venda garantida; troca apenas por telefone/e-mail inexistente ou invalido.',
+    'Termos materiais: assinatura recorrente; leads vendidos separadamente; lead e oportunidade, nao venda garantida; leads nao sao trocaveis.',
     '',
     '4. USO AUTENTICADO DA PLATAFORMA',
     `Eventos registrados depois da compra: ${d.accesses.length}`,

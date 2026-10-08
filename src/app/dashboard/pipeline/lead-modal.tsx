@@ -4,7 +4,6 @@ import { AddExistingLeadToPipeline, type ConfirmedPipelineEntry } from '@/compon
 
 import { useState, useEffect } from 'react'
 import { SendMessageModal } from '@/components/send-message-modal'
-import { ExchangeBox } from './exchange-box'
 import { TagPicker } from '@/components/tag-picker'
 import { WhatsAppInbox } from '@/components/whatsapp-inbox'
 import { callLead } from '@/components/voice/softphone'
@@ -284,7 +283,7 @@ function LeadModalContent({ leadId, buyerId, onClose, onSaved }: Props) {
     const payload = {
       name: lead.name, email: lead.email, phone: lead.phone,
       state: lead.state, city: lead.city, interest: lead.interest,
-      platform: lead.platform, reason: lead.reason,
+      birth_date: lead.birth_date || null, reason: lead.reason,
       age_range: lead.age_range, attendant: lead.attendant,
       is_organic: lead.is_organic, contract_closed: lead.contract_closed,
       policy_value: typeof lead.policy_value === 'number' ? lead.policy_value : (lead.policy_value ? parseFloat(lead.policy_value) || 0 : 0),
@@ -446,6 +445,7 @@ function LeadModalContent({ leadId, buyerId, onClose, onSaved }: Props) {
     const masked = privacy.enabled && sensitive
     const displayValue = masked
       ? privacy.mask(lead[field] || '', field === 'email' ? 'email' : 'phone')
+      : type === 'date' ? String(lead[field] || '').slice(0, 10) // coluna date vem 'YYYY-MM-DD'; input date só aceita esse formato
       : (lead[field] || '')
     return (
       <div>
@@ -556,7 +556,7 @@ function LeadModalContent({ leadId, buyerId, onClose, onSaved }: Props) {
                 <div className="grid grid-cols-2 gap-3">
                   {input(L('Cidade', 'City', 'Ciudad'), 'city')}
                   {input(L('Interesse', 'Interest', 'Interés'), 'interest')}
-                  {input(L('Plataforma', 'Platform', 'Plataforma'), 'platform')}
+                  {input(L('Data de nascimento', 'Date of birth', 'Fecha de nacimiento'), 'birth_date', 'date', '🎂')}
                   {input(L('Campanha', 'Campaign', 'Campaña'), 'campaign_name')}
                   {input(L('Faixa Etaria', 'Age Range', 'Rango de Edad'), 'age_range')}
                   {input(L('Atendente', 'Rep', 'Agente'), 'attendant')}
@@ -736,9 +736,6 @@ function LeadModalContent({ leadId, buyerId, onClose, onSaved }: Props) {
                   )
                 })()}
               </div>
-
-              {/* Troca de lead: aparece só quando elegível (14d trabalhados + 0 respostas) */}
-              <ExchangeBox leadId={leadId} />
 
               {/* Actions */}
               <div className="flex justify-end gap-3 pt-3" style={{ borderTop: '1px solid var(--bg-soft)' }}>

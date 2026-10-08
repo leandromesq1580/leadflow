@@ -12,7 +12,7 @@ const { build } = require('esbuild')
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE)
 const mocks = {
   '@/components/send-message-modal': 'export const SendMessageModal=()=>null',
-  './exchange-box': 'export const ExchangeBox=()=>null', '@/components/tag-picker': 'export const TagPicker=()=>null',
+  '@/components/tag-picker': 'export const TagPicker=()=>null',
   '@/components/whatsapp-inbox': 'export const WhatsAppInbox=()=>null', '@/components/voice/softphone': 'export const callLead=()=>{}',
   '@/components/ai-score-badge': 'export const AiScoreBadge=()=>null', '@/components/time-picker': 'export const TimePicker=()=>null',
   '@/lib/privacy-mode': 'export const usePrivacy=()=>({enabled:false,mask:v=>v})', './lead-forms-tab': 'export const LeadFormsTab=()=>null',
