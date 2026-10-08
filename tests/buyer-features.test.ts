@@ -173,6 +173,9 @@ test('admin controls render the existing IA permission, three modes and an expli
     for (const label of ['Padrão', 'Liberado', 'Bloqueado']) assert.ok(html.includes(label))
     assert.equal((html.match(/aria-pressed="true"/g) || []).length, 1)
     assert.ok(html.includes('cobrança'))
+    for (const unsupported of ['text-muted-foreground', 'text-destructive', 'border-border', 'bg-muted']) assert.ok(!html.includes(unsupported))
+    assert.ok(html.includes('bg-slate-100'))
+    assert.ok(html.includes('bg-white shadow-sm text-slate-900'))
   }
   const unavailable = renderToStaticMarkup(React.createElement(BuyerFeatureControls, { buyerId: buyer, initialFeatures: null }))
   assert.ok(unavailable.includes('consultar'))

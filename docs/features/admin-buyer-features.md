@@ -8,7 +8,7 @@ Em **Admin → Compradores → ficha do comprador → Ações Admin**, a seção
 | Liberado | Libera a IA para esse comprador, mesmo sem assinatura. Não cria cobrança. |
 | Bloqueado | Impede IA nas novas chamadas e geração/leitura de sugestões, inclusive para assinantes. Não impede a ligação normal nem sua gravação. |
 
-Não cancela ou altera assinaturas, franquias, pagamentos, créditos, roteiros ou planos de CRM. Bloquear durante uma ligação impede novas sugestões, mas não encerra a transcrição já iniciada no Twilio. O administrador deve tratar cancelamento/cobrança separadamente. A verificação é por requisição; uma geração já em andamento pode concluir, mas a API bloqueada não expõe a sugestão.
+Não cancela ou altera assinaturas, franquias, pagamentos, créditos, roteiros ou planos de CRM. Bloquear durante uma ligação impede novas sugestões, mas não encerra a transcrição já iniciada no Twilio: os minutos dessa chamada continuam sendo contabilizados. O administrador deve tratar cancelamento/cobrança separadamente. A verificação é por requisição; uma geração já em andamento pode concluir, mas a API bloqueada não expõe a sugestão.
 
 ## Persistência e autorização
 
