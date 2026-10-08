@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { hasCallIA } from '@/lib/buyer-features'
 import { callerBuyer, canActAs } from '@/lib/api-auth'
 
 export const dynamic = 'force-dynamic'
@@ -24,6 +25,7 @@ export async function GET(request: NextRequest) {
     if (!v) return NextResponse.json({ assist: null })
     const dono = String(v.meta?.buyer_id || '')
     if (dono && !canActAs(caller, dono)) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
+    if (!dono || !(await hasCallIA(db, dono))) return NextResponse.json({ assist: null, ouvindo: false, falas: 0 })
 
     return NextResponse.json({
       assist: v.assist || null,

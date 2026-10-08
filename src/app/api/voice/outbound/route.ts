@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { hasCallIA, voiceBuyerIdentity } from '@/lib/buyer-features'
 import { toE164 } from '@/lib/twilio'
 import { pickCallerId, validVoiceSignature, VOICE_OUTBOUND_URL, VOICE_STATUS_URL, VOICE_WHISPER_URL, VOICE_RECORDING_URL, VOICE_TRANSCRIPTION_URL, xmlEscape } from '@/lib/voice'
 
@@ -37,22 +38,14 @@ export async function POST(request: NextRequest) {
   const db = createAdminClient()
   const callerId = await pickCallerId(db, target, params.leadId)
 
-  // TRANSCRIÇÃO AO VIVO — liga quando o buyer tem o ADD-ON "IA na Ligação" ativo
-  // (settings.ia_ligacao_addon, gravado pelo webhook do Stripe) OU está na lista de
-  // cortesia settings.call_transcription.buyers (legado/admin). Fora dos dois, NADA
-  // muda no TwiML — transcrição custa por minuto, o gate É a cobrança.
+  // The signed SDK identity owns the gate; custom buyerId cannot borrow another grant.
+  const voiceBuyerId = voiceBuyerIdentity(params.From)
   let transcricao = ''
-  try {
-    const { data } = await db.from('settings').select('key, value').in('key', ['call_transcription', 'ia_ligacao_addon'])
-    const mapa = Object.fromEntries((data || []).map(r => [r.key, r.value as any]))
-    const liberados: string[] = mapa.call_transcription?.buyers || []
-    const addonAtivo = !!mapa.ia_ligacao_addon?.[params.buyerId || '']?.active
-    if (params.buyerId && (addonAtivo || liberados.includes(params.buyerId))) {
-      const tCb = `${VOICE_TRANSCRIPTION_URL}?buyer_id=${encodeURIComponent(params.buyerId)}&lead_id=${encodeURIComponent(params.leadId || '')}`
-      transcricao =
-        `<Start><Transcription statusCallbackUrl="${xmlEscape(tCb)}" languageCode="pt-BR" track="both_tracks" partialResults="false" transcriptionEngine="google"/></Start>`
-    }
-  } catch { /* transcrição é acessório: falha aqui nunca pode derrubar a ligação */ }
+  if (voiceBuyerId && await hasCallIA(db, voiceBuyerId)) {
+    const tCb = `${VOICE_TRANSCRIPTION_URL}?buyer_id=${encodeURIComponent(voiceBuyerId)}&lead_id=${encodeURIComponent(params.leadId || '')}`
+    transcricao =
+      `<Start><Transcription statusCallbackUrl="${xmlEscape(tCb)}" languageCode="pt-BR" track="both_tracks" partialResults="false" transcriptionEngine="google"/></Start>`
+  }
 
   // answerOnBridge: o navegador ouve o ringback e só conta minuto quando atende.
   const statusCb = `${VOICE_STATUS_URL}?buyer_id=${encodeURIComponent(params.buyerId || '')}&lead_id=${encodeURIComponent(params.leadId || '')}`
