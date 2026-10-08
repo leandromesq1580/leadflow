@@ -1,7 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
-import { checkExchangeEligibility } from '../src/lib/lead-exchange'
+import { existsSync, readFileSync } from 'node:fs'
 
 const source = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 
@@ -35,45 +34,26 @@ test('full policy and mandatory gate contain the four rules in Portuguese, Engli
     assert.match(code, /7 dias|7-day|7 días/)
     assert.match(code, /renova automaticamente|renovação automática|renew automatically|renews automatically|renueva automáticamente|se renuevan automáticamente/)
     assert.match(code, /não inclui|does not include|no incluye/)
-    assert.match(code, /telefone|phone|teléfono/)
-    assert.match(code, /e-mail|email|correo/)
+    assert.match(code, /não são trocáveis/)
+    assert.match(code, /not exchangeable/)
+    assert.match(code, /no son intercambiables/)
+    // A troca de lead foi removida: nenhum texto pode prometer troca por telefone/e-mail inválido.
+    assert.doesNotMatch(code, /troca de lead só pode|exchange may only be requested|solicitar el cambio de un lead/i)
   }
   assert.match(page, /pt:/)
   assert.match(page, /en:/)
   assert.match(page, /es:/)
 })
 
-function leadDb(lead: Record<string, unknown>) {
-  return {
-    from(table: string) {
-      assert.equal(table, 'leads')
-      const chain: any = {
-        select() { return chain },
-        eq() { return chain },
-        maybeSingle: async () => ({ data: lead, error: null }),
-      }
-      return chain
-    },
-  } as any
-}
-
-test('lead exchange depends only on ownership and an explicit invalid contact declaration', async () => {
-  const owned = leadDb({
-    id: 'lead-1', assigned_to: 'buyer-1', assigned_at: new Date().toISOString(),
-    phone: '+15555550100', email: 'lead@example.invalid',
-  })
-  assert.equal((await checkExchangeEligibility(owned, 'lead-1', 'buyer-1')).eligible, true)
-  assert.equal((await checkExchangeEligibility(owned, 'lead-1', 'buyer-1', { invalidContact: 'phone' })).eligible, true)
-  assert.equal((await checkExchangeEligibility(owned, 'lead-1', 'buyer-1', { invalidContact: 'email' })).eligible, true)
-  assert.equal((await checkExchangeEligibility(owned, 'lead-1', 'buyer-1', { invalidContact: 'both' })).eligible, true)
-  assert.equal((await checkExchangeEligibility(owned, 'lead-1', 'buyer-1', { invalidContact: 'no-response' })).eligible, false)
-  assert.equal((await checkExchangeEligibility(owned, 'lead-1', 'another-buyer', { invalidContact: 'phone' })).eligible, false)
-})
-
-test('approved invalid leads are archived and never recycled into cold inventory', () => {
-  const route = source('src/app/api/admin/lead-exchanges/route.ts')
-  assert.match(route, /archived: true/)
-  assert.match(route, /from\('pipeline_leads'\)\.delete\(\)/)
-  assert.doesNotMatch(route, /type: 'cold'/)
-  assert.doesNotMatch(source('src/lib/lead-exchange.ts'), /WINDOW_DAYS|MIN_ATTEMPT_DAYS|CAP_PCT/)
+test('lead exchange feature is removed from the codebase', () => {
+  for (const file of [
+    'src/lib/lead-exchange.ts',
+    'src/app/dashboard/pipeline/exchange-box.tsx',
+    'src/app/api/leads/[id]/exchange/route.ts',
+    'src/app/api/admin/lead-exchanges/route.ts',
+    'src/app/admin/trocas/page.tsx',
+  ]) {
+    assert.equal(existsSync(new URL(`../${file}`, import.meta.url)), false, `${file} should be removed`)
+  }
+  assert.doesNotMatch(source('src/app/dashboard/pipeline/lead-modal.tsx'), /ExchangeBox|exchange-box/)
 })

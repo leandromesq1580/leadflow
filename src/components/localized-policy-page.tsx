@@ -29,11 +29,10 @@ const COPY: Record<Locale, PolicyCopy> = {
         'Leads exclusivos são contatos gerados por campanhas e entregues individualmente a um comprador elegível. Um lead representa uma oportunidade de contato, não uma venda, resposta, reunião ou fechamento garantido.',
         'Pacotes de leads são independentes da assinatura do CRM. A entrega considera o idioma comprado, os estados licenciados, o saldo disponível e as regras de distribuição configuradas na plataforma.',
       ] },
-      { title: 'Política de troca de leads', paragraphs: [
-        'A troca de um lead somente poderá ser solicitada quando o telefone e/ou o endereço de e-mail fornecido para aquele lead não existir, for inválido ou estiver comprovadamente fora de serviço.',
-        'Falta de resposta, falta de interesse, desistência, ausência em reunião ou falta de fechamento não dão direito à troca. Toda solicitação fica sujeita à verificação da equipe Lead4Pro antes da devolução de crédito.',
+      { title: 'Troca de leads', paragraphs: [
+        'Leads não são trocáveis. Falta de resposta, falta de interesse, desistência, ausência em reunião, falta de fechamento ou dados de contato inválidos não geram troca, devolução nem crédito.',
       ] },
-      { title: 'Leads frios', paragraphs: ['Pacotes de leads frios são contatos com 7 dias ou mais, vendidos por preço reduzido e com entrega manual. Eles não entram na fila automática e não têm garantia de troca.'] },
+      { title: 'Leads frios', paragraphs: ['Pacotes de leads frios são contatos com 7 dias ou mais, vendidos por preço reduzido e com entrega manual. Eles não entram na fila automática.'] },
       { title: 'Ligações, mensagens e gravações', paragraphs: [
         'Ligações feitas pela plataforma podem usar números locais e ser gravadas após o aviso aplicável. Mensagens de WhatsApp, SMS, e-mail e automações devem ser usadas de acordo com a legislação e com os pedidos de cancelamento de contato do destinatário.',
         'O usuário é responsável pelo conteúdo enviado, pelo número de WhatsApp conectado e pela utilização adequada dos dados dos leads.',
@@ -60,11 +59,10 @@ const COPY: Record<Locale, PolicyCopy> = {
         'Exclusive leads are contacts generated through campaigns and delivered individually to an eligible buyer. A lead is a contact opportunity, not a guaranteed sale, response, meeting, or closing.',
         'Lead packages are independent from the CRM subscription. Delivery considers the purchased language, licensed states, available balance, and the distribution rules configured in the platform.',
       ] },
-      { title: 'Lead exchange policy', paragraphs: [
-        'A lead exchange may only be requested when the phone number and/or email address provided for that lead does not exist, is invalid, or is demonstrably out of service.',
-        'No response, lack of interest, withdrawal, a missed meeting, or failure to close a sale does not qualify for an exchange. Every request is subject to verification by the Lead4Pro team before a credit is returned.',
+      { title: 'Lead exchanges', paragraphs: [
+        'Leads are not exchangeable. No response, lack of interest, withdrawal, a missed meeting, failure to close a sale, or invalid contact details do not qualify for an exchange, return, or credit.',
       ] },
-      { title: 'Cold leads', paragraphs: ['Cold-lead packages contain contacts aged 7 days or more, are sold at a reduced price, and are delivered manually. They do not enter the automatic queue and are not covered by the exchange policy.'] },
+      { title: 'Cold leads', paragraphs: ['Cold-lead packages contain contacts aged 7 days or more, are sold at a reduced price, and are delivered manually. They do not enter the automatic queue.'] },
       { title: 'Calls, messages, and recordings', paragraphs: [
         'Calls made through the platform may use local numbers and may be recorded after the applicable notice. WhatsApp, SMS, email, and automated messages must comply with applicable law and the recipient’s opt-out requests.',
         'The user is responsible for sent content, the connected WhatsApp number, and the proper use of lead data.',
@@ -91,11 +89,10 @@ const COPY: Record<Locale, PolicyCopy> = {
         'Los leads exclusivos son contactos generados por campañas y entregados individualmente a un comprador elegible. Un lead es una oportunidad de contacto, no una venta, respuesta, reunión o cierre garantizado.',
         'Los paquetes de leads son independientes de la suscripción del CRM. La entrega considera el idioma comprado, los estados autorizados, el saldo disponible y las reglas de distribución configuradas en la plataforma.',
       ] },
-      { title: 'Política de cambio de leads', paragraphs: [
-        'Solo se puede solicitar el cambio de un lead cuando el número de teléfono y/o la dirección de correo proporcionada para ese lead no existe, es inválida o está comprobadamente fuera de servicio.',
-        'La falta de respuesta, falta de interés, desistimiento, ausencia en una reunión o falta de cierre no da derecho al cambio. Toda solicitud está sujeta a verificación por el equipo de Lead4Pro antes de devolver un crédito.',
+      { title: 'Cambio de leads', paragraphs: [
+        'Los leads no son intercambiables. La falta de respuesta, falta de interés, desistimiento, ausencia en una reunión, falta de cierre o datos de contacto inválidos no dan derecho a cambio, devolución ni crédito.',
       ] },
-      { title: 'Leads fríos', paragraphs: ['Los paquetes de leads fríos contienen contactos con 7 días o más, se venden a un precio reducido y se entregan manualmente. No entran en la fila automática ni tienen garantía de cambio.'] },
+      { title: 'Leads fríos', paragraphs: ['Los paquetes de leads fríos contienen contactos con 7 días o más, se venden a un precio reducido y se entregan manualmente. No entran en la fila automática.'] },
       { title: 'Llamadas, mensajes y grabaciones', paragraphs: [
         'Las llamadas realizadas por la plataforma pueden usar números locales y grabarse después del aviso correspondiente. Los mensajes de WhatsApp, SMS, correo y las automatizaciones deben cumplir la ley aplicable y las solicitudes del destinatario para dejar de recibir contactos.',
         'El usuario es responsable del contenido enviado, del número de WhatsApp conectado y del uso adecuado de los datos de los leads.',

@@ -18,19 +18,19 @@ export async function startCheckout(
 ): Promise<{ ok: boolean; error?: string }> {
   const locale = typeof document === 'undefined' ? 'pt' : document.documentElement.lang.slice(0, 2)
   const copy = locale === 'en' ? {
-    confirm: 'Before continuing, you must accept the Platform Leads & Usage Policy.\n\nIt covers the 7-day free trial, non-refundable paid subscriptions except where required by law, automatic renewal and in-platform cancellation, separate lead purchases, and exchanges only for nonexistent or invalid phone numbers and/or email addresses.\n\nFull text: lead4producers.com/politicas\n\nClick OK to accept and continue to payment.',
+    confirm: 'Before continuing, you must accept the Platform Leads & Usage Policy.\n\nIt covers the 7-day free trial, non-refundable paid subscriptions except where required by law, automatic renewal and in-platform cancellation, separate lead purchases, and that leads are not exchangeable.\n\nFull text: lead4producers.com/politicas\n\nClick OK to accept and continue to payment.',
     required: 'Policy acceptance is required to purchase.',
     acceptanceError: 'We could not record your acceptance. Please try again.',
     checkoutError: 'We could not open checkout',
     connectionError: 'Connection error.',
   } : locale === 'es' ? {
-    confirm: 'Antes de continuar, debes aceptar la Política de Leads y Uso de la Plataforma.\n\nIncluye la prueba gratuita de 7 días, la no devolución de suscripciones pagadas salvo obligación legal, la renovación automática y cancelación desde la plataforma, la compra separada de leads y cambios solo por teléfono y/o correo inexistente o inválido.\n\nTexto completo: lead4producers.com/politicas\n\nHaz clic en Aceptar para continuar al pago.',
+    confirm: 'Antes de continuar, debes aceptar la Política de Leads y Uso de la Plataforma.\n\nIncluye la prueba gratuita de 7 días, la no devolución de suscripciones pagadas salvo obligación legal, la renovación automática y cancelación desde la plataforma, la compra separada de leads y que los leads no son intercambiables.\n\nTexto completo: lead4producers.com/politicas\n\nHaz clic en Aceptar para continuar al pago.',
     required: 'Debes aceptar la política para comprar.',
     acceptanceError: 'No pudimos registrar tu aceptación. Inténtalo de nuevo.',
     checkoutError: 'No pudimos abrir el pago',
     connectionError: 'Error de conexión.',
   } : {
-    confirm: 'Antes de continuar, você precisa aceitar a Política de Leads e Uso da Plataforma.\n\nEla cobre os 7 dias grátis, a ausência de reembolso da assinatura paga salvo obrigação legal, a renovação automática e o cancelamento pela plataforma, a compra separada de leads e a troca somente por telefone e/ou e-mail inexistente ou inválido.\n\nTexto completo: lead4producers.com/politicas\n\nClique em OK para aceitar e seguir para o pagamento.',
+    confirm: 'Antes de continuar, você precisa aceitar a Política de Leads e Uso da Plataforma.\n\nEla cobre os 7 dias grátis, a ausência de reembolso da assinatura paga salvo obrigação legal, a renovação automática e o cancelamento pela plataforma, a compra separada de leads e que leads não são trocáveis.\n\nTexto completo: lead4producers.com/politicas\n\nClique em OK para aceitar e seguir para o pagamento.',
     required: 'Aceite da política necessário para comprar.',
     acceptanceError: 'Não consegui registrar o aceite. Tente de novo.',
     checkoutError: 'Não consegui abrir o checkout',

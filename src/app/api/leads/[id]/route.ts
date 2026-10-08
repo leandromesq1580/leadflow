@@ -52,7 +52,7 @@ export async function PATCH(
   const allowedFields = [
     'status', 'assigned_to', 'assigned_at', 'product_type', 'type',
     'name', 'email', 'phone', 'city', 'state', 'interest',
-    'age_range', 'reason', 'platform', 'is_organic', 'contract_closed',
+    'age_range', 'reason', 'birth_date', 'is_organic', 'contract_closed',
     'policy_value', 'observation', 'attendant', 'assigned_to_member', 'closed_at',
   ]
   const updates: Record<string, unknown> = {}
@@ -60,6 +60,16 @@ export async function PATCH(
   for (const field of allowedFields) {
     if (body[field] !== undefined) {
       updates[field] = body[field]
+    }
+  }
+
+  // birth_date (coluna date): vazio/null limpa; senão precisa ser YYYY-MM-DD válido.
+  if ('birth_date' in updates) {
+    const raw = updates.birth_date
+    if (raw === null || raw === '') {
+      updates.birth_date = null
+    } else if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw) || Number.isNaN(Date.parse(`${raw}T00:00:00Z`)) || new Date(`${raw}T00:00:00Z`).toISOString().slice(0, 10) !== raw) {
+      return NextResponse.json({ error: 'birth_date inválida: use o formato YYYY-MM-DD' }, { status: 400 })
     }
   }
 

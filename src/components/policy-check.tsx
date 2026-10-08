@@ -47,9 +47,9 @@ export function PolicyCheck({ context, dark = false }: { context: string; dark?:
     }}>
       <p className="text-[13px] font-bold" style={{ color: ink }}>{L('📜 Aceite a Política de Leads e Uso atualizada', '📜 Accept the updated Leads & Usage Policy', '📜 Acepta la Política de Leads y Uso actualizada')}</p>
       <p className="text-[12px] mt-1" style={{ color: mut }}>
-        {L('7 dias grátis para teste; pagamentos da assinatura não são reembolsáveis; renovação automática com cancelamento pela plataforma; assinatura não inclui leads; troca somente por telefone e/ou e-mail inexistente ou inválido.',
-          '7-day free trial; subscription payments are non-refundable; automatic renewal with in-platform cancellation; subscription does not include leads; exchanges only for a nonexistent or invalid phone number and/or email address.',
-          'Prueba gratuita de 7 días; los pagos de suscripción no son reembolsables; renovación automática con cancelación desde la plataforma; la suscripción no incluye leads; cambios solo por teléfono y/o correo inexistente o inválido.')}{' '}
+        {L('7 dias grátis para teste; pagamentos da assinatura não são reembolsáveis; renovação automática com cancelamento pela plataforma; assinatura não inclui leads; leads não são trocáveis.',
+          '7-day free trial; subscription payments are non-refundable; automatic renewal with in-platform cancellation; subscription does not include leads; leads are not exchangeable.',
+          'Prueba gratuita de 7 días; los pagos de suscripción no son reembolsables; renovación automática con cancelación desde la plataforma; la suscripción no incluye leads; los leads no son intercambiables.')}{' '}
         <a href="/politicas" target="_blank" rel="noopener noreferrer" className="font-bold underline" style={{ color: 'var(--accent)' }}>
           {L('Ler a política completa ↗', 'Read the full policy ↗', 'Leer la política completa ↗')}
         </a>
