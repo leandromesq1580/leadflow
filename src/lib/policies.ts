@@ -7,9 +7,9 @@ import type { createAdminClient } from './supabase/admin'
  * Registro append-only em policy_acceptances (quem/quando/versão/contexto/IP).
  * Falha fechada: sem confirmação explícita no banco, o aceite continua pendente.
  */
-export const CURRENT_POLICY_VERSION = '2026-09-07.1'
+export const CURRENT_POLICY_VERSION = '2026-10-08.1'
 /** SHA-256 do documento versionado publicado em /politicas. */
-export const CURRENT_POLICY_SHA256 = 'c179e400eceacc79dc31dec934f10d875380c7feeab5cc4e032b9bb1d13e35a9'
+export const CURRENT_POLICY_SHA256 = 'd89f6c9e3d9ffc77a2ca387e90be8de39d4146ae6c0b8eda40e3fa4d99b237fe'
 
 type Db = ReturnType<typeof createAdminClient>
 
