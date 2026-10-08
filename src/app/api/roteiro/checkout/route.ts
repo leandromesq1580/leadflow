@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { readBuyerFeatures } from '@/lib/buyer-features'
 import { getStripe } from '@/lib/stripe'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -28,6 +29,9 @@ export async function POST() {
       .eq('auth_user_id', user.id)
       .single()
     if (!buyer) return NextResponse.json({ error: 'Buyer not found' }, { status: 404 })
+    const ia = (await readBuyerFeatures(db, buyer.id)).find(f => f.id === 'ia_ligacao')!
+    if (ia.mode === 'disabled') return NextResponse.json({ error: 'Ligação com IA bloqueada pelo administrador.' }, { status: 403 })
+    if (ia.enabled) return NextResponse.json({ error: 'Ligação com IA já liberada nesta conta.' }, { status: 400 })
     if (!(await hasAcceptedCurrentPolicy(db, buyer.id))) {
       return NextResponse.json({ error: 'Aceite a Política de Leads e Uso antes de assinar.', policy_required: true }, { status: 412 })
     }

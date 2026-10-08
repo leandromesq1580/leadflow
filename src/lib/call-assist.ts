@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { hasCallIA } from '@/lib/buyer-features'
 import { SCRIPT_IUL_PADRAO, type CallScript } from '@/lib/call-script'
 
 /**
@@ -48,6 +49,7 @@ export async function avaliarConversa(callSid: string): Promise<Assist | null> {
   const { data } = await db.from('settings').select('value').eq('key', chave).maybeSingle()
   const v = (data?.value as any)
   if (!v?.meta?.buyer_id || !Array.isArray(v.linhas) || v.linhas.length === 0) return null
+  if (!(await hasCallIA(db, String(v.meta.buyer_id)))) return null
 
   // debounce + só reavalia se há fala nova desde a última sugestão
   const antes: Assist | undefined = v.assist
