@@ -94,7 +94,7 @@ export default function SequencesPage() {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
           <h1 className="text-[24px] font-extrabold" style={{ color: 'var(--fg)' }}>{t.sidebar.sequences}</h1>
-          <p className="text-[14px]" style={{ color: 'var(--fg-secondary)' }}>{L('Sequências de passos ou WhatsApp IA até a primeira resposta', 'Drip campaigns with multiple automated steps', 'Campañas de drip con múltiples pasos automatizados')}</p>
+          <p className="text-[14px]" style={{ color: 'var(--fg-secondary)' }}>{L('Sequências tradicionais e IA · WhatsApp: até 6 mensagens por número, com pausa mínima de 15 minutos entre lotes', 'Traditional and AI sequences · WhatsApp: up to 6 messages per number, with at least 15 minutes between batches', 'Secuencias tradicionales e IA · WhatsApp: hasta 6 mensajes por número, con al menos 15 minutos entre lotes')}</p>
         </div>
         <button onClick={() => { setEditing(null); setDuplicate(null); setShowNew(true) }}
           className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-white"
