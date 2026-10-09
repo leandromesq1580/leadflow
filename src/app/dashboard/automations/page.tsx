@@ -8,7 +8,7 @@ import { useT } from '@/lib/i18n-client'
 interface Automation {
   id: string
   name: string
-  trigger_type: 'stage_entered' | 'stage_stale' | 'no_response' | 'meeting_before' | 'event_before'
+  trigger_type: 'stage_entered' | 'stage_stale' | 'no_response' | 'meeting_before' | 'event_before' | 'birthday'
   trigger_config: { stage_id?: string; hours?: number }
   action_type: 'send_template' | 'move_stage' | 'notify_agent'
   action_config: { template_id?: string; target_stage_id?: string }
@@ -29,6 +29,7 @@ const TRIGGER_LABELS = (L: LFn): Record<string, string> => ({
   no_response: L('Sem resposta há N horas', 'No response for N hours', 'Sin respuesta por N horas'),
   meeting_before: L('Antes de uma reunião', 'Before a meeting', 'Antes de una reunión'),
   event_before: L('Antes de um evento da agenda', 'Before a calendar event', 'Antes de un evento de la agenda'),
+  birthday: L('Aniversário do cliente', "Customer's birthday", 'Cumpleaños del cliente'),
 })
 
 const ACTION_LABELS = (L: LFn): Record<string, string> => ({
@@ -106,6 +107,7 @@ export default function AutomationsPage() {
     if (a.trigger_type === 'no_response') trigger = L(`Sem resposta há ${a.trigger_config.hours || 48}h`, `No response for ${a.trigger_config.hours || 48}h`, `Sin respuesta por ${a.trigger_config.hours || 48}h`)
     if (a.trigger_type === 'meeting_before') trigger = L(`${a.trigger_config.hours || 1}h antes da reunião`, `${a.trigger_config.hours || 1}h before the meeting`, `${a.trigger_config.hours || 1}h antes de la reunión`)
     if (a.trigger_type === 'event_before') trigger = L(`${a.trigger_config.hours || 1}h antes do evento da agenda`, `${a.trigger_config.hours || 1}h before the calendar event`, `${a.trigger_config.hours || 1}h antes del evento de la agenda`)
+    if (a.trigger_type === 'birthday') trigger = L('No aniversário do cliente', "On the customer's birthday", 'En el cumpleaños del cliente')
 
     let action = ACTION_LABELS(L)[a.action_type]
     if (a.action_type === 'send_template' && tpl) action = `${L('Enviar', 'Send', 'Enviar')} ${tpl.type === 'whatsapp' ? '💬' : '📧'} "${tpl.name}"`
@@ -233,7 +235,7 @@ function AutomationForm({ buyerId, templates, stages, pipelines, editing, onClos
       trigger_type: triggerType,
       trigger_config: {
         stage_id: triggerStageId || undefined,
-        hours: triggerType !== 'stage_entered' ? Number(triggerHours) : undefined,
+        hours: ['stage_stale', 'no_response', 'meeting_before', 'event_before'].includes(triggerType) ? Number(triggerHours) : undefined,
       },
       action_type: actionType,
       action_config: {
@@ -271,6 +273,7 @@ function AutomationForm({ buyerId, templates, stages, pipelines, editing, onClos
             <option value="no_response">{L('Lead sem resposta há N horas', 'Lead with no response for N hours', 'Lead sin respuesta por N horas')}</option>
             <option value="meeting_before">{L('N horas antes de uma reunião', 'N hours before a meeting', 'N horas antes de una reunión')}</option>
             <option value="event_before">{L('N horas antes de um evento da agenda', 'N hours before a calendar event', 'N horas antes de un evento de la agenda')}</option>
+            <option value="birthday">{L('Aniversário do cliente', "Customer's birthday", 'Cumpleaños del cliente')}</option>
           </select>
 
           {(triggerType === 'stage_entered' || triggerType === 'stage_stale') && (
@@ -285,6 +288,12 @@ function AutomationForm({ buyerId, templates, stages, pipelines, editing, onClos
               className="w-full px-3 py-2 rounded-lg text-[13px]" style={{ background: 'var(--bg-card)', border: '1px solid rgba(139,92,246,0.35)' }} />
           )}
         </div>
+
+        {triggerType === 'birthday' && (
+          <div className="p-3 rounded-lg mb-3 text-[12px]" style={{ background: 'var(--accent-light)', color: 'var(--fg-secondary)' }}>
+            🎂 {L('Dispara uma vez por ano, no dia certo, pra cada lead do seu funil que tiver data de nascimento cadastrada na ficha.', "Fires once a year, on the exact day, for every lead in your pipeline who has a birth date saved on their profile.", 'Se dispara una vez al año, en el día exacto, para cada lead con fecha de nacimiento guardada en su ficha.')}
+          </div>
+        )}
 
         {triggerType === 'event_before' && actionType !== 'notify_agent' && (
           <div className="p-3 rounded-lg mb-3 text-[12px]" style={{ background: 'var(--warn-soft)', border: '1px solid #fde68a', color: '#92400e' }}>

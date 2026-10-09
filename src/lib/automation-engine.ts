@@ -13,11 +13,21 @@ interface Automation {
   buyer_id: string
   name: string
   created_at: string
-  trigger_type: 'stage_entered' | 'stage_stale' | 'no_response' | 'meeting_before' | 'event_before'
+  trigger_type: 'stage_entered' | 'stage_stale' | 'no_response' | 'meeting_before' | 'event_before' | 'birthday'
   trigger_config: { stage_id?: string; hours?: number }
   action_type: 'send_template' | 'move_stage' | 'notify_agent'
   action_config: { template_id?: string; target_stage_id?: string }
   enabled: boolean
+}
+
+// "Hoje" no fuso de negócio (Flórida) — mesmo padrão já usado pros lembretes de reunião.
+// Gatilhos recorrentes (hoje só 'birthday') carregam o ano como period_key pra poder
+// disparar TODO ANO pro mesmo lead; os demais (de uma vez só) usam null e mantêm o
+// comportamento antigo (uma linha pra sempre — ver migration 061).
+function periodKeyFor(auto: Automation): string | null {
+  if (auto.trigger_type !== 'birthday') return null
+  const hojeNY = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
+  return String(hojeNY.getFullYear())
 }
 
 /**
@@ -37,8 +47,11 @@ export async function runAutomations(buyerIds?: string[]): Promise<{ ran: number
   for (const auto of automations as Automation[]) {
     try {
       const targets = await findTargets(auto)
+      const periodKey = periodKeyFor(auto)
       for (const target of targets) {
-        // Idempotency: (automation_id, lead_id, meeting_id) — meeting_id NULL para triggers sem reunião
+        // Idempotency: (automation_id, lead_id, meeting_id, period_key) — meeting_id NULL
+        // para triggers sem reunião; period_key NULL para triggers de uma vez só (ver
+        // periodKeyFor acima e migration 061 pro índice único correspondente).
         let existingQuery = db
           .from('automation_runs')
           .select('id, status, error, created_at')
@@ -49,6 +62,9 @@ export async function runAutomations(buyerIds?: string[]): Promise<{ ran: number
         existingQuery = target.meeting_id
           ? existingQuery.eq('meeting_id', target.meeting_id)
           : existingQuery.is('meeting_id', null)
+        existingQuery = periodKey
+          ? existingQuery.eq('period_key', periodKey)
+          : existingQuery.is('period_key', null)
         const { data: existing } = await existingQuery.maybeSingle()
         // Language preparation fails BEFORE transport, so these failures alone are
         // safe to retry. Never reopen a successful, reserved or transport-failed run.
@@ -92,6 +108,7 @@ export async function runAutomations(buyerIds?: string[]): Promise<{ ran: number
           pipeline_lead_id: target.pipeline_lead_id || null,
           meeting_id: target.meeting_id || null,
           meeting_source: target.meeting_source || null,
+          period_key: periodKey,
           status: 'skipped', // vira success/failed depois do envio
         }
         const { data: reserva, error: reservaErr } = retryLanguage
@@ -201,6 +218,26 @@ async function findTargets(auto: Automation): Promise<Target[]> {
       .eq('assigned_to', auto.buyer_id)
       .lte('created_at', cutoff)
     return (leads || []).map(r => ({ lead_id: r.id }))
+  }
+
+  if (auto.trigger_type === 'birthday') {
+    // Dispara no dia do aniversário do cliente, todo ano, pra cada lead do corretor com
+    // data de nascimento cadastrada (ficha do lead, migration 059). O ANO de nascimento
+    // não importa aqui — só mês e dia batendo com "hoje" no fuso de negócio (Flórida).
+    const hojeNY = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
+    const mes = hojeNY.getMonth() + 1
+    const dia = hojeNY.getDate()
+    const { data: leads } = await db
+      .from('leads')
+      .select('id, birth_date')
+      .eq('assigned_to', auto.buyer_id)
+    return ((leads || []) as { id: string; birth_date: string | null }[])
+      .filter(l => {
+        if (!l.birth_date) return false
+        const d = new Date(`${l.birth_date}T00:00:00Z`)
+        return d.getUTCMonth() + 1 === mes && d.getUTCDate() === dia
+      })
+      .map(l => ({ lead_id: l.id }))
   }
 
   if (auto.trigger_type === 'meeting_before') {
