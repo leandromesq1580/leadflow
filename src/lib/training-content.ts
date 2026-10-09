@@ -72,6 +72,7 @@ export function getTrainingModules(locale: 'pt' | 'en' | 'es' = 'pt'): TrainingM
       ),
       videos: [
         { id: '1bYS7NFiY3lVfdIVvTbb6wOelPnNx7xbU', title: L('Automações', 'Automations', 'Automatizaciones') },
+        { id: 'community/training/automacao-aniversario.mp4', title: L('Como criar a automação de aniversário', 'How to create the birthday automation', 'Cómo crear la automatización de cumpleaños'), media: 'storage', poster: 'community/training/automacao-aniversario.jpg' },
         { id: '1kez3uxx8TmNXferItOcr53vvglgYC59A', title: L('Sequences — cadências automáticas', 'Sequences — automatic cadences', 'Sequences — cadencias automáticas') },
         { id: '19Nsna-8duFQcGJsXkhy3anHSCGZfGf0m', title: L('Especialista de IA', 'AI Specialist', 'Especialista de IA') },
       ],
