@@ -75,7 +75,7 @@ test('aniversário: mesmo dia não manda duas vezes, mas o ano seguinte volta a 
   // leads: um único lead, aniversário hoje — reusa a mesma fonte de verdade de "hoje" do motor.
   const hoje = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
   const mm = String(hoje.getMonth() + 1).padStart(2, '0'); const dd = String(hoje.getDate()).padStart(2, '0')
-  ;(db as any).from = (table: string) => table === 'leads'
+  ;(db as { from: unknown }).from = (table: string) => table === 'leads'
     ? { select: () => ({ eq: () => ({ then: (r: (v: unknown) => void) => r({ data: [{ id: 'lead-x', birth_date: `1990-${mm}-${dd}` }] }) }) }) }
     : originalFrom(table)
 
@@ -95,4 +95,5 @@ test('aniversário: mesmo dia não manda duas vezes, mas o ano seguinte volta a 
   const r3 = await runAutomations(['buyer-1'])
   assert.equal(runs.length, 2, 'no ano seguinte o motor cria uma NOVA reserva pro mesmo lead (aniversário se repete)')
   assert.equal(runs[1].period_key, String(hoje.getFullYear()))
+  assert.equal(r3.ran + r3.failed, 1, 'exatamente um alvo processado na virada de ano')
 })

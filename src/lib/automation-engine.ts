@@ -231,13 +231,13 @@ async function findTargets(auto: Automation): Promise<Target[]> {
       .from('leads')
       .select('id, birth_date')
       .eq('assigned_to', auto.buyer_id)
-    return (leads || [])
-      .filter((l: any) => {
+    return ((leads || []) as { id: string; birth_date: string | null }[])
+      .filter(l => {
         if (!l.birth_date) return false
         const d = new Date(`${l.birth_date}T00:00:00Z`)
         return d.getUTCMonth() + 1 === mes && d.getUTCDate() === dia
       })
-      .map((l: any) => ({ lead_id: l.id }))
+      .map(l => ({ lead_id: l.id }))
   }
 
   if (auto.trigger_type === 'meeting_before') {
