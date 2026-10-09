@@ -8,9 +8,11 @@ const other='00000000-0000-4000-8000-000000000002'
 const lead='00000000-0000-4000-8000-000000000003'
 const migration='supabase/migrations/053_ai_suppression_resolution.sql'
 async function applyPacing(db) {
- for (const migration of ['054_sequence_batch_pacing.sql', '055_sequence_batch_completion_clock.sql', '056_sequence_reply_stage.sql']) {
+ for (const migration of ['054_sequence_batch_pacing.sql', '055_sequence_batch_completion_clock.sql', '056_sequence_reply_stage.sql', '058_sequence_proven_rejection.sql']) {
   await db.exec(readFileSync('supabase/migrations/' + migration, 'utf8'))
  }
+ const pacing = 'supabase/migrations/060_sequence_six_per_fifteen.sql'
+ if (existsSync(pacing)) await db.exec(readFileSync(pacing, 'utf8'))
 }
 async function fixture() {
  const db=new PGlite()
@@ -105,7 +107,7 @@ test('expired orphan dispatch holds sender indefinitely without rearming STOP',a
   for(const scenario of ['stopped','deleted','no_return']){
    const sender={stopped:'15555550400',deleted:'15555550500',no_return:'15555550600'}[scenario]
    let stuck
-   for(let i=0;i<10;i++) {stuck=await make();assert.equal(await begin(stuck,sender),true);if(i<9)assert.equal(await finish(stuck,sender),true)}
+   for(let i=0;i<6;i++) {stuck=await make();assert.equal(await begin(stuck,sender),true);if(i<5)assert.equal(await finish(stuck,sender),true)}
    if(scenario==='stopped')await db.query('select stop_sequence_enrollment($1,$2)',[buyer,stuck.id])
    // Synthetic fixture deletion only: the durable ledger intentionally has no enrollment FK.
    if(scenario==='deleted')await db.query('delete from sequence_enrollments where id=$1',[stuck.id])
@@ -121,8 +123,8 @@ test('expired orphan dispatch holds sender indefinitely without rearming STOP',a
    const next=await make()
    assert.equal((await db.query('select preflight_sequence_batch($1,$2,$3) ok',[next.id,next.lease_token,sender])).rows[0].ok,false)
    assert.equal((await db.query('select state from sequence_batch_dispatches where token=$1',[stuck.lease_token])).rows[0].state,'unknown')
-   const b=(await db.query('select *,cooldown_until>=clock_timestamp()+interval \'299 seconds\' conservative from sequence_sender_batches where sender=$1',[sender])).rows[0]
-   assert.equal(b.used,10);assert.equal(b.conservative,true)
+   const b=(await db.query('select *,cooldown_until>=clock_timestamp()+interval \'899 seconds\' conservative from sequence_sender_batches where sender=$1',[sender])).rows[0]
+   assert.equal(b.used,6);assert.equal(b.conservative,true)
    assert.equal(await finish(stuck,sender),false,'late confirmation must not advance quarantined enrollment')
    assert.deepEqual((await db.query('select * from sequence_enrollments where id=$1',[stuck.id])).rows,snapshot)
    assert.deepEqual((await db.query('select * from ai_sequence_suppressions order by buyer_id,lead_id')).rows,suppressions)
@@ -133,32 +135,32 @@ test('expired orphan dispatch holds sender indefinitely without rearming STOP',a
    const fresh=await make()
    assert.equal((await db.query('select preflight_sequence_batch($1,$2,$3) ok',[fresh.id,fresh.lease_token,sender])).rows[0].ok,false)
    assert.equal(await begin(await make(),sender),false)
-   assert.equal((await db.query('select used from sequence_sender_batches where sender=$1',[sender])).rows[0].used,10)
-   assert.equal((await db.query('select count(*)::int n from sequence_batch_dispatches where sender=$1',[sender])).rows[0].n,10)
+   assert.equal((await db.query('select used from sequence_sender_batches where sender=$1',[sender])).rows[0].used,6)
+   assert.equal((await db.query('select count(*)::int n from sequence_batch_dispatches where sender=$1',[sender])).rows[0].n,6)
   }
   for(const role of ['anon','authenticated','service_role'])assert.equal((await db.query("select has_function_privilege($1,'public.expire_sequence_batch_dispatches(text)','execute') ok",[role])).rows[0].ok,role==='service_role')
  }finally{await db.close()}
 })
 
-test('shared sender grants ten, then durably waits without consuming attempt or advancing',async()=>{
+test('shared sender grants six, then durably waits without consuming attempt or advancing',async()=>{
  const {db,e}=await fixture()
  try {
   const path='supabase/migrations/054_sequence_batch_pacing.sql'
   assert.ok(existsSync(path),'batch pacing migration must exist')
   await applyPacing(db)
-  for(let i=0;i<11;i++) {
+  for(let i=0;i<7;i++) {
    const leadId=`00000000-0000-4000-8001-${String(i).padStart(12,'0')}`
    await db.query('insert into leads(id,assigned_to) values($1,$2)',[leadId,buyer])
    const {rows:[en]}=await db.query("insert into sequence_enrollments(sequence_id,lead_id,buyer_id,next_run_at) values($1,$2,$3,'2000-01-01') returning *",[e.sequence_id,leadId,buyer])
    const {rows:[c]}=await db.query('select * from claim_legacy_sequence($1)',[en.id])
    const {rows:[r]}=await db.query("select begin_sequence_batch($1,$2,'15555550100','fixture') result",[en.id,c.lease_token])
-   assert.equal(r.result.allowed,i<10)
+   assert.equal(r.result.allowed,i<6)
    const {rows:[state]}=await db.query('select * from sequence_enrollments where id=$1',[en.id])
    assert.equal(state.current_step,0)
-   if(i===10){assert.equal(state.attempts,0);assert.equal(state.status,'active');assert.equal(state.delivery_status,'idle');assert.ok(state.next_run_at>new Date())}
+   if(i===6){assert.equal(state.attempts,0);assert.equal(state.status,'active');assert.equal(state.delivery_status,'idle');assert.ok(state.next_run_at>new Date())}
    else assert.equal((await db.query("select begin_sequence_batch($1,$2,'15555550100','fixture') result",[en.id,c.lease_token])).rows[0].result.allowed,false)
   }
-  assert.equal((await db.query('select used from sequence_sender_batches')).rows[0].used,10)
+  assert.equal((await db.query('select used from sequence_sender_batches')).rows[0].used,6)
  }finally{await db.close()}
 })
 
@@ -206,9 +208,9 @@ test('full-batch cooldown starts after completion, partial idle reset, shared bu
   }
   const begin=async(e,sender)=>(await db.query("select begin_sequence_batch($1,$2,$3,'fixture') r",[e.id,e.lease_token,sender])).rows[0].r.allowed
   const finish=async(e,sender)=>(await db.query("select finish_sequence_batch($1,$2,$3,'',now(),$4,'15555550999') ok",[e.id,e.lease_token,'ack-'+e.id,sender])).rows[0].ok
-  for(let i=0;i<10;i++){const e=await legacy(i%2?buyer:other);assert.equal(await begin(e,'15555550300'),true);assert.equal(await finish(e,'15555550300'),true)}
+  for(let i=0;i<6;i++){const e=await legacy(i%2?buyer:other);assert.equal(await begin(e,'15555550300'),true);assert.equal(await finish(e,'15555550300'),true)}
   const b=(await db.query("select * from sequence_sender_batches where sender='15555550300'")).rows[0]
-  assert.equal(b.used,10);assert.ok(b.cooldown_until.getTime()-b.last_reserved_at.getTime()>=300000)
+  assert.equal(b.used,6);assert.ok(b.cooldown_until.getTime()-b.last_reserved_at.getTime()>=900000)
   const pending=await legacy();await db.query('update sequence_enrollments set attempts=3 where id=$1',[pending.id])
   assert.equal(await begin(pending,'15555550300'),false)
   const state=(await db.query('select * from sequence_enrollments where id=$1',[pending.id])).rows[0]
@@ -216,7 +218,7 @@ test('full-batch cooldown starts after completion, partial idle reset, shared bu
   await db.exec("update sequence_sender_batches set cooldown_until=clock_timestamp()-interval '1 second' where sender='15555550300'")
   const fresh=await legacy();assert.equal(await begin(fresh,'15555550300'),true);await finish(fresh,'15555550300')
   assert.equal((await db.query("select used from sequence_sender_batches where sender='15555550300'")).rows[0].used,1)
-  await db.exec("update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '6 minutes',last_settled_at=clock_timestamp()-interval '6 minutes' where sender='15555550300'")
+  await db.exec("update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '16 minutes',last_settled_at=clock_timestamp()-interval '16 minutes' where sender='15555550300'")
   const partial=await legacy();assert.equal(await begin(partial,'15555550300'),true);await finish(partial,'15555550300')
   assert.equal((await db.query("select used from sequence_sender_batches where sender='15555550300'")).rows[0].used,1)
   const wait=await legacy(buyer,'wait');assert.equal(await begin(wait,null),true);assert.equal(await finish(wait,''),true)

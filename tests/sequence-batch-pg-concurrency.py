@@ -2,9 +2,9 @@
 """Synthetic PostgreSQL 16 multi-session contract tests; never loads .env.
 
 L4P_TEST_PG_ROOT=/path/to/extracted/pg venv/bin/python tests/sequence-batch-pg-concurrency.py
-Creates a fresh Unix-socket-only cluster under TMPDIR; snapshots real 006/052/053/054.
+Creates a fresh Unix-socket-only cluster under TMPDIR; snapshots real 006/052..056/058/060.
 Failures remain failures: no function replacement, no xfail and no production writes.
-Time-boundary tests move synthetic timestamps instead of sleeping five minutes.
+Time-boundary tests move synthetic timestamps instead of sleeping fifteen minutes.
 """
 import concurrent.futures as cf
 import getpass
@@ -76,9 +76,10 @@ def q(c, sql, args=None):
     return cur.fetchall() if cur.description else []
 
 
-def setup():
+def setup(migrated=True):
     db = 'case_' + uuid.uuid4().hex
-    q(admin, f'CREATE DATABASE {db} TEMPLATE fixture_base')
+    source = 'fixture_base' if migrated else 'fixture_legacy'
+    q(admin, f'CREATE DATABASE {db} TEMPLATE {source}')
     c = connect(db)
     q(c, 'insert into buyers(id) values(%s),(%s)', [B, O])
     return c, db
@@ -143,9 +144,9 @@ def race_budget():
     es = [enrollment(c, 'ai_until_reply' if i % 2 else 'legacy', O if i % 3 else B) for i in range(16)]
     out = parallel(db, [lambda x, e=e: begin(x, e) for e in es])
     log('budget', batches=batch(c), states=[state(c, e) for e in es])
-    assert sum(out) == 10, out
-    assert batch(c)[0]['used'] == 10
-    assert q(c, 'select count(*) n from sequence_batch_dispatches')[0]['n'] == 10
+    assert sum(out) == 6, out
+    assert batch(c)[0]['used'] == 6
+    assert q(c, 'select count(*) n from sequence_batch_dispatches')[0]['n'] == 6
     for e, allowed in zip(es, out):
         s = state(c, e)
         assert s['current_step'] == 0
@@ -153,15 +154,15 @@ def race_budget():
             assert s['attempts'] == 0 and s['lease_token'] is None and s['status'] == 'active'
             assert s['delivery_status'] == 'idle'
     b = batch(c)[0]
-    assert (b['cooldown_until'] - b['last_reserved_at']).total_seconds() >= 300
+    assert (b['cooldown_until'] - b['last_reserved_at']).total_seconds() >= 900
 
 
 def independent():
     c, db = setup()
     es = [enrollment(c) for _ in range(22)]
     out = parallel(db, [lambda x, e=e, i=i: begin(x, e, SENDER if i < 11 else OTHER) for i, e in enumerate(es)])
-    assert sum(out[:11]) == sum(out[11:]) == 10
-    assert [b['used'] for b in batch(c)] == [10, 10]
+    assert sum(out[:11]) == sum(out[11:]) == 6
+    assert [b['used'] for b in batch(c)] == [6, 6]
     log('independent', batches=batch(c))
 
 
@@ -183,7 +184,7 @@ def duplicate(mode):
 
 def cooldown():
     c, db = setup()
-    es = [enrollment(c) for _ in range(10)]
+    es = [enrollment(c) for _ in range(6)]
     assert all(parallel(db, [lambda x, e=e: begin(x, e) for e in es]))
     before = batch(c)[0]['cooldown_until']
     assert finish(c, es[0])
@@ -197,7 +198,7 @@ def cooldown():
     assert all(parallel(db, [lambda x, e=e: finish(x, e) for e in es[1:]]))
     b = batch(c)[0]
     remaining = q(c, 'select extract(epoch from cooldown_until-clock_timestamp()) n from sequence_sender_batches')[0]['n']
-    assert remaining > 295
+    assert remaining > 895
     assert not begin(c, enrollment(c))
     q(c, "update sequence_sender_batches set cooldown_until=clock_timestamp()-interval '1 second'")
     assert begin(c, enrollment(c))
@@ -207,36 +208,36 @@ def cooldown():
 
 def partial_slow_completion():
     c, db = setup()
-    # 9 messages reserved at t0, delivered at t0+90s. At t0+301s the
-    # admissions are old but all nine deliveries are still in the last 5min.
-    es = [enrollment(c, 'ai_until_reply' if i % 2 else 'legacy', O if i % 3 else B) for i in range(9)]
+    # 5 messages reserved at t0, delivered at t0+90s. At t0+901s the
+    # admissions are old but all five deliveries are still in the last 15min.
+    es = [enrollment(c, 'ai_until_reply' if i % 2 else 'legacy', O if i % 3 else B) for i in range(5)]
     assert all(parallel(db, [lambda x, e=e: begin(x, e) for e in es]))
     assert all(parallel(db, [lambda x, e=e: finish(x, e) for e in es]))
-    q(c, "update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '301 seconds'")
-    q(c, "update sequence_batch_dispatches set started_at=clock_timestamp()-interval '301 seconds', expires_at=clock_timestamp()-interval '181 seconds'")
-    q(c, "update whatsapp_messages set sent_at=clock_timestamp()-interval '211 seconds' where direction='out'")
+    q(c, "update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '901 seconds'")
+    q(c, "update sequence_batch_dispatches set started_at=clock_timestamp()-interval '901 seconds', expires_at=clock_timestamp()-interval '781 seconds'")
+    q(c, "update whatsapp_messages set sent_at=clock_timestamp()-interval '811 seconds' where direction='out'")
     # The new completion clock, when installed, uses the same simulated time.
     if q(c, "select 1 from information_schema.columns where table_name='sequence_sender_batches' and column_name='last_settled_at'"):
-        q(c, "update sequence_sender_batches set last_settled_at=clock_timestamp()-interval '211 seconds'")
+        q(c, "update sequence_sender_batches set last_settled_at=clock_timestamp()-interval '811 seconds'")
     fresh = [enrollment(c, 'ai_until_reply' if i % 2 else 'legacy', O if i % 3 else B) for i in range(12)]
     out = parallel(db, [lambda x, e=e: begin(x, e) for e in fresh])
     for e, allowed in zip(fresh, out):
         if allowed: assert finish(c, e)
-    count = q(c, "select count(*) n from whatsapp_messages where direction='out' and sent_at>clock_timestamp()-interval '5 minutes'")[0]['n']
+    count = q(c, "select count(*) n from whatsapp_messages where direction='out' and sent_at>clock_timestamp()-interval '15 minutes'")[0]['n']
     log('partial_slow_completion', recent_confirmed_deliveries=count, new_admissions=sum(out), batches=batch(c))
-    assert count <= 10, f'{count} confirmed fixture deliveries in a rolling 5min window'
+    assert count <= 6, f'{count} confirmed fixture deliveries in a rolling 15min window'
     assert sum(out) == 1
 
 
 def partial_completion_boundaries():
-    for age, expected_used in ((299, 2), (301, 1)):
+    for age, expected_used in ((899, 2), (901, 1)):
         c, db = setup()
         e = enrollment(c)
         assert begin(c, e) and finish(c, e)
         settled = batch(c)[0]['last_settled_at']
         assert finish(c, e)  # Idempotent finish must not change completion clock.
         assert batch(c)[0]['last_settled_at'] == settled
-        q(c, "update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '400 seconds', last_settled_at=clock_timestamp()-(%s * interval '1 second')", [age])
+        q(c, "update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '1000 seconds', last_settled_at=clock_timestamp()-(%s * interval '1 second')", [age])
         assert begin(c, enrollment(c))
         assert batch(c)[0]['used'] == expected_used
         log('partial_boundary', age=age, used=batch(c)[0]['used'])
@@ -244,10 +245,10 @@ def partial_completion_boundaries():
 
 def partial_finish_begin_serialization():
     c, db = setup()
-    es = [enrollment(c) for _ in range(9)]
+    es = [enrollment(c) for _ in range(5)]
     assert all(begin(c, e) for e in es)
     assert all(finish(c, e) for e in es[:-1])
-    q(c, "update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '400 seconds', last_settled_at=clock_timestamp()-interval '400 seconds'")
+    q(c, "update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '1000 seconds', last_settled_at=clock_timestamp()-interval '1000 seconds'")
     a, b = connect(db), connect(db)
     q(a, 'begin')
     assert finish(a, es[-1])  # Holds ledger + sender until commit.
@@ -256,7 +257,7 @@ def partial_finish_begin_serialization():
     assert observe(c, b, f)
     q(a, 'commit')
     assert f.result(8)
-    assert batch(c)[0]['used'] == 10, 'must re-read the committed completion after sender lock'
+    assert batch(c)[0]['used'] == 6, 'must re-read the committed completion after sender lock'
     assert not begin(c, enrollment(c))
 
 
@@ -264,7 +265,7 @@ def partial_unknown_completion(kind):
     c, db = setup()
     e = enrollment(c)
     assert begin(c, e)
-    q(c, "update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '400 seconds',last_settled_at=clock_timestamp()-interval '400 seconds'")
+    q(c, "update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '1000 seconds',last_settled_at=clock_timestamp()-interval '1000 seconds'")
     before = q(c, 'select clock_timestamp() t')[0]['t']
     if kind == 'lost_response':
         q(c, "select defer_sequence_batch(%s,%s,'lost',clock_timestamp(),false)", [e['id'], e['lease_token']])
@@ -371,7 +372,7 @@ def fail_closed(mode, kind):
 def preflight_wait():
     c, db = setup()
     e = enrollment(c, 'ai_until_reply')
-    q(c, "insert into sequence_sender_batches(sender,used,cooldown_until) values(%s,10,clock_timestamp()+interval '5 minutes')", [SENDER])
+    q(c, "insert into sequence_sender_batches(sender,used,cooldown_until) values(%s,6,clock_timestamp()+interval '15 minutes')", [SENDER])
     q(c, 'update sequence_enrollments set attempts=3 where id=%s', [e['id']])
     assert not q(c, 'select preflight_sequence_batch(%s,%s,%s) ok', [e['id'], e['lease_token'], SENDER])[0]['ok']
     s = state(c, e)
@@ -410,7 +411,7 @@ def old_rpc_fallback():
     c, db = setup()
     # Explicit rollout limitation: old runtimes are unpaced until drained.
     # Verify compatibility AND prohibit new application code from using that RPC.
-    es = [enrollment(c) for _ in range(10)]
+    es = [enrollment(c) for _ in range(6)]
     assert all(begin(c, e) for e in es)
     e = enrollment(c, 'ai_until_reply')
     r = q(c, "select id from begin_ai_send(%s,%s,'synthetic')", [e['id'], e['lease_token']])
@@ -424,9 +425,9 @@ def old_rpc_fallback():
 
 def stopped_orphan_cleanup(mode):
     c, db = setup()
-    es = [enrollment(c, mode) for _ in range(10)]
+    es = [enrollment(c, mode) for _ in range(6)]
     assert all(parallel(db, [lambda x, e=e: begin(x, e) for e in es]))
-    assert all(parallel(db, [lambda x, e=e: finish(x, e) for e in es[:9]]))
+    assert all(parallel(db, [lambda x, e=e: finish(x, e) for e in es[:-1]]))
     orphan = es[-1]
     mutation(c, orphan, 'stop')
     q(c, "update sequence_enrollments set lease_until=clock_timestamp()-interval '1 second' where id=%s", [orphan['id']])
@@ -441,7 +442,7 @@ def stopped_orphan_cleanup(mode):
     assert dispatch == 'unknown', 'stopped expired sending dispatch permanently stalls sender; not quarantined'
     assert s['status'] == 'stopped' and s['current_step'] == 0
     remaining = q(c, 'select extract(epoch from cooldown_until-clock_timestamp()) n from sequence_sender_batches')[0]['n']
-    assert remaining > 295, 'cleanup must extend quarantine by five minutes'
+    assert remaining > 895, 'cleanup must extend quarantine by fifteen minutes'
     assert not finish(c, orphan) and not begin(c, orphan)
     q(c, "update sequence_sender_batches set cooldown_until=clock_timestamp()-interval '1 second'")
     fresh = [enrollment(c) for _ in range(12)]
@@ -476,6 +477,57 @@ def sender_unavailable():
     log('sender_unavailable', state=s)
 
 
+def reject(c,e,sender=SENDER):
+    proof={'version':2,'operation_id':str(e['lease_token']),'sender':sender,'outcome':'rejected_before_send','code':'bridge_not_ready'}
+    return q(c,'select reject_sequence_batch(%s,%s,%s,%s,%s,%s::jsonb) ok',
+             [e['id'],e['lease_token'],e['enrolled_at'],e['current_step'],sender,json.dumps(proof)])[0]['ok']
+
+
+def terminal_transition_race(count,terminal):
+    c,db=setup(False)
+    es=[enrollment(c,'ai_until_reply' if i%2 else 'legacy',O if i%2 else B) for i in range(count)]
+    assert all(begin(c,e) for e in es)
+    assert all(finish(c,e) for e in es[:-1])
+    holder,migrator,worker=connect(db),connect(db),connect(db)
+    q(holder,'begin')
+    q(holder,'select sender from sequence_sender_batches where sender=%s for update',[SENDER])
+    migration=POOL.submit(q,migrator,(RUN/'060_sequence_six_per_fifteen.sql').read_text())
+    assert observe(c,migrator,migration),'migration must wait on existing sender row'
+    terminal_fn=finish if terminal=='sent' else reject
+    settled=POOL.submit(terminal_fn,worker,es[-1])
+    assert observe(c,worker,settled),'in-flight finalization must serialize on the same sender'
+    q(holder,'commit')
+    migration.result(8)
+    assert settled.result(8)
+    b=batch(c)[0]
+    assert b['used']==count
+    log('transition_before_assert',used=count,terminal=terminal,batch=b,pause_seconds=(b['cooldown_until']-b['last_settled_at']).total_seconds())
+    assert (b['cooldown_until']-b['last_settled_at']).total_seconds()>=900
+    assert q(c,'select state from sequence_batch_dispatches where token=%s',[es[-1]['lease_token']])[0]['state']==terminal
+    fresh=[enrollment(c,'ai_until_reply' if i%2 else 'legacy') for i in range(8)]
+    assert not any(parallel(db,[lambda x,e=e:begin(x,e) for e in fresh]))
+    log('transition_terminal_serialization',used=count,terminal=terminal,batch=b)
+
+
+def last_rejection_clock_race():
+    c,db=setup()
+    es=[enrollment(c,'ai_until_reply' if i%2 else 'legacy') for i in range(6)]
+    assert all(begin(c,e) for e in es)
+    assert all(finish(c,e) for e in es[:-1])
+    worker=connect(db)
+    q(worker,'begin')
+    assert reject(worker,es[-1])
+    fresh=enrollment(c)
+    waiter=connect(db)
+    admission=POOL.submit(begin,waiter,fresh)
+    assert observe(c,waiter,admission)
+    q(worker,'commit')
+    assert not admission.result(8)
+    b=batch(c)[0]
+    assert b['used']==6 and (b['cooldown_until']-b['last_settled_at']).total_seconds()>=900
+    log('last_rejection_clock_race',batch=b,state=state(c,es[-1]))
+
+
 def case(name, fn):
     start = len(CONNS)
     log('case_start', name=name)
@@ -499,7 +551,7 @@ def independent_suppression_order():
     q(c, 'update sequence_enrollments set lead_id=%s where id=%s', [e1['lead_id'],e2['id']])
     e2['lead_id']=e1['lead_id']
     assert begin(c,e1) and begin(c,e2)
-    q(c, 'update sequence_sender_batches set used=10')
+    q(c, 'update sequence_sender_batches set used=6')
     q(c, "update sequence_enrollments set lease_until=clock_timestamp()-interval '1 second' where id=%s",[e1['id']])
     a,b=connect(db),connect(db)
     q(a,'begin')
@@ -538,14 +590,10 @@ try:
     fixture = re.search(r'await db.exec\(`(.*?)`\)', fixture_source, re.S).group(1)
     base = (REPO / 'supabase/migrations/006_inbox_sequences_ai_push.sql').read_text().split('-- AI LEAD SCORING')[0]
     sources = [('fixture.sql', fixture), ('006-prefix.sql', base)]
-    for name in ('052_ai_sequences_until_reply.sql', '053_ai_suppression_resolution.sql', '054_sequence_batch_pacing.sql'):
+    for name in ('052_ai_sequences_until_reply.sql', '053_ai_suppression_resolution.sql', '054_sequence_batch_pacing.sql',
+                 '055_sequence_batch_completion_clock.sql', '056_sequence_reply_stage.sql',
+                 '058_sequence_proven_rejection.sql', '060_sequence_six_per_fifteen.sql'):
         sources.append((name, (REPO / 'supabase/migrations' / name).read_text()))
-    completion = REPO / 'supabase/migrations/055_sequence_batch_completion_clock.sql'
-    if completion.exists():
-        sources.append((completion.name, completion.read_text()))
-    reply = REPO / 'supabase/migrations/056_sequence_reply_stage.sql'
-    if reply.exists():
-        sources.append((reply.name, reply.read_text()))
     for name, sql in sources:
         (RUN / name).write_text(sql)
         HASHES[name] = hashlib.sha256(sql.encode()).hexdigest()
@@ -557,18 +605,29 @@ try:
     v = q(admin, "select version(),current_setting('listen_addresses') listen,current_setting('server_version_num') ver")[0]
     assert v['listen'] == '' and v['ver'].startswith('16')
     log('server', **v)
-    q(admin, 'CREATE DATABASE fixture_base')
-    template = connect('fixture_base')
+    q(admin, 'CREATE DATABASE fixture_legacy')
+    template = connect('fixture_legacy')
     for name, sql in sources:
+        if name == '060_sequence_six_per_fifteen.sql':
+            continue
         q(template, sql)
         log('applied', name=name, sha256=HASHES[name])
     template.close()
+    q(admin, 'CREATE DATABASE fixture_base TEMPLATE fixture_legacy')
+    template = connect('fixture_base')
+    q(template, (RUN/'060_sequence_six_per_fifteen.sql').read_text())
+    log('applied', name='060_sequence_six_per_fifteen.sql',sha256=HASHES['060_sequence_six_per_fifteen.sql'])
+    template.close()
+    for count in (1,5,6,10):
+        for terminal in ('sent','rejected_before_send'):
+            case(f'migration_inflight_serialization_{count}_{terminal}',lambda n=count,k=terminal:terminal_transition_race(n,k))
+    case('last_rejection_begin_serialization_complete_15min',last_rejection_clock_race)
     case('independent_053_upserts', independent_upserts)
     case('independent_shared_suppression_lock_order', independent_suppression_order)
-    case('16_concurrent_begins_shared_AI_legacy_buyers_max10', race_budget)
+    case('16_concurrent_begins_shared_AI_legacy_buyers_max6', race_budget)
     case('22_concurrent_begins_two_independent_numbers', independent)
-    case('cooldown_tenth_admission_inflight_confirmation_and_reset', cooldown)
-    case('partial_slow_completion_rolling_5min_shared_modes_buyers', partial_slow_completion)
+    case('cooldown_sixth_admission_inflight_confirmation_and_reset', cooldown)
+    case('partial_slow_completion_rolling_15min_shared_modes_buyers', partial_slow_completion)
     case('partial_completion_boundaries_and_idempotence', partial_completion_boundaries)
     case('partial_finish_begin_serialization', partial_finish_begin_serialization)
     case('completion_acl_rls_preserved', completion_acl)
