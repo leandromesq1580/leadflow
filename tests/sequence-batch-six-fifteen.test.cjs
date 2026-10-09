@@ -59,6 +59,56 @@ async function finish(db, e) {
 const batch = async (db, number = sender) => (await query(db,
   'SELECT * FROM sequence_sender_batches WHERE sender=$1', [number]))[0];
 const snapshot = (db, table) => query(db, `SELECT to_jsonb(t) AS row FROM ${table} t ORDER BY to_jsonb(t)::text`);
+async function reject(db,e) {
+  const [row]=await query(db,'select enrolled_at,current_step from sequence_enrollments where id=$1',[e.id]);
+  const [dispatch]=await query(db,'select sender from sequence_batch_dispatches where token=$1',[e.token]);
+  return (await query(db,'select reject_sequence_batch($1,$2,$3,$4,$5,$6) ok',
+    [e.id,e.token,row.enrolled_at,row.current_step,dispatch.sender,{version:2,operation_id:e.token,sender:dispatch.sender,outcome:'rejected_before_send',code:'bridge_not_ready'}]))[0].ok;
+}
+
+test('060 last proven rejection keeps the reserved slot and extends the full cooldown from settlement',async(t)=>{
+ const db=await setup(t), members=[];
+ for(let i=0;i<6;i++){const e=await enrollment(db,i%2===1);assert.equal(await begin(db,e),true);members.push(e)}
+ for(const e of members.slice(0,-1))assert.equal(await finish(db,e),true);
+ await new Promise(r=>setTimeout(r,25));
+ const final=members.at(-1);assert.equal(await reject(db,final),true);
+ const b=await batch(db);
+ assert.equal(b.used,6);
+ assert.ok(+new Date(b.cooldown_until)-+new Date(b.last_settled_at)>=900000-2,'last rejection must start a complete fifteen-minute pause');
+ const [state]=await query(db,'select status,delivery_status,current_step,lease_token from sequence_enrollments where id=$1',[final.id]);
+ assert.deepEqual(state,{status:'paused',delivery_status:'rejected_before_send',current_step:0,lease_token:null});
+ assert.equal(await reject(db,final),true);assert.deepEqual(await batch(db),b);
+ assert.equal(await begin(db,await enrollment(db)),false);
+ await ageBatch(db,sender,901,true);assert.equal(await begin(db,await enrollment(db)),true);
+});
+
+test('060 migrated in-flight batches 1..5 and historical 7..10 preserve counts and extend cooldown for every terminal path',async(t)=>{
+ const db=await setup(t,false), cases=[];
+ for(const count of [1,2,3,4,5,7,8,9,10])for(const terminal of ['sent','rejected_before_send','unknown']){
+  const number='15550003'+String(cases.length).padStart(3,'0'),members=[];
+  for(let i=0;i<count;i++){const e=await enrollment(db,i%2===1);assert.equal(await begin(db,e,number),true);members.push(e)}
+  for(const e of members.slice(0,-1))assert.equal(await finish(db,e),true);
+  cases.push({count,terminal,number,last:members.at(-1)});
+ }
+ await db.exec(read(transition));
+ await new Promise(r=>setTimeout(r,25));
+ for(const c of cases){
+  assert.equal((await batch(db,c.number)).used,c.count);
+  if(c.terminal==='sent')assert.equal(await finish(db,c.last),true);
+  else if(c.terminal==='rejected_before_send')assert.equal(await reject(db,c.last),true);
+  else await query(db,"select defer_sequence_batch($1,$2,'delivery_unknown',clock_timestamp(),true)",[c.last.id,c.last.token]);
+  const b=await batch(db,c.number);
+  assert.equal(b.used,c.count,'terminal settlement must never return reserved capacity');
+  assert.ok(+new Date(b.cooldown_until)-+new Date(b.last_settled_at)>=900000-2,`${c.count}/${c.terminal}: complete pause after final settlement`);
+  const [d]=await query(db,'select state from sequence_batch_dispatches where token=$1',[c.last.token]);
+  assert.equal(d.state,c.terminal);
+  assert.equal(await begin(db,await enrollment(db),c.number),false);
+  await ageBatch(db,c.number,901,true);
+  const allowed=await begin(db,await enrollment(db),c.number);
+  assert.equal(allowed,c.terminal!=='unknown');
+  assert.equal((await batch(db,c.number)).used,c.terminal==='unknown'?c.count:1);
+ }
+});
 
 async function ageBatch(db, number, settledSeconds, cooldownExpired = false) {
   await query(db, `UPDATE sequence_sender_batches
@@ -124,8 +174,11 @@ test('060 preserves legacy used=10, partial and unknown state while extending co
     assert.deepEqual(currentOther, oldOther, 'migration must not reset used or rewrite sender clocks');
     if (!old.used) assert.deepEqual(current, old, 'unused sender must not be touched');
     else {
+      const inflightFloors=before.sequence_batch_dispatches.map(x=>x.row)
+        .filter(d=>d.sender===old.sender&&d.state==='sending').map(d=>+new Date(d.expires_at)/1000+900);
       const historicalFloor = Math.max(oldCooldown ? +new Date(oldCooldown) / 1000 : -Infinity,
-        +new Date(old.last_reserved_at) / 1000 + 900, +new Date(old.last_settled_at) / 1000 + 900);
+        +new Date(old.last_reserved_at) / 1000 + 900, +new Date(old.last_settled_at) / 1000 + 900,
+        ...inflightFloors);
       const actual = +new Date(currentCooldown) / 1000;
       assert.ok(actual >= Math.max(historicalFloor, lower + 900) - 0.002, `${old.sender}: conservative floor`);
       assert.ok(actual <= Math.max(historicalFloor, upper + 900) + 0.002, `${old.sender}: expected greatest floor`);

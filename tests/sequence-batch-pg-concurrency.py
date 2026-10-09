@@ -76,9 +76,10 @@ def q(c, sql, args=None):
     return cur.fetchall() if cur.description else []
 
 
-def setup():
+def setup(migrated=True):
     db = 'case_' + uuid.uuid4().hex
-    q(admin, f'CREATE DATABASE {db} TEMPLATE fixture_base')
+    source = 'fixture_base' if migrated else 'fixture_legacy'
+    q(admin, f'CREATE DATABASE {db} TEMPLATE {source}')
     c = connect(db)
     q(c, 'insert into buyers(id) values(%s),(%s)', [B, O])
     return c, db
@@ -476,6 +477,57 @@ def sender_unavailable():
     log('sender_unavailable', state=s)
 
 
+def reject(c,e,sender=SENDER):
+    proof={'version':2,'operation_id':str(e['lease_token']),'sender':sender,'outcome':'rejected_before_send','code':'bridge_not_ready'}
+    return q(c,'select reject_sequence_batch(%s,%s,%s,%s,%s,%s::jsonb) ok',
+             [e['id'],e['lease_token'],e['enrolled_at'],e['current_step'],sender,json.dumps(proof)])[0]['ok']
+
+
+def terminal_transition_race(count,terminal):
+    c,db=setup(False)
+    es=[enrollment(c,'ai_until_reply' if i%2 else 'legacy',O if i%2 else B) for i in range(count)]
+    assert all(begin(c,e) for e in es)
+    assert all(finish(c,e) for e in es[:-1])
+    holder,migrator,worker=connect(db),connect(db),connect(db)
+    q(holder,'begin')
+    q(holder,'select sender from sequence_sender_batches where sender=%s for update',[SENDER])
+    migration=POOL.submit(q,migrator,(RUN/'060_sequence_six_per_fifteen.sql').read_text())
+    assert observe(c,migrator,migration),'migration must wait on existing sender row'
+    terminal_fn=finish if terminal=='sent' else reject
+    settled=POOL.submit(terminal_fn,worker,es[-1])
+    assert observe(c,worker,settled),'in-flight finalization must serialize on the same sender'
+    q(holder,'commit')
+    migration.result(8)
+    assert settled.result(8)
+    b=batch(c)[0]
+    assert b['used']==count
+    log('transition_before_assert',used=count,terminal=terminal,batch=b,pause_seconds=(b['cooldown_until']-b['last_settled_at']).total_seconds())
+    assert (b['cooldown_until']-b['last_settled_at']).total_seconds()>=900
+    assert q(c,'select state from sequence_batch_dispatches where token=%s',[es[-1]['lease_token']])[0]['state']==terminal
+    fresh=[enrollment(c,'ai_until_reply' if i%2 else 'legacy') for i in range(8)]
+    assert not any(parallel(db,[lambda x,e=e:begin(x,e) for e in fresh]))
+    log('transition_terminal_serialization',used=count,terminal=terminal,batch=b)
+
+
+def last_rejection_clock_race():
+    c,db=setup()
+    es=[enrollment(c,'ai_until_reply' if i%2 else 'legacy') for i in range(6)]
+    assert all(begin(c,e) for e in es)
+    assert all(finish(c,e) for e in es[:-1])
+    worker=connect(db)
+    q(worker,'begin')
+    assert reject(worker,es[-1])
+    fresh=enrollment(c)
+    waiter=connect(db)
+    admission=POOL.submit(begin,waiter,fresh)
+    assert observe(c,waiter,admission)
+    q(worker,'commit')
+    assert not admission.result(8)
+    b=batch(c)[0]
+    assert b['used']==6 and (b['cooldown_until']-b['last_settled_at']).total_seconds()>=900
+    log('last_rejection_clock_race',batch=b,state=state(c,es[-1]))
+
+
 def case(name, fn):
     start = len(CONNS)
     log('case_start', name=name)
@@ -553,12 +605,23 @@ try:
     v = q(admin, "select version(),current_setting('listen_addresses') listen,current_setting('server_version_num') ver")[0]
     assert v['listen'] == '' and v['ver'].startswith('16')
     log('server', **v)
-    q(admin, 'CREATE DATABASE fixture_base')
-    template = connect('fixture_base')
+    q(admin, 'CREATE DATABASE fixture_legacy')
+    template = connect('fixture_legacy')
     for name, sql in sources:
+        if name == '060_sequence_six_per_fifteen.sql':
+            continue
         q(template, sql)
         log('applied', name=name, sha256=HASHES[name])
     template.close()
+    q(admin, 'CREATE DATABASE fixture_base TEMPLATE fixture_legacy')
+    template = connect('fixture_base')
+    q(template, (RUN/'060_sequence_six_per_fifteen.sql').read_text())
+    log('applied', name='060_sequence_six_per_fifteen.sql',sha256=HASHES['060_sequence_six_per_fifteen.sql'])
+    template.close()
+    for count in (1,5,6,10):
+        for terminal in ('sent','rejected_before_send'):
+            case(f'migration_inflight_serialization_{count}_{terminal}',lambda n=count,k=terminal:terminal_transition_race(n,k))
+    case('last_rejection_begin_serialization_complete_15min',last_rejection_clock_race)
     case('independent_053_upserts', independent_upserts)
     case('independent_shared_suppression_lock_order', independent_suppression_order)
     case('16_concurrent_begins_shared_AI_legacy_buyers_max6', race_budget)

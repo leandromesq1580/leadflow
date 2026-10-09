@@ -12,7 +12,7 @@ const proof = e => ({version:2,operation_id:e.lease_token,sender,outcome:'reject
 async function fixture() {
   const f = await setup.fixture()
   await setup.applyPacing(f.db)
-  if (fs.existsSync(migration)) await f.db.exec(fs.readFileSync(migration, 'utf8'))
+  // Shared helper installs 058 before 060, matching the real migration order.
   return f
 }
 async function make(db, mode='legacy', phone=sender) {
@@ -125,24 +125,24 @@ test('STOP, pause, reply, ownership and suppression survive rejection in either 
  }finally{await db.close()}
 })
 
-test('ten reservations include rejections; cooldown is five minutes from completion, partial reset respects clock',async()=>{
+test('six reservations include rejections; cooldown is fifteen minutes from completion, partial reset respects clock',async()=>{
  const {db}=await fixture()
  try {
   const entries=[]
-  for(let i=0;i<10;i++){const e=await make(db);assert.equal(e.allowed,true);entries.push(e)}
+  for(let i=0;i<6;i++){const e=await make(db);assert.equal(e.allowed,true);entries.push(e)}
   // Synthetic time travel of persisted clocks only, not a claim about real latency.
-  await db.query("update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '10 minutes',last_settled_at=clock_timestamp()-interval '10 minutes',cooldown_until=clock_timestamp()-interval '1 second' where sender=$1",[sender])
+  await db.query("update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '16 minutes',last_settled_at=clock_timestamp()-interval '16 minutes',cooldown_until=clock_timestamp()-interval '1 second' where sender=$1",[sender])
   for(const e of entries)assert.equal(await reject(db,e),true)
   const b=(await state(db,entries[0])).b
-  assert.equal(b.used,10);assert.ok(b.cooldown_until-b.last_settled_at>=300000)
-  assert.equal((await make(db)).allowed,false,'eleventh blocked after all ten rejected')
-  await db.query("update sequence_sender_batches set cooldown_until=clock_timestamp()-interval '1 second' where sender=$1",[sender])
+  assert.equal(b.used,6);assert.ok(b.cooldown_until-b.last_settled_at>=900000-2)
+  assert.equal((await make(db)).allowed,false,'seventh blocked after all six rejected')
+  await db.query("update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '16 minutes',last_settled_at=clock_timestamp()-interval '16 minutes',cooldown_until=clock_timestamp()-interval '1 second' where sender=$1",[sender])
   const partial=await make(db);assert.equal(partial.allowed,true);assert.equal((await state(db,partial)).b.used,1)
-  await db.query("update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '10 minutes',last_settled_at=clock_timestamp()-interval '10 minutes' where sender=$1",[sender])
+  await db.query("update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '16 minutes',last_settled_at=clock_timestamp()-interval '16 minutes' where sender=$1",[sender])
   assert.equal(await reject(db,partial),true)
   const next=await make(db);assert.equal(next.allowed,true);assert.equal((await state(db,next)).b.used,2,'no partial reset just because reservation was old')
   assert.equal(await reject(db,next),true)
-  await db.query("update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '6 minutes',last_settled_at=clock_timestamp()-interval '6 minutes' where sender=$1",[sender])
+  await db.query("update sequence_sender_batches set last_reserved_at=clock_timestamp()-interval '16 minutes',last_settled_at=clock_timestamp()-interval '16 minutes' where sender=$1",[sender])
   const fresh=await make(db);assert.equal(fresh.allowed,true);assert.equal((await state(db,fresh)).b.used,1)
  }finally{await db.close()}
 })

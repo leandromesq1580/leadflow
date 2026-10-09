@@ -13,11 +13,11 @@ Mudança solicitada pelo dono para reduzir o ritmo de WhatsApp. Aplica-se às se
 
 ## Publicação
 
-1. Revisar e aplicar `supabase/migrations/060_sequence_six_per_fifteen.sql` com autorização, antes do merge/deploy web. As versões atuais dos executores já chamam essas funções do banco; a alteração entra em vigor no commit da migration.
+1. Revisar e aplicar `supabase/migrations/060_sequence_six_per_fifteen.sql` com autorização, antes do merge/deploy web. As versões atuais dos executores já chamam essas funções do banco; a alteração vale para novas chamadas após o commit da migration. Chamadas e permissões já concedidas pela regra antiga são preservadas, não canceladas.
 2. A migration mantém reservas e registros históricos, inclusive lotes com `used` de 7 a 10. Não endurece a constraint antiga para não apagar/resetar esse estado; novas admissões são limitadas pelas funções a 6.
-3. A migration **reescreve somente a pausa dos remetentes com reservas**, estendendo para pelo menos 15 minutos a partir da aplicação (e preserva esperas maiores). Não altera créditos, inscrições, estágios, mensagens, estados desconhecidos nem habilita sequências.
+3. A migration **reescreve somente a pausa dos remetentes com reservas**, estendendo para pelo menos 15 minutos a partir da aplicação (e preserva esperas maiores). Havendo envio em andamento, cobre também 15 minutos após o prazo daquela permissão: o primeiro intervalo pode ser maior para drenar chamadas antigas sem encurtar a pausa. Não altera créditos, inscrições, estágios, mensagens, estados desconhecidos nem habilita sequências.
 4. Publicar web para mostrar a nova regra no texto existente da tela de Sequências, sem controles extras.
-5. Conferir as seis funções, pausa dos remetentes e preservação dos registros `unknown` por leitura. Não executar envios reais só para smoke-test sem autorização específica.
+5. Conferir as sete funções, pausa dos remetentes e preservação dos registros `unknown` por leitura. Não executar envios reais só para smoke-test sem autorização específica.
 
 ## Verificação local
 

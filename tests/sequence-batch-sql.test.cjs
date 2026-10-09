@@ -8,7 +8,7 @@ const other='00000000-0000-4000-8000-000000000002'
 const lead='00000000-0000-4000-8000-000000000003'
 const migration='supabase/migrations/053_ai_suppression_resolution.sql'
 async function applyPacing(db) {
- for (const migration of ['054_sequence_batch_pacing.sql', '055_sequence_batch_completion_clock.sql', '056_sequence_reply_stage.sql']) {
+ for (const migration of ['054_sequence_batch_pacing.sql', '055_sequence_batch_completion_clock.sql', '056_sequence_reply_stage.sql', '058_sequence_proven_rejection.sql']) {
   await db.exec(readFileSync('supabase/migrations/' + migration, 'utf8'))
  }
  const pacing = 'supabase/migrations/060_sequence_six_per_fifteen.sql'

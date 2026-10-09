@@ -6,6 +6,23 @@
 -- as funções abaixo impõem used<6 para qualquer nova admissão.
 BEGIN;
 
+-- Finalização única para todos os caminhos terminais. Um lote parcial migrado
+-- também tem cooldown: sua última finalização deve prolongar a pausa de transição.
+-- Preserva os slots, estado terminal, lease e evidência de rejeição/unknown.
+CREATE OR REPLACE FUNCTION public.settle_sequence_batch_dispatch() RETURNS trigger
+ LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+DECLARE t timestamptz:=clock_timestamp();
+BEGIN
+ IF OLD.state='sending' AND NEW.state IN ('sent','unknown','rejected_before_send') THEN
+  UPDATE public.sequence_sender_batches
+   SET last_settled_at=greatest(last_settled_at,t),
+    cooldown_until=CASE WHEN used>=6 OR cooldown_until IS NOT NULL
+     THEN greatest(cooldown_until,t+interval '15 minutes') ELSE cooldown_until END
+   WHERE sender=NEW.sender;
+ END IF;
+ RETURN NEW;
+END $$;
+
 CREATE OR REPLACE FUNCTION public.expire_sequence_batch_dispatches(p_sender text) RETURNS integer
  LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
 DECLARE n integer;
@@ -176,18 +193,26 @@ UPDATE public.sequence_sender_batches
 SET cooldown_until=greatest(
   cooldown_until,
   greatest(last_reserved_at,last_settled_at)+interval '15 minutes',
-  clock_timestamp()+interval '15 minutes'
+  clock_timestamp()+interval '15 minutes',
+  -- Uma chamada de finalização iniciada antes do DDL pode executar a função
+  -- antiga em cache. Ela só aceita confirmação antes do vencimento da lease.
+  -- Cobrir esse vencimento evita encurtar a pausa enquanto o código velho drena.
+  (SELECT max(d.expires_at)+interval '15 minutes'
+    FROM public.sequence_batch_dispatches d
+    WHERE d.sender=sequence_sender_batches.sender AND d.state='sending')
 )
 WHERE used>0;
 
 -- CREATE OR REPLACE mantém owner/ACL; reafirma acesso exclusivo de service_role.
-REVOKE ALL ON FUNCTION public.expire_sequence_batch_dispatches(text),
+REVOKE ALL ON FUNCTION public.settle_sequence_batch_dispatch(),
+  public.expire_sequence_batch_dispatches(text),
   public.finish_sequence_batch(uuid,uuid,text,text,timestamptz,text,text),
   public.defer_sequence_batch(uuid,uuid,text,timestamptz,boolean),
   public.sequence_batch_quarantine(),
   public.begin_sequence_batch(uuid,uuid,text,text),
   public.preflight_sequence_batch(uuid,uuid,text) FROM PUBLIC,anon,authenticated;
-GRANT EXECUTE ON FUNCTION public.expire_sequence_batch_dispatches(text),
+GRANT EXECUTE ON FUNCTION public.settle_sequence_batch_dispatch(),
+  public.expire_sequence_batch_dispatches(text),
   public.finish_sequence_batch(uuid,uuid,text,text,timestamptz,text,text),
   public.defer_sequence_batch(uuid,uuid,text,timestamptz,boolean),
   public.sequence_batch_quarantine(),
