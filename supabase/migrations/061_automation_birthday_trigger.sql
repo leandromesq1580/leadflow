@@ -1,4 +1,4 @@
--- 060: gatilho de automação "aniversário do cliente" + idempotência anual.
+-- 061: gatilho de automação "aniversário do cliente" + idempotência anual.
 --
 -- O índice idx_automation_runs_unique_no_meeting (automation_id, lead_id) trava o reenvio
 -- PRA SEMPRE depois do 1º disparo — certo pra gatilhos de uma vez só (estágio, sem resposta),

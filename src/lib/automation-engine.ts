@@ -23,7 +23,7 @@ interface Automation {
 // "Hoje" no fuso de negócio (Flórida) — mesmo padrão já usado pros lembretes de reunião.
 // Gatilhos recorrentes (hoje só 'birthday') carregam o ano como period_key pra poder
 // disparar TODO ANO pro mesmo lead; os demais (de uma vez só) usam null e mantêm o
-// comportamento antigo (uma linha pra sempre — ver migration 060).
+// comportamento antigo (uma linha pra sempre — ver migration 061).
 function periodKeyFor(auto: Automation): string | null {
   if (auto.trigger_type !== 'birthday') return null
   const hojeNY = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
@@ -51,7 +51,7 @@ export async function runAutomations(buyerIds?: string[]): Promise<{ ran: number
       for (const target of targets) {
         // Idempotency: (automation_id, lead_id, meeting_id, period_key) — meeting_id NULL
         // para triggers sem reunião; period_key NULL para triggers de uma vez só (ver
-        // periodKeyFor acima e migration 060 pro índice único correspondente).
+        // periodKeyFor acima e migration 061 pro índice único correspondente).
         let existingQuery = db
           .from('automation_runs')
           .select('id, status, error, created_at')
