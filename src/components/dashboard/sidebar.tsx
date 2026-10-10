@@ -203,6 +203,7 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, podeVerApo
     { href: '/admin/ads', label: 'Meta Ads', icon: '📈' },
     { href: '/admin/revenue', label: 'Receita', icon: '💰' },
     { href: '/admin/precos', label: 'Preços de Leads', icon: '🏷️' },
+    { href: '/admin/email-campaigns', label: 'Campanhas de E-mail', icon: '✉️' },
     { href: '/admin/chargebacks', label: 'Chargebacks', icon: '🛡️' },
     { href: '/admin/settings', label: t.sidebar.settings, icon: '⚙️' },
   ]
