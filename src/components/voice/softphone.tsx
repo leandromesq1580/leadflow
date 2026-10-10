@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { CallScriptPanel } from './call-script-panel'
 import { useT } from '@/lib/i18n-client'
+import { createDeviceActivator, type ActivationReason } from './softphone-activation'
 
 /** Dispara uma ligação de qualquer lugar do app: callLead('+1...', 'Nome', leadId). */
 export function callLead(phone: string, name?: string, leadId?: string) {
@@ -36,37 +37,51 @@ export function Softphone() {
   const leadIdRef = useRef<string>('')
 
   const mountedRef = useRef(true)
-  const initingRef = useRef(false)
 
-  // Inicializa (ou RE-inicializa) o Device sob demanda. Antes só tentava 1x no load da
-  // página: se o token falhasse naquele instante (rede/cold start), o telefone ficava
-  // morto pra sempre na aba — todo clique dava "Telefone ainda conectando" (caso Sidnei
-  // 2026-07-27). Agora o clique em Ligar re-tenta na hora.
-  async function initDevice(): Promise<boolean> {
-    if (deviceRef.current) return true
-    if (initingRef.current) return false
-    initingRef.current = true
-    try {
-      const res = await fetch('/api/voice/token', { cache: 'no-store' })
-      if (!res.ok) return false
-      const { token, identity } = await res.json()
-      buyerIdRef.current = identity || ''
-      const { Device } = await import('@twilio/voice-sdk')
-      if (!mountedRef.current) return false
-      const device = new Device(token, { codecPreferences: ['opus', 'pcmu'] as any, logLevel: 'error' as any })
-      device.on('registered', () => { if (mountedRef.current) setStatus('ready') })
-      device.on('error', (e: any) => { console.warn('[softphone]', e?.message || e); if (mountedRef.current) setStatus(s => (s === 'off' ? 'error' : s)) })
-      device.on('tokenWillExpire', async () => {
-        try { const r = await fetch('/api/voice/token', { cache: 'no-store' }); const j = await r.json(); device.updateToken(j.token) } catch {}
+  // Ativação do Device: 1 por vez, compartilhada entre load da página e clique em Ligar.
+  // Antes só tentava 1x no load; se o token falhasse (rede/cold start) o telefone ficava
+  // morto na aba (caso Sidnei 2026-07-27). E um clique DURANTE a ativação era tratado como
+  // falha, com alerta falando de microfone (casos Fernanda/Giselle 08–09/10/2026).
+  // Regras e testes: softphone-activation.ts / tests/softphone-activation.test.ts.
+  const activatorRef = useRef<ReturnType<typeof createDeviceActivator<any>> | null>(null)
+  function activator() {
+    if (!activatorRef.current) {
+      activatorRef.current = createDeviceActivator<any>({
+        fetchToken: () => fetch('/api/voice/token', { cache: 'no-store' }),
+        isMounted: () => mountedRef.current,
+        onIdentity: id => { buyerIdRef.current = id },
+        log: m => console.warn('[softphone] init:', m),
+        createDevice: async (token: string) => {
+          const { Device } = await import('@twilio/voice-sdk')
+          const device = new Device(token, { codecPreferences: ['opus', 'pcmu'] as any, logLevel: 'error' as any })
+          device.on('registered', () => { if (mountedRef.current) setStatus('ready') })
+          device.on('error', (e: any) => { console.warn('[softphone]', e?.message || e); if (mountedRef.current) setStatus(s => (s === 'off' ? 'error' : s)) })
+          device.on('tokenWillExpire', async () => {
+            try { const r = await fetch('/api/voice/token', { cache: 'no-store' }); const j = await r.json(); device.updateToken(j.token) } catch {}
+          })
+          return device
+        },
       })
-      await device.register()
-      deviceRef.current = device
-      return true
-    } catch (e: any) {
-      console.warn('[softphone] init:', e?.message || e)
-      return false
-    } finally {
-      initingRef.current = false
+    }
+    return activatorRef.current
+  }
+
+  async function initDevice(): Promise<boolean> {
+    const r = await activator().ensure()
+    if (r.ok) deviceRef.current = r.device
+    return r.ok
+  }
+
+  function activationMessage(reason: ActivationReason): string {
+    switch (reason) {
+      case 'unauthorized':
+        return L('Sua sessão expirou. Saia e entre de novo para voltar a ligar.', 'Your session expired. Sign out and sign in again to make calls.', 'Tu sesión expiró. Cierra sesión y entra de nuevo para llamar.')
+      case 'voice_unavailable':
+        return L('As ligações estão indisponíveis no momento. Avise o suporte.', 'Calling is unavailable right now. Please contact support.', 'Las llamadas no están disponibles ahora. Avisa al soporte.')
+      case 'register':
+        return L('Não consegui conectar o telefone. Verifique a permissão de microfone do navegador e tente de novo.', 'Could not connect the phone. Check the browser microphone permission and try again.', 'No pude conectar el teléfono. Revisa el permiso de micrófono del navegador e inténtalo de nuevo.')
+      default:
+        return L('Não consegui ativar o telefone agora (falha de conexão). Verifique sua internet e tente de novo.', 'Could not activate the phone right now (connection failed). Check your internet and try again.', 'No pude activar el teléfono ahora (fallo de conexión). Revisa tu internet e inténtalo de nuevo.')
     }
   }
 
@@ -81,6 +96,7 @@ export function Softphone() {
       clearInterval(timerRef.current)
       try { deviceRef.current?.destroy() } catch {}
       deviceRef.current = null
+      activatorRef.current?.clear()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -101,10 +117,12 @@ export function Softphone() {
 
   async function startCall(detail: { phone: string; name?: string; leadId?: string }) {
     if (status === 'connecting' || status === 'ringing' || status === 'incall') return
-    // Sem device? Tenta ativar AGORA (recupera token que falhou no load da página).
+    // Sem device? Ativa AGORA (ou espera a ativação em curso terminar) — nunca trata
+    // "ainda ativando" como falha. Só alerta com o motivo real da falha.
     if (!deviceRef.current) {
-      const ok = await initDevice()
-      if (!ok) { alert(L('Não consegui ativar o telefone agora. Recarregue a página (F5) e tente de novo — se persistir, verifique a permissão de microfone do navegador.', 'Could not activate the phone right now. Reload the page (F5) and try again — if it persists, check the browser microphone permission.', 'No pude activar el teléfono ahora. Recarga la página (F5) e inténtalo de nuevo — si persiste, revisa el permiso de micrófono del navegador.')); return }
+      const r = await activator().ensure()
+      if (!r.ok) { if (r.reason !== 'unmounted') alert(activationMessage(r.reason)); return }
+      deviceRef.current = r.device
     }
     const device = deviceRef.current
     setInfo({ name: detail.name, phone: detail.phone }); setMuted(false); setStatus('connecting')

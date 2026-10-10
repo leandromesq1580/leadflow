@@ -190,7 +190,7 @@ export async function notifyPolicyChanges(
  * fica cego: todo lead gera aviso, mesmo os que ficam pendentes. Quando o lead
  * for finalmente distribuído, o sendLeadNotificationEmail avisa "entregue pra X".
  */
-export async function notifyGroupLeadPending(lead: LeadLanguageFields & { name: string; phone: string; state?: string | null; interest?: string | null }) {
+export async function notifyGroupLeadPending(lead: LeadLanguageFields & { name: string; phone: string; state?: string | null; interest?: string | null; campaign_name?: string | null; raw_data?: unknown }) {
   const msg = `🔔 *NOVO LEAD RECEBIDO* (aguardando distribuição)
 
 📋 *${lead.name}*
@@ -198,6 +198,7 @@ ${leadNotificationLanguageLabel(lead)}
 📞 ${lead.phone}
 📍 ${lead.state || '—'}
 💡 ${lead.interest || 'Seguro de vida'}
+${leadOriginLines(lead)}
 
 ⏳ Nenhum comprador disponível agora (estado/horário). Será entregue automaticamente quando a janela abrir.`
   await notifyAdmins(msg) // grupo + direto (grupo sozinho NAO entrega — ver notifyAdmins)
@@ -336,6 +337,23 @@ interface Lead extends LeadLanguageFields {
   city: string
   state: string
   interest: string
+  campaign_name?: string | null
+  raw_data?: unknown
+}
+
+/**
+ * Linhas de ORIGEM do lead pro grupo admin: qual CRIATIVO (anúncio) e campanha converteram.
+ * Pedido do dono (09/10/2026). O Meta entrega ad_name/campaign_name no poll e isso fica em
+ * leads.raw_data — nada é inventado: sem ad_name, diz "não informado pelo Meta".
+ * Só pro grupo/admin: comprador e membro de equipe NÃO recebem (dado interno de marketing).
+ */
+function leadOriginLines(lead: { campaign_name?: string | null; raw_data?: unknown }): string {
+  const raw = (lead.raw_data && typeof lead.raw_data === 'object') ? lead.raw_data as Record<string, unknown> : {}
+  const creative = String(raw.ad_name || '').trim()
+  const campaign = String(lead.campaign_name || '').trim()
+  const lines = [`🎨 Criativo: ${creative || 'não informado pelo Meta'}`]
+  if (campaign) lines.push(`📣 Campanha: ${campaign}`)
+  return lines.join('\n')
 }
 
 /**
@@ -349,7 +367,7 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead): Promi
     if ((lead as any).id) {
       const { createAdminClient } = await import('@/lib/supabase/admin')
       const { data: src } = await createAdminClient()
-        .from('leads').select('meta_lead_id, lead_language, form_name').eq('id', (lead as any).id).maybeSingle()
+        .from('leads').select('meta_lead_id, lead_language, form_name, campaign_name, raw_data').eq('id', (lead as any).id).maybeSingle()
       if (src && !src.meta_lead_id) {
         console.log(`[Notify] Lead ${(lead as any).id} e MANUAL — pula notificacao (regra: manual nao notifica).`)
         return false
@@ -430,6 +448,7 @@ ${leadNotificationLanguageLabel(lead)}
 📞 ${lead.phone}
 📍 ${lead.state}
 💡 ${lead.interest}
+${leadOriginLines(lead)}
 
 👤 Distribuido para: *${buyer.name}*
 📧 ${buyer.email}`
