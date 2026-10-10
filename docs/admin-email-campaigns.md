@@ -20,7 +20,8 @@ Migração: `supabase/migrations/062_admin_email_campaigns.sql`. Cria tabelas e 
 | Variável | Uso |
 |---|---|
 | `RESEND_API_KEY` | Chave do provedor existente; precisa permitir consultar os domínios e enviar |
-| `RESEND_FROM_EMAIL` | Endereço próprio, em domínio autenticado; `resend.dev` é bloqueado |
+| `EMAIL_CAMPAIGNS_FROM_EMAIL` | Remetente exclusivo das campanhas em domínio próprio autenticado; não altera os avisos do sistema. `resend.dev` é bloqueado |
+| `RESEND_FROM_EMAIL` | Remetente compartilhado dos avisos; usado nas campanhas apenas se `EMAIL_CAMPAIGNS_FROM_EMAIL` estiver ausente ou vazio, para compatibilidade |
 | `MANUAL_EMAIL_POSTAL_ADDRESS` | Endereço postal obrigatório no rodapé (10–500 caracteres) |
 | `EMAIL_CAMPAIGN_WEBHOOK_SECRET` | Assinatura do endpoint dedicado de retornos |
 | `EMAIL_CAMPAIGNS_ENABLED` | Somente `true` libera agendamento/envio; ausente = bloqueado |

@@ -34,7 +34,7 @@ export function validateCampaign(input: unknown): {ok:true;value:CampaignDraft}|
 export type CampaignConfiguration={ready:boolean;issues:string[];key:string;webhookSecret:string;from:string;email:string;domain:string;postal:string;dailyLimit:number}
 export function campaignConfiguration(env:Record<string,string|undefined>):CampaignConfiguration {
   const issues:string[]=[],key=(env.RESEND_API_KEY||'').trim(),webhookSecret=(env.EMAIL_CAMPAIGN_WEBHOOK_SECRET||'').trim()
-  const raw=(env.RESEND_FROM_EMAIL||'').trim(),email=(raw.match(/<([^<>]+)>$/)?.[1]||raw).toLowerCase(),domain=email.split('@')[1]||''
+  const raw=(env.EMAIL_CAMPAIGNS_FROM_EMAIL||env.RESEND_FROM_EMAIL||'').trim(),email=(raw.match(/<([^<>]+)>$/)?.[1]||raw).toLowerCase(),domain=email.split('@')[1]||''
   const postal=(env.MANUAL_EMAIL_POSTAL_ADDRESS||'').trim(),daily=env.EMAIL_CAMPAIGN_DAILY_LIMIT||'200',dailyLimit=Number(daily)
   if(env.EMAIL_CAMPAIGNS_ENABLED!=='true')issues.push('Disparos de campanha desativados.')
   if(!key)issues.push('Falta configurar a chave do provedor.')
