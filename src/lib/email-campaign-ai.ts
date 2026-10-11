@@ -64,17 +64,28 @@ export async function generateCampaignCopy(value: unknown, io: AIIO = {}): Promi
   let timer:ReturnType<typeof setTimeout>|undefined
   try {
     const job=async()=>{
-      const response=await (io.fetch ?? globalThis.fetch)('https://api.openai.com/v1/chat/completions', {
-        method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json',Authorization:`Bearer ${key}`},
-        body:JSON.stringify({model:'gpt-4o-mini',temperature:0.7,max_tokens:1000,response_format:{type:'json_object'},messages:[{role:'system',content:SYSTEM},{role:'user',content:JSON.stringify({insurance:input.insurance,theme:input.theme})}]}),
-      })
-      if (!response.ok) throw new CampaignAIError(response.status===429?'rate_limit':'provider')
-      const data=await response.json()
-      const choice=data?.choices?.[0]
-      if (choice?.finish_reason!=='stop' || typeof choice?.message?.content!=='string' || choice.message.content.length>12000) throw new CampaignAIError('invalid_copy')
-      let output:unknown
-      try { output=JSON.parse(choice.message.content) } catch { throw new CampaignAIError('invalid_copy') }
-      return validateCopy(output,input)
+      // One bounded rewrite on invalid output, within the SAME timeout budget.
+      // Never echo refused content: it can contain private data or injected instructions.
+      for(let attempt=0;attempt<2;attempt++) {
+        try {
+          const messages=[{role:'system',content:SYSTEM},{role:'user',content:JSON.stringify({insurance:input.insurance,theme:input.theme})}]
+          if(attempt>0) messages.push({role:'user',content:'A primeira sugestão não passou na validação. Reescreva os dois idiomas a partir da mesma ideia comercial, mantendo a intenção. Confira antes de responder: JSON completo com os cinco campos; textos simples sem números, links, contatos, marcação ou placeholders; nenhum desconto, economia ou benefício garantido; não invente condições, elegibilidade ou cobertura. Use as condições da apólice quando o tema exigir cautela. Não peça ao usuário para reformular a ideia.'})
+          const response=await (io.fetch ?? globalThis.fetch)('https://api.openai.com/v1/chat/completions', {
+            method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json',Authorization:`Bearer ${key}`},
+            body:JSON.stringify({model:'gpt-4o-mini',temperature:attempt===0?0.7:0.3,max_tokens:1000,response_format:{type:'json_object'},messages}),
+          })
+          if (!response.ok) throw new CampaignAIError(response.status===429?'rate_limit':'provider')
+          const data=await response.json()
+          const choice=data?.choices?.[0]
+          if (choice?.finish_reason!=='stop' || typeof choice?.message?.content!=='string' || choice.message.content.length>12000) throw new CampaignAIError('invalid_copy')
+          let output:unknown
+          try { output=JSON.parse(choice.message.content) } catch { throw new CampaignAIError('invalid_copy') }
+          return validateCopy(output,input)
+        } catch(error) {
+          if(!(error instanceof CampaignAIError) || error.code!=='invalid_copy' || attempt===1 || controller.signal.aborted) throw error
+        }
+      }
+      throw new CampaignAIError('invalid_copy')
     }
     const timeout=new Promise<never>((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(new CampaignAIError('timeout'))},io.timeoutMs??20000)})
     const copy=await Promise.race([job(),timeout])
