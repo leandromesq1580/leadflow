@@ -15,6 +15,9 @@ test('reescreve automaticamente uma sugestão rejeitada preservando a ideia e se
  const messages=payloads[1].messages as {role:string;content:string}[]
  assert.deepEqual(JSON.parse(messages[1].content),{insurance:input.insurance,theme:input.theme})
  assert.match(messages.at(-1)!.content,/reescreva/i)
+ assert.equal(messages.at(-1)!.role,'system','Correção da aplicação precisa ter prioridade sobre o contexto comercial')
+ assert.match(messages.at(-1)!.content,/ahorro/)
+ assert.match(messages.at(-1)!.content,/valor de resgate/)
  assert.equal(copy.subject_pt,safe.subject_pt);assert.equal(copy.subject_es,safe.subject_es)
  for(const body of [copy.body_pt,copy.body_es]){assert(!body.includes('garantido'));assert.equal(body.match(/https:\/\//g)?.length,1);assert.match(body,/https:\/\/wa\.me\/12025550123/)}
 })
