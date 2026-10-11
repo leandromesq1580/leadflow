@@ -7,7 +7,7 @@ const config=campaignConfiguration({})
 const data={name:'Seguro',subject_pt:'Assunto',body_pt:'Conteúdo',subject_es:'Asunto',body_es:'Contenido',filters:{}}
 function fixture(auth:{id:string}|Response={id:actor}){
  const calls:[string,Record<string,unknown>][]=[]
- const handlers=createCampaignHandlers({authenticate:async()=>auth,runtime:()=>({config,provider:{verifyDomain:async()=>false,send:async()=>{throw new Error('no real sends')}},db:{rpc:async(n,a)=>{calls.push([n,a]);return {data:n==='ec_list'?{campaigns:[],recipients:[]}:n==='ec_save'?{id:actor}:n==='ec_audience'?{eligible:0}:true,error:null}}}})})
+ const handlers=createCampaignHandlers({authenticate:async()=>auth,runtime:()=>({config,provider:{verifyDomain:async()=>false,trackingStatus:async()=>({open:null,click:null,status:"unknown" as const,checked_at:""}),send:async()=>{throw new Error('no real sends')}},db:{rpc:async(n,a)=>{calls.push([n,a]);return {data:n==='ec_list'?{campaigns:[],recipients:[]}:n==='ec_save'?{id:actor}:n==='ec_audience'?{eligible:0}:true,error:null}}}})})
  const post=(body:unknown,origin='https://lead4producers.com')=>handlers.POST(new Request('https://lead4producers.com/api/admin/email-campaigns',{method:'POST',headers:{'Content-Type':'application/json',Origin:origin},body:JSON.stringify(body)}))
  return {calls,handlers,post}
 }
