@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import EmailCampaignAIGenerator from '@/components/admin/EmailCampaignAIGenerator'
 import { Mail, Plus, ArrowLeft, RefreshCw, CheckCircle2, AlertCircle, Pause, Play, Ban, Eye, ChevronDown } from '@/components/admin/campaign-icons'
 import { CampaignDraft, CampaignFilters, validateCampaign } from '@/lib/email-campaigns'
 
@@ -100,6 +101,7 @@ export default function EmailCampaignsPage(){
    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
     <section className="min-w-0 space-y-5 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
      <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Nome da campanha<input aria-label="Nome da campanha" className={'mt-2 '+inputClass} value={draft.name} maxLength={100} disabled={!editable||busy} onChange={e=>change('name',e.target.value)} placeholder="Ex.: proteção da família — outubro"/></label>
+     {editable&&<EmailCampaignAIGenerator key={active?.id||'new'} disabled={busy} hasContent={Boolean(draft.subject_pt||draft.body_pt||draft.subject_es||draft.body_es)} onApply={copy=>{setDraft(current=>({...current,...copy,name:current.name.trim()?current.name:copy.name}));setDirty(true);setScheduleConfirmed(false);setNotice('Sugestões aplicadas aos dois idiomas. Revise e salve o rascunho; nenhum e-mail foi enviado.')}}/>}
      <div className="flex gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">{(['pt','es'] as const).map(l=><button key={l} aria-pressed={locale===l} onClick={()=>setLocale(l)} className={`flex-1 rounded-md px-3 py-2 text-sm font-medium ${locale===l?'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white':'text-slate-500 dark:text-slate-400'}`}>{l==='pt'?'Português':'Español'}</button>)}</div>
      <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">{locale==='pt'?'Assunto em português':'Asunto en español'}<input aria-label={locale==='pt'?'Assunto em português':'Asunto en español'} className={'mt-2 '+inputClass} value={draft[titleField]} maxLength={160} disabled={!editable||busy} onChange={e=>change(titleField,e.target.value)} placeholder={locale==='pt'?'Sua família merece proteção':'Tu familia merece protección'}/></label>
      <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">{locale==='pt'?'Mensagem em português':'Mensaje en español'}<textarea aria-label={locale==='pt'?'Mensagem em português':'Mensaje en español'} className={'mt-2 min-h-56 resize-y '+inputClass} value={draft[bodyField]} maxLength={20000} disabled={!editable||busy} onChange={e=>change(bodyField,e.target.value)} placeholder={locale==='pt'?'Olá {{nome}},…':'Hola {{nome}},…'}/><span className="mt-2 block text-xs font-normal text-slate-500">Use {'{{nome}}'} para personalizar. Texto e links, sem HTML. Rodapé e descadastro são incluídos automaticamente.</span></label>
