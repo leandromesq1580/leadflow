@@ -184,6 +184,14 @@ BEGIN
  AND EXISTS(SELECT 1 FROM public.email_campaign_recipients x WHERE x.campaign_id=c0.id AND x.state='pending')
  ORDER BY scheduled_at,id LIMIT 1 FOR UPDATE SKIP LOCKED;
  IF NOT FOUND THEN RETURN NULL; END IF;
+ -- An admin may resume/schedule a campaign after the cleanup scan skipped its lock.
+ -- Recheck the actual selected campaign under its lock, before reserving or consuming quota.
+ IF NOT public.ec_tracking_still_confirmed(c.tracking_snapshot,p_tracking)
+  OR (c.resend_of IS NOT NULL AND NOT COALESCE(public.ec_tracking_confirmed(p_tracking) AND p_tracking->>'status'='verified',false)) THEN
+  UPDATE public.email_campaigns SET state='paused',pause_reason='tracking_not_confirmed',updated_at=t WHERE id=c.id;
+  INSERT INTO public.email_campaign_audit(actor,campaign_id,action,details) VALUES(NULL,c.id,'pause',jsonb_build_object('reason','tracking_not_confirmed','promised',c.tracking_snapshot,'current',p_tracking,'resend_of',c.resend_of));
+  RETURN NULL;
+ END IF;
  SELECT * INTO r FROM public.email_campaign_recipients WHERE campaign_id=c.id AND state='pending' ORDER BY id LIMIT 1 FOR UPDATE SKIP LOCKED;
  IF NOT FOUND THEN RETURN NULL; END IF;
  UPDATE public.email_campaign_recipients SET state='reserved',lease=gen_random_uuid(),lease_until=t+interval '5 minutes' WHERE id=r.id RETURNING * INTO r;
