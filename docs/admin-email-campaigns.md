@@ -48,6 +48,18 @@ Para as duas últimas rotinas: `EC_TEST_SOCKET` aponta para o socket Unix do Pos
 
 Limites da verificação: UI testada isoladamente com identidade admin injetada, não com login de produção. Entrega real, autenticação do domínio real, plano/quota do provedor e evento real ainda precisam de configuração e autorização. Não enviar um teste real à base.
 
+## Apoio de IA no editor
+
+O controle **Gerar com IA**, disponível apenas em rascunhos, produz nome sugerido, assuntos e textos PT/ES. O objetivo é iniciar uma conversa para saber mais ou pedir uma cotação, com um único destino de WhatsApp. O contato inicial é `1 863 280 8696`; o link é construído pela aplicação (`https://wa.me/18632808696`), não escolhido pelo modelo. O administrador pode ajustar tipo de seguro, orientação geral e contato antes de gerar.
+
+Geração → prévia dos dois idiomas → **Usar textos no rascunho** → revisão/edição → salvamento explícito. Gerar não grava campanha, destinatário, permissão, fila ou evento; não envia e-mail e não agenda. Aplicar substitui somente assunto/corpo dos dois idiomas e preenche o nome apenas se estiver vazio; filtros, nome existente e permissões são preservados. Se há conteúdo, exige confirmação de substituição. Campanhas congeladas não oferecem a geração. Trocar a campanha descarta sugestões pendentes e aborta a requisição do editor anterior. Erros preservam o rascunho.
+
+`POST /api/admin/email-campaigns/generate`: mesma autenticação exata de admin de campanhas; origem externa recusada; JSON limitado a 4 KiB. Corpo `{insurance, theme, phone}`; responde `{copy:{name,subject_pt,body_pt,subject_es,body_es}}`. `OPENAI_API_KEY` existente, modelo `gpt-4o-mini`, uma chamada por clique, até 1.000 tokens de saída e 20 s de limite. Sem nova variável nem migration. A chave nunca chega ao navegador. Não registra prompts, respostas rejeitadas ou detalhes do provedor nos logs. Há guarda de rajada de 6 gerações por minuto por admin e instância; **não é quota global nem limite de gastos entre instâncias serverless**. O consumo de IA continua sujeito ao limite da conta OpenAI.
+
+Somente tipo de seguro e orientação geral vão ao modelo; nem o WhatsApp comercial nem dados da base são consultados/enviados. A UI pede para não incluir dados de pessoas e o filtro recusa contatos/atribuições pessoais reconhecíveis. É uma proteção lexical, **não anonimização universal**. O tema fica no JSON de usuário subordinado às regras fixas. Saída malformada/truncada, HTML, links, contatos escolhidos pelo modelo, números e alegações promocionais reconhecíveis são recusados. Se o tipo é genérico, não aceita que o modelo invente uma categoria como seguro residencial. Regras e filtros reduzem risco: **o admin ainda precisa conferir fatos, idioma, tipo de seguro e destino antes de aprovar**; não são uma revisão jurídica automática.
+
+Verificação focada: `node --import tsx --test tests/email-campaign-ai*.test.ts`. A geração real pode ser conferida com brief comercial genérico, sem dados de lead, sem gravar campanha e sem enviar mensagem. A UI é exercitada em harness loopback com o componente/CSS reais e respostas HTTP explicitamente sintéticas, em desktop/mobile/tema escuro. Teste local não comprova login ou uso em produção.
+
 ## Fora da primeira versão
 
 Fluxos condicionais/automáticos, editor visual HTML, cadência individual de retentativa de rejeitados, liberação automática de resultado incerto, testes A/B e envio em nome de cada corretor. O teto diário é configuração de operação, não decisão de envio automático por custo. Nenhuma contagem ou estimativa de custo da base de produção foi inferida a partir das fixtures.
