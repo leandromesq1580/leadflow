@@ -8,6 +8,7 @@ const actor = '00000000-0000-0000-0000-000000000001'
 const client = '00000000-0000-0000-0000-000000000002'
 const forms = JSON.stringify(META_FORM_LANGUAGES)
 const tracking = (open: boolean | null, click: boolean | null = open) => JSON.stringify({ open, click, status: open === null ? 'unknown' : 'verified', checked_at: new Date().toISOString() })
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- PostgreSQL JSON fixtures exercise several RPC envelopes; assertions validate their concrete fields.
 type Json = Record<string, any>
 async function fixture(t: TestContext) {
   const db = new PGlite(); t.after(() => db.close())
@@ -26,7 +27,7 @@ async function fixture(t: TestContext) {
     await rpc('ec_schedule', [actor, c.id, new Date().toISOString(), forms, null, track])
     await db.exec("update email_campaign_rate set minute_used=0,day_used=0")
     for (let i = 0; i < 5; i++) {
-      const r = await rpc('ec_claim', [200]); if (!r) break
+      const r = await rpc('ec_claim', [200, track]); if (!r) break  // the worker passes its current provider reading; here it equals the snapshot
       assert.equal(await rpc('ec_authorize', [r.id, r.lease]), true)
       await rpc('ec_finish', [r.id, r.lease, 'accepted', 'prov-' + c.id.slice(0, 8) + '-' + i, null])
     }
@@ -147,21 +148,21 @@ test('scheduling a resend freezes the original recipients, requires tracking, re
   // Engagement arriving after scheduling: the sweep and the final authorization both stop the send.
   await rpc('ec_event', ['o-2', ids[2].provider_id, 'email.opened', new Date().toISOString()])
   await db.exec("update email_campaign_rate set minute_used=0,day_used=0")
-  const a = await rpc('ec_claim', [200])
+  const a = await rpc('ec_claim', [200, tracking(true)])
   assert.notEqual(a.email, ids[2].email, 'opened contact must be removed by the pending sweep')
   assert.equal((await rows("select state,reason from email_campaign_recipients where campaign_id=$1 and email=$2", [draft.id, ids[2].email]))[0].reason, 'engaged_before_resend')
   await rpc('ec_event', ['k-' + a.email, (ids.find(r => r.email === a.email) as Json).provider_id, 'email.clicked', new Date().toISOString()])
   assert.equal(await rpc('ec_authorize', [a.id, a.lease]), false)
   assert.equal((await rows("select state from email_campaign_recipients where id=$1", [a.id]))[0].state, 'suppressed')
-  const b = await rpc('ec_claim', [200])
+  const b = await rpc('ec_claim', [200, tracking(true)])
   assert.equal(await rpc('ec_authorize', [b.id, b.lease]), true)
-  assert.equal(await rpc('ec_claim', [200]), null, 'the resend never grows beyond the frozen eligible set')
+  assert.equal(await rpc('ec_claim', [200, tracking(true)]), null, 'the resend never grows beyond the frozen eligible set')
 })
 
 test('new SQL objects are not executable by anon/authenticated and search_path is fixed', async t => {
   const { db } = await fixture(t)
-  const fns = await db.query<{ proname: string; proconfig: string[] | null; acl: string | null }>("select proname,proconfig,proacl::text acl from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and proname in ('ec_resend_preview','ec_resend_create','ec_resend_rows','ec_resend_engaged','ec_engagement_match','ec_tracking_confirmed','ec_list','ec_schedule','ec_authorize','ec_claim')")
-  assert.equal(fns.rows.length, 10)
+  const fns = await db.query<{ proname: string; proconfig: string[] | null; acl: string | null }>("select proname,proconfig,proacl::text acl from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and proname in ('ec_resend_preview','ec_resend_create','ec_resend_rows','ec_resend_engaged','ec_engagement_match','ec_tracking_confirmed','ec_tracking_still_confirmed','ec_control','ec_list','ec_schedule','ec_authorize','ec_claim')")
+  assert.equal(fns.rows.length, 12, 'one signature each: the old ec_claim(integer) is dropped, not duplicated')
   for (const f of fns.rows) { assert.ok(f.proconfig?.some(x => x.startsWith('search_path=')), f.proname); assert.ok(!/[{,]=X\/|anon|authenticated/.test(String(f.acl)), f.proname + ' ' + f.acl) }
   await db.exec('set role authenticated')
   await assert.rejects(db.query(`select public.ec_resend_preview('${actor}','${actor}')`), /permission denied/)

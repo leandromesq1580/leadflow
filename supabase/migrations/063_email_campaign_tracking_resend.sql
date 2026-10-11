@@ -4,6 +4,8 @@
 BEGIN;
 ALTER TABLE public.email_campaigns ADD COLUMN tracking_snapshot jsonb;
 ALTER TABLE public.email_campaigns ADD COLUMN resend_of uuid REFERENCES public.email_campaigns(id);
+-- Why the worker paused a campaign on its own (NULL for manual pauses); cleared on resume.
+ALTER TABLE public.email_campaigns ADD COLUMN pause_reason text;
 -- One resend round per original campaign, enforced transactionally (any state, cancelled included:
 -- a cancelled resend may already have delivered mail).
 CREATE UNIQUE INDEX email_campaign_resend_once ON public.email_campaigns(resend_of) WHERE resend_of IS NOT NULL;
@@ -115,7 +117,40 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
   WHERE c.id=p_campaign AND o.email=p_email AND (o.opened_at IS NOT NULL OR o.clicked_at IS NOT NULL OR o.state<>'delivered'))
 $$;
 
-CREATE OR REPLACE FUNCTION public.ec_claim(p_daily integer) RETURNS jsonb
+CREATE OR REPLACE FUNCTION public.ec_control(p_actor uuid,p_id uuid,p_action text) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+DECLARE c public.email_campaigns;
+BEGIN
+ PERFORM public.ec_admin(p_actor);
+ SELECT * INTO c FROM public.email_campaigns WHERE id=p_id FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'campaign_not_found'; END IF;
+ IF p_action='pause' AND c.state IN ('scheduled','running') THEN c.state:='paused';
+ ELSIF p_action='resume' AND c.state='paused' THEN c.state:='scheduled'; c.pause_reason:=NULL; -- the next worker round decides again
+ ELSIF p_action='cancel' AND c.state IN ('draft','scheduled','running','paused') THEN
+  c.state:='cancelled';
+  UPDATE public.email_campaign_recipients SET state='cancelled',reason='campaign_cancelled' WHERE campaign_id=c.id AND state IN ('pending','reserved');
+ ELSE RAISE EXCEPTION 'invalid_transition'; END IF;
+ UPDATE public.email_campaigns SET state=c.state,pause_reason=c.pause_reason,updated_at=now() WHERE id=c.id;
+ INSERT INTO public.email_campaign_audit(actor,campaign_id,action) VALUES(p_actor,c.id,p_action);
+ RETURN to_jsonb(c);
+END $$;
+
+-- The promise made at scheduling ("opens/clicks tracked since the first send") must still hold at send time.
+-- p_current is the worker's fresh provider reading. Only flags the snapshot promised (true) are demanded now;
+-- NULL/malformed current status fails for a promised flag (fail closed). Campaigns that promised nothing are unaffected.
+CREATE FUNCTION public.ec_tracking_still_confirmed(p_snapshot jsonb,p_current jsonb) RETURNS boolean
+LANGUAGE sql IMMUTABLE SET search_path=public,pg_temp AS $$
+ SELECT COALESCE((NOT public.ec_tracking_confirmed(p_snapshot) OR (public.ec_tracking_confirmed(p_current) AND p_current->>'status'='verified'))
+  AND (p_snapshot IS NULL OR jsonb_typeof(p_snapshot->'click')<>'boolean' OR (p_snapshot->>'click')::boolean=false
+   OR (p_current IS NOT NULL AND jsonb_typeof(p_current->'click')='boolean' AND (p_current->>'click')::boolean=true AND p_current->>'status'='verified')),false)
+$$;
+
+-- Worker claim. p_tracking is the provider status read by this worker round (NULL = no reading: legacy callers).
+-- Before anything is reserved, a due campaign whose snapshot promised tracking the provider does not confirm now is
+-- paused with a fixed reason and audited; a resend additionally needs open tracking confirmed now. Rows, snapshot,
+-- provider ids and events are never touched by that pause; an admin resume puts the campaign back in the queue.
+DROP FUNCTION public.ec_claim(integer);
+CREATE FUNCTION public.ec_claim(p_daily integer,p_tracking jsonb DEFAULT NULL) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
 DECLARE c public.email_campaigns; r public.email_campaign_recipients; meter public.email_campaign_rate; t timestamptz:=clock_timestamp();
 BEGIN
@@ -131,6 +166,14 @@ BEGIN
   IF c.resend_of IS NOT NULL THEN
    UPDATE public.email_campaign_recipients r0 SET state='suppressed',reason='engaged_before_resend'
    WHERE r0.campaign_id=c.id AND r0.state='pending' AND public.ec_resend_engaged(c.id,r0.email);
+  END IF;
+  IF c.state IN ('scheduled','running') AND c.scheduled_at<=t
+   AND EXISTS(SELECT 1 FROM public.email_campaign_recipients x WHERE x.campaign_id=c.id AND x.state='pending')
+   AND (NOT public.ec_tracking_still_confirmed(c.tracking_snapshot,p_tracking)
+    OR (c.resend_of IS NOT NULL AND NOT (public.ec_tracking_confirmed(p_tracking) AND p_tracking->>'status'='verified'))) THEN
+   UPDATE public.email_campaigns SET state='paused',pause_reason='tracking_not_confirmed',updated_at=t WHERE id=c.id;
+   INSERT INTO public.email_campaign_audit(actor,campaign_id,action,details) VALUES(NULL,c.id,'pause',jsonb_build_object('reason','tracking_not_confirmed','promised',c.tracking_snapshot,'current',p_tracking,'resend_of',c.resend_of));
+   CONTINUE;
   END IF;
   PERFORM public.ec_complete(c.id);
  END LOOP;
@@ -225,7 +268,7 @@ END $$;
 
 DO $$ DECLARE f record; BEGIN
  FOR f IN SELECT p.oid::regprocedure signature FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public'
- AND p.proname IN ('ec_tracking_confirmed','ec_engagement_match','ec_resend_rows','ec_resend_preview','ec_resend_create','ec_resend_engaged','ec_schedule','ec_claim','ec_authorize','ec_list') LOOP
+ AND p.proname IN ('ec_tracking_confirmed','ec_tracking_still_confirmed','ec_engagement_match','ec_resend_rows','ec_resend_preview','ec_resend_create','ec_resend_engaged','ec_schedule','ec_control','ec_claim','ec_authorize','ec_list') LOOP
   EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC,anon,authenticated',f.signature);
   EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO service_role',f.signature);
  END LOOP;

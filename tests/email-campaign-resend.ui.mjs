@@ -40,7 +40,7 @@ const sql=async(n,args)=>{const r=await rpc(n,args);if(r.error)throw new Error(r
 await sql('ec_record_permission',{p_actor:admin,p_filters:'{}',p_forms:forms,p_evidence:'Synthetic documented insurance consent fixture',p_confirm:true})
 const origin=await sql('ec_save',{p_actor:admin,p_id:null,p_data:JSON.stringify({name:'Synthetic Seguro origem',subject_pt:'Olá {{nome}}, proteção',body_pt:'Olá {{nome}}, conheça opções de seguro.',subject_es:'Hola {{nome}}, protección',body_es:'Hola {{nome}}, conoce opciones de seguro.',filters:{}})})
 await sql('ec_schedule',{p_actor:admin,p_id:origin.id,p_at:new Date().toISOString(),p_forms:forms,p_expected:null,p_tracking:JSON.stringify(tracking())})
-for(let i=0;i<people.length;i++){await db.query('update email_campaign_rate set minute_used=0,day_used=0');const r=await sql('ec_claim',{p_daily:200});assert.ok(r);assert.equal(await sql('ec_authorize',{p_id:r.id,p_lease:r.lease}),true);await sql('ec_finish',{p_id:r.id,p_lease:r.lease,p_state:'accepted',p_provider:'prov-'+i,p_reason:null})}
+for(let i=0;i<people.length;i++){await db.query('update email_campaign_rate set minute_used=0,day_used=0');const r=await sql('ec_claim',{p_daily:200,p_tracking:JSON.stringify(tracking())});assert.ok(r);assert.equal(await sql('ec_authorize',{p_id:r.id,p_lease:r.lease}),true);await sql('ec_finish',{p_id:r.id,p_lease:r.lease,p_state:'accepted',p_provider:'prov-'+i,p_reason:null})}
 const rows=(await db.query('select id,email,provider_id from email_campaign_recipients where campaign_id=$1',[origin.id])).rows
 const by=email=>rows.find(r=>r.email===email)
 const old=new Date(Date.now()-72*3600e3).toISOString(),recent=new Date(Date.now()-6*3600e3).toISOString()
@@ -49,7 +49,7 @@ for(const e of ['opened','clicked','quiet-a','quiet-b'])await sql('ec_event',{p_
 await sql('ec_event',{p_event:'d-recent',p_provider:by('recent@example.invalid').provider_id,p_kind:'email.delivered',p_at:recent})
 await sql('ec_event',{p_event:'o-1',p_provider:by('opened@example.invalid').provider_id,p_kind:'email.opened',p_at:old})
 await sql('ec_event',{p_event:'k-1',p_provider:by('clicked@example.invalid').provider_id,p_kind:'email.clicked',p_at:old})
-await sql('ec_claim',{p_daily:200})
+await sql('ec_claim',{p_daily:200,p_tracking:JSON.stringify(tracking())})
 assert.equal((await db.query('select state from email_campaigns where id=$1',[origin.id])).rows[0].state,'completed')
 const bundle=await esbuild.build({stdin:{contents:`import React from 'react';import{createRoot}from'react-dom/client';import Page from '${resolve(repo,'src/app/admin/email-campaigns/page.tsx')}';createRoot(document.getElementById('root')).render(<Page/>);`,resolveDir:repo,loader:'tsx'},bundle:true,write:false,format:'iife',platform:'browser',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'},tsconfig:resolve(repo,'tsconfig.json')})
 const css=await postcss([tailwind({base:repo})]).process(readFileSync(resolve(repo,'src/app/globals.css'),'utf8'),{from:resolve(repo,'src/app/globals.css')})
@@ -140,6 +140,15 @@ try{
  await dark.getByText('Prévia do conteúdo',{exact:true}).click();await shot(dark,'email-campaign-report-dark')
  await dark.setViewportSize({width:390,height:844});await shot(dark,'email-campaign-report-mobile-dark')
  check('Mobile report has no page overflow',await dark.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))
+ // The worker pause reason is stored in SQL and must reach the real admin page through ec_list.
+ const draftId=(await db.query('select id from email_campaigns where resend_of=$1',[origin.id])).rows[0].id
+ await db.query("update email_campaigns set state='paused',pause_reason='tracking_not_confirmed' where id=$1",[draftId])
+ await dark.getByRole('button',{name:'Campanhas',exact:true}).click()
+ await dark.getByRole('button',{name:/^Reenvio · Synthetic Seguro origem/}).click()
+ const pausedNotice=dark.getByText(/^Pausada automaticamente: o provedor não confirma mais o rastreamento/)
+ await pausedNotice.waitFor()
+ check('Paused tracking reason reaches the real page via SQL and explains manual resume',await pausedNotice.count()===1&&/retome a campanha/i.test(await pausedNotice.textContent())&&await dark.getByRole('button',{name:'Retomar',exact:true}).isEnabled())
+ await shot(dark,'email-campaign-tracking-paused-mobile-dark')
  check('No browser console errors',errors.length===0)
  check('No provider sending calls',sendingCalls===0)
  check('Origin rows untouched',(await db.query("select count(*)::int n from email_campaign_recipients where campaign_id=$1 and provider_id is not null",[origin.id])).rows[0].n===6)
