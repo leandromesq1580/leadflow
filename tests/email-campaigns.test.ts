@@ -52,7 +52,7 @@ test('worker verifies the dedicated sender domain and uses it in the real dispat
   const row={id:'00000000-0000-0000-0000-000000000020',lease:'fixture-lease',email:'test@example.invalid',name:'Test',language:'pt' as const,unsubscribe_token:'00000000-0000-0000-0000-000000000021',campaign:input}
   let claimed=false,verified='',sender=''
   const db:CampaignDb={rpc:async n=>({data:n==='ec_claim'?(!claimed?(claimed=true,row):null):true,error:null})}
-  const provider:CampaignProvider={verifyDomain:async domain=>{verified=domain;return true},send:async payload=>{sender=payload.from;return {data:{id:'synthetic-only'},error:null}}}
+  const provider:CampaignProvider={trackingStatus:async()=>({open:null,click:null,status:"unknown",checked_at:""}),verifyDomain:async domain=>{verified=domain;return true},send:async payload=>{sender=payload.from;return {data:{id:'synthetic-only'},error:null}}}
   const result=await dispatchCampaigns(db,provider,c)
   assert.equal(verified,'myhomefirst.us')
   assert.equal(sender,'Lead4Pro <contato@myhomefirst.us>')
@@ -62,7 +62,7 @@ test('worker verifies the dedicated sender domain and uses it in the real dispat
 test('a dedicated sender does not enable dispatch or bypass the provider domain check',async()=>{
   let sends=0,claims=0,verifications=0
   const db:CampaignDb={rpc:async()=>{claims++;return {data:null,error:null}}}
-  const provider:CampaignProvider={verifyDomain:async()=>{verifications++;return false},send:async()=>{sends++;return {data:{id:'synthetic-only'},error:null}}}
+  const provider:CampaignProvider={trackingStatus:async()=>({open:null,click:null,status:"unknown",checked_at:""}),verifyDomain:async()=>{verifications++;return false},send:async()=>{sends++;return {data:{id:'synthetic-only'},error:null}}}
   const env={...config,EMAIL_CAMPAIGNS_FROM_EMAIL:'contato@myhomefirst.us'}
   const disabled=await dispatchCampaigns(db,provider,campaignConfiguration({...env,EMAIL_CAMPAIGNS_ENABLED:'false'}))
   assert.equal(disabled.blocked,true)
@@ -84,7 +84,7 @@ test('rendering is locale-specific, escapes contact data, includes unsubscribe a
 test('worker never calls provider when disabled, authorization fails, or domain is not verified',async()=>{
   let sends=0,claims=0
   const db:CampaignDb={rpc:async()=>{claims++;return {data:null,error:null}}}
-  const provider:CampaignProvider={verifyDomain:async()=>false,send:async()=>{sends++;return {data:{id:'synthetic'},error:null}}}
+  const provider:CampaignProvider={trackingStatus:async()=>({open:null,click:null,status:"unknown",checked_at:""}),verifyDomain:async()=>false,send:async()=>{sends++;return {data:{id:'synthetic'},error:null}}}
   await dispatchCampaigns(db,provider,campaignConfiguration({...config,EMAIL_CAMPAIGNS_ENABLED:'false'}))
   await dispatchCampaigns(db,provider,campaignConfiguration(config))
   assert.equal(sends,0);assert.equal(claims,0)
@@ -95,7 +95,7 @@ test('worker preserves unknown results and uses stable recipient idempotency, ac
   let payload:Parameters<CampaignProvider['send']>[0]|undefined,options:Parameters<CampaignProvider['send']>[1]|undefined
   const row={id:'00000000-0000-0000-0000-000000000020',lease:'fixture-lease',email:'test@example.invalid',name:'Test',language:'pt' as const,unsubscribe_token:'00000000-0000-0000-0000-000000000021',campaign:input}
   const db:CampaignDb={rpc:async(n,a)=>{calls.push([n,a]);return {data:n==='ec_claim'?(!claimed?(claimed=true,row):null):true,error:null}}}
-  const provider:CampaignProvider={verifyDomain:async()=>true,send:async(p,o)=>{payload=p;options=o;throw new Error('timeout might have sent')}}
+  const provider:CampaignProvider={trackingStatus:async()=>({open:null,click:null,status:"unknown",checked_at:""}),verifyDomain:async()=>true,send:async(p,o)=>{payload=p;options=o;throw new Error('timeout might have sent')}}
   await dispatchCampaigns(db,provider,campaignConfiguration(config))
   assert.ok(payload&&options)
   assert.deepEqual(payload.to,['test@example.invalid']);assert.equal('bcc' in payload,false);assert.equal(options.idempotencyKey,'l4p-campaign-'+row.id)

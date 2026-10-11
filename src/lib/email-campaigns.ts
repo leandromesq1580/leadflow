@@ -64,15 +64,35 @@ export async function campaignRpc<T=unknown>(db:CampaignDb,name:string,args:Reco
   if(error)throw new Error('campaign_database_error')
   return data as T
 }
-export type CampaignProvider={verifyDomain:(domain:string)=>Promise<boolean>;send:(payload:{from:string;to:string[];subject:string;text:string;html:string;headers:Record<string,string>;tags:{name:string;value:string}[]},options:{idempotencyKey:string})=>Promise<{data:{id:string}|null;error:{name?:string}|null}>}
+// `issue` is an allowlisted reason only (never provider payloads): DNS for tracking not verified, detail for another domain, or an incomplete answer.
+export type TrackingIssue='tracking_dns_not_verified'|'domain_mismatch'|'incomplete_response'
+export type TrackingStatus={open:boolean|null;click:boolean|null;status:'verified'|'not_verified'|'not_found'|'unknown';checked_at:string;issue?:TrackingIssue}
+export const trackingUnknown=():TrackingStatus=>({open:null,click:null,status:'unknown',checked_at:new Date().toISOString()})
+// Only a snapshot that explicitly says open tracking is ON counts. Off, missing or unknown block any "unopened" reasoning.
+export const trackingConfirmed=(t:TrackingStatus|null|undefined)=>t?.open===true
+// Both opens and clicks effective right now (verified Tracking CNAME included); used only to warn before a first scheduling.
+export const trackingFullyConfirmed=(t:TrackingStatus|null|undefined)=>t?.open===true&&t?.click===true
+export type CampaignProvider={verifyDomain:(domain:string)=>Promise<boolean>;trackingStatus:(domain:string)=>Promise<TrackingStatus>;send:(payload:{from:string;to:string[];subject:string;text:string;html:string;headers:Record<string,string>;tags:{name:string;value:string}[]},options:{idempotencyKey:string})=>Promise<{data:{id:string}|null;error:{name?:string}|null}>}
 const provenRejections=new Set(['validation_error','missing_required_field','invalid_from_address','invalid_parameter','restricted_api_key','invalid_api_key','not_found','rate_limit_exceeded','daily_quota_exceeded'])
+// The claim receives a normalized copy of the provider reading (flags, status, time only) so SQL can compare it with
+// what the snapshot promised. Anything that is not a plain boolean/known status becomes null/unknown (fail closed).
+export function normalizeTracking(t:unknown):TrackingStatus{
+  const d=(t&&typeof t==='object'?t:{}) as Record<string,unknown>
+  const flag=(v:unknown)=>typeof v==='boolean'?v:null
+  const status=['verified','not_verified','not_found','unknown'].includes(String(d.status))?d.status as TrackingStatus['status']:'unknown'
+  const checked=typeof d.checked_at==='string'&&Number.isFinite(Date.parse(d.checked_at))?d.checked_at:new Date().toISOString()
+  return {open:flag(d.open),click:flag(d.click),status,checked_at:checked}
+}
 export async function dispatchCampaigns(db:CampaignDb,provider:CampaignProvider,config:CampaignConfiguration){
   const deadline=Date.now()+45000
   const result={accepted:0,refused:0,unknown:0,skipped:0,blocked:!config.ready}
   if(!config.ready)return result
   if(!await provider.verifyDomain(config.domain))return {...result,blocked:true}
+  // One tracking reading per round, before the first claim: campaigns that promised tracking are paused in SQL when it no longer holds.
+  let tracking:TrackingStatus
+  try{tracking=normalizeTracking(await provider.trackingStatus(config.domain))}catch{tracking=normalizeTracking(trackingUnknown())}
   for(let i=0;i<10 && Date.now()<deadline-12000;i++){
-    const row=await campaignRpc<CampaignRecipient|null>(db,'ec_claim',{p_daily:config.dailyLimit})
+    const row=await campaignRpc<CampaignRecipient|null>(db,'ec_claim',{p_daily:config.dailyLimit,p_tracking:tracking})
     if(!row)break
     // Render before authorizing. No external effect until the last SQL permission check.
     let copy:ReturnType<typeof renderCampaignEmail>
