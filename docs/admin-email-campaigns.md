@@ -13,6 +13,14 @@ Ao agendar, conteúdo, público e destinatários ficam congelados. A contagem co
 
 Pausa/cancelamento impedem novos envios autorizados. Um e-mail que já estava autorizado e em andamento pode terminar: não existe desfazer um envio. Resultados incertos não são automaticamente repetidos. Cancelamento preserva histórico. Permissão e bloqueio são conferidos novamente antes do envio, inclusive depois do agendamento.
 
+## Hyperlink do WhatsApp no conteúdo
+
+O editor continua aceitando texto simples e o endereço `https://wa.me/...`. No HTML enviado e nas prévias do gerador e do rascunho, o endereço fica escondido por **clique aqui para falar comigo** (PT) ou **haz clic aquí para hablar conmigo** (ES). Número e mensagem pré-preenchida são preservados literalmente; nenhum contato é substituído pelo número padrão durante essa formatação. Apenas domínio HTTPS `wa.me`, sem usuário/senha e com caminho de telefone válido, recebe o rótulo. Outros links continuam visíveis com o próprio endereço.
+
+`src/lib/email-campaign-content.ts` é a fonte única dessa apresentação. Escapa o texto e os atributos antes de criar apenas links HTTP(S), sem aceitar HTML do usuário. O conteúdo salvo, filtros, filas, remetente, consentimento, rodapé e descadastro não mudam. A versão alternativa de texto simples conserva a URL para leitores sem HTML. A mudança vale para futuros envios, inclusive de corpos já salvos/congelados; não altera e-mails já entregues e não reenvia nada.
+
+Teste de regressão: `tests/email-campaign-hyperlink.test.ts`; UI real local com API sintética: `tests/email-campaign-ai.ui.mjs`. Não é necessária migration, variável nova nem envio real de teste.
+
 ## Configuração antes de produção
 
 Migração: `supabase/migrations/062_admin_email_campaigns.sql`. Cria tabelas e funções novas; **não reescreve nem remove leads, compradores, créditos ou permissões existentes**. Tabelas com RLS e sem acesso direto de anon/authenticated. Funções novas revogadas de PUBLIC/anon/authenticated, concedidas só a service_role. As APIs admin conferem a identidade autenticada exata por `buyers.auth_user_id` e passam o `buyers.id` para as funções SQL, sem herdar permissão do responsável de uma equipe. As referências a leads e compradores novos usam `ON DELETE SET NULL`: exclusões existentes preservam o histórico da campanha, sem impedir a operação. Um lead removido ou com endereço alterado não é enviado pela fila congelada.

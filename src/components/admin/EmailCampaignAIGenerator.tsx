@@ -5,6 +5,7 @@ import {ChevronDown,RefreshCw} from '@/components/admin/campaign-icons'
 function Sparkles({size=16}:{size?:number}) {return <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4ZM20 2v4m-2-2h4"/></svg>}
 import type {CampaignAICopy} from '@/lib/email-campaign-ai'
 import {OFFICIAL_WHATSAPP_DISPLAY} from '@/lib/official-whatsapp'
+import {renderCampaignBody} from '@/lib/email-campaign-content'
 
 interface Props { disabled:boolean;hasContent:boolean;onApply:(copy:CampaignAICopy)=>void }
 const field='w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:ring-emerald-900'
@@ -51,7 +52,7 @@ export default function EmailCampaignAIGenerator({disabled,hasContent,onApply}:P
       {copy&&<div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
         <div className="flex gap-2">{(['pt','es'] as const).map(l=><button key={l} type="button" aria-pressed={locale===l} className={'rounded-md px-3 py-1.5 text-xs font-medium '+(locale===l?'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200':'text-slate-500 dark:text-slate-400')} onClick={()=>setLocale(l)}>{l==='pt'?'Prévia em português':'Vista en español'}</button>)}</div>
         <p data-testid="ai-subject" className="break-words text-sm font-semibold text-slate-900 dark:text-white">{copy[`subject_${locale}`]}</p>
-        <p data-testid="ai-body" className="whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-600 dark:text-slate-300">{copy[`body_${locale}`]}</p>
+        <p data-testid="ai-body" className="break-words text-sm leading-relaxed text-slate-600 dark:text-slate-300" dangerouslySetInnerHTML={{__html:renderCampaignBody(copy[`body_${locale}`],locale)}}/>
         <p className="text-xs leading-relaxed text-slate-500">Confira os fatos e o destino do WhatsApp. O texto é uma sugestão, não uma validação de preços ou coberturas.</p>
         <button type="button" className={button+' w-full'} disabled={disabled||loading||applied} onClick={apply}>{applied?'Aplicado ao rascunho':'Usar textos no rascunho'}</button>
         {applied&&<p role="status" className="text-xs text-emerald-700 dark:text-emerald-400">Revise no editor e salve quando estiver pronto. Nenhum e-mail foi enviado.</p>}
