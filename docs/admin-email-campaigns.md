@@ -21,6 +21,16 @@ O editor continua aceitando texto simples e o endereço `https://wa.me/...`. No 
 
 Teste de regressão: `tests/email-campaign-hyperlink.test.ts`; UI real local com API sintética: `tests/email-campaign-ai.ui.mjs`. Não é necessária migration, variável nova nem envio real de teste.
 
+## Nova ideia por clique e hyperlink no rascunho
+
+O tipo inicial é **Seguro de vida**, editável pelo admin. Cada clique envia `variation` (inteiro 0–10.000) e até três sugestões editoriais anteriores em `previous`, sem URLs/telefone. A aplicação alterna seis abordagens: curiosidade, cotidiano, objeção, planejamento, mudança de fase e clareza antes de contratar. Produto e intenção comercial continuam no briefing. Seguro de vida escolhido exige menção ao produto nos dois corpos; não basta uma reflexão genérica.
+
+Antes de devolver outra versão, a aplicação recusa corpo idêntico, abertura idêntica ou sobreposição de pelo menos 75% dos pares de palavras contra as últimas três sugestões, em qualquer idioma. Uma tentativa limitada de reescrita, dentro do mesmo prazo, continua sendo o teto. A guarda não prova novidade semântica nem qualidade persuasiva: a rubrica com gerações reais segue obrigatória. Em falha, a sugestão anterior e o rascunho continuam disponíveis. Mudança do tipo/tema/contato limpa o histórico editorial local; não existe cache de textos de clientes. O teto HTTP é 16 KiB para acomodar o histórico limitado.
+
+O corpo do rascunho agora é um editor de texto com hyperlinks nomeados, não uma textarea que mostra o endereço cru. Aplicar, editar, mudar idioma, copiar, salvar e reabrir preservam o destino literal. A persistência e o texto simples continuam guardando a URL; os nomes PT/ES são apenas apresentação. Links protegidos não são editados por dentro, mas o texto pode ser editado e o link inteiro removido. Colagem aceita somente texto; arrastar HTML é bloqueado. Continua sem HTML livre, sem envio automático e sem alteração do banco de produção.
+
+Regressões: `tests/email-campaign-new-idea.test.ts`, `tests/email-campaign-draft-link.test.ts`, `tests/email-campaign-ai.ui.mjs` (página/editor/CSS reais com respostas de IA sintéticas) e `tests/email-campaigns.ui.mjs` (salvar/reabrir pelo handler real e PostgreSQL local, esquema 062 + 063). Os testes locais não comprovam resposta futura do provedor nem entrega de e-mail.
+
 ## Configuração antes de produção
 
 Migração: `supabase/migrations/062_admin_email_campaigns.sql`. Cria tabelas e funções novas; **não reescreve nem remove leads, compradores, créditos ou permissões existentes**. Tabelas com RLS e sem acesso direto de anon/authenticated. Funções novas revogadas de PUBLIC/anon/authenticated, concedidas só a service_role. As APIs admin conferem a identidade autenticada exata por `buyers.auth_user_id` e passam o `buyers.id` para as funções SQL, sem herdar permissão do responsável de uma equipe. As referências a leads e compradores novos usam `ON DELETE SET NULL`: exclusões existentes preservam o histórico da campanha, sem impedir a operação. Um lead removido ou com endereço alterado não é enviado pela fila congelada.

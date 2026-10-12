@@ -6,6 +6,7 @@ function Sparkles({size=16}:{size?:number}) {return <svg aria-hidden="true" widt
 import type {CampaignAICopy} from '@/lib/email-campaign-ai'
 import {OFFICIAL_WHATSAPP_DISPLAY} from '@/lib/official-whatsapp'
 import {renderCampaignBody} from '@/lib/email-campaign-content'
+import {campaignCopyForHistory} from '@/lib/email-campaign-ideas'
 
 interface Props { disabled:boolean;hasContent:boolean;onApply:(copy:CampaignAICopy)=>void }
 const field='w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:ring-emerald-900'
@@ -13,23 +14,24 @@ const button='inline-flex items-center justify-center gap-2 rounded-lg bg-emeral
 const failure='Não foi possível gerar os textos. Seu rascunho foi preservado; tente novamente.'
 
 export default function EmailCampaignAIGenerator({disabled,hasContent,onApply}:Props) {
-  const [insurance,setInsurance]=useState('Seguro'),[theme,setTheme]=useState(''),[phone,setPhone]=useState(OFFICIAL_WHATSAPP_DISPLAY)
+  const [insurance,setInsurance]=useState('Seguro de vida'),[theme,setTheme]=useState(''),[phone,setPhone]=useState(OFFICIAL_WHATSAPP_DISPLAY)
   const [loading,setLoading]=useState(false),[copy,setCopy]=useState<CampaignAICopy|null>(null),[error,setError]=useState(''),[locale,setLocale]=useState<'pt'|'es'>('pt'),[applied,setApplied]=useState(false)
   const generation=useRef(0),controller=useRef<AbortController|null>(null)
+  const previous=useRef<CampaignAICopy[]>([]),variation=useRef(0)
   useEffect(()=>()=>{generation.current++;controller.current?.abort()},[])
-  function edit(setter:(value:string)=>void,value:string) {setter(value);setCopy(null);setApplied(false);setError('')}
+  function edit(setter:(value:string)=>void,value:string) {setter(value);setCopy(null);setApplied(false);setError('');previous.current=[];variation.current=0}
   async function generate() {
     const id=++generation.current
     controller.current?.abort();const abort=new AbortController();controller.current=abort
-    setLoading(true);setError('');setCopy(null);setApplied(false)
+    setLoading(true);setError('')
     const timer=setTimeout(()=>abort.abort(),35000)
     try {
-      const response=await fetch('/api/admin/email-campaigns/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({insurance,theme,phone}),signal:abort.signal})
+      const response=await fetch('/api/admin/email-campaigns/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({insurance,theme,phone,variation:variation.current++%10001,...(previous.current.length?{previous:previous.current.map(campaignCopyForHistory)}:{})}),signal:abort.signal})
       const data=await response.json()
       if (generation.current!==id) return
       if (!response.ok) {setError(typeof data.error==='string'?data.error:failure);return}
       if (!data.copy || !['name','subject_pt','body_pt','subject_es','body_es'].every(k=>typeof data.copy[k]==='string'&&data.copy[k].trim())) {setError(failure);return}
-      setCopy(data.copy)
+      previous.current=[...previous.current,data.copy].slice(-3);setCopy(data.copy);setApplied(false)
     } catch {if(generation.current===id)setError(failure)}
     finally {clearTimeout(timer);if(generation.current===id)setLoading(false)}
   }
