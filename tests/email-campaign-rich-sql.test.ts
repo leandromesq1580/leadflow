@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {PGlite} from '@electric-sql/pglite'
 import {encodeCampaignHtml} from '../src/lib/email-campaign-rich'
-import {validateCampaign,renderCampaignEmail,campaignConfiguration} from '../src/lib/email-campaigns'
+import {validateCampaign,renderCampaignEmail,campaignConfiguration,type CampaignDraft} from '../src/lib/email-campaigns'
 const migration=readFileSync(new URL('../supabase/migrations/064_campaign_rich_images.sql',import.meta.url),'utf8')
 test('migration cria bucket dedicado público sem mudar anexos privados; mesmo com política ampla bloqueia escrita direta',async t=>{
  const db=new PGlite();t.after(()=>db.close())
@@ -37,7 +37,7 @@ test('salvar e reabrir SQL mantém HTML sanitizado, destino exato e imagem; envi
  const body=encodeCampaignHtml('<p>Olá {{nome}}, <strong>seguro de vida</strong></p><p><a href="https://wa.me/17867442126?text=Cota%C3%A7%C3%A3o">clique aqui para falar comigo</a></p><img src="https://example.org/family.png" alt="Família">')
  const validated=validateCampaign({name:'Rich SQL',subject_pt:'Olá',subject_es:'Hola',body_pt:body,body_es:body,filters:{}});assert.equal(validated.ok,true);if(!validated.ok)throw Error('invalid_fixture')
  const saved=(await db.query<{value:{id:string}}>('select public.ec_save($1,null,$2::jsonb) value',[actor,JSON.stringify(validated.value)])).rows[0].value
- const result=(await db.query<{value:{campaigns:{body_pt:string;body_es:string;subject_pt:string}[]}}>('select public.ec_list($1,$2) value',[actor,saved.id])).rows[0].value.campaigns[0]
+ const result=(await db.query<{value:{campaigns:CampaignDraft[]}}>('select public.ec_list($1,$2) value',[actor,saved.id])).rows[0].value.campaigns[0]
  assert.equal(result.body_pt,body);assert.equal(result.body_es,body)
  const config=campaignConfiguration({RESEND_API_KEY:'synthetic',EMAIL_CAMPAIGN_WEBHOOK_SECRET:'synthetic',MANUAL_EMAIL_POSTAL_ADDRESS:'Synthetic address',EMAIL_CAMPAIGNS_ENABLED:'true'})
  const email=renderCampaignEmail({campaign:result,name:'Ana',language:'pt',unsubscribe_token:'00000000-0000-4000-8000-000000000001'},config)

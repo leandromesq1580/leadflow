@@ -18,7 +18,7 @@ export function sanitizeCampaignHtml(html:string):string {
   allowedStyles:{img:{'max-width':[/^100%$/],height:[/^auto$/],display:[/^block$/]}},
   transformTags:{
    b:'strong',i:'em',div:'p',
-   a:(_tag,attrs)=>{const href=safeCampaignUrl(attrs.href??'');return href?{tagName:'a',attribs:{href,target:'_blank',rel:'noopener noreferrer',class:'underline underline-offset-2 text-blue-700 dark:text-blue-300'}}:{tagName:'span',attribs:{}}},
+   a:(_tag,attrs):sanitizeHtml.Tag=>{const href=safeCampaignUrl(attrs.href??'');return href?{tagName:'a',attribs:{href,target:'_blank',rel:'noopener noreferrer',class:'underline underline-offset-2 text-blue-700 dark:text-blue-300'}}:{tagName:'span',attribs:{}}},
    img:(_tag,attrs)=>({tagName:'img',attribs:{src:safeCampaignUrl(attrs.src??'',true)??'',alt:(attrs.alt??'Imagem da campanha').slice(0,300),style:'max-width:100%;height:auto;display:block'}}),
   },
   exclusiveFilter:frame=>frame.tag==='img'&&!frame.attribs.src,
