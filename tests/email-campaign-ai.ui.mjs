@@ -10,7 +10,7 @@ if(!out||!tools)throw new Error('EC_TEST_OUTPUT and EC_TEST_TOOL_DIR required')
 mkdirSync(out,{recursive:true})
 const require=createRequire(repo+'/package.json'),toolRequire=createRequire(tools+'/package.json')
 const esbuild=require('esbuild'),postcss=require('postcss'),tailwind=require('@tailwindcss/postcss'),{chromium}=toolRequire('playwright')
-const fixture={name:'Sugestão sintética',subject_pt:'Conheça opções de seguro',body_pt:'Podemos ajudar você a entender suas opções de seguro. Fale conosco pelo WhatsApp para saber mais ou solicitar uma cotação.\n\nhttps://wa.me/18632808696?text=Ol%C3%A1',subject_es:'Conoce opciones de seguro',body_es:'Podemos ayudarte a conocer tus opciones de seguro. Escríbenos por WhatsApp para saber más o solicitar una cotización.\n\nhttps://wa.me/18632808696?text=Hola'}
+const fixture={name:'Sugestão sintética',subject_pt:'Conheça opções de seguro',body_pt:'Podemos ajudar você a entender suas opções de seguro. Fale conosco pelo WhatsApp para saber mais ou solicitar uma cotação.\n\nhttps://wa.me/17867442126?text=Ol%C3%A1',subject_es:'Conoce opciones de seguro',body_es:'Podemos ayudarte a conocer tus opciones de seguro. Escríbenos por WhatsApp para saber más o solicitar una cotización.\n\nhttps://wa.me/17867442126?text=Hola'}
 const bundle=await esbuild.build({stdin:{contents:`import React from 'react';import{createRoot}from'react-dom/client';import Page from '${resolve(repo,'src/app/admin/email-campaigns/page.tsx')}';createRoot(document.getElementById('root')).render(<Page/>);`,resolveDir:repo,loader:'tsx'},bundle:true,write:false,format:'iife',platform:'browser',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'},tsconfig:resolve(repo,'tsconfig.json')})
 const css=await postcss([tailwind({base:repo})]).process(readFileSync(resolve(repo,'src/app/globals.css'),'utf8'),{from:resolve(repo,'src/app/globals.css')})
 const html=`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><style>${css.css}@font-face{font-family:Geist;src:url('/geist.woff2');font-weight:100 900}body{font-family:Geist,Arial,sans-serif;padding:16px;background:#f8fafc}#root{max-width:1160px;margin:auto}</style></head><body><div id="root"></div><script>${bundle.outputFiles[0].text}</script></body></html>`
@@ -44,7 +44,7 @@ try{
  await page.getByLabel('Assunto em português',{exact:true}).fill('Assunto original')
  await page.getByLabel('Mensagem em português',{exact:true}).fill('Mensagem original preservada')
  await page.locator('summary').filter({hasText:'Gerar com IA'}).click()
- check('WhatsApp indicado preenchido',await page.getByLabel('WhatsApp de atendimento para IA').inputValue()==='1 863 280 8696')
+ check('WhatsApp indicado preenchido',await page.getByLabel('WhatsApp de atendimento para IA').inputValue()==='1 786 744 2126')
  await page.getByRole('button',{name:'Gerar sugestões',exact:true}).click();await page.getByTestId('ai-subject').waitFor()
  check('Gerar mantém o rascunho',await page.getByLabel('Assunto em português',{exact:true}).inputValue()==='Assunto original')
  check('Prévia PT mostra assunto real do retorno',await page.getByTestId('ai-subject').textContent()===fixture.subject_pt)

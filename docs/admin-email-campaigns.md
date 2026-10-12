@@ -80,7 +80,7 @@ Limites da verificação: UI testada isoladamente com identidade admin injetada,
 
 ## Apoio de IA no editor
 
-O controle **Gerar com IA**, disponível apenas em rascunhos, produz nome sugerido, assuntos e textos PT/ES. O objetivo é iniciar uma conversa para saber mais ou pedir uma cotação, com um único destino de WhatsApp. O contato inicial é `1 863 280 8696`; o link é construído pela aplicação (`https://wa.me/18632808696`), não escolhido pelo modelo. O administrador pode ajustar tipo de seguro, orientação geral e contato antes de gerar.
+O controle **Gerar com IA**, disponível apenas em rascunhos, produz nome sugerido, assuntos e textos PT/ES. O objetivo é iniciar uma conversa para saber mais ou pedir uma cotação, com um único destino de WhatsApp. O contato inicial é `1 786 744 2126`; o link é construído pela aplicação (`https://wa.me/17867442126`), não escolhido pelo modelo. O administrador pode ajustar tipo de seguro, orientação geral e contato antes de gerar.
 
 Geração → prévia dos dois idiomas → **Usar textos no rascunho** → revisão/edição → salvamento explícito. Gerar não grava campanha, destinatário, permissão, fila ou evento; não envia e-mail e não agenda. Aplicar substitui somente assunto/corpo dos dois idiomas e preenche o nome apenas se estiver vazio; filtros, nome existente e permissões são preservados. Se há conteúdo, exige confirmação de substituição. Campanhas congeladas não oferecem a geração. Trocar a campanha descarta sugestões pendentes e aborta a requisição do editor anterior. Erros preservam o rascunho.
 
