@@ -1,4 +1,5 @@
 // Core is dependency-injected: tests cannot send real mail or touch production.
+import { renderCampaignBody } from './email-campaign-content'
 export type CampaignFilters = { buyer_id?: string; states?: string[]; languages?: ('pt'|'es')[]; types?: ('hot'|'cold')[]; since?: string; until?: string }
 export type CampaignDraft = { name: string; subject_pt: string; body_pt: string; subject_es: string; body_es: string; filters: CampaignFilters }
 export const CAMPAIGN_URL = 'https://lead4producers.com'
@@ -52,7 +53,7 @@ export function renderCampaignEmail(row:{campaign:CampaignDraft;name:string;lang
   const unsubscribe=`${CAMPAIGN_URL}/api/email-campaigns/unsubscribe/${row.unsubscribe_token}`
   const label=row.language==='es'?'Cancelar suscripción':'Cancelar recebimento'
   // Plain-text authoring; safe HTML counterpart for clickable links. No arbitrary HTML/editor scripts.
-  const html=escapeHtml(body).replace(/https?:\/\/[^\s<>]+/g,url=>`<a href="${url}">${url}</a>`).replace(/\n/g,'<br/>')
+  const html=renderCampaignBody(body,row.language)
   return {subject,text:`${body}\n\nLead4Pro · ${config.postal}\n${label}: ${unsubscribe}`,
     html:`<div style="font:16px/1.6 Arial,sans-serif;color:#0f172a">${html}<hr/><p style="font-size:12px">Lead4Pro · ${escapeHtml(config.postal)}<br/><a href="${unsubscribe}">${label}</a></p></div>`,
     headers:{'List-Unsubscribe':`<${unsubscribe}>`,'List-Unsubscribe-Post':'List-Unsubscribe=One-Click'}}
