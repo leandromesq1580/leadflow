@@ -89,13 +89,16 @@ try{
  check('Colagem rica vira texto literal e não executa HTML',await editor.locator('img').count()===0&&await page.evaluate(()=>!window.syntheticPasteXSS))
  check('Colagem preserva URL e texto existente',(await editorValue(editor)).startsWith('Ajuste: '+currentCopy.body_pt+'\n<img'))
  await editor.fill('Ajuste: '+currentCopy.body_pt);await page.getByLabel('Assunto em português',{exact:true}).focus()
- const copied=await editor.evaluate(element=>{const range=document.createRange();range.selectNodeContents(element);const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);const data=new DataTransfer();element.dispatchEvent(new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:data}));return data.getData('text/plain')})
+ const copied=await editor.evaluate(element=>{element.focus();const range=document.createRange();range.selectNodeContents(element);const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);const data=new DataTransfer();element.dispatchEvent(new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:data}));return data.getData('text/plain')})
+ if(copied!=='Ajuste: '+currentCopy.body_pt)console.log('COPY_DIAGNOSTIC',JSON.stringify({copied,expected:'Ajuste: '+currentCopy.body_pt,html:await editor.innerHTML(),serialized:await editorValue(editor)}))
  check('Copiar o editor preserva endereço, não só o rótulo',copied==='Ajuste: '+currentCopy.body_pt)
  check('Texto longo não aparece na prévia do rascunho',!(await page.getByTestId('campaign-body-preview').innerText()).includes('https://wa.me'))
  await page.getByRole('button',{name:'Español',exact:true}).click()
  await page.getByLabel('Mensaje en español',{exact:true}).fill('<img src=x onerror="window.syntheticXSS=true">\n'+currentCopy.body_es)
  check('Prévia escapa HTML colado no rascunho',await page.getByTestId('campaign-body-preview').locator('img,script').count()===0&&await page.evaluate(()=>window.syntheticXSS===undefined))
- await page.getByLabel('Mensaje en español',{exact:true}).fill(currentCopy.body_es);await page.getByLabel('Asunto en español',{exact:true}).focus()
+ await page.getByLabel('Mensaje en español',{exact:true}).evaluate((element,text)=>{
+  element.focus();const range=document.createRange();range.selectNodeContents(element);const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);const data=new DataTransfer();data.setData('text/plain',text);element.dispatchEvent(new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:data}))
+ },currentCopy.body_es);await page.getByLabel('Asunto en español',{exact:true}).focus()
  check('Texto simples reaplica rótulo sem perder URL',await editorValue(page.getByLabel('Mensaje en español',{exact:true}))===currentCopy.body_es&&await page.getByLabel('Mensaje en español',{exact:true}).getByRole('link',{name:'haz clic aquí para hablar conmigo',exact:true}).count()===1)
  check('Aplicar não salva, não agenda e não envia',requests.every(r=>r.method!=='POST'||r.path.endsWith('/generate')))
  for(const [name,width,dark] of [['desktop',1280,false],['mobile',390,false],['mobile-dark',390,true],['narrow',320,false]]){
