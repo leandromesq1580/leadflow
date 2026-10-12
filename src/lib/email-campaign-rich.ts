@@ -26,8 +26,8 @@ export function sanitizeCampaignHtml(html:string):string {
 }
 export function encodeCampaignHtml(html:string):string{return CAMPAIGN_RICH_PREFIX+sanitizeCampaignHtml(html)}
 export function campaignRichHtml(body:string):string{return sanitizeCampaignHtml(body.slice(CAMPAIGN_RICH_PREFIX.length))}
-export function campaignBodyToText(body:string):string {
- if(!isRichCampaignBody(body))return body
+export function campaignBodyToText(body:string,rich=isRichCampaignBody(body)):string {
+ if(!rich)return body
  const safe=campaignRichHtml(body)
  const spaced=safe.replace(/<a\b[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g,(_match,href,label)=>`${label} (${href})`)
   .replace(/<img\b[^>]*alt="([^"]*)"[^>]*\/?\s*>/g,(_match,alt)=>alt?`[${alt}]`:'')

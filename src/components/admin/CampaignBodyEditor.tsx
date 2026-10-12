@@ -2,8 +2,8 @@
 
 import {useEffect,useRef,useState,type ClipboardEvent} from 'react'
 import {flushSync} from 'react-dom'
-import {campaignBodyFromEditor,campaignHtmlFromEditor,renderCampaignEditor} from '@/lib/email-campaign-editor'
-import {campaignBodyToText,CAMPAIGN_BODY_LIMIT,campaignRichHtml,encodeCampaignHtml,escapeCampaignHtml,isRichCampaignBody,safeCampaignUrl,sanitizeCampaignHtml} from '@/lib/email-campaign-rich'
+import {campaignBodyAfterInsertion,campaignBodyFromEditor,campaignHtmlFromEditor,renderCampaignEditor} from '@/lib/email-campaign-editor'
+import {CAMPAIGN_BODY_LIMIT,campaignRichHtml,encodeCampaignHtml,escapeCampaignHtml,isRichCampaignBody,safeCampaignUrl,sanitizeCampaignHtml} from '@/lib/email-campaign-rich'
 
 interface Props {value:string;language:'pt'|'es';label:string;disabled:boolean;onChange:(value:string)=>void;onUploadStateChange?:(busy:boolean)=>void}
 type Panel='link'|'image'|'html'|null
@@ -86,7 +86,7 @@ export default function CampaignBodyEditor({value,language,label,disabled,onChan
  }
  function copy(event:ClipboardEvent<HTMLDivElement>,cut=false){
   const range=selectedRange();if(!range || range.collapsed)return
-  if(rich.current){const fragment=document.createElement('div');fragment.append(range.cloneContents());const body=campaignHtmlFromEditor(fragment);event.clipboardData.setData('text/html',campaignRichHtml(body));event.clipboardData.setData('text/plain',campaignBodyToText(body))}
+  if(rich.current){const fragment=document.createElement('div');fragment.append(range.cloneContents());const body=campaignHtmlFromEditor(fragment);event.clipboardData.setData('application/x-lead4pro-campaign',body);event.clipboardData.setData('text/html',campaignRichHtml(body));event.clipboardData.setData('text/plain',campaignBodyFromEditor(fragment))}
   else event.clipboardData.setData('text/plain',campaignBodyFromEditor(range.cloneContents()))
   event.preventDefault();if(cut&&!unavailable){document.execCommand('delete');update()}
  }
@@ -110,7 +110,15 @@ export default function CampaignBodyEditor({value,language,label,disabled,onChan
    onKeyDown={event=>{if(!unavailable&&(event.ctrlKey||event.metaKey)&&!event.altKey&&['b','i','k'].includes(event.key.toLowerCase())){event.preventDefault();if(event.key.toLowerCase()==='k')open('link');else format(event.key.toLowerCase()==='b'?'bold':'italic')}}}
    onFocus={()=>{const range=rememberedRange.current,selection=window.getSelection();if(range&&selection&&root.current?.contains(range.commonAncestorContainer)){selection.removeAllRanges();selection.addRange(range)}}}
    onClick={event=>{if((event.target as Element).closest('a'))event.preventDefault()}} onDrop={event=>event.preventDefault()}
-   onPaste={event=>{event.preventDefault();if(unavailable||!root.current)return;const range=selectedRange();if(!range)return;const pasted=event.clipboardData.getData('text/plain'),selected=campaignBodyFromEditor(range.cloneContents());if(canonical.current.length-selected.length+pasted.length>CAMPAIGN_BODY_LIMIT)return;document.execCommand('insertHTML',false,renderCampaignEditor(pasted,language));update()}}
+   onPaste={event=>{
+    event.preventDefault();if(unavailable||!root.current)return;const range=selectedRange();if(!range)return
+    const internal=event.clipboardData.getData('application/x-lead4pro-campaign'),hasRich=isRichCampaignBody(internal)
+    const pasted=event.clipboardData.getData('text/plain')
+    if((hasRich?internal.length:pasted.length)>CAMPAIGN_BODY_LIMIT){setError('A mensagem pode ter até 20.000 caracteres, incluindo o HTML.');return}
+    const html=hasRich?renderCampaignEditor(internal,language):renderCampaignEditor(pasted,language)
+    if(campaignBodyAfterInsertion(root.current,range,html,rich.current||hasRich).length>CAMPAIGN_BODY_LIMIT){setError('A mensagem pode ter até 20.000 caracteres, incluindo o HTML.');return}
+    document.execCommand('insertHTML',false,html);update(hasRich);setError('')
+   }}
    onCopy={event=>copy(event)} onCut={event=>copy(event,true)}/>
  </div>
 }

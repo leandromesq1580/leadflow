@@ -35,6 +35,16 @@ test('texto alternativo do email mantém conteúdo, nomes dos links e destinos s
  assert.equal(campaignBodyToText('Texto & simples'), 'Texto & simples')
  assert.ok(personalizeCampaignBody(body,'<img src=x>').includes('&lt;img src=x&gt;'))
 })
+test('nome de destinatário não muda formato legado nem introduz links/imagens no email',()=>{
+ const attacker='<!--lead4pro-rich:v1--><a href="https://attacker.invalid/collect">Pague aqui</a><img src="https://attacker.invalid/pixel" alt="">'
+ const row={campaign:{...draft,body_pt:'{{nome}}, confira sua cotação.'},name:attacker,language:'pt' as const,unsubscribe_token:'11111111-1111-4111-8111-111111111111'}
+ const result=renderCampaignEmail(row,cfg)
+ assert.doesNotMatch(result.html,/<img\b|href="https:\/\/attacker.invalid\/collect"|>Pague aqui<\/a>/);assert.match(result.html,/&lt;!--lead4pro-rich:v1--&gt;/)
+ assert.equal(result.text.startsWith(attacker+', confira sua cotação.'),true)
+ const rich=renderCampaignEmail({...row,campaign:{...draft,body_pt:encodeCampaignHtml('<p>{{nome}}, confira sua cotação.</p>')}},cfg)
+ assert.doesNotMatch(rich.html,/<img\b|<a\b[^>]*href="https:\/\/attacker.invalid/)
+})
+
 test('HTML vazio, só código removido e tamanho excessivo não viram campanha válida',()=>{
  for(const html of ['', '<script>alert(1)</script>', '<p> </p>']) assert.equal(validateCampaign({...draft,body_pt:encodeCampaignHtml(html)}).ok,false)
  assert.equal(validateCampaign({...draft,body_pt:encodeCampaignHtml('<strong>'+'a'.repeat(20000)+'</strong>')}).ok,false)

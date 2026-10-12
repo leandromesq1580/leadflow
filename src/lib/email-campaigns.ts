@@ -53,12 +53,13 @@ function escapeHtml(s:string){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'
 export function renderCampaignEmail(row:{campaign:CampaignDraft;name:string;language:'pt'|'es';unsubscribe_token:string},config:CampaignConfiguration){
   if(!CAMPAIGN_UUID.test(row.unsubscribe_token)||!['pt','es'].includes(row.language))throw new Error('invalid_recipient')
   const subject=row.campaign[row.language==='es'?'subject_es':'subject_pt'].replace(/{{\s*nome\s*}}/g,row.name.replace(/[\r\n]/g,' ').slice(0,120))
-  const body=personalizeCampaignBody(row.campaign[row.language==='es'?'body_es':'body_pt'],row.name)
+  const source=row.campaign[row.language==='es'?'body_es':'body_pt'],rich=isRichCampaignBody(source)
+  const body=personalizeCampaignBody(source,row.name)
   const unsubscribe=`${CAMPAIGN_URL}/api/email-campaigns/unsubscribe/${row.unsubscribe_token}`
   const label=row.language==='es'?'Cancelar suscripción':'Cancelar recebimento'
   // Same sanitizer and renderer used by previews; plain-text fallback remains readable.
-  const html=renderCampaignBody(body,row.language)
-  return {subject,text:`${campaignBodyToText(body)}\n\nLead4Pro · ${config.postal}\n${label}: ${unsubscribe}`,
+  const html=renderCampaignBody(body,row.language,rich)
+  return {subject,text:`${campaignBodyToText(body,rich)}\n\nLead4Pro · ${config.postal}\n${label}: ${unsubscribe}`,
     html:`<div style="font:16px/1.6 Arial,sans-serif;color:#0f172a">${html}<hr/><p style="font-size:12px">Lead4Pro · ${escapeHtml(config.postal)}<br/><a href="${unsubscribe}">${label}</a></p></div>`,
     headers:{'List-Unsubscribe':`<${unsubscribe}>`,'List-Unsubscribe-Post':'List-Unsubscribe=One-Click'}}
 }

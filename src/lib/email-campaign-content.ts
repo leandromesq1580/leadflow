@@ -5,8 +5,9 @@ function escapeHtml(text: string) {
 }
 
 /** Legacy text stays escaped; explicitly marked rich drafts are sanitized at every render. */
-export function renderCampaignBody(body: string, language: 'pt' | 'es') {
-  if(isRichCampaignBody(body))return campaignRichHtml(body)
+export function renderCampaignBody(body: string, language: 'pt' | 'es', rich=isRichCampaignBody(body)) {
+  // Callers personalizing a draft pin this mode from the saved source, never recipient data.
+  if(rich)return campaignRichHtml(body)
   const label = language === 'es' ? 'haz clic aquí para hablar conmigo' : 'clique aqui para falar comigo'
   let html = '', cursor = 0
   for (const match of body.matchAll(/https?:\/\/[^\s<>]+/g)) {
