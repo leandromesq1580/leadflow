@@ -1,4 +1,5 @@
 import {renderCampaignBody} from './email-campaign-content'
+import {encodeCampaignHtml} from './email-campaign-rich'
 
 export function renderCampaignEditor(body:string,language:'pt'|'es') {
   return renderCampaignBody(body,language).replaceAll('<a ','<a contenteditable="false" ')
@@ -23,3 +24,6 @@ export function campaignBodyFromEditor(root:Node):string {
   for(const child of root.childNodes)visit(child)
   return text.replaceAll('\u00a0',' ')
 }
+
+/** Called only after an explicit rich-text command; legacy typing remains plain-text compatible. */
+export function campaignHtmlFromEditor(root:HTMLElement):string{return encodeCampaignHtml(root.innerHTML)}
