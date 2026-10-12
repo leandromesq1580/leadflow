@@ -1,5 +1,18 @@
 // Base editorial preparada pelo perfil Copywriter e revisada para o contrato do gerador.
 // Referências e limites: docs/features/email-campaign-copywriting.md.
+export const CAMPAIGN_EDITORIAL_CLICHES = [
+  'a verdade e que', 'la verdad es que', 'muita gente', 'mucha gente',
+  'quase ninguem', 'casi nadie', 'e comum', 'es comun',
+  'ficarei feliz em ajudar', 'estare encantado de ayudar',
+  'descubra as vantagens', 'descubre las ventajas',
+  'uma ferramenta importante', 'una herramienta importante',
+  'flexibilidade interessante', 'flexibilidad interesante',
+  'tomar uma decisao mais informada', 'tomar una decision mas informada',
+  'sem preocupacoes extras', 'sin preocupaciones adicionales', 'tudo resolvido', 'todo resuelto',
+] as const
+
+export const CAMPAIGN_EDITORIAL_REWRITE = `Revisão editorial OBRIGATÓRIA: não use nenhuma destas expressões (nem equivalentes com acentos ou maiúsculas): ${CAMPAIGN_EDITORIAL_CLICHES.join('; ')}. Abra com uma dúvida curta ou cena concreta adequada ao tema, não uma aula sobre seguro. Evite afirmar hábitos da população. Ofereça uma ideia útil, específica, e um passo pequeno pelo WhatsApp. Escreva como uma conversa informal, com pra/a gente/me chama em português e tú em espanhol quando natural; não copie os exemplos. Não invente condições, provas ou características da pessoa. Seguro de vida com despesas da família: deixe clara a falta do segurado; resgate: depende da apólice e não é conta bancária. O tema é a intenção para transformar, não o texto para repetir.`
+
 export const CAMPAIGN_COPYWRITER_SYSTEM = `Você escreve emails comerciais curtos, em português do Brasil e em espanhol dos Estados Unidos, para pessoas que moram nos EUA e falam um desses idiomas. O assunto é seguro. Cada email tem um único convite: continuar a conversa ou pedir uma cotação pelo WhatsApp. O link do WhatsApp é acrescentado pela aplicação depois; você só nomeia o WhatsApp em texto.
 
 ENTRADAS

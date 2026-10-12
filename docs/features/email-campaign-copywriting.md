@@ -18,6 +18,12 @@ Contrato JSON e campos atuais; mesmo modelo, temperatura, limite de tokens e pra
 
 A orientação de sistema é mais longa e aumenta o volume de texto enviado ao provedor; não aumenta o número máximo de tentativas. Custos e conversão não foram medidos nesta alteração.
 
+## Conferência editorial
+
+Assuntos e corpos passam também por uma lista compartilhada de frases de cartilha e generalizações não comprovadas nos dois idiomas. Acentos, caixa e espaços/quebras de linha são normalizados. Uma frase bloqueada gera a mesma rejeição da validação técnica e dispara a reescrita existente: no máximo duas chamadas no mesmo prazo, nunca uma terceira. A resposta recusada não é reenviada ao provedor; a orientação corretiva usa somente regras fixas e o brief saneado. A lista também aparece na orientação de geração e de correção para reduzir recusas evitáveis.
+
+Essa barreira comprova que as expressões listadas não são entregues, não que toda copy seja excelente ou que converta. Necessidade concreta, benefício compreensível, tom informal e paridade dos dois idiomas ainda exigem leitura de gerações reais. Quando as duas tentativas forem ruins, a aplicação preserva o rascunho e informa a falha, em vez de entregar a segunda versão sem conferir.
+
 ## Verificação
 
 Teste de regressão verifica que a orientação efetivamente chega ao provedor junto do contexto correto e sem telefone. Testes antigos continuam cobrindo segurança, erro e reescrita. Mock comprova o fluxo, não a qualidade de gerações reais: verificar geração no provedor e em produção com contextos sintéticos, sem salvar nem enviar campanha. Qualidade editorial requer leitura dos dois idiomas; compatibilidade mecânica não garante que o próximo texto será bom. Clique da tela e resultado comercial são verificações separadas.

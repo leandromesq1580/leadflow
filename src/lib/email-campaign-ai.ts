@@ -1,4 +1,4 @@
-import { CAMPAIGN_COPYWRITER_SYSTEM } from './email-campaign-copywriting'
+import { CAMPAIGN_COPYWRITER_SYSTEM, CAMPAIGN_EDITORIAL_CLICHES, CAMPAIGN_EDITORIAL_REWRITE } from './email-campaign-copywriting'
 
 export interface CampaignAICopy {
   name: string
@@ -50,6 +50,10 @@ function validateCopy(value:unknown,input:CampaignAIInput): CampaignAICopy {
     const text=raw[field],body=field.startsWith('body_')
     if (typeof text!=='string' || text.trim().length<(body?20:3) || text.length>(body?1600:100) || /[\u0000-\u0008\u000b-\u001f\u007f]/.test(text) || (!body && /[\r\n]/.test(text)) || unsafeCopy.test(normalize(text))) throw new CampaignAIError('invalid_copy')
     if (/^seguros?(?: geral| em geral)?$/.test(normalize(input.insurance)) && /\b(?:casa|hogar|imovel|imoveis|carro|auto|automovel|vehiculo|saude|salud|seguro de vida)\b/.test(normalize(text))) throw new CampaignAIError('invalid_copy')
+    // Editorial rejection uses the same bounded retry as technical rejection.
+    // Check only displayed copy, not the internal campaign name.
+    const editorialText=normalize(text).replace(/\s+/g,' ')
+    if (field!=='name' && CAMPAIGN_EDITORIAL_CLICHES.some(phrase=>editorialText.includes(phrase))) throw new CampaignAIError('invalid_copy')
     result[field]=text.trim()
   }
   return result
@@ -67,8 +71,8 @@ export async function generateCampaignCopy(value: unknown, io: AIIO = {}): Promi
       // Never echo refused content: it can contain private data or injected instructions.
       for(let attempt=0;attempt<2;attempt++) {
         try {
-          const messages=[{role:'system',content:SYSTEM},{role:'user',content:JSON.stringify({insurance:input.insurance,theme:input.theme})}]
-          if(attempt>0) messages.push({role:'system',content:'A primeira sugestão não passou na validação da aplicação. Reescreva os dois idiomas a partir da mesma ideia comercial, mantendo a intenção. Regras de validação OBRIGATÓRIAS: JSON completo com os cinco campos; textos simples sem números, links, contatos, marcação ou placeholders. Não use palavras com as raízes econom ou ahorr (incluindo economia, ahorro e ahorrar), nem garantias, aprovação, desconto ou gratuidade, mesmo numa comparação ou frase negativa. Se a ideia do usuário comparar seguro com poupança, explique o conceito de valor de resgate / valor de rescate de algumas modalidades, sempre condicionado à apólice; não apresente o seguro como conta poupança nem prometa rendimento. Não invente condições, elegibilidade, cobertura ou benefícios adicionais. Se o tipo for genérico, não deduza a categoria. Confira essas regras antes de devolver o JSON; não peça ao usuário para reformular a ideia.'})
+          const messages=[{role:'system',content:SYSTEM+'\n\n'+CAMPAIGN_EDITORIAL_REWRITE},{role:'user',content:JSON.stringify({insurance:input.insurance,theme:input.theme})}]
+          if(attempt>0) messages.push({role:'system',content:'A primeira sugestão não passou na validação da aplicação. Reescreva os dois idiomas a partir da mesma ideia comercial, mantendo a intenção. Regras de validação OBRIGATÓRIAS: JSON completo com os cinco campos; textos simples sem números, links, contatos, marcação ou placeholders. Não use palavras com as raízes econom ou ahorr (incluindo economia, ahorro e ahorrar), nem garantias, aprovação, desconto ou gratuidade, mesmo numa comparação ou frase negativa. Se a ideia do usuário comparar seguro com poupança, explique o conceito de valor de resgate / valor de rescate de algumas modalidades, sempre condicionado à apólice; não apresente o seguro como conta poupança nem prometa rendimento. Não invente condições, elegibilidade, cobertura ou benefícios adicionais. Se o tipo for genérico, não deduza a categoria. Confira essas regras antes de devolver o JSON; não peça ao usuário para reformular a ideia.\n\n'+CAMPAIGN_EDITORIAL_REWRITE})
           const response=await (io.fetch ?? globalThis.fetch)('https://api.openai.com/v1/chat/completions', {
             method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json',Authorization:`Bearer ${key}`},
             body:JSON.stringify({model:'gpt-4o-mini',temperature:attempt===0?0.7:0.3,max_tokens:1000,response_format:{type:'json_object'},messages}),
