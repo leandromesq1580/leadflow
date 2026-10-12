@@ -1,4 +1,5 @@
 'use client'
+import { acknowledgeConversation } from '@/lib/conversation-read-receipt'
 import { FLORIDA_TIME_ZONE } from '@/lib/florida-time'
 
 import { useState, useEffect, useRef } from 'react'
@@ -53,6 +54,8 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
   const [canal, setCanal] = useState<'whatsapp' | 'sms'>('whatsapp')
   const canalDefinido = useRef(false)
   const [loading, setLoading] = useState(true)
+  const [loadedForLead, setLoadedForLead] = useState<string | null>(null)
+  const activeLead = useRef(leadId)
   const [showEmoji, setShowEmoji] = useState(false)
   const [recording, setRecording] = useState(false)
   const [recordSecs, setRecordSecs] = useState(0)
@@ -67,24 +70,14 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
   const textRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
+    activeLead.current = leadId
     load()
-    // Marca como lido e dispara evento global pras sidebars/cards reagirem ja
-    fetch('/api/whatsapp/messages', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lead_id: leadId }),
-    })
-      .then(() => {
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('wa-unread-changed', { detail: { leadId } }))
-        }
-      })
-      .catch(() => {})
+
     // Fallback poll — 5s pra responsividade tipo chat. Realtime cobre
     // o caso normal; o poll garante que mesmo se WebSocket falhar a thread
     // atualiza em poucos segundos.
     const interval = setInterval(load, 5000)
-    return () => clearInterval(interval)
+    return () => { activeLead.current = ''; clearInterval(interval) }
   }, [leadId])
 
   // Realtime: msg nova pro lead -> recarrega thread
@@ -99,6 +92,18 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages.length])
 
+  useEffect(() => {
+    let cancelled = false
+    const mark = () => {
+      if (document.visibilityState !== 'visible' || loadedForLead !== leadId || loading || !messages.length) return
+      acknowledgeConversation(leadId, messages)
+        .then(ok => { if (ok && !cancelled) window.dispatchEvent(new CustomEvent('wa-unread-changed', { detail: { leadId } })) }).catch(() => {})
+    }
+    mark()
+    document.addEventListener('visibilitychange', mark)
+    return () => { cancelled = true; document.removeEventListener('visibilitychange', mark) }
+  }, [leadId, messages, loading, loadedForLead])
+
   async function load() {
     // try/finally garante que setLoading(false) sempre roda, mesmo se a fetch
     // rejeitar (network glitch, extension do browser bloqueando, etc).
@@ -108,7 +113,9 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
       const r = await fetch(`/api/whatsapp/messages?lead_id=${leadId}`)
       if (r.ok) {
         const d = await r.json()
+        if (activeLead.current !== leadId) return
         setMessages(d.messages || [])
+        setLoadedForLead(leadId)
         if (!canalDefinido.current) {
           const entradas = (d.messages || []).filter((m: any) => m.direction === 'in')
           const ultima = entradas[entradas.length - 1]
@@ -119,7 +126,7 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
     } catch (err) {
       console.error('[WaInbox] Falha ao carregar mensagens:', err)
     } finally {
-      setLoading(false)
+      if (activeLead.current === leadId) setLoading(false)
     }
   }
 
@@ -411,14 +418,15 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
           <div key={m.id} className={`flex ${m.direction === 'out' ? 'justify-end' : 'justify-start'}`}>
             <div className={`${m.media_type === 'audio' ? 'max-w-[320px] min-w-[280px]' : 'max-w-[80%]'} px-3 py-2 rounded-2xl`}
               style={{
-                background: m.direction === 'out' ? '#dcf8c6' : 'var(--bg-card)',
+                background: m.channel === 'sms' && m.direction === 'in' ? '#dbeafe' : m.direction === 'out' ? '#dcf8c6' : 'var(--bg-card)',
+                color: m.channel === 'sms' && m.direction === 'in' ? '#172554' : undefined,
                 border: m.direction === 'in' ? '1px solid var(--border)' : 'none',
                 borderBottomRightRadius: m.direction === 'out' ? 4 : 16,
                 borderBottomLeftRadius: m.direction === 'in' ? 4 : 16,
               }}>
               {m.channel === 'sms' && (
                 <span className="inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mb-1"
-                  style={{ background: m.direction === 'out' ? 'rgba(15,118,110,0.12)' : 'var(--accent-light)', color: m.direction === 'out' ? '#0f766e' : 'var(--accent)', letterSpacing: 0.5 }}>
+                  style={{ background: m.direction === 'out' ? 'rgba(15,118,110,0.12)' : '#1d4ed8', color: m.direction === 'out' ? '#0f766e' : '#fff', letterSpacing: 0.5 }}>
                   SMS
                 </span>
               )}

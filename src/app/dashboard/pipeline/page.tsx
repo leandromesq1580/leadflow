@@ -193,12 +193,14 @@ export default function PipelinePage() {
   }, [dragOrder])
 
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({})
+  const [smsCounts, setSmsCounts] = useState<Record<string, number>>({})
   async function loadUnreadCounts() {
     if (!buyerId) return
     const r = await fetch(`/api/whatsapp/unread?buyer_id=${buyerId}`)
     if (r.ok) {
       const d = await r.json()
-      setUnreadCounts(d.counts || {})
+      setUnreadCounts(d.whatsappCounts || d.counts || {})
+      setSmsCounts(d.smsCounts || {})
     }
   }
   useEffect(() => {
@@ -592,7 +594,7 @@ export default function PipelinePage() {
                       returnTo={`/dashboard/pipeline?pipeline=${memberPipeline.id}`}
                       items={orderPipelineCards(memberLeads.filter(l => l.stage_id === stage.id), order.effectiveMode, order.dates) as any}
                       onLeadClick={(item) => setSelectedLead(item as any)}
-                      unreadCounts={unreadCounts}
+                      unreadCounts={unreadCounts} smsCounts={smsCounts}
                       teamMembers={isAgency ? teamMembers : undefined}
                       viewedMemberId={selectedMemberId}
                       onAssigned={() => {
@@ -725,7 +727,7 @@ export default function PipelinePage() {
                 returnTo={`/dashboard/pipeline?pipeline=${activePipeline.id}`}
                 items={getStageLeads(stage.id)}
                 onLeadClick={(item) => setSelectedLead(item)}
-                unreadCounts={unreadCounts}
+                unreadCounts={unreadCounts} smsCounts={smsCounts}
                 teamMembers={isAgency ? teamMembers : undefined}
                 onAssigned={() => activePipeline && loadLeads(activePipeline)}
                 onArchived={() => activePipeline && loadLeads(activePipeline)}

@@ -69,14 +69,14 @@ test('historical empty technical event contributes zero to unread badge', async 
   const api = route('src/app/api/whatsapp/unread/route.ts', { whatsapp_messages: [empty] })
   const res = await api.GET(new Request('https://local.invalid/api/whatsapp/unread?buyer_id=buyer'))
   assert.equal(res.status, 200)
-  assert.deepEqual(await res.json(), { counts: {}, total: 0 })
+  assert.deepEqual(await res.json(), { counts: {}, total: 0, whatsappCounts: {}, smsCounts: {} })
 })
 
 test('unread counts only actual replies, preserves pending media, and reads beyond server page cap', async () => {
   const rows = [empty, message({ id: '02', body: '👍' }), message({ id: '03', media_type: 'audio' }), message({ id: '04', body: 'outbound', direction: 'out', wa_message_id: 'true_out' }), message({ id: '05', body: 'own echo', wa_message_id: 'true_echo' }), message({ id: '06', body: 'real reply' })]
   const api = route('src/app/api/whatsapp/unread/route.ts', { whatsapp_messages: rows }, 2)
   const res = await api.GET(new Request('https://local.invalid/api/whatsapp/unread?buyer_id=buyer'))
-  assert.deepEqual(await res.json(), { counts: { lead: 3 }, total: 3 })
+  assert.deepEqual(await res.json(), { counts: { lead: 3 }, total: 3, whatsappCounts: { lead: 3 }, smsCounts: {} })
 })
 
 for (const admin of [false, true]) {

@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { callerBuyer, canActAs } from '@/lib/api-auth'
 import { leadMessageLocale, type LeadMessageLocale } from '@/lib/lead-message-locale'
 import { readWhatsAppHistory, readConversationMetadata, compareTimestamp } from '@/lib/wa-message-history'
+import { readSmsReplies } from '@/lib/sms-inbox'
 
 interface Conversation {
   lead_id: string
@@ -15,6 +16,8 @@ interface Conversation {
   last_direction: 'in' | 'out'
   last_sent_at: string
   unread: number
+  sms_unread: number
+  last_channel: 'sms' | 'whatsapp'
 }
 
 /**
@@ -41,14 +44,19 @@ export async function GET(request: NextRequest) {
     return q
   }).catch(() => null)
   if (!messages) return NextResponse.json({ error: 'Conversations unavailable' }, { status: 503 })
-  messages.sort(compareTimestamp(m => m.sent_at, 'desc'))
+  const sms = await readSmsReplies(db, buyerId).catch(() => null)
+  if (!sms) return NextResponse.json({ error: 'Conversations unavailable' }, { status: 503 })
+  const combined = [...messages, ...sms].sort(compareTimestamp(m => m.sent_at, 'desc'))
 
   // Agrupa por lead_id: pega a primeira msg (mais recente) + conta unread
-  const byLead: Record<string, { last: any; unread: number }> = {}
-  for (const m of messages || []) {
+  const byLead: Record<string, { last: any; unread: number; sms_unread: number }> = {}
+  for (const m of combined) {
     if (!m.lead_id) continue
-    if (!byLead[m.lead_id]) byLead[m.lead_id] = { last: m, unread: 0 }
-    if (m.direction === 'in' && !m.read_at) byLead[m.lead_id].unread++
+    if (!byLead[m.lead_id]) byLead[m.lead_id] = { last: m, unread: 0, sms_unread: 0 }
+    if (m.direction === 'in' && !m.read_at) {
+      byLead[m.lead_id].unread++
+      if ('channel' in m && m.channel === 'sms') byLead[m.lead_id].sms_unread++
+    }
   }
 
   const leadIds = Object.keys(byLead)
@@ -90,6 +98,8 @@ export async function GET(request: NextRequest) {
         last_direction: last.direction as 'in' | 'out',
         last_sent_at: last.sent_at,
         unread: byLead[id].unread,
+        sms_unread: byLead[id].sms_unread,
+        last_channel: last.channel === 'sms' ? 'sms' as const : 'whatsapp' as const,
       }
     })
     .filter((c): c is Conversation => c !== null)

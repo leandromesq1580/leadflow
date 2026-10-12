@@ -1,4 +1,5 @@
 'use client'
+import { ReplyBadges } from '@/components/reply-badges'
 
 import { useEffect, useState, useMemo } from 'react'
 import { WhatsAppInbox } from '@/components/whatsapp-inbox'
@@ -17,6 +18,8 @@ interface Conversation {
   last_direction: 'in' | 'out'
   last_sent_at: string
   unread: number
+  sms_unread?: number
+  last_channel?: 'sms' | 'whatsapp'
 }
 
 function timeAgoShort(iso: string, locale: string): string {
@@ -191,14 +194,10 @@ export default function WhatsAppPage() {
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <p className="text-[11px] truncate flex-1" style={{ color: c.unread > 0 ? 'var(--fg)' : 'var(--fg-muted)', fontWeight: c.unread > 0 ? 600 : 400 }}>
                           {c.last_direction === 'out' && '✓ '}
+                          {c.last_channel === 'sms' && 'SMS: '}
                           {c.last_body}
                         </p>
-                        {c.unread > 0 && (
-                          <span className="text-[10px] font-extrabold text-white rounded-full flex items-center justify-center flex-shrink-0"
-                            style={{ background: 'var(--accent)', minWidth: 18, height: 18, padding: '0 5px' }}>
-                            {c.unread > 99 ? '99+' : c.unread}
-                          </span>
-                        )}
+                        <ReplyBadges whatsapp={c.unread - (c.sms_unread || 0)} sms={c.sms_unread} />
                       </div>
                       <div className="mt-1"><LeadLanguageBadge lead={c} /></div>
                     </div>

@@ -1,4 +1,5 @@
 'use client'
+import { ReplyBadges } from '@/components/reply-badges'
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
@@ -6,7 +7,7 @@ import { useT } from '@/lib/i18n-client'
 import { MIcon } from '@/components/mobile/icons'
 import { timeAgo, getInitials } from '@/lib/utils'
 
-interface Conv { lead_id: string; lead_name: string; lead_phone: string; last_body: string; last_direction: 'in' | 'out'; last_sent_at: string; unread: number }
+interface Conv { lead_id: string; lead_name: string; lead_phone: string; last_body: string; last_direction: 'in' | 'out'; last_sent_at: string; unread: number; sms_unread?: number; last_channel?: 'sms' | 'whatsapp' }
 
 function avatarBg(name: string) {
   const h = ((name?.charCodeAt(0) || 65) * 37) % 360
@@ -69,11 +70,9 @@ export default function MobileWhatsApp() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                 <p className="m-muted" style={{ margin: '3px 0 0', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {c.last_direction === 'out' ? `${L('Você', 'You', 'Tú')}: ` : ''}{c.last_body}
+                  {c.last_channel === 'sms' && 'SMS: '}{c.last_direction === 'out' ? `${L('Você', 'You', 'Tú')}: ` : ''}{c.last_body}
                 </p>
-                {c.unread > 0 && (
-                  <span style={{ background: 'var(--m-grad)', color: '#fff', fontSize: 11, minWidth: 19, height: 19, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px', fontWeight: 700, flexShrink: 0 }}>{c.unread > 99 ? '99+' : c.unread}</span>
-                )}
+                <ReplyBadges whatsapp={c.unread - (c.sms_unread || 0)} sms={c.sms_unread} />
               </div>
             </div>
           </Link>

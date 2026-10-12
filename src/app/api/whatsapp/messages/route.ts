@@ -48,14 +48,17 @@ export async function GET(request: NextRequest) {
   // não via em lugar nenhum. Aqui os SMS entram na MESMA linha do tempo, marcados
   // com channel:'sms' (a tela mostra a etiqueta; o composer continua só WhatsApp).
   // Só o que materializou de verdade: sent/delivered/received/failed — agendado e
-  // cancelado não são eventos da conversa. Tolerante: sem tabela, segue só WhatsApp.
+  // cancelado não são eventos da conversa. Falha explícita evita ocultar respostas.
   if (leadId) {
     try {
-      const { data: sms } = await db.from('sms_messages')
-        .select('id, direction, from_phone, to_phone, body, status, created_at')
-        .eq('lead_id', leadId)
-        .in('status', ['sent', 'delivered', 'received', 'failed'])
-        .order('created_at', { ascending: true }).limit(200)
+      const sms = await readWhatsAppHistory(after => {
+        let q = db.from('sms_messages')
+          .select('id, direction, from_phone, to_phone, body, status, created_at, read_at')
+          .eq('lead_id', leadId).in('status', ['sent', 'delivered', 'received', 'failed'])
+          .order('id').limit(500)
+        if (after) q = q.gt('id', after)
+        return q
+      })
       const smsMsgs = (sms || []).map(s => ({
         id: `sms-${s.id}`,
         direction: s.direction === 'in' ? 'in' : 'out',
@@ -64,13 +67,13 @@ export async function GET(request: NextRequest) {
         to_phone: s.to_phone || '',
         sent_at: s.created_at,
         status: s.status,
-        read_at: s.created_at,   // SMS não participa do contador de não lidas
+        read_at: s.read_at,
         channel: 'sms',
       }))
       const tudo = [...(data || []), ...smsMsgs]
         .sort((a: any, b: any) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime())
       return NextResponse.json({ messages: tudo })
-    } catch { /* segue só com whatsapp */ }
+    } catch { return NextResponse.json({ error: 'SMS conversation unavailable' }, { status: 503 }) }
   }
 
   return NextResponse.json({ messages: data || [] })
@@ -445,7 +448,10 @@ export async function DELETE(request: NextRequest) {
 
 /** PATCH /api/whatsapp/messages — mark as read */
 export async function PATCH(request: NextRequest) {
-  const { lead_id, buyer_id } = await request.json()
+  const { lead_id, buyer_id, sms_ids } = await request.json()
+  if (sms_ids !== undefined && (!lead_id || !Array.isArray(sms_ids) || sms_ids.length > 200 || sms_ids.some((id: unknown) => typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)))) {
+    return NextResponse.json({ error: 'Invalid SMS receipt' }, { status: 400 })
+  }
   if (!lead_id && !buyer_id) return NextResponse.json({ error: 'Missing' }, { status: 400 })
 
   const db = createAdminClient()
@@ -462,6 +468,22 @@ export async function PATCH(request: NextRequest) {
   if (lead_id) query = query.eq('lead_id', lead_id)
   if (buyer_id) query = query.eq('buyer_id', buyer_id)
 
-  await query
+  const { error } = await query
+  if (error) return NextResponse.json({ error: 'Read receipt unavailable' }, { status: 503 })
+  if (sms_ids?.length) {
+    // Only messages that were actually displayed. New arrivals stay unread.
+    let visible = db.from('sms_inbox_messages').select('id')
+      .eq('lead_id', lead_id).in('id', sms_ids)
+    if (!caller.isAdmin) visible = visible.eq('buyer_id', caller.id)
+    if (buyer_id) visible = visible.eq('buyer_id', buyer_id)
+    const { data: allowed, error: scopeError } = await visible
+    if (scopeError) return NextResponse.json({ error: 'Read receipt unavailable' }, { status: 503 })
+    if (allowed?.length) {
+      const { error: smsError } = await db.from('sms_messages')
+        .update({ read_at: new Date().toISOString() }).eq('lead_id', lead_id)
+        .eq('direction', 'in').is('read_at', null).in('id', allowed.map(row => row.id))
+      if (smsError) return NextResponse.json({ error: 'Read receipt unavailable' }, { status: 503 })
+    }
+  }
   return NextResponse.json({ success: true })
 }
