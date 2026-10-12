@@ -4,6 +4,7 @@ import {useEffect,useRef,useState} from 'react'
 import {ChevronDown,RefreshCw} from '@/components/admin/campaign-icons'
 function Sparkles({size=16}:{size?:number}) {return <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4ZM20 2v4m-2-2h4"/></svg>}
 import type {CampaignAICopy} from '@/lib/email-campaign-ai'
+import {OFFICIAL_WHATSAPP_DISPLAY} from '@/lib/official-whatsapp'
 
 interface Props { disabled:boolean;hasContent:boolean;onApply:(copy:CampaignAICopy)=>void }
 const field='w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:ring-emerald-900'
@@ -11,7 +12,7 @@ const button='inline-flex items-center justify-center gap-2 rounded-lg bg-emeral
 const failure='Não foi possível gerar os textos. Seu rascunho foi preservado; tente novamente.'
 
 export default function EmailCampaignAIGenerator({disabled,hasContent,onApply}:Props) {
-  const [insurance,setInsurance]=useState('Seguro'),[theme,setTheme]=useState(''),[phone,setPhone]=useState('1 863 280 8696')
+  const [insurance,setInsurance]=useState('Seguro'),[theme,setTheme]=useState(''),[phone,setPhone]=useState(OFFICIAL_WHATSAPP_DISPLAY)
   const [loading,setLoading]=useState(false),[copy,setCopy]=useState<CampaignAICopy|null>(null),[error,setError]=useState(''),[locale,setLocale]=useState<'pt'|'es'>('pt'),[applied,setApplied]=useState(false)
   const generation=useRef(0),controller=useRef<AbortController|null>(null)
   useEffect(()=>()=>{generation.current++;controller.current?.abort()},[])

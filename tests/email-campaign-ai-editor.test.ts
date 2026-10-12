@@ -11,7 +11,8 @@ test('editor de IA começa sem enviar, com WhatsApp indicado e revisão explíci
  const {default:Generator}=await import('../src/components/admin/EmailCampaignAIGenerator')
  let applied=0
  const html=renderToStaticMarkup(createElement(Generator,{disabled:false,hasContent:false,onApply:()=>applied++}))
- assert.match(html,/Gerar com IA/);assert.match(html,/1 863 280 8696/)
+ assert.match(html,/Gerar com IA/);assert.match(html,/value="1 786 744 2126"/)
+ assert.doesNotMatch(html,/863[\s()-]*280[\s()-]*8696/)
  assert.match(html,/Nada é salvo ou enviado ao gerar/);assert.match(html,/Tipo de seguro/)
  assert.equal(applied,0)
 })

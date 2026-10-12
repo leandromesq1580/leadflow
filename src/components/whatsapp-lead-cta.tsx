@@ -1,5 +1,7 @@
 'use client'
 
+import { OFFICIAL_WHATSAPP_NUMBER } from '@/lib/official-whatsapp'
+
 /**
  * CTA verde de WhatsApp pra landing: dispara o evento `Lead` no Meta Pixel no
  * clique (a campanha otimiza por esse evento) e abre o wa.me com mensagem
@@ -12,7 +14,7 @@ interface Props {
   block?: boolean
 }
 
-const WA_NUMBER = '18632808696' // bridge de vendas/novos clientes (Lead4Pro / regiane@myhomefirst.us)
+const WA_NUMBER = OFFICIAL_WHATSAPP_NUMBER // contato público; a sessão conectada é configurada separadamente
 
 export function WhatsAppLeadCta({ label, message, size = 'md', block }: Props) {
   const href = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(message)}`
