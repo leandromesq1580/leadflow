@@ -32,3 +32,10 @@ test('voz informal sem clichê é entregue na primeira chamada',async()=>{
  const copy=await generateCampaignCopy(input,{key:'synthetic',fetch:async()=>{calls++;return response(safe)}})
  assert.equal(calls,1);assert.equal(copy.body_pt.split('\n\nhttps://')[0],safe.body_pt)
 })
+test('tamanho, parágrafos e CTA nos dois idiomas são conferidos antes da entrega',async()=>{
+ const invalid=[{...safe,subject_pt:'s'.repeat(81)},{...safe,body_pt:'Conversa curta pelo WhatsApp.'},{...safe,body_es:Array(91).fill('opciones').join(' ')+' WhatsApp'},{...safe,body_pt:safe.body_pt+'\n\nprimeiro\n\nsegundo\n\nterceiro'},{...safe,body_es:safe.body_es.replace('WhatsApp','outro canal')}]
+ for(const bad of invalid){let calls=0;const copy=await generateCampaignCopy(input,{key:'synthetic',fetch:async()=>response(++calls===1?bad:safe)});assert.equal(calls,2);assert.equal(copy.subject_pt,safe.subject_pt)}
+})
+test('alternativas de promessa vistas no teste real também são recusadas',async()=>{
+ for(const phrase of ['Pode garantir tranquilidade.','Vai seguir sem aperto.','Todo siga tranquilo.','Você sabia?']){let calls=0;await generateCampaignCopy(input,{key:'synthetic',fetch:async()=>response(++calls===1?{...safe,body_pt:phrase+' '+safe.body_pt}:safe)});assert.equal(calls,2,phrase)}
+})

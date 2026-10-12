@@ -1,4 +1,4 @@
-import { CAMPAIGN_COPYWRITER_SYSTEM, CAMPAIGN_EDITORIAL_CLICHES, CAMPAIGN_EDITORIAL_REWRITE } from './email-campaign-copywriting'
+import { CAMPAIGN_COPYWRITER_SYSTEM, CAMPAIGN_EDITORIAL_CLICHES, CAMPAIGN_EDITORIAL_REWRITE, CAMPAIGN_MODEL } from './email-campaign-copywriting'
 
 export interface CampaignAICopy {
   name: string
@@ -54,6 +54,12 @@ function validateCopy(value:unknown,input:CampaignAIInput): CampaignAICopy {
     // Check only displayed copy, not the internal campaign name.
     const editorialText=normalize(text).replace(/\s+/g,' ')
     if (field!=='name' && CAMPAIGN_EDITORIAL_CLICHES.some(phrase=>editorialText.includes(phrase))) throw new CampaignAIError('invalid_copy')
+    if (field==='subject_pt' || field==='subject_es') {
+      if (text.trim().length>80) throw new CampaignAIError('invalid_copy')
+    } else if (field==='body_pt' || field==='body_es') {
+      const words=text.trim().split(/\s+/).length
+      if (words<40 || words>90 || text.trim().split(/\n\s*\n/).length>3 || (text.match(/WhatsApp/gi)?.length??0)!==1) throw new CampaignAIError('invalid_copy')
+    }
     result[field]=text.trim()
   }
   return result
@@ -72,10 +78,10 @@ export async function generateCampaignCopy(value: unknown, io: AIIO = {}): Promi
       for(let attempt=0;attempt<2;attempt++) {
         try {
           const messages=[{role:'system',content:SYSTEM+'\n\n'+CAMPAIGN_EDITORIAL_REWRITE},{role:'user',content:JSON.stringify({insurance:input.insurance,theme:input.theme})}]
-          if(attempt>0) messages.push({role:'system',content:'A primeira sugestão não passou na validação da aplicação. Reescreva os dois idiomas a partir da mesma ideia comercial, mantendo a intenção. Regras de validação OBRIGATÓRIAS: JSON completo com os cinco campos; textos simples sem números, links, contatos, marcação ou placeholders. Não use palavras com as raízes econom ou ahorr (incluindo economia, ahorro e ahorrar), nem garantias, aprovação, desconto ou gratuidade, mesmo numa comparação ou frase negativa. Se a ideia do usuário comparar seguro com poupança, explique o conceito de valor de resgate / valor de rescate de algumas modalidades, sempre condicionado à apólice; não apresente o seguro como conta poupança nem prometa rendimento. Não invente condições, elegibilidade, cobertura ou benefícios adicionais. Se o tipo for genérico, não deduza a categoria. Confira essas regras antes de devolver o JSON; não peça ao usuário para reformular a ideia.\n\n'+CAMPAIGN_EDITORIAL_REWRITE})
+          if(attempt>0) messages.push({role:'system',content:'A primeira sugestão não passou na validação. Reescreva os dois idiomas e confira todas as regras de voz e formato. Preserve a intenção do tema sem repetir comparações financeiras ou termos proibidos. JSON completo com os cinco campos; assunto até oitenta caracteres; cada corpo de quarenta a noventa palavras, até três parágrafos e um único convite WhatsApp. Não envie números, contatos, links, markup, dados pessoais, promessa, garantia, aprovação, desconto ou palavra com raiz ahorr/econom (incluindo ahorro e economia), nem para negar. Se o tipo for genérico, não deduza categoria. Não peça ao usuário para reformular a ideia.\n\n'+CAMPAIGN_EDITORIAL_REWRITE})
           const response=await (io.fetch ?? globalThis.fetch)('https://api.openai.com/v1/chat/completions', {
             method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json',Authorization:`Bearer ${key}`},
-            body:JSON.stringify({model:'gpt-4o-mini',temperature:attempt===0?0.7:0.3,max_tokens:1000,response_format:{type:'json_object'},messages}),
+            body:JSON.stringify({model:CAMPAIGN_MODEL,temperature:attempt===0?0.7:0.3,max_tokens:1000,response_format:{type:'json_object'},messages}),
           })
           if (!response.ok) throw new CampaignAIError(response.status===429?'rate_limit':'provider')
           const data=await response.json()

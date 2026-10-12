@@ -14,9 +14,9 @@ Referências conceituais: níveis de consciência (Eugene Schwartz), AIDA/PAS/BA
 
 ## Limites preservados
 
-Contrato JSON e campos atuais; mesmo modelo, temperatura, limite de tokens e prazo. Input tem somente insurance/theme enviados ao modelo; telefone é usado localmente para o link. As regras de entrada/saída não foram relaxadas. Continua existindo até uma reescrita automática, no mesmo prazo global, se a sugestão for inválida. Não salva/agendas/envia campanha. A mudança não cria migração nem configuração nova.
+Contrato JSON e campos atuais; o modelo passa a GPT‑4.1 após comparação real com GPT‑4o mini e GPT‑4.1 mini. Temperatura, limite de tokens e prazo total continuam. Input tem somente insurance/theme enviados ao modelo; telefone é usado localmente para o link. As regras de entrada/saída não foram relaxadas: assunto até oitenta caracteres, quarenta a noventa palavras por corpo, até três parágrafos e uma menção ao WhatsApp agora são conferidos no código. Continua existindo até uma reescrita automática, no mesmo prazo global, se a sugestão for inválida. Não salva/agendas/envia campanha. A mudança não cria migração nem configuração nova.
 
-A orientação de sistema é mais longa e aumenta o volume de texto enviado ao provedor; não aumenta o número máximo de tentativas. Custos e conversão não foram medidos nesta alteração.
+A orientação de sistema foi condensada para reduzir instruções repetidas e comparação financeira que induzia palavras proibidas. O GPT‑4.1 custa mais por unidade de texto que o modelo anterior; a escolha foi por aderência editorial medida em comparações reais, não por promessa de conversão. O número máximo de tentativas não aumenta. Registre uso real e preços públicos ao estimar custo; não atribua custo total de uma geração de dois idiomas a cada destinatário da campanha.
 
 ## Conferência editorial
 

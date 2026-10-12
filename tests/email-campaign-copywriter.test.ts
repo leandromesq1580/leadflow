@@ -24,7 +24,7 @@ test('envia base do Copywriter com contexto EUA, voz informal e persuasão sem l
  assert.equal(system.includes('- orientação geral do admin, quando houver:'),false)
  assert.deepEqual(JSON.parse(payload.messages[1].content),{insurance:input.insurance,theme:input.theme})
  assert.equal(JSON.stringify(payload).includes('12025550123'),false)
- assert.equal(payload.model,'gpt-4o-mini')
+ assert.equal(payload.model,'gpt-4.1')
  assert.equal(calls,1);assert.equal(copy.subject_pt,safe.subject_pt)
  assert.match(copy.body_pt,/https:\/\/wa\.me\/12025550123/)
 })
