@@ -1,9 +1,13 @@
+import {campaignRichHtml,isRichCampaignBody} from './email-campaign-rich'
+
 function escapeHtml(text: string) {
   return text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;')
 }
 
-/** Plain text in; escaped HTML out. Shared by email delivery and both admin previews. */
-export function renderCampaignBody(body: string, language: 'pt' | 'es') {
+/** Legacy text stays escaped; explicitly marked rich drafts are sanitized at every render. */
+export function renderCampaignBody(body: string, language: 'pt' | 'es', rich=isRichCampaignBody(body)) {
+  // Callers personalizing a draft pin this mode from the saved source, never recipient data.
+  if(rich)return campaignRichHtml(body)
   const label = language === 'es' ? 'haz clic aquí para hablar conmigo' : 'clique aqui para falar comigo'
   let html = '', cursor = 0
   for (const match of body.matchAll(/https?:\/\/[^\s<>]+/g)) {

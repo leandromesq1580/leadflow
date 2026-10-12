@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {generateCampaignCopy} from '../src/lib/email-campaign-ai'
+import {CAMPAIGN_CREATIVE_ANGLES} from '../src/lib/email-campaign-ideas'
 const input={insurance:'Seguro',theme:'Explicar seguro sem falar como um anúncio e convidar a uma conversa.',phone:'+12025550123'}
 const safe={name:'conversa-sobre-seguro',subject_pt:'Seguro fica pra depois?',body_pt:'Seguro pode parecer um assunto comprido, cheio de termos difíceis. Dá pra começar por uma conversa sobre quais opções existem e o que cada uma resolve, sem escolher nada agora. Se fizer sentido, me chama no WhatsApp e a gente começa pela sua dúvida.',subject_es:'¿El seguro se queda para después?',body_es:'El seguro puede parecer un tema largo, lleno de términos difíciles. Podemos empezar por una conversación sobre las opciones y lo que resuelve cada una, sin elegir nada ahora. Si te parece, mándame un mensaje por WhatsApp y empezamos por tu duda.'}
 test('envia base do Copywriter com contexto EUA, voz informal e persuasão sem liberar promessas',async()=>{
@@ -22,7 +23,7 @@ test('envia base do Copywriter com contexto EUA, voz informal e persuasão sem l
  assert.match(system,/não afirme hábitos da população/i)
  assert.match(system,/nomeie a falta do segurado/i)
  assert.equal(system.includes('- orientação geral do admin, quando houver:'),false)
- assert.deepEqual(JSON.parse(payload.messages[1].content),{insurance:input.insurance,theme:input.theme})
+ assert.deepEqual(JSON.parse(payload.messages[1].content),{insurance:input.insurance,theme:input.theme,creativeAngle:CAMPAIGN_CREATIVE_ANGLES[0]})
  assert.equal(JSON.stringify(payload).includes('12025550123'),false)
  assert.equal(payload.model,'gpt-4.1')
  assert.equal(calls,1);assert.equal(copy.subject_pt,safe.subject_pt)

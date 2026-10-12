@@ -1,5 +1,6 @@
 // Core is dependency-injected: tests cannot send real mail or touch production.
 import { renderCampaignBody } from './email-campaign-content'
+import {campaignBodyToText,campaignRichHtml,encodeCampaignHtml,isRichCampaignBody,personalizeCampaignBody} from './email-campaign-rich'
 export type CampaignFilters = { buyer_id?: string; states?: string[]; languages?: ('pt'|'es')[]; types?: ('hot'|'cold')[]; since?: string; until?: string }
 export type CampaignDraft = { name: string; subject_pt: string; body_pt: string; subject_es: string; body_es: string; filters: CampaignFilters }
 export const CAMPAIGN_URL = 'https://lead4producers.com'
@@ -25,12 +26,15 @@ export function validateCampaign(input: unknown): {ok:true;value:CampaignDraft}|
   if(Object.keys(c).some(k=>!keys.includes(k))) return {ok:false,error:'Campo de campanha desconhecido.'}
   for(const key of keys.filter(k=>k!=='filters')){
     const v=c[key],max=key==='name'?100:key.startsWith('subject')?160:20000
-    if(typeof v!=='string'||!v.trim()||v.length>max||/<[^>]*>/.test(v)||(/subject|name/.test(key)&&/[\r\n]/.test(v))) return {ok:false,error:'Revise o campo '+key+'. Use texto, sem HTML.'}
+    const rich=typeof v==='string'&&key.startsWith('body')&&isRichCampaignBody(v)
+    if(typeof v!=='string'||!v.trim()||v.length>max||(!rich&&/<[^>]*>/.test(v))||(/subject|name/.test(key)&&/[\r\n]/.test(v))) return {ok:false,error:'Revise o campo '+key+'. Use o editor para inserir HTML seguro.'}
+    if(rich&&!campaignBodyToText(v).trim()&&!/<img\b/.test(campaignRichHtml(v)))return {ok:false,error:'A mensagem não pode ficar vazia.'}
     if([...v.matchAll(/{{([^}]+)}}/g)].some(m=>m[1].trim()!=='nome')||v.replace(/{{\s*nome\s*}}/g,'').includes('{{')) return {ok:false,error:'A variável permitida é {{nome}}.'}
   }
   const f=validateFilters(c.filters??{})
   if(!f.ok)return f
-  return {ok:true,value:{name:String(c.name).trim(),subject_pt:String(c.subject_pt).trim(),subject_es:String(c.subject_es).trim(),body_pt:String(c.body_pt).trim(),body_es:String(c.body_es).trim(),filters:f.value}}
+  const body=(v:string)=>isRichCampaignBody(v)?encodeCampaignHtml(campaignRichHtml(v)):v.trim()
+  return {ok:true,value:{name:String(c.name).trim(),subject_pt:String(c.subject_pt).trim(),subject_es:String(c.subject_es).trim(),body_pt:body(String(c.body_pt)),body_es:body(String(c.body_es)),filters:f.value}}
 }
 export type CampaignConfiguration={ready:boolean;issues:string[];key:string;webhookSecret:string;from:string;email:string;domain:string;postal:string;dailyLimit:number}
 export function campaignConfiguration(env:Record<string,string|undefined>):CampaignConfiguration {
@@ -49,12 +53,13 @@ function escapeHtml(s:string){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'
 export function renderCampaignEmail(row:{campaign:CampaignDraft;name:string;language:'pt'|'es';unsubscribe_token:string},config:CampaignConfiguration){
   if(!CAMPAIGN_UUID.test(row.unsubscribe_token)||!['pt','es'].includes(row.language))throw new Error('invalid_recipient')
   const subject=row.campaign[row.language==='es'?'subject_es':'subject_pt'].replace(/{{\s*nome\s*}}/g,row.name.replace(/[\r\n]/g,' ').slice(0,120))
-  const body=row.campaign[row.language==='es'?'body_es':'body_pt'].replace(/{{\s*nome\s*}}/g,row.name.slice(0,200))
+  const source=row.campaign[row.language==='es'?'body_es':'body_pt'],rich=isRichCampaignBody(source)
+  const body=personalizeCampaignBody(source,row.name)
   const unsubscribe=`${CAMPAIGN_URL}/api/email-campaigns/unsubscribe/${row.unsubscribe_token}`
   const label=row.language==='es'?'Cancelar suscripción':'Cancelar recebimento'
-  // Plain-text authoring; safe HTML counterpart for clickable links. No arbitrary HTML/editor scripts.
-  const html=renderCampaignBody(body,row.language)
-  return {subject,text:`${body}\n\nLead4Pro · ${config.postal}\n${label}: ${unsubscribe}`,
+  // Same sanitizer and renderer used by previews; plain-text fallback remains readable.
+  const html=renderCampaignBody(body,row.language,rich)
+  return {subject,text:`${campaignBodyToText(body,rich)}\n\nLead4Pro · ${config.postal}\n${label}: ${unsubscribe}`,
     html:`<div style="font:16px/1.6 Arial,sans-serif;color:#0f172a">${html}<hr/><p style="font-size:12px">Lead4Pro · ${escapeHtml(config.postal)}<br/><a href="${unsubscribe}">${label}</a></p></div>`,
     headers:{'List-Unsubscribe':`<${unsubscribe}>`,'List-Unsubscribe-Post':'List-Unsubscribe=One-Click'}}
 }

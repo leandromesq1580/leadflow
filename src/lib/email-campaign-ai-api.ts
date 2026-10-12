@@ -13,7 +13,7 @@ async function readInput(request:Request):Promise<unknown> {
       const {done,value}=await reader.read()
       if (done) break
       total+=value.length
-      if (total>4096) { await reader.cancel();throw new CampaignAIError('input') }
+      if (total>16384) { await reader.cancel();throw new CampaignAIError('input') }
       chunks.push(value)
     }
     const bytes=new Uint8Array(total)
