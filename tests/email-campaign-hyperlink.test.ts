@@ -10,7 +10,7 @@ const config = campaignConfiguration({
 })
 function render(body: string, language: 'pt' | 'es' = 'pt', name = 'Maria') {
   return renderCampaignEmail({
-    campaign: { subject_pt: 'Olá {{nome}}', body_pt: body, subject_es: 'Hola {{nome}}', body_es: body },
+    campaign: { name: 'Campanha sintética', filters: {}, subject_pt: 'Olá {{nome}}', body_pt: body, subject_es: 'Hola {{nome}}', body_es: body },
     name, language, unsubscribe_token: '00000000-0000-0000-0000-000000000011',
   }, config)
 }
@@ -21,7 +21,7 @@ test('link exato do pedido aparece com o rótulo solicitado, sem URL visível no
   assert.match(result.html, />clique aqui para falar comigo<\/a>/)
   assert.ok(result.html.includes(`href="${url}"`), 'Destino e texto pré-preenchido devem ser preservados exatamente')
   assert.doesNotMatch(visible(result.html), /https:\/\/wa\.me|%20|%C3/)
-  assert.match(visible(result.html), /Olá Maria!.*Vamos conversar\./s)
+  assert.match(visible(result.html), /Olá Maria![\s\S]*Vamos conversar\./)
   assert.match(result.subject, /Olá Maria/)
 })
 
@@ -51,7 +51,8 @@ test('link novo e link já salvo são formatados sem editar o conteúdo da campa
 
 test('somente wa.me real com telefone válido recebe o rótulo de conversa', () => {
   for (const link of ['https://wa.me.example.invalid/17867442126', 'https://wa.me@other.example.invalid/17867442126',
-    'https://wa.me/invalid', 'https://wa.me:8443/17867442126', 'http://wa.me/17867442126', 'https://example.invalid/quote']) {
+    'https://wa.me/invalid', 'https://wa.me:8443/17867442126', 'https://synthetic:fixture@wa.me/15555550109',
+    'http://wa.me/17867442126', 'https://example.invalid/quote']) {
     const result = render(link)
     assert.doesNotMatch(result.html, />clique aqui para falar comigo<\/a>/, link)
     assert.ok(visible(result.html).includes(link), link)
@@ -67,10 +68,11 @@ test('WhatsApp personalizado continua com o número e mensagem escolhidos pelo a
 })
 
 test('nome, texto e atributos não viram HTML executável', () => {
-  const body = '<img src=x onerror=alert(1)>\n' + url + '&a="onclick=evil"\n<script>bad()</script>'
+  const body = 'Olá {{nome}}!\n<img src=x onerror=alert(1)>\n' + url + '&a="onclick=evil"\n<script>bad()</script>'
   const result = render(body, 'pt', '<svg onload=evil()>')
   assert.doesNotMatch(result.html, /<img|<svg|<script|href="[^"]*"onclick=/)
   assert.match(result.html, /&lt;img/)
+  assert.match(result.html, /&lt;svg onload=evil\(\)&gt;/)
   assert.match(result.html, /&lt;script/)
   assert.match(result.html, /&quot;onclick=evil&quot;/)
   assert.match(result.html, />clique aqui para falar comigo<\/a>/)
