@@ -1,12 +1,13 @@
 'use client'
 
-import {useEffect,useRef,type ClipboardEvent} from 'react'
+import {useEffect,useRef,useState,type ClipboardEvent} from 'react'
 import {campaignBodyFromEditor,renderCampaignEditor} from '@/lib/email-campaign-editor'
 
 interface Props {value:string;language:'pt'|'es';label:string;disabled:boolean;onChange:(value:string)=>void}
 export default function CampaignBodyEditor({value,language,label,disabled,onChange}:Props) {
   // Keep React's HTML prop identity stable. Otherwise each keystroke redraws the initial body.
-  const root=useRef<HTMLDivElement>(null),canonical=useRef(value),initial=useRef({__html:renderCampaignEditor(value,language)})
+  const root=useRef<HTMLDivElement>(null),canonical=useRef(value)
+  const [initial]=useState(()=>({__html:renderCampaignEditor(value,language)}))
   const rememberedRange=useRef<Range|null>(null)
   useEffect(()=>{
     if(root.current && value!==canonical.current){root.current.innerHTML=renderCampaignEditor(value,language);canonical.current=value;rememberedRange.current=null}
@@ -30,7 +31,7 @@ export default function CampaignBodyEditor({value,language,label,disabled,onChan
   }
   return <div ref={root} role="textbox" aria-label={label} aria-multiline="true" aria-disabled={disabled} tabIndex={disabled?-1:0} contentEditable={!disabled} suppressContentEditableWarning
     className={'mt-1 min-h-40 w-full whitespace-pre-wrap break-words rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:ring-emerald-900 '+(disabled?'opacity-60':'')}
-    dangerouslySetInnerHTML={initial.current}
+    dangerouslySetInnerHTML={initial}
     onInput={update}
     onBlur={()=>{const range=selectedRange();if(range)rememberedRange.current=range.cloneRange()}}
     onFocus={()=>{
