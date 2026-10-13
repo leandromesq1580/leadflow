@@ -13,6 +13,36 @@ Ao agendar, conteúdo, público e destinatários ficam congelados. A contagem co
 
 Pausa/cancelamento impedem novos envios autorizados. Um e-mail que já estava autorizado e em andamento pode terminar: não existe desfazer um envio. Resultados incertos não são automaticamente repetidos. Cancelamento preserva histórico. Permissão e bloqueio são conferidos novamente antes do envio, inclusive depois do agendamento.
 
+## Hyperlink do WhatsApp no conteúdo
+
+O editor continua aceitando texto simples e o endereço `https://wa.me/...`. No HTML enviado e nas prévias do gerador e do rascunho, o endereço fica escondido por **clique aqui para falar comigo** (PT) ou **haz clic aquí para hablar conmigo** (ES). Número e mensagem pré-preenchida são preservados literalmente; nenhum contato é substituído pelo número padrão durante essa formatação. Apenas domínio HTTPS `wa.me`, sem usuário/senha e com caminho de telefone válido, recebe o rótulo. Outros links continuam visíveis com o próprio endereço.
+
+`src/lib/email-campaign-content.ts` é a fonte única dessa apresentação. Textos legados continuam escapados; corpos ricos usam a sanitização de `email-campaign-rich.ts`, descrita abaixo. Filtros, filas, remetente, consentimento, rodapé e descadastro não mudam. A versão alternativa de texto simples conserva os destinos para leitores sem HTML. A mudança vale para futuros envios; não altera e-mails já entregues e não reenvia nada.
+
+Teste de regressão: `tests/email-campaign-hyperlink.test.ts`; UI real local com API sintética: `tests/email-campaign-ai.ui.mjs`. Não é necessária migration, variável nova nem envio real de teste.
+
+## Nova ideia por clique e hyperlink no rascunho
+
+O tipo inicial é **Seguro de vida**, editável pelo admin. Cada clique envia `variation` (inteiro 0–10.000) e até três sugestões editoriais anteriores em `previous`, sem URLs/telefone. A aplicação alterna seis abordagens: curiosidade, cotidiano, objeção, planejamento, mudança de fase e clareza antes de contratar. Produto e intenção comercial continuam no briefing. Seguro de vida escolhido exige menção ao produto nos dois corpos; não basta uma reflexão genérica.
+
+Antes de devolver outra versão, a aplicação recusa corpo idêntico, abertura idêntica ou sobreposição de pelo menos 75% dos pares de palavras contra as últimas três sugestões, em qualquer idioma. Uma tentativa limitada de reescrita, dentro do mesmo prazo, continua sendo o teto. A guarda não prova novidade semântica nem qualidade persuasiva: a rubrica com gerações reais segue obrigatória. Em falha, a sugestão anterior e o rascunho continuam disponíveis. Mudança do tipo/tema/contato limpa o histórico editorial local; não existe cache de textos de clientes. O teto HTTP é 16 KiB para acomodar o histórico limitado.
+
+O corpo do rascunho agora é um editor de texto com hyperlinks nomeados, não uma textarea que mostra o endereço cru. Aplicar, editar, mudar idioma, copiar, recortar, desfazer, salvar e reabrir preservam o destino literal. Cópia/recorte usam representação canônica e colagem segura participa da transação nativa de edição, sem aceitar HTML da área de transferência. Perder foco não redesenha o DOM: seleção é restaurada ao retornar e o histórico de desfazer é preservado. O limite de colagem desconta o trecho selecionado que será substituído. A representação legada de texto simples conserva a URL; depois de usar um comando de formatação, o documento rico mantém o texto do link e seu destino no HTML sanitizado. Links protegidos não são editados por dentro; o link inteiro pode ser removido ou alterado na opção HTML. Colagem externa aceita somente texto; copiar/recortar dentro do editor preserva um fragmento rico próprio (também sanitizado), com destino literal e formatação. Arrastar HTML é bloqueado. O limite de colagem é medido no documento final após substituir a seleção, sem misturar tamanho de tags e texto. A edição HTML explícita é sanitizada, sem envio automático e sem alteração do banco de produção durante os testes.
+
+Regressões: `tests/email-campaign-new-idea.test.ts`, `tests/email-campaign-draft-link.test.ts`, `tests/email-campaign-ai.ui.mjs` (página/editor/CSS reais com respostas de IA sintéticas) e `tests/email-campaigns.ui.mjs` (salvar/reabrir pelo handler real e PostgreSQL local, esquema 062 + 063). Os testes locais não comprovam resposta futura do provedor nem entrega de e-mail.
+
+## Editor rico: negrito, links e imagens (migration 064)
+
+A barra do corpo oferece **B**, *I*, **Link**, **Imagem** e **</>** nos dois idiomas. Selecione palavras e use B/I (ou Ctrl/Cmd+B/I); Link pede o texto e o destino, e Ctrl/Cmd+K abre esse controle. A opção HTML permite editar uma estrutura limitada: parágrafos, negrito, itálico, sublinhado, listas, títulos, links HTTP(S) e imagens HTTPS. Código ativo, embeds, SVG/data/file URLs, eventos e CSS arbitrário são removidos na entrada, na validação do servidor e no envio/prévia. HTML arbitrário sem marcador de documento rico continua rejeitado pela API. `{{nome}}` só aceita nome escapado no HTML; o modo de renderização é fixado pelo corpo salvo antes da personalização (nome não pode introduzir marcador rico). Texto alternativo de envio é gerado sem tags.
+
+O formato rico usa o prefixo interno `<!--lead4pro-rich:v1-->` nos campos de corpo existentes (até 20.000 caracteres incluindo HTML); não há mudança de esquema das campanhas nem reescrita dos rascunhos antigos. Textos legados/IA continuam renderizados e editáveis. Salvar e reabrir mantém formatação e destinos. Rodapé, descadastro, consentimento, filtros e filas permanecem na mesma lógica. Aplicar outra sugestão de IA substitui o corpo após confirmação, inclusive a formatação/imagem anterior; não agenda ou envia.
+
+Imagem pode vir por URL HTTPS ou upload de **JPG, PNG, WEBP/GIF, até 3 MB**, com descrição acessível. Upload exclusivo de admin em `POST /api/admin/email-campaigns/images`: identidade de campanhas, origem conferida, tamanho e assinatura binária compatíveis com o MIME, caminho aleatório por admin e `upsert=false`. Não processa SVG nem aceita HTML renomeado como imagem. Enquanto o arquivo sobe, salvar, trocar idioma/campanha e outros comandos ficam bloqueados; só insere depois de liberar o editor. Falha preserva o corpo.
+
+A migration **064_campaign_rich_images.sql** cria somente o bucket público `campaign-images` (obrigatório para carregar arte nos e-mails), limite 3 MB e quatro tipos de imagem. Não altera `lead-attachments`, gravações, leads, contatos, créditos ou permissões de envio. Políticas restritivas proíbem insert/update/delete direto por anon/authenticated mesmo se existir política ampla; gravação só via API admin usando service_role. **Imagens carregadas são públicas**: a tela avisa para nunca usar documentos/fotos privados de clientes. Não há exclusão automática de arquivos: uma imagem já referenciada por e-mail deve continuar acessível. Não exige chave/variável nova. Aplicar migration antes do merge/deploy autorizado.
+
+Regressões: `email-campaign-rich.test.ts`, `email-campaign-images.test.ts`, `email-campaign-rich-sql.test.ts` (PostgreSQL em PGlite), `email-campaign-rich.ui.mjs` (React + handlers HTTP reais + SQL isolado, arquivos/armazenamento sintéticos). UI verifica negrito, links, HTML seguro, imagem por URL/upload, bloqueio durante upload, PT/ES, salvar/reabrir, prévia/envio offline e desktop/mobile/dark. Sem acesso/armazenamento de produção e nenhum e-mail real.
+
 ## Configuração antes de produção
 
 Migração: `supabase/migrations/062_admin_email_campaigns.sql`. Cria tabelas e funções novas; **não reescreve nem remove leads, compradores, créditos ou permissões existentes**. Tabelas com RLS e sem acesso direto de anon/authenticated. Funções novas revogadas de PUBLIC/anon/authenticated, concedidas só a service_role. As APIs admin conferem a identidade autenticada exata por `buyers.auth_user_id` e passam o `buyers.id` para as funções SQL, sem herdar permissão do responsável de uma equipe. As referências a leads e compradores novos usam `ON DELETE SET NULL`: exclusões existentes preservam o histórico da campanha, sem impedir a operação. Um lead removido ou com endereço alterado não é enviado pela fila congelada.
@@ -25,10 +55,10 @@ Migração: `supabase/migrations/062_admin_email_campaigns.sql`. Cria tabelas e 
 | `MANUAL_EMAIL_POSTAL_ADDRESS` | Endereço postal obrigatório no rodapé (10–500 caracteres) |
 | `EMAIL_CAMPAIGN_WEBHOOK_SECRET` | Assinatura do endpoint dedicado de retornos |
 | `EMAIL_CAMPAIGNS_ENABLED` | Somente `true` libera agendamento/envio; ausente = bloqueado |
-| `EMAIL_CAMPAIGN_DAILY_LIMIT` | Teto global por dia UTC; padrão conservador 200; intervalo 1–10.000 |
+| `EMAIL_CAMPAIGN_DAILY_LIMIT` | `0` (padrão) = sem teto diário do Lead4Pro; valores 1–10.000 preservam configuração explícita legada. Requer migration 066 antes de publicar o worker com zero. Não altera limites do plano/provedor |
 | `CRON_SECRET` | Autorização Bearer do agendador Vercel; sem valor não executa |
 
-Agendador declarado em `vercel.json`: `/api/cron/email-campaigns`, uma vez por minuto. Mesmo com execuções sobrepostas, o banco reserva no máximo 10 contatos por minuto e respeita o teto diário compartilhado entre todas as campanhas. Reservas consomem capacidade conservadoramente. Não aumenta automaticamente o limite do plano do provedor.
+Agendador declarado em `vercel.json`: `/api/cron/email-campaigns`, uma vez por minuto. Mesmo com execuções sobrepostas, o banco reserva no máximo 10 contatos por minuto e, só quando configurado um valor positivo, respeita o teto diário compartilhado entre todas as campanhas. Com `0`, não espera a renovação do dia UTC. Reservas continuam contabilizadas conservadoramente para auditoria, mesmo sem teto diário. Não aumenta automaticamente o limite do plano do provedor.
 
 O domínio é consultado no provedor e precisa estar verificado tanto no agendamento quanto no processamento. Nada de usar remetente de teste. O módulo pode ser publicado com disparos desativados, mantendo rascunhos e prévias disponíveis.
 
@@ -37,6 +67,15 @@ Cadastrar no provedor o endpoint `https://lead4producers.com/api/email-campaigns
 Descadastro: `/api/email-campaigns/unsubscribe/<token-opaco>`. GET só confirma visualmente (não muda dados, para evitar scanners); POST confirma o descadastro. Cabeçalhos RFC 8058 permitem descadastro de um clique pelos provedores. A resposta não revela o endereço. O descadastro é imediato no contato global; a fila pendente é marcada como bloqueada pelo próximo processamento, sob a mesma ordem de travas da fila. Isso evita contato→destinatário invertido em relação à autorização. A última verificação antes de enviar consulta o bloqueio mesmo se a fila ainda não foi atualizada. O descadastro vale para futuras campanhas do admin, inclusive em outras campanhas/clientes; não modifica sequências transacionais/manuais dos clientes.
 
 Aberturas e cliques dependem do rastreamento habilitado no domínio. Aberturas são estimativas por causa de mecanismos de privacidade. `aceito pelo provedor` não é `entregue`; a tela e o histórico distinguem isso. `processada` significa que não há fila ativa, não que todos receberam.
+
+### Identificar quem abriu ou clicou
+
+Em **Suas campanhas**, o resumo mostra quantidades e porcentagens de aberturas/cliques únicos. A base é o número de **entregues**, não a fila inteira: destinatários com evento ÷ entregues × 100, com até uma casa decimal em português. Sem entregas, a taxa fica `—`; sem rastreamento confirmado na campanha, não aparece taxa nem zero inferido. Eventos repetidos do mesmo destinatário não multiplicam a contagem.
+
+Abra a campanha e, em **Resultados**, clique em **Aberturas únicas** ou **Cliques únicos**. O atalho seleciona o respectivo filtro **Abriram/Clicaram**, volta à primeira página e leva à lista de contatos com **nome, e-mail e data/hora registrada**. O filtro e a paginação existentes continuam disponíveis. Consultar esses contatos é somente leitura: não prepara nem dispara follow-up. Falha na consulta preserva a lista anterior e mostra o erro, sem fingir que ninguém abriu/clicou.
+
+As métricas continuam recebendo eventos depois de “Processada”; use **Atualizar** para consultar os novos registros. Abertura não comprova leitura humana e clique pode incluir qualquer link do e-mail (inclusive rodapé) ou scanner automático. Esta melhoria não recupera eventos de campanhas enviadas sem rastreamento e não muda filas, consentimento, conteúdo ou envio.
+
 
 ## Resultados, filtros e reenvio (migration 063)
 

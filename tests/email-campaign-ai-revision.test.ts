@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {generateCampaignCopy} from '../src/lib/email-campaign-ai'
+import {CAMPAIGN_CREATIVE_ANGLES} from '../src/lib/email-campaign-ideas'
 const input={insurance:'Seguro resgatável nos EUA',theme:'Explicar a ideia do seguro com valor de resgate e convidar a conversar sobre as condições.',phone:'+12025550123'}
 const safe={name:'Entenda o valor de resgate',subject_pt:'Quer entender o seguro com valor de resgate?',body_pt:'Algumas modalidades de seguro podem ter valor de resgate, conforme as condições da apólice. Esse funcionamento depende do produto e merece ser entendido antes de contratar. Fale conosco pelo WhatsApp para conversar sobre as opções e tirar suas dúvidas, com calma e sem compromisso.',subject_es:'¿Quieres entender el seguro con valor de rescate?',body_es:'Algunas modalidades de seguro pueden tener valor de rescate, según las condiciones de la póliza. Su funcionamiento depende del producto y conviene entenderlo antes de contratar. Escríbenos por WhatsApp para conversar sobre las opciones y resolver tus dudas, con calma y sin compromiso.'}
 test('reescreve automaticamente uma sugestão rejeitada preservando a ideia e sem expor a resposta recusada',async()=>{
@@ -13,7 +14,7 @@ test('reescreve automaticamente uma sugestão rejeitada preservando a ideia e se
  assert.equal(payloads.length,2)
  const repair=JSON.stringify(payloads[1]);assert(!repair.includes('RETORNO_NAO_CONFIAVEL'));assert(!repair.includes('private@example.invalid'));assert(!repair.includes(input.phone.replace('+','')))
  const messages=payloads[1].messages as {role:string;content:string}[]
- assert.deepEqual(JSON.parse(messages[1].content),{insurance:input.insurance,theme:input.theme})
+ assert.deepEqual(JSON.parse(messages[1].content),{insurance:input.insurance,theme:input.theme,creativeAngle:CAMPAIGN_CREATIVE_ANGLES[0]})
  assert.match(messages.at(-1)!.content,/reescreva/i)
  assert.equal(messages.at(-1)!.role,'system','Correção da aplicação precisa ter prioridade sobre o contexto comercial')
  assert.match(messages.at(-1)!.content,/ahorro/)

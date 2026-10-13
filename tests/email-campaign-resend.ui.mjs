@@ -27,7 +27,7 @@ await db.query(`create table buyers(id uuid primary key,is_admin boolean,name te
 await db.query('insert into buyers(id,is_admin,name,auth_user_id) values($1,true,$2,$3),($4,false,$5,$6)',[admin,'Synthetic Admin',authUid,client,'Synthetic Client',randomUUID()])
 const people=[['Synthetic Opened','opened@example.invalid','pt'],['Synthetic Clicked','clicked@example.invalid','es'],['Synthetic Quiet A','quiet-a@example.invalid','pt'],['Synthetic Quiet B','quiet-b@example.invalid','es'],['Synthetic Recent','recent@example.invalid','pt'],['Synthetic Bounced','bounced@example.invalid','pt']]
 for(const [name,email,lang] of people)await db.query('insert into leads(name,email,state,lead_language,assigned_to) values($1,$2,$3,$4,$5)',[name,email,'FL',lang,client])
-for(const m of ['062_admin_email_campaigns.sql','063_email_campaign_tracking_resend.sql'])await db.query(readFileSync(resolve(repo,'supabase/migrations/'+m),'utf8'))
+for(const m of ['062_admin_email_campaigns.sql','063_email_campaign_tracking_resend.sql','066_campaign_no_daily_cap.sql'])await db.query(readFileSync(resolve(repo,'supabase/migrations/'+m),'utf8'))
 let sendingCalls=0,trackingOn=true,trackingIssue
 // Production-like shape: with an issue, the flags are off on paper too (Resend keeps them inactive until the Tracking CNAME is verified).
 const tracking=()=>trackingIssue?{open:false,click:false,status:'not_verified',checked_at:new Date().toISOString(),issue:trackingIssue}:({open:trackingOn,click:trackingOn,status:'verified',checked_at:new Date().toISOString()})
@@ -49,6 +49,9 @@ for(const e of ['opened','clicked','quiet-a','quiet-b'])await sql('ec_event',{p_
 await sql('ec_event',{p_event:'d-recent',p_provider:by('recent@example.invalid').provider_id,p_kind:'email.delivered',p_at:recent})
 await sql('ec_event',{p_event:'o-1',p_provider:by('opened@example.invalid').provider_id,p_kind:'email.opened',p_at:old})
 await sql('ec_event',{p_event:'k-1',p_provider:by('clicked@example.invalid').provider_id,p_kind:'email.clicked',p_at:old})
+// Multiple provider events for one recipient must not inflate unique metrics or the name list.
+await sql('ec_event',{p_event:'o-repeat',p_provider:by('opened@example.invalid').provider_id,p_kind:'email.opened',p_at:recent})
+await sql('ec_event',{p_event:'k-repeat',p_provider:by('clicked@example.invalid').provider_id,p_kind:'email.clicked',p_at:recent})
 await sql('ec_claim',{p_daily:200,p_tracking:JSON.stringify(tracking())})
 assert.equal((await db.query('select state from email_campaigns where id=$1',[origin.id])).rows[0].state,'completed')
 const bundle=await esbuild.build({stdin:{contents:`import React from 'react';import{createRoot}from'react-dom/client';import Page from '${resolve(repo,'src/app/admin/email-campaigns/page.tsx')}';createRoot(document.getElementById('root')).render(<Page/>);`,resolveDir:repo,loader:'tsx'},bundle:true,write:false,format:'iife',platform:'browser',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'},tsconfig:resolve(repo,'tsconfig.json')})
@@ -56,6 +59,7 @@ const css=await postcss([tailwind({base:repo})]).process(readFileSync(resolve(re
 const html=dark=>`<!doctype html><html lang="pt-BR"${dark?' class="dark"':''}><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><style>${css.css}body{font-family:Arial,sans-serif;padding:24px;background:${dark?'#0f172a':'#f8fafc'}}#root{max-width:1160px;margin:auto}</style></head><body><div id="root"></div><script>${bundle.outputFiles[0].text}</script></body></html>`
 const server=createServer(async(req,res)=>{
  if(req.url.startsWith('/api/admin/email-campaigns')){
+  requests.push({method:req.method,url:req.url})
   let raw='';for await(const chunk of req)raw+=chunk
   const request=new Request('http://127.0.0.1:'+server.address().port+req.url,{method:req.method,headers:req.headers,...(req.method==='POST'?{body:raw}:{})})
   const response=await handlers[req.method](request);res.writeHead(response.status,Object.fromEntries(response.headers));res.end(await response.text())
@@ -63,8 +67,8 @@ const server=createServer(async(req,res)=>{
 })
 await new Promise(r=>server.listen(0,'127.0.0.1',r))
 const base='http://127.0.0.1:'+server.address().port
-const browser=await chromium.launch({headless:true,executablePath:'/home/hermes/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',args:['--no-sandbox']})
-const errors=[],checks=[],screenshots=[]
+const browser=await chromium.launch({headless:true,executablePath:process.env.EC_TEST_CHROME||'/home/hermes/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',args:['--no-sandbox']})
+const errors=[],checks=[],screenshots=[],requests=[]
 async function shot(page,name){const p=resolve(out,name+'.png');await page.screenshot({path:p,fullPage:true});screenshots.push(p)}
 function check(name,value){assert.ok(value,name);checks.push(name)}
 // On failure, record what the browser and the database actually showed (no secrets: synthetic fixture only).
@@ -80,12 +84,29 @@ try{
  await context.route('**/*',route=>route.request().url().startsWith(base)?route.continue():route.abort())
  const page=await context.newPage();lastPage=page;page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept())
  await page.goto(base);await page.getByRole('button',{name:/Synthetic Seguro origem/}).waitFor()
+ check('Unlimited daily sending is labelled honestly',await page.getByText('Sem limite diário',{exact:false}).count()===1)
  check('List shows delivered and unopened per campaign',await page.getByText(/5 entregues/).count()===1&&await page.getByText(/3 sem abertura/).count()===1)
+ check('List rates are visible before opening the campaign',await page.getByRole('button',{name:/Synthetic Seguro origem/}).textContent().then(t=>/1 aberturas \(20%\).*1 cliques \(20%\)/.test(t)))
  await page.getByRole('button',{name:/Synthetic Seguro origem/}).click();await page.getByRole('heading',{name:'Resultados'}).waitFor()
  const metric=async label=>Number(await page.getByTestId('metric-'+label).textContent())
  check('Report totals: accepted 6, delivered 5, opened 1, clicked 1, unopened 3 (incl. recent), failed 1',await metric('accepted')===6&&await metric('delivered')===5&&await metric('opened')===1&&await metric('clicked')===1&&await metric('unopened')===3&&await metric('failed')===1)
  check('Rates use delivered as base',await page.getByText('20% dos entregues').count()===2)
  check('Tracking snapshot is explained, not assumed',await page.getByText(/rastreamento de abertura ativo/i).count()===1)
+ check('Open/click metrics are actionable shortcuts',await page.getByRole('button',{name:'Ver contatos: Aberturas únicas',exact:true}).count()===1&&await page.getByRole('button',{name:'Ver contatos: Cliques únicos',exact:true}).count()===1)
+ const readOnlyStart=requests.length
+ await page.getByRole('button',{name:'Ver contatos: Aberturas únicas',exact:true}).click();await page.getByText('Página 1 · 1 contatos').waitFor()
+ check('Open shortcut shows the exact person, email and date, not clicked-only recipients',await page.getByLabel('Filtrar contatos por engajamento',{exact:true}).inputValue()==='opened'&&await page.locator('tbody tr').count()===1&&await page.locator('tbody').getByText('Synthetic Opened',{exact:true}).count()===1&&await page.getByText('opened@example.invalid',{exact:true}).count()===1&&await page.locator('tbody').getByText('Abertura em',{exact:false}).count()===1&&await page.getByText('clicked@example.invalid',{exact:true}).count()===0)
+ await page.getByRole('button',{name:'Ver contatos: Cliques únicos',exact:true}).click();await page.waitForFunction(()=>document.querySelector('tbody')?.textContent.includes('clicked@example.invalid'))
+ check('Click shortcut shows the exact person, email and date, even without an open event',await page.getByLabel('Filtrar contatos por engajamento',{exact:true}).inputValue()==='clicked'&&await page.locator('tbody tr').count()===1&&await page.locator('tbody').getByText('Synthetic Clicked',{exact:true}).count()===1&&await page.locator('tbody').getByText('Clique em',{exact:false}).count()===1&&await page.getByText('opened@example.invalid',{exact:true}).count()===0)
+ await page.waitForFunction(()=>document.activeElement?.getAttribute('aria-label')==='Contatos da campanha')
+ check('Shortcut moves focus to the contact list for keyboard navigation',await page.getByRole('region',{name:'Contatos da campanha',exact:true}).evaluate(e=>document.activeElement===e))
+ check('Following engagement shortcuts is read-only, never a follow-up/send',requests.slice(readOnlyStart).length===2&&requests.slice(readOnlyStart).every(r=>r.method==='GET')&&sendingCalls===0)
+ await page.route('**/api/admin/email-campaigns?*engagement=opened',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Synthetic engagement read failed'})}))
+ await page.getByRole('button',{name:'Ver contatos: Aberturas únicas',exact:true}).click();await page.getByRole('alert').waitFor()
+ check('Failed shortcut preserves the prior named list/filter and shows a failure, never a fake empty result',await page.getByLabel('Filtrar contatos por engajamento',{exact:true}).inputValue()==='clicked'&&await page.getByText('clicked@example.invalid',{exact:true}).count()===1&&await page.getByRole('alert').getByText('Synthetic engagement read failed',{exact:false}).count()===1)
+ await page.unroute('**/api/admin/email-campaigns?*engagement=opened')
+ await page.getByRole('button',{name:'Ver contatos: Aberturas únicas',exact:true}).click();await page.waitForFunction(()=>document.querySelector('tbody')?.textContent.includes('opened@example.invalid'))
+ check('The same shortcut recovers after a failed read',await page.getByRole('alert').count()===0)
  await page.getByLabel('Filtrar contatos por engajamento',{exact:true}).selectOption('unopened');await page.getByText('Página 1 · 3 contatos').waitFor()
  const rowsShown=await page.locator('tbody tr').count()
  check('Unopened filter paginates in SQL with exact total',rowsShown===3&&await page.getByText('quiet-a@example.invalid').count()===1&&await page.getByText('recent@example.invalid').count()===1&&await page.getByText('quiet-b@example.invalid').count()===1)
@@ -135,6 +156,10 @@ try{
  // The list is newest-first, so the resend draft ("Reenvio · …") precedes the origin: a bare /Synthetic Seguro origem/ .first() would open the draft, which has no "Resultados".
  const listOrder=await dark.locator('section button p.font-medium').allTextContents()
  check('List shows the resend draft labelled as a resend, before the origin',await resendRow.count()===1&&await originRow.count()===1&&listOrder[0]==='Reenvio · Synthetic Seguro origem'&&listOrder[1]==='Synthetic Seguro origem'&&await dark.getByText(/^Reenvio · 0 destinatários/).count()===1)
+ await shot(dark,'email-campaign-list-percentages-dark')
+ await dark.setViewportSize({width:390,height:844});await shot(dark,'email-campaign-list-percentages-mobile-dark')
+ check('Mobile list keeps the percentages visible without page overflow',await dark.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)&&/2 aberturas \(40%\).*1 cliques \(20%\)/.test(await originRow.textContent()))
+ await dark.setViewportSize({width:1280,height:900})
  await originRow.click();await dark.getByRole('heading',{name:'Resultados'}).waitFor()
  check('Click metric says it counts any e-mail link, footer included, and automatic filters',await dark.getByTitle(/cliques em links do e-mail, inclusive rodapé; filtros automáticos podem contar/).count()===1)
  await dark.getByText('Prévia do conteúdo',{exact:true}).click();await shot(dark,'email-campaign-report-dark')
@@ -152,6 +177,12 @@ try{
  check('No browser console errors',errors.length===0)
  check('No provider sending calls',sendingCalls===0)
  check('Origin rows untouched',(await db.query("select count(*)::int n from email_campaign_recipients where campaign_id=$1 and provider_id is not null",[origin.id])).rows[0].n===6)
+ // Old campaign without a snapshot: unavailable is not zero, even if old events exist.
+ await db.query('update email_campaigns set tracking_snapshot=null where id=$1',[origin.id])
+ await dark.getByRole('button',{name:'Campanhas',exact:true}).click();await originRow.waitFor()
+ check('Missing snapshot hides list rates, never inventing zero engagement',!/%|aberturas|cliques/.test(await originRow.textContent()))
+ await originRow.click();await dark.getByRole('heading',{name:'Resultados'}).waitFor()
+ check('Unavailable tracking has no actionable open/click shortcut and displays a dash',await dark.getByRole('button',{name:'Ver contatos: Aberturas únicas',exact:true}).count()===0&&await dark.getByRole('button',{name:'Ver contatos: Cliques únicos',exact:true}).count()===0&&await dark.getByTestId('metric-opened').textContent()==='—'&&await dark.getByTestId('metric-clicked').textContent()==='—')
  const result={executed_at:new Date().toISOString(),database,passed:checks.length,checks,screenshots,errors,sendingCalls,source:'Actual page + local PostgreSQL + actual API handlers with injected admin/provider (synthetic)'}
  writeFileSync(resolve(out,'email-campaign-resend-ui-result.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2))
 }catch(e){await diagnose(e);throw e}finally{await browser.close();await new Promise(r=>server.close(r));await db.end();await root.end()}

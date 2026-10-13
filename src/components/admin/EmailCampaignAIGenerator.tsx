@@ -5,6 +5,8 @@ import {ChevronDown,RefreshCw} from '@/components/admin/campaign-icons'
 function Sparkles({size=16}:{size?:number}) {return <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4ZM20 2v4m-2-2h4"/></svg>}
 import type {CampaignAICopy} from '@/lib/email-campaign-ai'
 import {OFFICIAL_WHATSAPP_DISPLAY} from '@/lib/official-whatsapp'
+import {renderCampaignBody} from '@/lib/email-campaign-content'
+import {campaignCopyForHistory} from '@/lib/email-campaign-ideas'
 
 interface Props { disabled:boolean;hasContent:boolean;onApply:(copy:CampaignAICopy)=>void }
 const field='w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:ring-emerald-900'
@@ -12,23 +14,24 @@ const button='inline-flex items-center justify-center gap-2 rounded-lg bg-emeral
 const failure='Não foi possível gerar os textos. Seu rascunho foi preservado; tente novamente.'
 
 export default function EmailCampaignAIGenerator({disabled,hasContent,onApply}:Props) {
-  const [insurance,setInsurance]=useState('Seguro'),[theme,setTheme]=useState(''),[phone,setPhone]=useState(OFFICIAL_WHATSAPP_DISPLAY)
+  const [insurance,setInsurance]=useState('Seguro de vida'),[theme,setTheme]=useState(''),[phone,setPhone]=useState(OFFICIAL_WHATSAPP_DISPLAY)
   const [loading,setLoading]=useState(false),[copy,setCopy]=useState<CampaignAICopy|null>(null),[error,setError]=useState(''),[locale,setLocale]=useState<'pt'|'es'>('pt'),[applied,setApplied]=useState(false)
   const generation=useRef(0),controller=useRef<AbortController|null>(null)
+  const previous=useRef<CampaignAICopy[]>([]),variation=useRef(0)
   useEffect(()=>()=>{generation.current++;controller.current?.abort()},[])
-  function edit(setter:(value:string)=>void,value:string) {setter(value);setCopy(null);setApplied(false);setError('')}
+  function edit(setter:(value:string)=>void,value:string) {setter(value);setCopy(null);setApplied(false);setError('');previous.current=[];variation.current=0}
   async function generate() {
     const id=++generation.current
     controller.current?.abort();const abort=new AbortController();controller.current=abort
-    setLoading(true);setError('');setCopy(null);setApplied(false)
+    setLoading(true);setError('')
     const timer=setTimeout(()=>abort.abort(),35000)
     try {
-      const response=await fetch('/api/admin/email-campaigns/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({insurance,theme,phone}),signal:abort.signal})
+      const response=await fetch('/api/admin/email-campaigns/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({insurance,theme,phone,variation:variation.current++%10001,...(previous.current.length?{previous:previous.current.map(campaignCopyForHistory)}:{})}),signal:abort.signal})
       const data=await response.json()
       if (generation.current!==id) return
       if (!response.ok) {setError(typeof data.error==='string'?data.error:failure);return}
       if (!data.copy || !['name','subject_pt','body_pt','subject_es','body_es'].every(k=>typeof data.copy[k]==='string'&&data.copy[k].trim())) {setError(failure);return}
-      setCopy(data.copy)
+      previous.current=[...previous.current,data.copy].slice(-3);setCopy(data.copy);setApplied(false)
     } catch {if(generation.current===id)setError(failure)}
     finally {clearTimeout(timer);if(generation.current===id)setLoading(false)}
   }
@@ -51,7 +54,7 @@ export default function EmailCampaignAIGenerator({disabled,hasContent,onApply}:P
       {copy&&<div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
         <div className="flex gap-2">{(['pt','es'] as const).map(l=><button key={l} type="button" aria-pressed={locale===l} className={'rounded-md px-3 py-1.5 text-xs font-medium '+(locale===l?'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200':'text-slate-500 dark:text-slate-400')} onClick={()=>setLocale(l)}>{l==='pt'?'Prévia em português':'Vista en español'}</button>)}</div>
         <p data-testid="ai-subject" className="break-words text-sm font-semibold text-slate-900 dark:text-white">{copy[`subject_${locale}`]}</p>
-        <p data-testid="ai-body" className="whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-600 dark:text-slate-300">{copy[`body_${locale}`]}</p>
+        <p data-testid="ai-body" className="break-words text-sm leading-relaxed text-slate-600 dark:text-slate-300" dangerouslySetInnerHTML={{__html:renderCampaignBody(copy[`body_${locale}`],locale)}}/>
         <p className="text-xs leading-relaxed text-slate-500">Confira os fatos e o destino do WhatsApp. O texto é uma sugestão, não uma validação de preços ou coberturas.</p>
         <button type="button" className={button+' w-full'} disabled={disabled||loading||applied} onClick={apply}>{applied?'Aplicado ao rascunho':'Usar textos no rascunho'}</button>
         {applied&&<p role="status" className="text-xs text-emerald-700 dark:text-emerald-400">Revise no editor e salve quando estiver pronto. Nenhum e-mail foi enviado.</p>}
