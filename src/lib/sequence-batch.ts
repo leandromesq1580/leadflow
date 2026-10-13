@@ -26,13 +26,36 @@ export function classifySequenceSend(value:unknown,status:number,operation:strin
   return {outcome:'unknown'}
 }
 
+export type ConfirmationArgs = {p_id:string;p_token:string;p_wa:string;p_choice:string|null;p_next:string;p_from:string;p_to:string}
+
+/** Retry receipt persistence only. Never call the transport again. */
+export async function persistSequenceConfirmation(
+  rpc:(name:string,args:ConfirmationArgs,signal?:AbortSignal)=>Promise<unknown>,
+  args:ConfirmationArgs,
+):Promise<void> {
+  try {
+    if(await rpc('finish_sequence_batch',args,AbortSignal.timeout(5000))===true)return
+  } catch { /* The transaction might have committed before the response was lost. */ }
+  for(let attempt=0;attempt<3;attempt++) {
+    try {
+      if(await rpc('confirm_sequence_delivery',args,AbortSignal.timeout(5000))===true)return
+    } catch { /* The correlated receipt is idempotent; no message replay. */ }
+    if(attempt<2)await new Promise(resolve=>setTimeout(resolve,250*(attempt+1)))
+  }
+  throw Error('sequence_confirmation_unpersisted')
+}
+
+// The bridge allows sendMessage up to 45s. Leave room for recipient lookup and
+// receipt serialization, while staying below the dispatch lease's 120s budget.
+export const SEQUENCE_SEND_TIMEOUT_MS = 75000
+
 /** One POST, no replay. A lost/missing rejection RPC falls back to quarantine. */
 export async function sendSequenceMessage(
   bridge:BridgeConfig & {phone:string}, e:SequenceOperation, number:string, message:string,
   rpc:(name:string,args:Record<string,unknown>)=>Promise<unknown>, timeout:number,
 ):Promise<string> {
   const response=await fetch(`${bridge.url}/send`,{
-    method:'POST',headers:{apikey:bridge.key,'Content-Type':'application/json'},signal:AbortSignal.timeout(timeout),
+    method:'POST',headers:{apikey:bridge.key,'Content-Type':'application/json'},signal:AbortSignal.timeout(Math.max(timeout,SEQUENCE_SEND_TIMEOUT_MS)),
     body:JSON.stringify({number,message,sequence:{version:2,operation_id:e.lease_token,sender:bridge.phone}}),
   })
   const result=classifySequenceSend(await response.json(),response.status,e.lease_token,bridge.phone)

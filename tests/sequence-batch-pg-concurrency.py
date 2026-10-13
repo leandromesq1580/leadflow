@@ -584,6 +584,69 @@ def independent_upserts():
             assert r['reason']==('replied' if kind=='inbound' else 'optout')
             assert state(c,e)['status']=='stopped'
 
+def confirm_receipt(c, e):
+    return q(c, "select confirm_sequence_delivery(%s,%s,%s,'0:0',clock_timestamp()+interval '1 day',%s,'15555550999') ok",
+             [e['id'], e['lease_token'], 'synthetic-confirmed-' + str(e['id']), SENDER])[0]['ok']
+
+
+def late_receipt_duplicate_and_sender_release():
+    c, db = setup()
+    e = enrollment(c)
+    assert begin(c, e)
+    q(c, "update sequence_enrollments set lease_until=clock_timestamp()-interval '1 second' where id=%s", [e['id']])
+    q(c, "select defer_sequence_batch(%s,%s,'delivery_unknown',clock_timestamp(),true)", [e['id'],e['lease_token']])
+    assert all(parallel(db, [lambda x: confirm_receipt(x,e)] * 8))
+    s=state(c,e)
+    assert s['current_step']==1 and s['status']=='paused' and s['stop_reason']=='delivery_confirmed_paused'
+    assert q(c,'select count(*) n from whatsapp_messages')[0]['n']==1
+    assert q(c,'select count(*) n from sequence_batch_dispatches where state=\'unknown\'')[0]['n']==0
+    assert begin(c,enrollment(c)), 'a confirmed old operation must not block other leads'
+    assert batch(c)[0]['used']==2, 'confirmation must not return spent send capacity'
+
+
+def late_receipt_sender_lock_serialization():
+    c, db = setup()
+    e=enrollment(c)
+    assert begin(c,e)
+    q(c,"select defer_sequence_batch(%s,%s,'delivery_unknown',clock_timestamp(),true)",[e['id'],e['lease_token']])
+    fresh=enrollment(c,'ai_until_reply',O)
+    a,b=connect(db),connect(db)
+    q(a,'begin')
+    assert confirm_receipt(a,e)
+    f=POOL.submit(begin,b,fresh)
+    assert observe(c,b,f)
+    q(a,'commit')
+    assert f.result(8)
+    assert state(c,e)['status']=='paused'
+    assert batch(c)[0]['used']==2
+
+
+def late_receipt_expire_lock_interleaving():
+    c, db=setup()
+    e=enrollment(c)
+    assert begin(c,e)
+    q(c,"update sequence_batch_dispatches set expires_at=clock_timestamp()-interval '1 second' where token=%s",[e['lease_token']])
+    signature='public.confirm_sequence_delivery(uuid,uuid,text,text,timestamptz,text,text)'
+    source=q(c,'select pg_get_functiondef(%s::regprocedure) source',[signature])[0]['source']
+    marker='PERFORM 1 FROM public.sequence_sender_batches WHERE sender=sender_key FOR UPDATE;'
+    assert source.count(marker)==1
+    # Isolated test barrier immediately after the new RPC takes the sender lock.
+    # The function logic and all production triggers otherwise remain exact.
+    q(c,source.replace(marker,marker+' PERFORM pg_advisory_xact_lock(654321);'))
+    gate, ack, expiry=connect(db),connect(db),connect(db)
+    q(gate,'select pg_advisory_lock(654321)')
+    fa=POOL.submit(confirm_receipt,ack,e)
+    assert observe(c,ack,fa)
+    fe=POOL.submit(lambda:q(expiry,'select expire_sequence_batch_dispatches(%s) n',[SENDER])[0]['n'])
+    end=time.monotonic()+1
+    while not fe.done() and time.monotonic()<end:time.sleep(.02)
+    q(gate,'select pg_advisory_unlock(654321)')
+    result=fa.result(8)
+    expired=fe.result(8)
+    assert result and expired==0, 'expiry must skip the dispatch already held by confirmation'
+    assert state(c,e)['current_step']==1
+
+
 started = False
 try:
     fixture_source = (REPO / 'tests/sequence-batch-sql.test.cjs').read_text()
@@ -594,6 +657,8 @@ try:
                  '055_sequence_batch_completion_clock.sql', '056_sequence_reply_stage.sql',
                  '058_sequence_proven_rejection.sql', '060_sequence_six_per_fifteen.sql'):
         sources.append((name, (REPO / 'supabase/migrations' / name).read_text()))
+    sources.append(('fixture-receipt-phone.sql', "ALTER TABLE public.leads ADD COLUMN phone text DEFAULT '15555550999';"))
+    sources.append(('065_sequence_confirmed_receipts.sql',(REPO/'supabase/migrations/065_sequence_confirmed_receipts.sql').read_text()))
     for name, sql in sources:
         (RUN / name).write_text(sql)
         HASHES[name] = hashlib.sha256(sql.encode()).hexdigest()
@@ -646,6 +711,9 @@ try:
             case(f'{mode}_{kind}', lambda m=mode, k=kind: fail_closed(m, k))
         for kind in ('inbound', 'optout', 'ownership'):
             case(f'{mode}_finish_{kind}_lock_inversion', lambda m=mode, k=kind: inversion(m, k))
+    case('late_receipt_8_concurrent_confirmations_one_advance_no_reactivation',late_receipt_duplicate_and_sender_release)
+    case('late_receipt_confirm_expire_forced_interleaving',late_receipt_expire_lock_interleaving)
+    case('late_receipt_confirm_begin_lock_serialization',late_receipt_sender_lock_serialization)
     case('rollout_old_rpc_compatible_but_new_app_has_no_fallback', old_rpc_fallback)
 finally:
     for c in CONNS:

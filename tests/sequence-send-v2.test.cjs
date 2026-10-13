@@ -104,7 +104,7 @@ async function runEngine(mode, scenario, options = {}) {
     }
     return t.invoke(payload)
   }
-  const globals = { fetch: request, AbortSignal: { timeout: ms => ({ syntheticTimeout: ms }) } }
+  const globals = { fetch: request, setTimeout, AbortSignal: { timeout: ms => ({ syntheticTimeout: ms }) } }
   const batch = load('src/lib/sequence-batch.ts', {}, globals)
   const models = load('src/lib/ai-sequence-models.ts')
   const config = load('src/lib/ai-sequence-config.ts', { './ai-sequence-models': models })
@@ -116,7 +116,8 @@ async function runEngine(mode, scenario, options = {}) {
       if (name === 'begin_sequence_batch') return { data: { allowed: true } }
       if (name === 'reject_sequence_batch' && options.rejectLost) return { data: null, error: { code: 'SYNTHETIC_LOST_RPC' } }
       if (name === 'reject_sequence_batch' && options.rejectFalse) return { data: false }
-      if (name === 'finish_sequence_batch' && options.finishLost) return { data: null, error: { code: 'SYNTHETIC_LOST_RPC' } }
+      if (name === 'finish_sequence_batch' && options.finishResponseLost) return { data: null, error: { code: 'SYNTHETIC_LOST_RESPONSE' } }
+      if (['finish_sequence_batch', 'confirm_sequence_delivery'].includes(name) && options.finishLost) return { data: null, error: { code: 'SYNTHETIC_LOST_RPC' } }
       return { data: true }
     },
     from: table => {
@@ -164,6 +165,14 @@ for (const mode of ['ai', 'legacy']) {
     assert.ok(r.calls.some(c => c.name === 'reject_sequence_batch'))
     assert.equal(r.calls.find(c => c.name === 'defer_sequence_batch')?.args.p_unknown, true)
     assert.equal(r.state.posts, 1); assert.equal(r.state.sends, 0)
+  })
+  test(`${mode}: lost acknowledgement is persisted without replaying transport`, async () => {
+    const r = await runEngine(mode, 'confirmed', { finishResponseLost: true })
+    assert.equal(r.result,true);assert.equal(r.thrown,undefined)
+    assert.equal(r.state.posts,1);assert.equal(r.state.sends,1)
+    const receipt=r.calls.find(c=>c.name==='confirm_sequence_delivery')
+    assert.equal(receipt.args.p_token,operation);assert.equal(receipt.args.p_wa,'synthetic-current')
+    assert.ok(!r.calls.some(c=>c.name==='defer_sequence_batch'))
   })
   test(`${mode}: lost finish response never replays transport`, async () => {
     const r = await runEngine(mode, 'confirmed', { finishLost: true })

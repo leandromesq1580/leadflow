@@ -1,7 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { renderTemplate } from '@/lib/template-render'
 import { getBridgeForBuyer } from '@/lib/wa-bridge'
-import { SequenceWaiting, SequenceRejectedSettled, sendSequenceMessage, verifiedSequenceBridge } from './sequence-batch'
+import { SequenceWaiting, SequenceRejectedSettled, persistSequenceConfirmation, sendSequenceMessage, verifiedSequenceBridge } from './sequence-batch'
 import { checkSendRate } from '@/lib/send-guard'
 import { Resend } from 'resend'
 import { localeDoBuyer, trad } from '@/lib/buyer-locale'
@@ -208,8 +208,9 @@ export async function processSequences(options: { mode?: 'legacy' | 'ai_until_re
 type LegacyEnrollment = { id:string; buyer_id:string; lead_id:string; sequence_id:string; current_step:number; lease_token:string; enrolled_at?:string }
 type Receipt = {id:string;from:string;to:string}
 type Db = ReturnType<typeof createAdminClient>
-async function sequenceRpc(db:Db,name:string,args:Record<string,unknown>) {
-  const {data,error}=await db.rpc(name,args)
+async function sequenceRpc(db:Db,name:string,args:Record<string,unknown>,signal?:AbortSignal) {
+  const request=db.rpc(name,args)
+  const {data,error}=await (signal && typeof request.abortSignal==='function' ? request.abortSignal(signal) : request)
   if(error)throw new Error('Sequence storage unavailable')
   return data
 }
@@ -228,7 +229,9 @@ export async function runLegacyEnrollment(id:string,db:Db=createAdminClient()):P
     }
     const step=steps?.[e.current_step]
     const receipt=step ? await executeStep(step,e,begin,db) : (await begin(null,''),null)
-    if(!await sequenceRpc(db,'finish_sequence_batch',{p_id:id,p_token:e.lease_token,p_wa:receipt?.id||'',p_choice:'',p_next:new Date().toISOString(),p_from:receipt?.from||'',p_to:receipt?.to||''}))throw new Error('Confirmation not persisted')
+    const args={p_id:id,p_token:e.lease_token,p_wa:receipt?.id||'',p_choice:'',p_next:new Date().toISOString(),p_from:receipt?.from||'',p_to:receipt?.to||''}
+    if(receipt)await persistSequenceConfirmation((name,value,signal)=>sequenceRpc(db,name,value,signal),args)
+    else if(!await sequenceRpc(db,'finish_sequence_batch',args))throw new Error('Confirmation not persisted')
     return true
   }catch(error){
     if(error instanceof SequenceRejectedSettled)return false
