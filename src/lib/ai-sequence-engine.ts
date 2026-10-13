@@ -4,7 +4,7 @@ import type { LeadLanguageFields } from './lead-message-locale'
 import type { createAdminClient } from './supabase/admin'
 import { getBridgeForBuyer, type BridgeConfig } from './wa-bridge'
 import { checkSendRate } from './send-guard'
-import { SequenceWaiting, SequenceRejectedSettled, sendSequenceMessage, verifiedSequenceBridge } from './sequence-batch'
+import { SequenceWaiting, SequenceRejectedSettled, persistSequenceConfirmation, sendSequenceMessage, verifiedSequenceBridge } from './sequence-batch'
 export interface AIEnrollment { id:string; buyer_id:string; lead_id:string; sequence_id:string; lease_token:string; current_step:number; recent_choices:string[]; enrolled_at?:string }
 type Context = {config:AISequenceConfig;lead:LeadLanguageFields;phone:string}
 type Sent = {id:string;from:string;to:string}
@@ -55,8 +55,9 @@ export async function runAIEnrollment(id:string, io:AIEnginePorts):Promise<boole
 type Db=ReturnType<typeof createAdminClient>
 export function aiEnginePorts(db:Db):AIEnginePorts {
   let bridge:(BridgeConfig & {phone:string})|null=null
-  async function rpc(name:string,args:Record<string,unknown>) {
-    const {data,error}=await db.rpc(name,args)
+  async function rpc(name:string,args:Record<string,unknown>,signal?:AbortSignal) {
+    const request=db.rpc(name,args)
+    const {data,error}=await (signal && typeof request.abortSignal==='function' ? request.abortSignal(signal) : request)
     if(error)throw new Error(`Sequence storage unavailable: ${error.code}`)
     return data
   }
@@ -89,7 +90,7 @@ export function aiEnginePorts(db:Db):AIEnginePorts {
       const id=await sendSequenceMessage(bridge,e,to,body,rpc,20000)
       return {id,from:bridge.phone,to}
     },
-    finish:async(e,sent,choice,next)=>{if(!await rpc('finish_sequence_batch',{p_id:e.id,p_token:e.lease_token,p_wa:sent.id,p_choice:choice,p_next:next.toISOString(),p_from:sent.from,p_to:sent.to}))throw new Error('Confirmation not persisted')},
+    finish:async(e,sent,choice,next)=>persistSequenceConfirmation(rpc,{p_id:e.id,p_token:e.lease_token,p_wa:sent.id,p_choice:choice,p_next:next.toISOString(),p_from:sent.from,p_to:sent.to}),
     defer:async(e,reason,next,unknown)=>{
       if(!unknown && (reason==='batch_wait'||reason==='outside_window')) await rpc('wait_sequence_batch',{p_id:e.id,p_token:e.lease_token,p_reason:reason,p_next:next.toISOString()})
       else await rpc('defer_sequence_batch',{p_id:e.id,p_token:e.lease_token,p_reason:reason,p_next:next.toISOString(),p_unknown:unknown})
