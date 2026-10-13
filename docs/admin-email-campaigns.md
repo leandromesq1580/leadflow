@@ -68,6 +68,15 @@ Descadastro: `/api/email-campaigns/unsubscribe/<token-opaco>`. GET só confirma 
 
 Aberturas e cliques dependem do rastreamento habilitado no domínio. Aberturas são estimativas por causa de mecanismos de privacidade. `aceito pelo provedor` não é `entregue`; a tela e o histórico distinguem isso. `processada` significa que não há fila ativa, não que todos receberam.
 
+### Identificar quem abriu ou clicou
+
+Em **Suas campanhas**, o resumo mostra quantidades e porcentagens de aberturas/cliques únicos. A base é o número de **entregues**, não a fila inteira: destinatários com evento ÷ entregues × 100, com até uma casa decimal em português. Sem entregas, a taxa fica `—`; sem rastreamento confirmado na campanha, não aparece taxa nem zero inferido. Eventos repetidos do mesmo destinatário não multiplicam a contagem.
+
+Abra a campanha e, em **Resultados**, clique em **Aberturas únicas** ou **Cliques únicos**. O atalho seleciona o respectivo filtro **Abriram/Clicaram**, volta à primeira página e leva à lista de contatos com **nome, e-mail e data/hora registrada**. O filtro e a paginação existentes continuam disponíveis. Consultar esses contatos é somente leitura: não prepara nem dispara follow-up. Falha na consulta preserva a lista anterior e mostra o erro, sem fingir que ninguém abriu/clicou.
+
+As métricas continuam recebendo eventos depois de “Processada”; use **Atualizar** para consultar os novos registros. Abertura não comprova leitura humana e clique pode incluir qualquer link do e-mail (inclusive rodapé) ou scanner automático. Esta melhoria não recupera eventos de campanhas enviadas sem rastreamento e não muda filas, consentimento, conteúdo ou envio.
+
+
 ## Resultados, filtros e reenvio (migration 063)
 
 Migração: `supabase/migrations/063_email_campaign_tracking_resend.sql`. Adiciona o registro do rastreamento no momento do agendamento (`tracking_snapshot`), o vínculo `resend_of`, os filtros de engajamento na lista de contatos e as funções `ec_resend_preview` / `ec_resend_create`. Não altera leads, compradores, créditos nem permissões; campanhas anteriores continuam legíveis.
