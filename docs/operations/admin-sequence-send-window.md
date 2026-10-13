@@ -9,7 +9,10 @@ Sem suporte a janela que cruza meia-noite, como a configuração IA existente.
 
 ## Escopo
 
-- Altera só `ai_config.start`/`end` e o carimbo de atualização da sequência indicada.
+- Altera `ai_config.start`/`end` e o carimbo da sequência indicada; o trigger existente
+  incrementa `reply_move_version`, preservando a proteção de movimentações de resposta.
+  Uma movimentação pendente com versão anterior pode ser recusada por `sequence_changed`.
+  Essa proteção não é removida. Não há atualização direta dos contatos ou de intenções.
 - Preserva configuração completa: intervalo, dias, fuso, instruções e campos desconhecidos.
 - Confere comprador explicitamente. Somente modo `ai_until_reply`.
 - Não ativa sequência desativada; não toca em contatos, fila, leases, status, histórico ou transporte.
@@ -28,7 +31,19 @@ permanente nem um bloqueio sobre outras rotas existentes.
 Erro de atualização ou leitura posterior retorna 503 com `reconcile_required: true`:
 consultar o alvo antes de decidir qualquer tentativa. Não repetir atualização cegamente.
 Se já estiver na janela solicitada, responde sem nova escrita.
-Nenhuma migration ou credencial nova. Testes usam dados sintéticos e não enviam mensagens.
+Migration 067 necessária ANTES da rota. Ela substitui apenas o trigger de reavaliação da
+sequência: a exceção é uma edição válida e exclusivamente de janela IA, sem nenhuma outra
+mudança na sequência (desconsiderando carimbo e a revisão interna incrementada pelo trigger).
+Mudanças de ativação, dono, modo, estágio, instruções ou intervalo continuam reavaliando;
+opt-out e demais proteções de envio permanecem. Não atualiza linhas existentes.
+A rota exige a função de prontidão service-only e falha antes de escrever se ela faltar.
+Nenhuma credencial nova. Testes sintéticos não enviam mensagens.
+
+Regressão local real, separada de `npm test`: instalar `pg` em diretório externo de ferramentas,
+inicializar PostgreSQL 16 sem TCP em socket Unix descartável na porta 55432 e executar
+`EC_TEST_SOCKET=<socket-local> EC_TEST_TOOL_DIR=<ferramentas> node tests/admin-sequence-window.pg.mjs`
+e `node tests/admin-sequence-window-trigger.pg.mjs` com as mesmas variáveis. O segundo usa
+migrations reais e compara integralmente inscrições e regras de cancelamento.
 
 ## Operação
 

@@ -64,7 +64,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return reply({ error: 'window_conflict' }, 409)
     }
     if (changed) {
-      writeAttempted = true
+      // Missing/disabled migration must fail before the UPDATE can fire old triggers.
+      const { data: ready, error: readinessError } = await db.rpc('admin_sequence_window_ready')
+      if (readinessError || ready !== true) return unavailable()
+      writeAttempted = true;
       // A single conditional UPDATE protects against any edit since our snapshot.
       // JSONB equality ignores key order. No retry of an ambiguous write.
       const { data: updated, count, error: updateError } = await db.from('sequences')

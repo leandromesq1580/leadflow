@@ -22,7 +22,7 @@ function fixture() {
   const rows: Row[] = [sequence, other].map(id => ({ id, buyer_id: buyer, mode: 'ai_until_reply', enabled: true,
     updated_at: '2026-10-01T12:00:00+00:00', ai_config: structuredClone(config) }))
   const f = { rows, calls: [] as Call[], user: { id: auth } as { id: string } | null, isAdmin: true as unknown,
-    authError: false, adminError: false, before: (...args: Call[]) => { void args }, reply: (_call: Call, response: Response) => response }
+    authError: false, adminError: false, readiness: true as unknown, before: (...args: Call[]) => { void args }, reply: (_call: Call, response: Response) => response }
   const db = createClient('http://fixture.invalid', 'offline-fixture', {
     auth: { persistSession: false, autoRefreshToken: false },
     global: { fetch: async (input, init) => {
@@ -33,6 +33,7 @@ function fixture() {
         assert.equal(url.searchParams.get('auth_user_id'), 'eq.' + auth)
         return f.adminError ? Response.json({ message: 'private detail' }, { status: 503 }) : Response.json({ is_admin: f.isAdmin })
       }
+      if (url.pathname.endsWith('/rpc/admin_sequence_window_ready')) return f.reply(call, Response.json(f.readiness))
       assert.ok(url.pathname.endsWith('/sequences'), 'no enrollment, dispatch, message or other table access')
       const matches = rows.filter(row => {
         for (const key of ['id', 'buyer_id', 'mode', 'enabled', 'updated_at', 'ai_config'] as const) {
@@ -88,6 +89,17 @@ test('verified admin updates only the window, preserves all other fields and nev
   assert.ok(!JSON.stringify(result).includes('Perguntas curtas'), 'no instructions in response')
 })
 
+test('missing migration or disabled readiness fails before any update', async () => {
+  for (const ready of [false, null, 'true']) {
+    const f = fixture(); f.readiness = ready
+    const response = await f.invoke(); assert.equal(response.status, 503)
+    assert.equal((await response.json()).reconcile_required, false)
+    assert.equal(f.calls.filter(c => c.method === 'PATCH').length, 0)
+  }
+  const f = fixture(); f.reply = (c, r) => c.url.pathname.endsWith('/rpc/admin_sequence_window_ready') ? Response.json({ message: 'missing function' }, { status: 404 }) : r
+  assert.equal((await f.invoke()).status, 503)
+  assert.equal(f.calls.filter(c => c.method === 'PATCH').length, 0)
+})
 test('replay and already-correct window perform zero additional writes', async () => {
   const f = fixture(); f.rows[0].ai_config.start = '08:00'
   const response = await f.invoke(); assert.equal(response.status, 200); assert.equal((await response.json()).changed, false)
