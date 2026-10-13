@@ -1,5 +1,7 @@
+import type { TrackingStatus } from './email-campaigns'
+
 type EngagementStats = Record<string, number>
-type EngagementTracking = { open: boolean; click: boolean } | null | undefined
+type EngagementTracking = Pick<TrackingStatus, 'open' | 'click'> | null | undefined
 
 const rateFormatter = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 })
 

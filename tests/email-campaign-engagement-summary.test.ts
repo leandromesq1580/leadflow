@@ -13,7 +13,7 @@ test('list summary exposes both unique rates, including zero clicks when tracked
  assert.match(campaignEngagementSummary({total:10,delivered:5,opened:0,clicked:0},{open:true,click:true}),/0 aberturas \(0%\).*0 cliques \(0%\)/)
 })
 test('unknown or disabled tracking must not imply zero opens/clicks or show a rate',()=>{
- for(const tracking of [null,undefined,{open:false,click:false}])assert.equal(campaignEngagementSummary({total:10,delivered:5,opened:3,clicked:2},tracking),'10 destinatários · 5 entregues')
+ for(const tracking of [null,undefined,{open:false,click:false},{open:null,click:null}])assert.equal(campaignEngagementSummary({total:10,delivered:5,opened:3,clicked:2},tracking),'10 destinatários · 5 entregues')
  assert.equal(campaignEngagementSummary({total:10,delivered:5,opened:3,clicked:2},{open:true,click:false}),'10 destinatários · 5 entregues · 3 aberturas (60%) · 0 sem abertura')
  assert.equal(campaignEngagementSummary({total:10,delivered:5,opened:3,clicked:2},{open:false,click:true}),'10 destinatários · 5 entregues · 2 cliques (40%)')
 })
