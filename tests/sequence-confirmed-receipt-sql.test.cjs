@@ -62,6 +62,54 @@ test('receipt RPC is restricted to service role',async()=>{
   }finally{await db.close()}
 })
 
+test('another unknown operation retains the shared protection after one receipt',async()=>{
+  const {db,e}=await setup();try{
+    const s=(await db.query("select * from save_sequence($1,null,$2,$3)",[e.buyer_id,{name:'synthetic-second',mode:'legacy'},[{step_type:'send_template',custom_body:'synthetic body',delay_hours:0}]])).rows[0]
+    await db.query('update sequences set enabled=true where id=$1',[s.id])
+    const added=(await db.query("select * from enroll_sequence($1,$2,$3,'2000-01-01')",[e.buyer_id,s.id,e.lead_id])).rows[0]
+    const second=(await db.query('select * from claim_legacy_sequence($1)',[added.id])).rows[0]
+    assert.ok(second)
+    await call(db,'begin_sequence_batch',{p_id:e.id,p_token:e.lease_token,p_sender:'18635550111',p_body:'synthetic body'})
+    await call(db,'begin_sequence_batch',{p_id:second.id,p_token:second.lease_token,p_sender:'18635550222',p_body:'synthetic body'})
+    for(const x of [e,second])await call(db,'defer_sequence_batch',{p_id:x.id,p_token:x.lease_token,p_reason:'delivery_unknown',p_next:new Date().toISOString(),p_unknown:true})
+    assert.equal(await call(db,'confirm_sequence_delivery',proof(e)),true)
+    assert.equal((await db.query('select ai_sequence_block($1,$2,$3) reason',[e.buyer_id,e.lead_id,e.sequence_id])).rows[0].reason,'delivery_unknown')
+    assert.equal((await db.query('select state from sequence_batch_dispatches where token=$1',[second.lease_token])).rows[0].state,'unknown')
+  }finally{await db.close()}
+})
+test('real manual stop after unknown retains the shared suppression',async()=>{
+  const {db,e}=await setup();try{
+    await call(db,'begin_sequence_batch',{p_id:e.id,p_token:e.lease_token,p_sender:'18635550111',p_body:'synthetic body'})
+    await call(db,'defer_sequence_batch',{p_id:e.id,p_token:e.lease_token,p_reason:'delivery_unknown',p_next:new Date().toISOString(),p_unknown:true})
+    assert.equal(await call(db,'stop_sequence_enrollment',{p_buyer:e.buyer_id,p_id:e.id}),true)
+    assert.equal(await call(db,'confirm_sequence_delivery',proof(e)),true)
+    const row=(await db.query('select status,stop_reason from sequence_enrollments where id=$1',[e.id])).rows[0]
+    assert.equal(row.status,'stopped');assert.equal(row.stop_reason,'manual')
+    assert.equal((await db.query('select resolved_at from ai_sequence_suppressions')).rows[0].resolved_at,null)
+    assert.equal((await db.query('select ai_sequence_block($1,$2,$3) reason',[e.buyer_id,e.lead_id,e.sequence_id])).rows[0].reason,'delivery_unknown')
+  }finally{await db.close()}
+})
+test('partial batch expired cooldown is extended on a late confirmed receipt',async()=>{
+  const {db,e}=await setup();try{
+    await call(db,'begin_sequence_batch',{p_id:e.id,p_token:e.lease_token,p_sender:'18635550111',p_body:'synthetic body'})
+    await db.query("update sequence_batch_dispatches set expires_at=clock_timestamp()-interval '1 second' where token=$1",[e.lease_token])
+    await db.query('select expire_sequence_batch_dispatches($1)',['18635550111'])
+    await db.query("update sequence_sender_batches set cooldown_until=clock_timestamp()-interval '1 second',last_settled_at=clock_timestamp()-interval '16 minutes',last_reserved_at=clock_timestamp()-interval '16 minutes'")
+    assert.equal(await call(db,'confirm_sequence_delivery',proof(e)),true)
+    const row=(await db.query("select used,cooldown_until>clock_timestamp()+interval '14 minutes' extended,last_settled_at>clock_timestamp()-interval '1 minute' recent from sequence_sender_batches")).rows[0]
+    assert.equal(row.used,1);assert.equal(row.extended,true);assert.equal(row.recent,true)
+  }finally{await db.close()}
+})
+test('a future cooldown is never shortened by a late confirmed receipt',async()=>{
+  const {db,e}=await setup();try{
+    await call(db,'begin_sequence_batch',{p_id:e.id,p_token:e.lease_token,p_sender:'18635550111',p_body:'synthetic body'})
+    await call(db,'defer_sequence_batch',{p_id:e.id,p_token:e.lease_token,p_reason:'delivery_unknown',p_next:new Date().toISOString(),p_unknown:true})
+    await db.query("update sequence_sender_batches set cooldown_until=clock_timestamp()+interval '2 hours'")
+    assert.equal(await call(db,'confirm_sequence_delivery',proof(e)),true)
+    assert.equal((await db.query("select cooldown_until>clock_timestamp()+interval '119 minutes' kept from sequence_sender_batches")).rows[0].kept,true)
+  }finally{await db.close()}
+})
+
 test('confirmed same-operation receipt settles an expired unknown dispatch without reactivating it',async()=>{
   const {db,e}=await setup()
   try {

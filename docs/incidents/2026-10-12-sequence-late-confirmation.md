@@ -18,7 +18,7 @@ A operação pontual não faz parte da migration, não é um backfill automátic
 - Depois de uma resposta v2 confirmada para **a mesma operação e remetente**, tentar persistir o recibo. Se a resposta do banco falhar ou se perder, repetir somente sua persistência, nunca o envio.
 - Migration aditiva 065: comprovante correlacionado pode resolver um despacho `unknown`/reserva expirada. Mantém a inscrição pausada/parada quando houve pausa, resposta, STOP ou perda de reserva; não reativa contatos.
 - Recibo idempotente por despacho/ciclo/passo e identificador WhatsApp. Operação, remetente, destinatário e conflito de recibo divergentes são recusados. Função exclusiva de `service_role`.
-- Preserve ordem de locks enrollment → sender → dispatch, orçamento seis/15 minutos e proteções não relacionadas à incerteza.
+- Preserve ordem de locks enrollment → dispatch → sender, orçamento seis/15 minutos e todas as proteções compartilhadas por comprador/lead. A confirmação automática resolve somente o despacho: nem mesmo a proteção `delivery_unknown` global é removida, pois pode representar uma parada manual posterior ou outro despacho incerto.
 - Sem confirmação válida, a proteção conservadora permanece: timeout total, queda completa do processo, resposta inválida e indisponibilidade persistente do banco **não** autorizam reenvio nem liberação automática.
 
 ## Verificação e publicação

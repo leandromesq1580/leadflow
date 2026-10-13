@@ -25,11 +25,12 @@ BEGIN
  IF NOT FOUND THEN RETURN false; END IF;
  SELECT sender INTO sender_key FROM public.sequence_batch_dispatches WHERE token=p_token AND enrollment_id=p_id;
  IF sender_key IS DISTINCT FROM p_from THEN RETURN false; END IF;
- -- Same lock order as the current finish RPC: enrollment -> sender -> dispatch.
- PERFORM 1 FROM public.sequence_sender_batches WHERE sender=sender_key FOR UPDATE;
+ -- Same lock order as finish/expiry and their settlement trigger:
+ -- enrollment -> dispatch -> sender. Never hold sender while awaiting dispatch.
  SELECT * INTO d FROM public.sequence_batch_dispatches WHERE token=p_token AND enrollment_id=p_id FOR UPDATE;
  IF NOT FOUND OR d.sender IS DISTINCT FROM p_from OR d.cycle IS DISTINCT FROM e.enrolled_at
  OR d.state NOT IN ('sending','unknown','sent') THEN RETURN false; END IF;
+ PERFORM 1 FROM public.sequence_sender_batches WHERE sender=sender_key FOR UPDATE;
  IF NOT EXISTS(SELECT 1 FROM public.leads WHERE id=e.lead_id
    AND regexp_replace(phone,'[^0-9]','','g')=p_to) THEN RETURN false; END IF;
  SELECT * INTO w FROM public.whatsapp_messages WHERE wa_message_id=p_wa;
@@ -65,8 +66,10 @@ BEGIN
  OR regexp_replace(w.from_phone,'[^0-9]','','g') IS DISTINCT FROM p_from
  OR regexp_replace(w.to_phone,'[^0-9]','','g') IS DISTINCT FROM p_to
  THEN RAISE EXCEPTION 'sequence_receipt_conflict'; END IF;
- UPDATE public.ai_sequence_suppressions SET resolved_at=clock_timestamp()
- WHERE buyer_id=e.buyer_id AND lead_id=e.lead_id AND reason='delivery_unknown' AND resolved_at IS NULL;
+ -- Suppression is shared across cycles/sequences for buyer+lead. A subsequent
+ -- real manual stop can keep reason=delivery_unknown through ON CONFLICT, and
+ -- another operation may still be unknown. Never clear that shared protection
+ -- merely because this one dispatch has been reconciled. Owner action required.
  UPDATE public.sequence_enrollments SET
    current_step=current_step+1,last_sent_at=confirmed_time,delivery_status='sent',attempts=0,
    recent_choices=CASE WHEN e.mode='ai_until_reply' THEN
@@ -80,7 +83,8 @@ BEGIN
    lease_token=NULL,lease_until=NULL WHERE id=p_id;
  UPDATE public.sequence_batch_dispatches SET state='sent',confirmed_wa_id=p_wa,confirmed_at=confirmed_time WHERE token=p_token;
  UPDATE public.sequence_sender_batches SET last_settled_at=greatest(last_settled_at,clock_timestamp()),
-   cooldown_until=CASE WHEN used>=6 THEN clock_timestamp()+interval '15 minutes' ELSE cooldown_until END WHERE sender=sender_key;
+   cooldown_until=CASE WHEN used>=6 OR cooldown_until IS NOT NULL
+     THEN greatest(cooldown_until,clock_timestamp()+interval '15 minutes') ELSE cooldown_until END WHERE sender=sender_key;
  RETURN true;
 END $$;
 REVOKE ALL ON FUNCTION public.confirm_sequence_delivery(uuid,uuid,text,text,timestamptz,text,text) FROM PUBLIC,anon,authenticated;

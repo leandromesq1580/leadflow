@@ -621,6 +621,32 @@ def late_receipt_sender_lock_serialization():
     assert batch(c)[0]['used']==2
 
 
+def late_receipt_expire_lock_interleaving():
+    c, db=setup()
+    e=enrollment(c)
+    assert begin(c,e)
+    q(c,"update sequence_batch_dispatches set expires_at=clock_timestamp()-interval '1 second' where token=%s",[e['lease_token']])
+    signature='public.confirm_sequence_delivery(uuid,uuid,text,text,timestamptz,text,text)'
+    source=q(c,'select pg_get_functiondef(%s::regprocedure) source',[signature])[0]['source']
+    marker='PERFORM 1 FROM public.sequence_sender_batches WHERE sender=sender_key FOR UPDATE;'
+    assert source.count(marker)==1
+    # Isolated test barrier immediately after the new RPC takes the sender lock.
+    # The function logic and all production triggers otherwise remain exact.
+    q(c,source.replace(marker,marker+' PERFORM pg_advisory_xact_lock(654321);'))
+    gate, ack, expiry=connect(db),connect(db),connect(db)
+    q(gate,'select pg_advisory_lock(654321)')
+    fa=POOL.submit(confirm_receipt,ack,e)
+    assert observe(c,ack,fa)
+    fe=POOL.submit(lambda:q(expiry,'select expire_sequence_batch_dispatches(%s) n',[SENDER])[0]['n'])
+    end=time.monotonic()+1
+    while not fe.done() and time.monotonic()<end:time.sleep(.02)
+    q(gate,'select pg_advisory_unlock(654321)')
+    result=fa.result(8)
+    expired=fe.result(8)
+    assert result and expired==0, 'expiry must skip the dispatch already held by confirmation'
+    assert state(c,e)['current_step']==1
+
+
 started = False
 try:
     fixture_source = (REPO / 'tests/sequence-batch-sql.test.cjs').read_text()
@@ -686,6 +712,7 @@ try:
         for kind in ('inbound', 'optout', 'ownership'):
             case(f'{mode}_finish_{kind}_lock_inversion', lambda m=mode, k=kind: inversion(m, k))
     case('late_receipt_8_concurrent_confirmations_one_advance_no_reactivation',late_receipt_duplicate_and_sender_release)
+    case('late_receipt_confirm_expire_forced_interleaving',late_receipt_expire_lock_interleaving)
     case('late_receipt_confirm_begin_lock_serialization',late_receipt_sender_lock_serialization)
     case('rollout_old_rpc_compatible_but_new_app_has_no_fallback', old_rpc_fallback)
 finally:
