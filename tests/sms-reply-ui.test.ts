@@ -10,11 +10,11 @@ const mod = { exports: {} as { ReplyBadges: ComponentType<{sms?: number; whatsap
 const code = transpileModule(readFileSync('src/components/reply-badges.tsx', 'utf8'), { compilerOptions: { module: ModuleKind.CommonJS, jsx: JsxEmit.ReactJSX } }).outputText
 new Function('require', 'module', 'exports', code)(createRequire(import.meta.url), mod, mod.exports)
 
-test('real React badge renders blue SMS label separately from red WhatsApp', () => {
+test('real React badge renders green SMS label separately from red WhatsApp', () => {
   const html = renderToStaticMarkup(createElement(mod.exports.ReplyBadges, {sms: 2, whatsapp: 1}))
   assert.match(html, /aria-label="SMS: 2"/)
   assert.match(html, /aria-label="WhatsApp: 1"/)
-  assert.match(html, /background:#1d4ed8/)
+  assert.match(html, /background:#15803d/)
   assert.match(html, /background:#dc2626/)
   assert.match(html, /SMS 2/)
 })

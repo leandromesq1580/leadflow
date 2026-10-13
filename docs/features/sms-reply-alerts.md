@@ -4,7 +4,7 @@
 Implementação local na branch `feat/sms-resposta-aviso`. Sem migration, push, merge, deploy ou envio de mensagens em produção. A publicação e a migration dependem de autorização explícita do Leandro.
 
 ## Comportamento
-- Balão azul com texto SMS e contagem própria nos cartões do Pipeline desktop e nas listas de conversas desktop/mobile.
+- Balão verde com texto SMS e contagem própria nos cartões do Pipeline desktop e nas listas de conversas desktop/mobile.
 - A conversa existente agrega WhatsApp e SMS; SMS recebido fica com fundo azul e etiqueta SMS.
 - Resposta exclusivamente por SMS entra na lista de conversas e na contagem de não lidas; WhatsApp segue separado nos balões e agregado no total.
 - A leitura de SMS é persistida somente para IDs exibidos na conversa visível. Novas chegadas que não constam no recibo continuam não lidas. Recibos em lotes de até 200.
@@ -16,7 +16,7 @@ Implementação local na branch `feat/sms-resposta-aviso`. Sem migration, push, 
 - TDD: testes novos falharam antes da implementação e passaram depois.
 - Testes focados finais: 118 passaram, zero falhas (incluem regressões de Pipeline, horário/idiomas e WhatsApp).
 - Migração 064 executada duas vezes em PostgreSQL local PGlite; verificados recibos, resolução de membro, fallback e privilégios da view.
-- React real renderizado em teste: balão azul SMS, contagens por canal, zero oculto, limite visual 99+ com contagem acessível completa.
+- React real renderizado em teste: balão verde SMS, contagens por canal, zero oculto, limite visual 99+ com contagem acessível completa.
 - Build completo: exit 0. Configuração preexistente do build pula checagem de tipos; tsc independente encontrou os mesmos 17 diagnósticos normalizados na base limpa e no código alterado, sem novos.
 - Suíte completa executada uma vez: 743 testes, 739 passando, 4 falhas. Três incompatibilidades dos harnesses com os novos hooks/imports foram corrigidas e passaram na rodada focada final. A falha restante de automation-scheduling foi reproduzida na base limpa e não foi alterada.
 - NÃO VERIFICADO: interface no navegador autenticado, tráfego real SMS e banco de produção. Não foi enviado SMS nem WhatsApp.
