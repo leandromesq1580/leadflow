@@ -21,7 +21,7 @@ async function fixture(t: TestContext) {
     create table leads(id uuid primary key default gen_random_uuid(),name text,email text,state text,type text default 'hot',assigned_to uuid,lead_language text,form_name text,created_at timestamptz default now());
     insert into buyers(id,is_admin) values ('${actor}',true);
     insert into leads(name,email,state,lead_language) values ('A','a@example.invalid','FL','pt'),('B','b@example.invalid','FL','pt'),('C','c@example.invalid','FL','es');`)
-  for (const m of ['062_admin_email_campaigns.sql', '063_email_campaign_tracking_resend.sql']) await db.exec(readFileSync(new URL('../supabase/migrations/' + m, import.meta.url), 'utf8'))
+  for (const m of ['062_admin_email_campaigns.sql', '063_email_campaign_tracking_resend.sql', '066_campaign_no_daily_cap.sql']) await db.exec(readFileSync(new URL('../supabase/migrations/' + m, import.meta.url), 'utf8'))
   const rows = async (sql: string, args: unknown[] = []) => (await db.query<Json>(sql, args)).rows
   // Same envelope the Supabase client gives the worker: named parameters, {data,error}.
   const calls: [string, Record<string, unknown>][] = []

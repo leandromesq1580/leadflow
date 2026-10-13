@@ -25,7 +25,7 @@ async function scenario(name,current,resend=false){
   await db.query(`create table buyers(id uuid primary key,is_admin boolean,name text);
    create table leads(id uuid primary key default gen_random_uuid(),name text,email text,state text,type text default 'hot',assigned_to uuid,lead_language text,form_name text,created_at timestamptz default now());`)
   for(const role of ['anon','authenticated','service_role'])if(!(await ctl.query('select 1 from pg_roles where rolname=$1',[role])).rowCount)await ctl.query('CREATE ROLE '+role)
-  for(const file of ['062_admin_email_campaigns.sql','063_email_campaign_tracking_resend.sql'])await db.query(readFileSync(new URL('../supabase/migrations/'+file,import.meta.url),'utf8'))
+  for(const file of ['062_admin_email_campaigns.sql','063_email_campaign_tracking_resend.sql','066_campaign_no_daily_cap.sql'])await db.query(readFileSync(new URL('../supabase/migrations/'+file,import.meta.url),'utf8'))
   const actor=randomUUID();await db.query('insert into buyers values($1,true,$2)',[actor,'Synthetic admin'])
   await db.query("insert into leads(name,email,state,lead_language) values('Synthetic target','target-race@example.invalid','FL','pt'),('Synthetic sentinel','sentinel-race@example.invalid','NH','pt')")
   await rpc(db,'ec_record_permission',[actor,'{}','{}','Synthetic permission only for isolated regression',true])
@@ -50,7 +50,7 @@ async function scenario(name,current,resend=false){
   const quotaBefore=(await db.query('select day_used,minute_used from email_campaign_rate')).rows[0]
   await admin.query('begin');await rpc(admin,'ec_control',[actor,target.id,'resume'])
   await blocker.query('begin');await blocker.query('select id from email_campaign_recipients where campaign_id=$1 for update',[sentinel.id])
-  const pending=rpc(worker,'ec_claim',[200,JSON.stringify(current)])
+  const pending=rpc(worker,'ec_claim',[0,JSON.stringify(current)])
   let observed=false
   try{
    for(let i=0;i<200;i++){

@@ -40,13 +40,13 @@ export type CampaignConfiguration={ready:boolean;issues:string[];key:string;webh
 export function campaignConfiguration(env:Record<string,string|undefined>):CampaignConfiguration {
   const issues:string[]=[],key=(env.RESEND_API_KEY||'').trim(),webhookSecret=(env.EMAIL_CAMPAIGN_WEBHOOK_SECRET||'').trim()
   const raw=(env.EMAIL_CAMPAIGNS_FROM_EMAIL||env.RESEND_FROM_EMAIL||'').trim(),email=(raw.match(/<([^<>]+)>$/)?.[1]||raw).toLowerCase(),domain=email.split('@')[1]||''
-  const postal=(env.MANUAL_EMAIL_POSTAL_ADDRESS||'').trim(),daily=env.EMAIL_CAMPAIGN_DAILY_LIMIT||'200',dailyLimit=Number(daily)
+  const postal=(env.MANUAL_EMAIL_POSTAL_ADDRESS||'').trim(),daily=env.EMAIL_CAMPAIGN_DAILY_LIMIT||'0',dailyLimit=Number(daily)
   if(env.EMAIL_CAMPAIGNS_ENABLED!=='true')issues.push('Disparos de campanha desativados.')
   if(!key)issues.push('Falta configurar a chave do provedor.')
   if(!webhookSecret)issues.push('Falta configurar os retornos de campanha do provedor.')
   if(!emailPattern.test(email)||email.length>254||/[\r\n]/.test(raw)||domain==='resend.dev'||domain.endsWith('.resend.dev'))issues.push('Configure um endereço próprio, não o remetente de teste.')
   if(postal.length<10||postal.length>500)issues.push('Falta um endereço postal válido no rodapé.')
-  if(!/^\d+$/.test(daily)||!Number.isInteger(dailyLimit)||dailyLimit<1||dailyLimit>10000)issues.push('O limite diário deve ser de 1 a 10.000.')
+  if(!/^\d+$/.test(daily)||!Number.isInteger(dailyLimit)||dailyLimit<0||dailyLimit>10000)issues.push('O limite diário deve ser de 0 a 10.000; 0 significa sem limite diário.')
   return {ready:issues.length===0,issues,key,webhookSecret,from:`Lead4Pro <${email}>`,email,domain,postal,dailyLimit}
 }
 function escapeHtml(s:string){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!))}

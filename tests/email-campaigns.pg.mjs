@@ -22,7 +22,7 @@ const actor=randomUUID()
 await db.query(`create table buyers(id uuid primary key,is_admin boolean,name text);
  create table leads(id uuid primary key default gen_random_uuid(),name text,email text,state text,type text default 'hot',assigned_to uuid,lead_language text,form_name text,created_at timestamptz default now());`)
 await db.query('insert into buyers(id,is_admin,name) values($1,true,$2)',[actor,'Synthetic admin'])
-await db.query(readFileSync(new URL('../supabase/migrations/062_admin_email_campaigns.sql',import.meta.url),'utf8'))
+for(const file of ['062_admin_email_campaigns.sql','063_email_campaign_tracking_resend.sql','066_campaign_no_daily_cap.sql'])await db.query(readFileSync(new URL('../supabase/migrations/'+file,import.meta.url),'utf8'))
 const rpc=async(c,n,args=[])=> (await c.query(`select public.${n}(${args.map((_,i)=>'$'+(i+1)).join(',')}) as value`,args)).rows[0].value
 async function fixture(state,n=12){
  for(const c of (await db.query("select id from email_campaigns where state in ('draft','scheduled','running','paused')")).rows)await rpc(db,'ec_control',[actor,c.id,'cancel'])
@@ -45,7 +45,8 @@ async function check(name,fn){try{await fn();results.push({name,passed:true});co
 try{
  await check('20 simultaneous workers reserve at most 10 distinct recipients globally',async()=>{
   const c=await fixture('FL',20),workers=await Promise.all(Array.from({length:20},()=>connection(database)))
-  const claims=await Promise.all(workers.map(w=>rpc(w,'ec_claim',[200])))
+  await db.query("update email_campaign_rate set day=(clock_timestamp() at time zone 'UTC')::date,day_used=20000")
+  const claims=await Promise.all(workers.map(w=>rpc(w,'ec_claim',[0])))
   const valid=claims.filter(Boolean);assert.equal(valid.length,10);assert.equal(new Set(valid.map(x=>x.id)).size,10)
   assert.equal((await db.query('select minute_used from email_campaign_rate')).rows[0].minute_used,10)
   await rpc(db,'ec_control',[actor,c.id,'cancel'])

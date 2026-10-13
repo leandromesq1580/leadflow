@@ -55,10 +55,10 @@ Migração: `supabase/migrations/062_admin_email_campaigns.sql`. Cria tabelas e 
 | `MANUAL_EMAIL_POSTAL_ADDRESS` | Endereço postal obrigatório no rodapé (10–500 caracteres) |
 | `EMAIL_CAMPAIGN_WEBHOOK_SECRET` | Assinatura do endpoint dedicado de retornos |
 | `EMAIL_CAMPAIGNS_ENABLED` | Somente `true` libera agendamento/envio; ausente = bloqueado |
-| `EMAIL_CAMPAIGN_DAILY_LIMIT` | Teto global por dia UTC; padrão conservador 200; intervalo 1–10.000 |
+| `EMAIL_CAMPAIGN_DAILY_LIMIT` | `0` (padrão) = sem teto diário do Lead4Pro; valores 1–10.000 preservam configuração explícita legada. Requer migration 066 antes de publicar o worker com zero. Não altera limites do plano/provedor |
 | `CRON_SECRET` | Autorização Bearer do agendador Vercel; sem valor não executa |
 
-Agendador declarado em `vercel.json`: `/api/cron/email-campaigns`, uma vez por minuto. Mesmo com execuções sobrepostas, o banco reserva no máximo 10 contatos por minuto e respeita o teto diário compartilhado entre todas as campanhas. Reservas consomem capacidade conservadoramente. Não aumenta automaticamente o limite do plano do provedor.
+Agendador declarado em `vercel.json`: `/api/cron/email-campaigns`, uma vez por minuto. Mesmo com execuções sobrepostas, o banco reserva no máximo 10 contatos por minuto e, só quando configurado um valor positivo, respeita o teto diário compartilhado entre todas as campanhas. Com `0`, não espera a renovação do dia UTC. Reservas continuam contabilizadas conservadoramente para auditoria, mesmo sem teto diário. Não aumenta automaticamente o limite do plano do provedor.
 
 O domínio é consultado no provedor e precisa estar verificado tanto no agendamento quanto no processamento. Nada de usar remetente de teste. O módulo pode ser publicado com disparos desativados, mantendo rascunhos e prévias disponíveis.
 
