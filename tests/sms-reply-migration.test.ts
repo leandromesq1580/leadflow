@@ -16,7 +16,7 @@ test('real PostgreSQL migration: owner isolation, member fallback, transfer, rec
       INSERT INTO team_members VALUES ('00000000-0000-4000-8000-000000000003','00000000-0000-4000-8000-000000000012');
       INSERT INTO leads VALUES ('00000000-0000-4000-8000-000000000004','00000000-0000-4000-8000-000000000001',null);
       INSERT INTO sms_messages VALUES ('00000000-0000-4000-8000-000000000005','00000000-0000-4000-8000-000000000004','in','Fixture',now());`)
-    const migration = readFileSync('supabase/migrations/064_sms_reply_unread.sql', 'utf8')
+    const migration = readFileSync('supabase/migrations/067_sms_reply_unread.sql', 'utf8')
     await db.exec(migration)
     await db.exec(migration)
     const owner = async () => (await db.query<{buyer_id: string}>('SELECT buyer_id FROM sms_inbox_messages')).rows[0].buyer_id
