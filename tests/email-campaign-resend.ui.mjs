@@ -27,7 +27,7 @@ await db.query(`create table buyers(id uuid primary key,is_admin boolean,name te
 await db.query('insert into buyers(id,is_admin,name,auth_user_id) values($1,true,$2,$3),($4,false,$5,$6)',[admin,'Synthetic Admin',authUid,client,'Synthetic Client',randomUUID()])
 const people=[['Synthetic Opened','opened@example.invalid','pt'],['Synthetic Clicked','clicked@example.invalid','es'],['Synthetic Quiet A','quiet-a@example.invalid','pt'],['Synthetic Quiet B','quiet-b@example.invalid','es'],['Synthetic Recent','recent@example.invalid','pt'],['Synthetic Bounced','bounced@example.invalid','pt']]
 for(const [name,email,lang] of people)await db.query('insert into leads(name,email,state,lead_language,assigned_to) values($1,$2,$3,$4,$5)',[name,email,'FL',lang,client])
-for(const m of ['062_admin_email_campaigns.sql','063_email_campaign_tracking_resend.sql'])await db.query(readFileSync(resolve(repo,'supabase/migrations/'+m),'utf8'))
+for(const m of ['062_admin_email_campaigns.sql','063_email_campaign_tracking_resend.sql','066_campaign_no_daily_cap.sql'])await db.query(readFileSync(resolve(repo,'supabase/migrations/'+m),'utf8'))
 let sendingCalls=0,trackingOn=true,trackingIssue
 // Production-like shape: with an issue, the flags are off on paper too (Resend keeps them inactive until the Tracking CNAME is verified).
 const tracking=()=>trackingIssue?{open:false,click:false,status:'not_verified',checked_at:new Date().toISOString(),issue:trackingIssue}:({open:trackingOn,click:trackingOn,status:'verified',checked_at:new Date().toISOString()})
@@ -84,6 +84,7 @@ try{
  await context.route('**/*',route=>route.request().url().startsWith(base)?route.continue():route.abort())
  const page=await context.newPage();lastPage=page;page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept())
  await page.goto(base);await page.getByRole('button',{name:/Synthetic Seguro origem/}).waitFor()
+ check('Unlimited daily sending is labelled honestly',await page.getByText('Sem limite diário',{exact:false}).count()===1)
  check('List shows delivered and unopened per campaign',await page.getByText(/5 entregues/).count()===1&&await page.getByText(/3 sem abertura/).count()===1)
  check('List rates are visible before opening the campaign',await page.getByRole('button',{name:/Synthetic Seguro origem/}).textContent().then(t=>/1 aberturas \(20%\).*1 cliques \(20%\)/.test(t)))
  await page.getByRole('button',{name:/Synthetic Seguro origem/}).click();await page.getByRole('heading',{name:'Resultados'}).waitFor()

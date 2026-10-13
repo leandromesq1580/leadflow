@@ -117,7 +117,7 @@ export default function EmailCampaignsPage(){
   {notice&&<div role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">{notice}</div>}
   {config&&<div className="flex items-start gap-2 rounded-lg border border-slate-200 p-3 text-sm dark:border-slate-700">
    {config.ready?<CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600"/>:<AlertCircle size={18} className="mt-0.5 shrink-0 text-amber-600"/>}
-   <div className="min-w-0 text-slate-600 dark:text-slate-300">{config.ready?<>Remetente: <strong className="break-all">{config.from}</strong> · até {config.dailyLimit} por dia, compartilhados entre campanhas</>:<><strong>Disparos bloqueados.</strong> {config.issues.join(' ')} Rascunhos e prévias continuam disponíveis.</>}</div>
+   <div className="min-w-0 text-slate-600 dark:text-slate-300">{config.ready?<>Remetente: <strong className="break-all">{config.from}</strong> · {config.dailyLimit===0?'Sem limite diário':`até ${config.dailyLimit} por dia, compartilhados entre campanhas`}</>:<><strong>Disparos bloqueados.</strong> {config.issues.join(' ')} Rascunhos e prévias continuam disponíveis.</>}</div>
   </div>}
   {!editing?<section className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
    <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-slate-800"><h2 className="font-medium text-slate-900 dark:text-white">Suas campanhas <span className="ml-1 text-sm text-slate-400">{total}</span></h2><button aria-label="Atualizar campanhas" className={secondary} disabled={busy||loading} onClick={()=>void load(undefined,listPage)}><RefreshCw size={15}/></button></div>
