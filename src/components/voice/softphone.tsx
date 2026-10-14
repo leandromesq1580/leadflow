@@ -119,6 +119,10 @@ export function Softphone() {
     } catch {}
   }
 
+  // O listener assíncrono pode atualizar a ref após seu reset e durante connect().
+  // Ler por função evita inferir que ela continua null após o await.
+  function readSignalingError() { return signalingErrorRef.current }
+
   async function startCall(detail: { phone: string; name?: string; leadId?: string }) {
     if (status === 'connecting' || status === 'ringing' || status === 'incall') return
     // Sem register(), tokenWillExpire não é armado até a primeira sinalização.
@@ -143,8 +147,8 @@ export function Softphone() {
     } catch (e: unknown) {
       // O SDK emite Device.error e pode rejeitar connect() sem argumento no close.
       // Mantemos só o código da MESMA instância/tentativa, nunca texto arbitrário.
-      const signal = signalingErrorRef.current
-      handleCallFailure(classifyCallFailure(e).reason === 'unknown' && signal?.device === device ? { code: signal.code } : e)
+      const signal = readSignalingError()
+      handleCallFailure(classifyCallFailure(e).reason === 'unknown' && signal && signal.device === device ? { code: signal.code } : e)
     }
   }
 
