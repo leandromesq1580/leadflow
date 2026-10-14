@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CallScriptPanel } from './call-script-panel'
 import { useT } from '@/lib/i18n-client'
 import { createDeviceActivator, type ActivationReason } from './softphone-activation'
+import { classifyCallFailure } from './softphone-errors'
 
 /** Dispara uma ligação de qualquer lugar do app: callLead('+1...', 'Nome', leadId). */
 export function callLead(phone: string, name?: string, leadId?: string) {
@@ -53,9 +54,8 @@ export function Softphone() {
         log: m => console.warn('[softphone] init:', m),
         createDevice: async (token: string) => {
           const { Device } = await import('@twilio/voice-sdk')
-          const device = new Device(token, { codecPreferences: ['opus', 'pcmu'] as any, logLevel: 'error' as any })
-          device.on('registered', () => { if (mountedRef.current) setStatus('ready') })
-          device.on('error', (e: any) => { console.warn('[softphone]', e?.message || e); if (mountedRef.current) setStatus(s => (s === 'off' ? 'error' : s)) })
+          const device = new Device(token, { codecPreferences: ['opus', 'pcmu'] as any, logLevel: 'error' as any, enableImprovedSignalingErrorPrecision: true })
+          device.on('error', (e: unknown) => { console.warn('[softphone]', classifyCallFailure(e)); if (mountedRef.current) setStatus(s => (s === 'off' ? 'error' : s)) })
           device.on('tokenWillExpire', async () => {
             try { const r = await fetch('/api/voice/token', { cache: 'no-store' }); const j = await r.json(); device.updateToken(j.token) } catch {}
           })
@@ -68,7 +68,7 @@ export function Softphone() {
 
   async function initDevice(): Promise<boolean> {
     const r = await activator().ensure()
-    if (r.ok) deviceRef.current = r.device
+    if (r.ok) { deviceRef.current = r.device; if (mountedRef.current) setStatus('ready') }
     return r.ok
   }
 
@@ -78,8 +78,6 @@ export function Softphone() {
         return L('Sua sessão expirou. Saia e entre de novo para voltar a ligar.', 'Your session expired. Sign out and sign in again to make calls.', 'Tu sesión expiró. Cierra sesión y entra de nuevo para llamar.')
       case 'voice_unavailable':
         return L('As ligações estão indisponíveis no momento. Avise o suporte.', 'Calling is unavailable right now. Please contact support.', 'Las llamadas no están disponibles ahora. Avisa al soporte.')
-      case 'register':
-        return L('Não consegui conectar o telefone. Verifique a permissão de microfone do navegador e tente de novo.', 'Could not connect the phone. Check the browser microphone permission and try again.', 'No pude conectar el teléfono. Revisa el permiso de micrófono del navegador e inténtalo de nuevo.')
       default:
         return L('Não consegui ativar o telefone agora (falha de conexão). Verifique sua internet e tente de novo.', 'Could not activate the phone right now (connection failed). Check your internet and try again.', 'No pude activar el teléfono ahora (fallo de conexión). Revisa tu internet e inténtalo de nuevo.')
     }
@@ -136,8 +134,30 @@ export function Softphone() {
       call.on('disconnect', endUi)
       call.on('cancel', endUi)
       call.on('reject', endUi)
-      call.on('error', (e: any) => { console.warn('[softphone] call:', e?.message || e); endUi() })
-    } catch (e: any) { console.warn('[softphone] connect:', e?.message || e); endUi() }
+      call.on('error', handleCallFailure)
+    } catch (e: unknown) { handleCallFailure(e) }
+  }
+
+  function handleCallFailure(error: unknown) {
+    const failure = classifyCallFailure(error)
+    console.warn('[softphone] call:', failure)
+    // Uma autorização expirada não pode deixar a aba presa ao mesmo Device/token.
+    // Não rediscamos: o próximo clique autorizado pelo usuário busca outro token.
+    if (failure.reason === 'authentication') {
+      try { deviceRef.current?.destroy() } catch {}
+      deviceRef.current = null
+      activatorRef.current?.clear()
+    }
+    endUi()
+    if (!mountedRef.current) return
+    const message = failure.reason === 'microphone_permission'
+      ? L('O navegador bloqueou o microfone. Permita o microfone para este site e tente novamente.', 'The browser blocked the microphone. Allow microphone access for this site and try again.', 'El navegador bloqueó el micrófono. Permite el micrófono para este sitio e inténtalo de nuevo.')
+      : failure.reason === 'authentication'
+      ? L('O Twilio recusou a autorização do telefone. Tente novamente; se persistir, envie este aviso ao suporte.', 'Twilio rejected the phone authorization. Try again; if it persists, send this notice to support.', 'Twilio rechazó la autorización del teléfono. Inténtalo de nuevo; si persiste, envía este aviso al soporte.')
+      : failure.reason === 'connection'
+      ? L('A conexão com o serviço de ligações falhou. Tente novamente; se persistir, envie este aviso ao suporte.', 'The connection to the calling service failed. Try again; if it persists, send this notice to support.', 'La conexión con el servicio de llamadas falló. Inténtalo de nuevo; si persiste, envía este aviso al soporte.')
+      : L('A ligação falhou. Envie este aviso ao suporte para verificarmos a causa.', 'The call failed. Send this notice to support so we can check the cause.', 'La llamada falló. Envía este aviso al soporte para revisar la causa.')
+    alert(failure.code === null ? message : `${message} (${failure.code})`)
   }
 
   function endUi() {

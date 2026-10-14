@@ -13,7 +13,7 @@
  *  - depois de uma falha, o próximo ensure() tenta de novo (não fica travado).
  */
 
-export type ActivationReason = 'unauthorized' | 'voice_unavailable' | 'token' | 'sdk' | 'register' | 'unmounted'
+export type ActivationReason = 'unauthorized' | 'voice_unavailable' | 'token' | 'sdk' | 'unmounted'
 
 export type ActivationResult<D> = { ok: true; device: D } | { ok: false; reason: ActivationReason; detail?: string }
 
@@ -22,7 +22,7 @@ type TokenResponse = { ok: boolean; status: number; json: () => Promise<any> }
 export type ActivatorDeps<D> = {
   fetchToken: () => Promise<TokenResponse>
   /** Cria e configura o Device (listeners inclusos). Não chama register(). */
-  createDevice: (token: string) => Promise<D & { register: () => Promise<unknown> }>
+  createDevice: (token: string) => Promise<D & { destroy: () => void }>
   isMounted: () => boolean
   onIdentity?: (identity: string) => void
   log: (message: string) => void
@@ -58,21 +58,19 @@ export function createDeviceActivator<D>(deps: ActivatorDeps<D>) {
     if (!token) return { ok: false, reason: 'token', detail: 'sem token' }
     if (!deps.isMounted()) return { ok: false, reason: 'unmounted' }
 
-    let device: D & { register: () => Promise<unknown> }
+    let device: D & { destroy: () => void }
     try {
       device = await deps.createDevice(token)
     } catch (e: any) {
       deps.log(`sdk: ${e?.message || e}`)
       return { ok: false, reason: 'sdk', detail: String(e?.message || e) }
     }
-    if (!deps.isMounted()) return { ok: false, reason: 'unmounted' }
-    try {
-      await device.register()
-    } catch (e: any) {
-      deps.log(`register: ${e?.message || e}`)
-      return { ok: false, reason: 'register', detail: String(e?.message || e) }
+    if (!deps.isMounted()) {
+      try { device.destroy() } catch { /* desmontagem não deve deixar uma ativação rejeitada */ }
+      return { ok: false, reason: 'unmounted' }
     }
-    if (!deps.isMounted()) return { ok: false, reason: 'unmounted' }
+    // Saída usa connect(), que abre seu próprio canal. register() só habilita
+    // recebimento e pode recusar/travar sem que isso impeça chamadas de saída.
     current = device
     return { ok: true, device }
   }

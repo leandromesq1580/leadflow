@@ -27,13 +27,13 @@ test('clicar durante a ativação pendente espera a ativação terminar em vez d
   const g = gate()
   const activator = createDeviceActivator({
     fetchToken: okToken(),
-    createDevice: async token => { const d = new FakeDevice(token); d.registerGate = g; return d },
+    createDevice: async token => { const d = new FakeDevice(token); await g.promise; return d },
     isMounted: () => true,
     log: () => {},
   })
 
   const first = activator.ensure()           // load da página
-  await new Promise(r => setTimeout(r, 0))   // deixa a ativação chegar ao register()
+  await new Promise(r => setTimeout(r, 0))   // deixa a ativação chegar à criação do Device
   const second = activator.ensure()          // clique em Ligar enquanto ainda ativa
   g.release()
 
@@ -65,14 +65,14 @@ test('sessão recusada pelo servidor vira motivo legível e permite nova tentati
   assert.equal(FakeDevice.created, 1)
 })
 
-test('falha ao registrar o telefone não trava as tentativas seguintes', async () => {
+test('falha ao criar o telefone não trava as tentativas seguintes', async () => {
   FakeDevice.created = 0
   let fail = true
   const activator = createDeviceActivator({
     fetchToken: okToken(),
     createDevice: async token => {
+      if (fail) throw new Error('sdk indisponível (fixture)')
       const d = new FakeDevice(token)
-      if (fail) d.register = async () => { throw new Error('register boom') }
       return d
     },
     isMounted: () => true,
@@ -81,13 +81,13 @@ test('falha ao registrar o telefone não trava as tentativas seguintes', async (
 
   const first = await activator.ensure()
   assert.equal(first.ok, false)
-  assert.equal((first as any).reason, 'register')
+  assert.equal((first as any).reason, 'sdk')
   assert.equal(activator.current(), null)
 
   fail = false
   const second = await activator.ensure()
   assert.equal(second.ok, true)
-  assert.equal(FakeDevice.created, 2)
+  assert.equal(FakeDevice.created, 1)
 })
 
 test('componente desmontado durante a ativação não guarda Device', async () => {
