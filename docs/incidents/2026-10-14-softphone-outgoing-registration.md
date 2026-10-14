@@ -17,6 +17,9 @@ Base: `f4c47842af3fda85866cb800a6ac57291b714052`
 - Cliques durante preparação ainda compartilham uma ativação; falha de preparação permite nova tentativa.
 - Falha de saída não fica silenciosa: distingue permissão de áudio, autorização, conexão e erro desconhecido pelo código do SDK. Só código numérico e categoria vão ao novo aviso/log; mensagens arbitrárias não são copiadas.
 - Rejeição de autorização descarta o telefone/token antigo; só outro clique busca nova autorização. Sem rediscagem automática.
+- Ajuste único pós-revisão (R1): cada clique renova a autorização, compartilhando a requisição pendente e preservando a instância. Não depende de tokenWillExpire antes da primeira sinalização. Device.error fornece só seu código à rejeição sem argumento da mesma tentativa; isso permite descartar a autorização recusada e tentar novamente apenas no próximo clique.
+- A revisão independente avaliou `69a132b4c2ebc3f5976ed8ab1163cf0edef7ce5c`, reprovou R1 e não cobre o delta corretivo posterior. Delta conferido pelo agente principal, com testes RED no SHA revisado → GREEN no SHA final. Mudança na preparação compartilhada entre cliques, sem SQL; essa limitação precisa constar no pedido de publicação.
+- Preexistências fora do escopo: listener de l4p:call fecha sobre status antigo (risco de segundo clique durante chamada) e limpeza de ativações pendentes durante desmontagem/remontagem. Não são reivindicadas como corrigidas nesta entrega.
 - Nenhuma alteração de credenciais, banco, roteamento, gravação ou destinatário.
 
 ## Verificação

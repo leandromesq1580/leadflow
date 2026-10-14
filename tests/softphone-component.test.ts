@@ -8,7 +8,7 @@ import vm from 'node:vm'
 import ts from 'typescript'
 
 // Componente real; somente React/browser/transporte são fixtures. Nenhuma rede ou chamada.
-function harness(options: { connectError?: object; locale?: string } = {}) {
+function harness(options: { connectError?: object; deviceAuthError?: boolean; locale?: string } = {}) {
   const listeners = new Map<string, (ev: unknown) => Promise<void>>()
   const alerts: string[] = []
   const logs: unknown[] = []
@@ -21,9 +21,14 @@ function harness(options: { connectError?: object; locale?: string } = {}) {
     destroyed = false
     constructor(public token: string) { super(); devices.push(this) }
     async register() { registrations++; throw new Error('recebimento recusado (fixture)') }
-    async connect() { connections++; if (failure) throw failure; const call = new EventEmitter(); calls.push(call); return call }
+    async connect() {
+      connections++
+      if (options.deviceAuthError && failure) { this.emit('error', failure); throw undefined }
+      if (failure) throw failure
+      const call = new EventEmitter(); calls.push(call); return call
+    }
     destroy() { this.destroyed = true }
-    updateToken() {}
+    updateToken(token: string) { this.token = token }
   }
   const cache = new Map<string, unknown>()
   function load(file: string): Record<string, unknown> {
@@ -64,11 +69,41 @@ function harness(options: { connectError?: object; locale?: string } = {}) {
   return {
     alerts, logs, devices, calls,
     fail: (error?: object) => { failure = error },
+    idle: async () => { await new Promise(resolve => setImmediate(resolve)) },
     click: async () => { await listeners.get('l4p:call')!({ detail: { phone: '+15555550100', name: 'Fixture' } }) },
     counters: () => ({ fetches, registrations, connections }),
     cleanup: () => { if (typeof cleanup === 'function') cleanup() },
   }
 }
+
+test('aba ociosa busca autorização nova antes de ligar sem depender de tokenWillExpire', async () => {
+  const h = harness()
+  try {
+    await h.idle()
+    assert.equal(h.counters().fetches, 1)
+    await h.click()
+    assert.equal(h.counters().fetches, 2, 'o primeiro clique após ociosidade precisa de autorização atual')
+    assert.equal(h.devices[0].token, 'synthetic-token-2')
+    assert.equal(h.counters().connections, 1)
+    assert.equal(h.counters().registrations, 0)
+  } finally { h.cleanup() }
+})
+
+test('Device.error de autorização seguido de close sem código não prende a aba ao token recusado', async () => {
+  const h = harness({ connectError: { code: 20104, message: 'synthetic-token-sensitive' }, deviceAuthError: true })
+  try {
+    await h.click()
+    assert.match(h.alerts[0], /Twilio recusou a autorização.*20104/)
+    assert.equal(h.devices[0].destroyed, true)
+    assert.equal(h.counters().connections, 1)
+    h.fail()
+    await h.click()
+    assert.equal(h.counters().fetches, 2)
+    assert.equal(h.counters().connections, 2)
+    assert.equal(h.alerts.length, 1)
+    assert.doesNotMatch(JSON.stringify(h.logs), /synthetic-token-sensitive/)
+  } finally { h.cleanup() }
+})
 
 test('erro posterior da chamada também mostra motivo sem expor mensagem do SDK', async () => {
   const h = harness()

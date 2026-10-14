@@ -36,6 +36,7 @@ export function Softphone() {
   const buyerIdRef = useRef<string>('')
   const timerRef = useRef<any>(null)
   const leadIdRef = useRef<string>('')
+  const signalingErrorRef = useRef<{ device: unknown; code: number | null } | null>(null)
 
   const mountedRef = useRef(true)
 
@@ -55,7 +56,12 @@ export function Softphone() {
         createDevice: async (token: string) => {
           const { Device } = await import('@twilio/voice-sdk')
           const device = new Device(token, { codecPreferences: ['opus', 'pcmu'] as any, logLevel: 'error' as any, enableImprovedSignalingErrorPrecision: true })
-          device.on('error', (e: unknown) => { console.warn('[softphone]', classifyCallFailure(e)); if (mountedRef.current) setStatus(s => (s === 'off' ? 'error' : s)) })
+          device.on('error', (e: unknown) => {
+            const failure = classifyCallFailure(e)
+            signalingErrorRef.current = { device, code: failure.code }
+            console.warn('[softphone]', failure)
+            if (mountedRef.current) setStatus(s => (s === 'off' ? 'error' : s))
+          })
           device.on('tokenWillExpire', async () => {
             try { const r = await fetch('/api/voice/token', { cache: 'no-store' }); const j = await r.json(); device.updateToken(j.token) } catch {}
           })
@@ -115,14 +121,13 @@ export function Softphone() {
 
   async function startCall(detail: { phone: string; name?: string; leadId?: string }) {
     if (status === 'connecting' || status === 'ringing' || status === 'incall') return
-    // Sem device? Ativa AGORA (ou espera a ativação em curso terminar) — nunca trata
-    // "ainda ativando" como falha. Só alerta com o motivo real da falha.
-    if (!deviceRef.current) {
-      const r = await activator().ensure()
-      if (!r.ok) { if (r.reason !== 'unmounted') alert(activationMessage(r.reason)); return }
-      deviceRef.current = r.device
-    }
+    // Sem register(), tokenWillExpire não é armado até a primeira sinalização.
+    // Cada clique prepara uma autorização atual; nunca rediscamos automaticamente.
+    const r = await activator().ensure({ refresh: true })
+    if (!r.ok) { if (r.reason !== 'unmounted') alert(activationMessage(r.reason)); return }
+    deviceRef.current = r.device
     const device = deviceRef.current
+    signalingErrorRef.current = null
     setInfo({ name: detail.name, phone: detail.phone }); setMuted(false); setStatus('connecting')
     leadIdRef.current = detail.leadId || ''
     try {
@@ -135,7 +140,12 @@ export function Softphone() {
       call.on('cancel', endUi)
       call.on('reject', endUi)
       call.on('error', handleCallFailure)
-    } catch (e: unknown) { handleCallFailure(e) }
+    } catch (e: unknown) {
+      // O SDK emite Device.error e pode rejeitar connect() sem argumento no close.
+      // Mantemos só o código da MESMA instância/tentativa, nunca texto arbitrário.
+      const signal = signalingErrorRef.current
+      handleCallFailure(classifyCallFailure(e).reason === 'unknown' && signal?.device === device ? { code: signal.code } : e)
+    }
   }
 
   function handleCallFailure(error: unknown) {

@@ -9,6 +9,7 @@ test('ligação de saída não depende do registro de recebimento recusado pelo 
     register: async () => { registrations++; throw new Error('recebimento indisponível (fixture)') },
     connect: async () => { connections++; return { fixture: true } },
     destroy: () => {},
+    updateToken: (_token: string) => {},
   }
   const activator = createDeviceActivator({
     fetchToken: async () => ({ ok: true, status: 200, json: async () => ({ token: 'synthetic-token', identity: 'synthetic_buyer' }) }),

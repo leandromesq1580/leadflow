@@ -22,14 +22,14 @@ type TokenResponse = { ok: boolean; status: number; json: () => Promise<any> }
 export type ActivatorDeps<D> = {
   fetchToken: () => Promise<TokenResponse>
   /** Cria e configura o Device (listeners inclusos). Não chama register(). */
-  createDevice: (token: string) => Promise<D & { destroy: () => void }>
+  createDevice: (token: string) => Promise<D & { destroy: () => void; updateToken: (token: string) => void }>
   isMounted: () => boolean
   onIdentity?: (identity: string) => void
   log: (message: string) => void
 }
 
 export function createDeviceActivator<D>(deps: ActivatorDeps<D>) {
-  let current: D | null = null
+  let current: (D & { destroy: () => void; updateToken: (token: string) => void }) | null = null
   let inflight: Promise<ActivationResult<D>> | null = null
 
   async function activate(): Promise<ActivationResult<D>> {
@@ -58,10 +58,13 @@ export function createDeviceActivator<D>(deps: ActivatorDeps<D>) {
     if (!token) return { ok: false, reason: 'token', detail: 'sem token' }
     if (!deps.isMounted()) return { ok: false, reason: 'unmounted' }
 
-    let device: D & { destroy: () => void }
+    let device = current
     try {
-      device = await deps.createDevice(token)
+      if (device) device.updateToken(token)
+      else device = await deps.createDevice(token)
     } catch (e: any) {
+      try { device?.destroy() } catch {}
+      current = null
       deps.log(`sdk: ${e?.message || e}`)
       return { ok: false, reason: 'sdk', detail: String(e?.message || e) }
     }
@@ -76,10 +79,12 @@ export function createDeviceActivator<D>(deps: ActivatorDeps<D>) {
   }
 
   return {
-    /** Garante um Device pronto. Chamadas simultâneas compartilham a MESMA ativação. */
-    ensure(): Promise<ActivationResult<D>> {
-      if (current) return Promise.resolve({ ok: true, device: current })
+    /** Instância preparada para TENTAR saída, não conexão/microfone validados.
+     * refresh=true renova a autorização no clique, mesmo sem sinalização prévia.
+     * Chamadas simultâneas compartilham a MESMA preparação/renovação. */
+    ensure(options: { refresh?: boolean } = {}): Promise<ActivationResult<D>> {
       if (inflight) return inflight
+      if (current && !options.refresh) return Promise.resolve({ ok: true, device: current })
       inflight = activate().finally(() => { inflight = null })
       return inflight
     },
