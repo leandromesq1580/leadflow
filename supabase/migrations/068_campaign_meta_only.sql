@@ -6,9 +6,19 @@ BEGIN;
 CREATE FUNCTION public.ec_is_meta_lead(p_lead uuid) RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
  SELECT EXISTS(SELECT 1 FROM public.leads l WHERE l.id=p_lead
-  AND nullif(btrim(l.meta_lead_id),'') IS NOT NULL
-  AND coalesce(l.form_name,'')<>'csv_import'
-  AND coalesce(l.raw_data->>'source','') NOT IN ('csv_import','import_csv'))
+  -- Known Meta forms and original acquisition payload are both required.
+  -- An import endpoint can populate meta_lead_id; the ID alone is NOT proof.
+  AND l.meta_lead_id ~ '^[0-9]+$'
+  AND l.form_name IN ('25952858404333766','1963007337624994')
+  AND coalesce(l.raw_data->>'source','')=''
+  AND (
+   (l.raw_data->>'id'=l.meta_lead_id AND jsonb_typeof(l.raw_data->'field_data')='array')
+   OR (l.raw_data->>'object'='page' AND EXISTS(
+    SELECT 1 FROM jsonb_array_elements(CASE WHEN jsonb_typeof(l.raw_data->'entry')='array' THEN l.raw_data->'entry' ELSE '[]'::jsonb END) e,
+     LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(e->'changes')='array' THEN e->'changes' ELSE '[]'::jsonb END) ch
+    WHERE ch->>'field'='leadgen' AND ch->'value'->>'leadgen_id'=l.meta_lead_id AND ch->'value'->>'form_id'=l.form_name
+   ))
+  ))
 $$;
 
 CREATE OR REPLACE FUNCTION public.ec_rows(p_filters jsonb,p_forms jsonb)

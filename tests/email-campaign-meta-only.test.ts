@@ -15,7 +15,7 @@ async function setup(){
  INSERT INTO buyers VALUES('${actor}',true,true),('${user}',false,true);`)
  for(const f of migrations){const p=new URL('../supabase/migrations/'+f,import.meta.url);if(existsSync(p))await db.exec(readFileSync(p,'utf8'))}
  const rpc=async(name:string,args:string='')=>(await db.query<{result:any}>(`SELECT public.${name}(${args}) AS result`)).rows[0].result
- const add=async(n:number,email:string,meta:string|null=null,source='Meta Lead Ads')=>{const id='10000000-0000-0000-0000-'+String(n).padStart(12,'0');await db.query(`INSERT INTO leads(id,name,email,lead_language,meta_lead_id,form_name,campaign_name,raw_data,created_at) VALUES($1,'Synthetic',$2,'pt',$3,$4,$4,$5,now()+($6||' seconds')::interval)`,[id,email,meta,source,JSON.stringify({source:source==='Import CSV'?'csv_import':source}),String(n)]);return id}
+ const add=async(n:number,email:string,meta:string|null=null,source='Meta Lead Ads')=>{const id='10000000-0000-0000-0000-'+String(n).padStart(12,'0');const form=source==='Meta Lead Ads'?'25952858404333766':source;const raw=source==='Meta Lead Ads'?{id:meta,field_data:[]}:{source:source==='Import CSV'?'csv_import':source,id:meta,field_data:[]};await db.query(`INSERT INTO leads(id,name,email,lead_language,meta_lead_id,form_name,campaign_name,raw_data,created_at) VALUES($1,'Synthetic',$2,'pt',$3,$4,$4,$5,now()+($6||' seconds')::interval)`,[id,email,meta,form,JSON.stringify(raw),String(n)]);return id}
  const consent=async(email:string)=>db.query(`INSERT INTO email_campaign_contacts(email,consent_at,consent_by,consent_evidence) VALUES($1,now(),$2,'synthetic historical permission') ON CONFLICT(email) DO UPDATE SET consent_at=now(),consent_by=$2,consent_evidence='synthetic historical permission'`,[email,actor])
  const draft=async()=>rpc('ec_save',`'${actor}',NULL,'{"name":"Synthetic","subject_pt":"Seguro","body_pt":"Conteúdo","subject_es":"Seguro","body_es":"Contenido","filters":{}}'`)
  return {db,rpc,add,consent,draft}
@@ -65,6 +65,23 @@ test('resend audience excludes historically delivered imported recipients',async
  const f=await setup();try{
  const csv=await f.add(1,'csv@example.invalid',null,'Import CSV');const meta=await f.add(2,'meta@example.invalid','123');await f.consent('csv@example.invalid');await f.consent('meta@example.invalid');const c=await f.draft();await f.db.query(`UPDATE email_campaigns SET state='completed',tracking_snapshot='{"open":true,"click":true}' WHERE id=$1`,[c.id]);await f.db.query(`INSERT INTO email_campaign_recipients(campaign_id,lead_id,email,name,language,state,accepted_at,delivered_at) VALUES($1,$2,'csv@example.invalid','Synthetic','pt','delivered',now()-interval '3 days',now()-interval '3 days'),($1,$3,'meta@example.invalid','Synthetic','pt','delivered',now()-interval '3 days',now()-interval '3 days')`,[c.id,csv,meta])
  const r=await f.db.query<any>(`SELECT * FROM ec_resend_rows($1)`,[c.id]);assert.equal(r.rows.filter(x=>x.reason===null).length,1);assert.equal(r.rows.find(x=>x.email==='csv@example.invalid').reason,'non_meta')
+ }finally{await f.db.close()}
+})
+test('a populated ID is not origin proof: CSV, manual, landing, Google Sheets and unverified forms remain blocked',async()=>{
+ const f=await setup();try{
+ for(const [n,source] of [[1,'Meta Lead Ads'],[2,'google_sheets'],[3,'manual'],[4,'landing_nova'],[5,'Import CSV']] as const){await f.add(n,`origin-${n}@example.invalid`,String(n),source);await f.consent(`origin-${n}@example.invalid`)}
+ const a=await f.rpc('ec_audience',`'${actor}','{}','{}'`);assert.equal(a.eligible,1);assert.equal(a.exclusions.non_meta,4)
+ }finally{await f.db.close()}
+})
+test('verified polling and webhook payloads pass; mismatched IDs, unknown forms, imported provenance and malformed payloads do not',async()=>{
+ const f=await setup();try{
+ for(let n=1;n<=6;n++){await f.add(n,`payload-${n}@example.invalid`,String(n));await f.consent(`payload-${n}@example.invalid`)}
+ await f.db.exec(`UPDATE leads SET raw_data='{"object":"page","entry":[{"changes":[{"field":"leadgen","value":{"leadgen_id":"2","form_id":"25952858404333766"}}]}]}' WHERE meta_lead_id='2';
+ UPDATE leads SET raw_data='{"id":"different","field_data":[]}' WHERE meta_lead_id='3';
+ UPDATE leads SET form_name='Unknown form' WHERE meta_lead_id='4';
+ UPDATE leads SET raw_data=raw_data||'{"source":"google_sheets"}' WHERE meta_lead_id='5';
+ UPDATE leads SET raw_data='{"object":"page","entry":{}}' WHERE meta_lead_id='6';`)
+ const a=await f.rpc('ec_audience',`'${actor}','{}','{}'`);assert.equal(a.eligible,2);assert.equal(a.exclusions.non_meta,4)
  }finally{await f.db.close()}
 })
 test('revocation HTTP requires explicit confirmation and admin, rejects unknown fields and never sends',async()=>{
