@@ -38,6 +38,11 @@ type ActionBody={action?:string;id?:string;campaign?:unknown;filters?:unknown;ev
    let body:ActionBody;try{body=JSON.parse(raw)}catch{return error('Pedido inválido.')}
    if(!body||typeof body!=='object'||Array.isArray(body))return error('Pedido inválido.')
    const actor={p_actor:auth.id},forms={p_forms:META_FORM_LANGUAGES}
+   if(body.action==='policy')return json({policy:await rpc('ec_meta_policy',actor)})
+   if(body.action==='revoke_non_meta'){
+    if(body.confirm!==true||Object.keys(body).some(k=>k!=='action'&&k!=='confirm'))return error('Confirme a retirada da permissão dos contatos que não vieram da Meta.')
+    return json({revocation:await rpc('ec_revoke_non_meta',actor)})
+   }
    if(body.action==='resend_preview'||body.action==='resend_create'){
     if(typeof body.id!=='string'||!CAMPAIGN_UUID.test(body.id))return error('Campanha inválida.')
     const tracking=await readTracking()
