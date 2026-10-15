@@ -7,7 +7,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import * as jsx from 'react/jsx-runtime'
 import * as language from '../src/lib/lead-message-locale'
 
-test('lead badges show Brazil/Spain flags beside readable language names', () => {
+test('lead badges show Brazil/Spain/US flags beside readable language names', () => {
   const code = transpileModule(readFileSync(new URL('../src/components/lead-language-badge.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ModuleKind.CommonJS, jsx: JsxEmit.ReactJSX },
   }).outputText
@@ -22,7 +22,7 @@ test('lead badges show Brazil/Spain flags beside readable language names', () =>
       assert.ok(name in dependencies, `Unexpected dependency: ${name}`)
       return dependencies[name]
     }, module, module.exports)
-    for (const [locale, flag] of [['pt', '🇧🇷'], ['es', '🇪🇸'], ['en', '🌐'], [null, '🌐']] as const) {
+    for (const [locale, flag] of [['pt', '🇧🇷'], ['es', '🇪🇸'], ['en', '🇺🇸'], [null, '🌐']] as const) {
       const html = renderToStaticMarkup(createElement(module.exports.LeadLanguageBadge, { lead: { lead_language: locale } }))
       assert.ok(html.includes(flag))
       assert.ok(html.includes(language.leadMessageLanguageLabel(locale, ui)))

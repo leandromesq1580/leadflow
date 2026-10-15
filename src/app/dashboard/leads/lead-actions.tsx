@@ -35,7 +35,7 @@ function ManualLeadModal({ onClose }: { onClose: () => void }) {
   const t = useT()
   const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const router = useRouter()
-  const [form, setForm] = useState({ name: '', phone: '', email: '', state: '', city: '', interest: L('Seguro de vida', 'Life insurance', 'Seguro de vida'), notes: '' })
+  const [form, setForm] = useState({ name: '', phone: '', email: '', state: '', city: '', interest: L('Seguro de vida', 'Life insurance', 'Seguro de vida'), notes: '', lead_language: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -43,6 +43,10 @@ function ManualLeadModal({ onClose }: { onClose: () => void }) {
     setError('')
     if (!form.name.trim() || (!form.phone.trim() && !form.email.trim())) {
       setError(L('Nome e (telefone ou email) são obrigatórios.', 'Name and (phone or email) are required.', 'El nombre y (teléfono o email) son obligatorios.'))
+      return
+    }
+    if (!['pt', 'en', 'es'].includes(form.lead_language)) {
+      setError(L('Selecione o idioma do lead.', 'Select the lead language.', 'Selecciona el idioma del lead.'))
       return
     }
     setSaving(true)
@@ -103,6 +107,19 @@ function ManualLeadModal({ onClose }: { onClose: () => void }) {
               <input value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} placeholder="Orlando"
                 className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px]" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }} />
             </div>
+          </div>
+          <div>
+            <label htmlFor="manual-lead-language" className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Idioma do lead', 'Lead language', 'Idioma del lead')} *</label>
+            <select id="manual-lead-language" value={form.lead_language} onChange={e => { setForm({ ...form, lead_language: e.target.value }); setError('') }}
+              required disabled={saving} aria-describedby="manual-lead-language-help"
+              className="w-full mt-1 px-3 py-2.5 rounded-lg text-[13px] font-semibold"
+              style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--fg)' }}>
+              <option value="" disabled>{L('Selecione o idioma', 'Select a language', 'Selecciona el idioma')}</option>
+              <option value="pt">🇧🇷 Português</option>
+              <option value="en">🇺🇸 English</option>
+              <option value="es">🇪🇸 Español</option>
+            </select>
+            <p id="manual-lead-language-help" className="text-[11px] mt-1" style={{ color: 'var(--fg-secondary)' }}>{L('Idioma de contato deste lead. Não altera o idioma do sistema.', 'This lead’s contact language. Does not change the system language.', 'Idioma de contacto de este lead. No cambia el idioma del sistema.')}</p>
           </div>
           <div>
             <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fg-muted)' }}>{L('Interesse', 'Interest', 'Interés')}</label>
