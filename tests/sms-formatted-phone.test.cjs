@@ -6,6 +6,18 @@ const path = require('node:path')
 const ts = require('typescript')
 const { createClient } = require('@supabase/supabase-js')
 const root = path.resolve(__dirname, '..')
+let pgPromise
+async function localPg() {
+  if (!pgPromise) pgPromise = (async () => {
+    const { PGlite } = require('@electric-sql/pglite')
+    const pg = new PGlite()
+    await pg.exec(fs.readFileSync(path.join(root, 'tests/fixtures/sms-link-schema.sql'), 'utf8'))
+    await pg.exec(fs.readFileSync(path.join(root, 'supabase/migrations/070_link_orphan_sms_reply.sql'), 'utf8'))
+    return pg
+  })()
+  return pgPromise
+}
+test.after(async () => { if (pgPromise) await (await pgPromise).close() })
 const leadId = '11111111-1111-4111-8111-111111111111'
 const buyerId = '22222222-2222-4222-8222-222222222222'
 const messageId = '33333333-3333-4333-8333-333333333333'
@@ -35,6 +47,22 @@ function fixture({ leads = [syntheticLead()], messages = [], caller = { id: buye
     const method = init.method || 'GET'
     events.push({ table, method, query: url.searchParams.toString(), body: init.body ? JSON.parse(init.body) : null })
     if (table === failTable && method === failMethod) return new Response(JSON.stringify({ code: 'fixture_error', message: 'Synthetic database failure' }), { status: 400 })
+    if (table === 'link_orphan_sms_reply') {
+      const pg = await localPg()
+      await pg.exec('TRUNCATE public.sms_messages, public.leads')
+      for (const lead of tables.leads) {
+        await pg.query('INSERT INTO public.leads (id, name, phone, assigned_to, created_at) VALUES ($1,$2,$3,$4,$5)', [lead.id, lead.name, lead.phone, lead.assigned_to, lead.created_at])
+      }
+      for (const message of tables.sms_messages) {
+        const fields = ['id','lead_id','direction','status','from_phone','to_phone','body','twilio_sid','created_at']
+        await pg.query(`INSERT INTO public.sms_messages (${fields.join(',')}) VALUES (${fields.map((_, i) => '$'+(i+1)).join(',')})`, fields.map(key => message[key] ?? null))
+      }
+      const args = JSON.parse(init.body)
+      const { rows } = await pg.query('SELECT public.link_orphan_sms_reply($1,$2,$3) AS result', [args.p_message_id, args.p_lead_id, args.p_expected_owner_id])
+      const saved = await pg.query('SELECT id, lead_id FROM public.sms_messages')
+      for (const row of saved.rows) tables.sms_messages.find(m => m.id === row.id).lead_id = row.lead_id
+      return new Response(JSON.stringify(rows[0].result), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
     let rows = tables[table]
     if (!rows) throw new Error(`Unexpected table: ${table}`)
     rows = rows.filter(row => [...url.searchParams].every(([key, value]) => {
@@ -121,11 +149,12 @@ test('admin links a saved reply without resending, copying, or changing its cont
   assert.equal(response.status, 200)
   assert.deepEqual(f.tables.sms_messages[0], { ...before, lead_id: leadId })
   assert.equal(f.tables.sms_messages.length, 2)
-  assert.equal(f.events.filter(e => e.method === 'POST').length, 0)
+  assert.equal(f.events.filter(e => e.table === 'sms_messages' && e.method !== 'GET').length, 0)
   assert.equal(f.owner.length + f.group.length + f.push.length, 0)
-  assert.deepEqual(f.events.find(e => e.method === 'PATCH').body, { lead_id: leadId })
-  assert.equal((await f.recover()).status, 200)
-  assert.equal(f.events.filter(e => e.method === 'PATCH').length, 1, 'retry must be idempotent')
+  const retry = await f.recover()
+  assert.equal(retry.status, 200)
+  assert.equal((await retry.json()).already_linked, true)
+  assert.deepEqual(f.tables.sms_messages[0], { ...before, lead_id: leadId })
 })
 
 for (const [label, options, expected] of [
@@ -134,26 +163,27 @@ for (const [label, options, expected] of [
   ['owner changed', { leads: [syntheticLead(undefined, { assigned_to: otherBuyerId })] }, 409],
   ['different phone', { leads: [syntheticLead('2025550999')] }, 409],
   ['foreign suffix collision', { leads: [syntheticLead('+552025550123')] }, 409],
-  ['already linked elsewhere', { messages: [storedReply({ lead_id: otherLeadId }), storedOutbound()] }, 409],
+  ['already linked elsewhere', { leads: [syntheticLead(), syntheticLead('2025550999', { id: otherLeadId })], messages: [storedReply({ lead_id: otherLeadId }), storedOutbound()] }, 409],
   ['not inbound', { messages: [storedReply({ direction: 'out' }), storedOutbound()] }, 409],
   ['no earlier outbound', { messages: [storedReply()] }, 409],
   ['future outbound', { messages: [storedReply(), storedOutbound({ created_at: '2026-03-02T12:00:00Z' })] }, 409],
   ['failed outbound', { messages: [storedReply(), storedOutbound({ status: 'failed' })] }, 409],
   ['outbound to another phone', { messages: [storedReply(), storedOutbound({ to_phone: '12025550999' })] }, 409],
-  ['lead read failed', { failTable: 'leads' }, 503],
-  ['message read failed', { failTable: 'sms_messages' }, 503],
+  ['transaction failed', { failTable: 'link_orphan_sms_reply', failMethod: 'POST' }, 503],
 ]) {
   test(`recovery refuses ${label} without writes`, async () => {
     const f = fixture({ messages: [storedReply(), storedOutbound()], ...options })
+    const before = structuredClone(f.tables.sms_messages)
     assert.equal((await f.recover()).status, expected)
-    assert.equal(f.events.filter(e => e.method !== 'GET').length, 0)
+    assert.deepEqual(f.tables.sms_messages, before)
   })
 }
 
-test('recovery reports write failure without claiming success', async () => {
-  const f = fixture({ messages: [storedReply(), storedOutbound()], failTable: 'sms_messages', failMethod: 'PATCH' })
+test('recovery reports confirmation failure without claiming success or retrying the write', async () => {
+  const f = fixture({ messages: [storedReply(), storedOutbound()], failTable: 'sms_messages', failMethod: 'GET' })
   assert.equal((await f.recover()).status, 503)
-  assert.equal(f.tables.sms_messages[0].lead_id, null)
+  assert.equal(f.tables.sms_messages[0].lead_id, leadId)
+  assert.equal(f.events.filter(e => e.table === 'link_orphan_sms_reply').length, 1)
 })
 
 test('recovery validates explicit identifiers before querying business records', async () => {
@@ -162,3 +192,22 @@ test('recovery validates explicit identifiers before querying business records',
   assert.equal(f.events.length, 0)
 })
 
+for (const phone of ['+1 (468) 555-0123', '4685550123']) {
+  test(`ten-digit international sender cannot be mistaken for NANP ${phone}`, async () => {
+    const f = fixture({ leads: [syntheticLead(phone)] })
+    await f.inbound('+4685550123')
+    assert.equal(f.tables.sms_messages[0].lead_id, null)
+  })
+}
+
+test('explicit ten-digit international lead stays international', async () => {
+  const f = fixture({ leads: [syntheticLead('+46 8 555 0123')] })
+  await f.inbound('+4685550123')
+  assert.equal(f.tables.sms_messages[0].lead_id, leadId)
+})
+
+test('recovery never infers NANP country code from a persisted international sender', async () => {
+  const f = fixture({ leads: [syntheticLead('+1 (468) 555-0123')], messages: [storedReply({ from_phone: '4685550123' }), storedOutbound({ to_phone: '14685550123' })] })
+  assert.equal((await f.recover()).status, 409)
+  assert.equal(f.tables.sms_messages[0].lead_id, null)
+})

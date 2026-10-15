@@ -82,8 +82,8 @@ test('SMS reply from a lead with two duplicate records routes to the buyer who a
     leads: [
       {
         data: [
-          { id: NEW_DUP_LEAD, name: 'Andi Salustiano', assigned_to: BUYER_DAVI, created_at: '2026-04-20T21:51:19Z' },
-          { id: OLD_LEAD, name: 'Andi Salustiano', assigned_to: BUYER_LEANDRO, created_at: '2026-04-15T03:58:56Z' },
+          { id: NEW_DUP_LEAD, name: 'Andi Salustiano', phone: '9095550473', assigned_to: BUYER_DAVI, created_at: '2026-04-20T21:51:19Z' },
+          { id: OLD_LEAD, name: 'Andi Salustiano', phone: '9095550473', assigned_to: BUYER_LEANDRO, created_at: '2026-04-15T03:58:56Z' },
         ],
         error: null,
       },
@@ -102,7 +102,7 @@ test('single matching lead is used directly without querying outbound history', 
       { data: null, error: null }, // dedupe check
     ],
     leads: [
-      { data: [{ id: OLD_LEAD, name: 'Andi Salustiano', assigned_to: BUYER_LEANDRO, created_at: '2026-04-15T03:58:56Z' }], error: null },
+      { data: [{ id: OLD_LEAD, name: 'Andi Salustiano', phone: '9095550473', assigned_to: BUYER_LEANDRO, created_at: '2026-04-15T03:58:56Z' }], error: null },
     ],
   })
   await f.post()
