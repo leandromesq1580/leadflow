@@ -24,6 +24,13 @@ export async function POST(request: NextRequest) {
   const body = await request.json()
   const { name, phone, email, state, city, interest, notes } = body
 
+  // Keep the legacy default only for older clients omitting this field.
+  // Never infer a contact's language from the producer UI, name or location.
+  const leadLanguage = body.lead_language === undefined ? 'pt' : body.lead_language
+  if (leadLanguage !== 'pt' && leadLanguage !== 'es' && leadLanguage !== 'en') {
+    return NextResponse.json({ error: 'Selecione Português, Español ou English para o idioma do lead.' }, { status: 400 })
+  }
+
   if (!name?.trim() || (!phone?.trim() && !email?.trim())) {
     return NextResponse.json({ error: 'Nome e (telefone ou email) obrigatórios' }, { status: 400 })
   }
@@ -43,6 +50,7 @@ export async function POST(request: NextRequest) {
       interest: (interest || 'Seguro de vida').trim(),
       campaign_name: 'Manual',
       form_name: 'manual_entry',
+      lead_language: leadLanguage,
       type: 'hot',
       status: 'assigned',
       product_type: 'lead',
