@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { callerBuyer, canActAs } from '@/lib/api-auth'
 import { readWhatsAppHistory } from '@/lib/wa-message-history'
+import { readSmsReplies } from '@/lib/sms-inbox'
 
 /** Only actual, unread customer replies. Historical empty events stay in storage. */
 export async function GET(request: NextRequest) {
@@ -20,10 +21,16 @@ export async function GET(request: NextRequest) {
       if (after) q = q.gt('id', after)
       return q
     })
-    const counts: Record<string, number> = {}
-    for (const row of data) if (row.lead_id) counts[row.lead_id] = (counts[row.lead_id] || 0) + 1
+    const whatsappCounts: Record<string, number> = {}
+    for (const row of data) if (row.lead_id) whatsappCounts[row.lead_id] = (whatsappCounts[row.lead_id] || 0) + 1
+    const smsCounts: Record<string, number> = {}
+    for (const row of await readSmsReplies(db, buyerId, true)) {
+      smsCounts[row.lead_id] = (smsCounts[row.lead_id] || 0) + 1
+    }
+    const counts = { ...whatsappCounts }
+    for (const [id, count] of Object.entries(smsCounts)) counts[id] = (counts[id] || 0) + count
     const total = Object.values(counts).reduce((s, n) => s + n, 0)
-    return NextResponse.json({ counts, total }, { headers: { 'Cache-Control': 'private, no-store' } })
+    return NextResponse.json({ counts, total, whatsappCounts, smsCounts }, { headers: { 'Cache-Control': 'private, no-store' } })
   } catch {
     return NextResponse.json({ error: 'Unread messages unavailable' }, { status: 503 })
   }

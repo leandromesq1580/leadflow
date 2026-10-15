@@ -1,6 +1,7 @@
 'use client'
 
 import { FollowUpBadge } from '@/components/follow-up-badge'
+import { ReplyBadges } from '@/components/reply-badges'
 import type { LastFollowUp } from '@/lib/pipeline-follow-ups'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -27,6 +28,7 @@ interface Props {
   stageColor?: string
   movedAt?: string | null
   unreadCount?: number
+  smsUnreadCount?: number
   lastFollowUp?: LastFollowUp | null
   teamMembers?: TeamMember[]
   onAssigned?: () => void
@@ -42,9 +44,8 @@ function timeAgo(date: string) {
   return `${Math.floor(s / 86400)}d`
 }
 
-export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, unreadCount = 0, lastFollowUp, teamMembers, onAssigned, onArchived, viewedMemberId }: Props) {
+export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, unreadCount = 0, smsUnreadCount = 0, lastFollowUp, teamMembers, onAssigned, onArchived, viewedMemberId }: Props) {
   const t = useT()
-  const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const privacy = usePrivacy()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: pipelineLeadId,
@@ -79,21 +80,9 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
   return (
     <div ref={setNodeRef} style={{ ...cardStyle, position: 'relative' }} {...attributes} {...listeners} onClick={onClick}>
       {/* Unread badge */}
-      {unreadCount > 0 && (
-        <div className="absolute flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold text-white"
-          style={{
-            top: -6, right: -6,
-            background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-            boxShadow: '0 2px 8px rgba(239,68,68,0.5)',
-            minWidth: 22, height: 22, justifyContent: 'center',
-            zIndex: 10,
-          }}
-          title={L(
-            `${unreadCount} mensagem${unreadCount > 1 ? 's' : ''} não lida${unreadCount > 1 ? 's' : ''}`,
-            `${unreadCount} unread message${unreadCount > 1 ? 's' : ''}`,
-            `${unreadCount} mensaje${unreadCount > 1 ? 's' : ''} sin leer`,
-          )}>
-          💬 {unreadCount > 99 ? '99+' : unreadCount}
+      {(unreadCount > 0 || smsUnreadCount > 0) && (
+        <div className="absolute" style={{ top: -6, right: -6, zIndex: 10 }}>
+          <ReplyBadges whatsapp={unreadCount} sms={smsUnreadCount} />
         </div>
       )}
 

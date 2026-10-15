@@ -194,8 +194,8 @@ export function TopBar({ buyerId }: { buyerId?: string }) {
                   ? L('1 lead esperando o primeiro contato', '1 lead waiting for first contact', '1 lead esperando el primer contacto')
                   : L(`${n.semContato} leads esperando o primeiro contato`, `${n.semContato} leads waiting for first contact`, `${n.semContato} leads esperando el primer contacto`)} />}
                 {n.wa > 0 && <Item href="/dashboard/whatsapp" icone="💬" cor="var(--ok-soft)" texto={n.wa === 1
-                  ? L('1 conversa não lida no WhatsApp', '1 unread WhatsApp conversation', '1 conversación sin leer en WhatsApp')
-                  : L(`${n.wa} conversas não lidas no WhatsApp`, `${n.wa} unread WhatsApp conversations`, `${n.wa} conversaciones sin leer en WhatsApp`)} />}
+                  ? L('1 conversa não lida (WhatsApp/SMS)', '1 unread conversation (WhatsApp/SMS)', '1 conversación sin leer (WhatsApp/SMS)')
+                  : L(`${n.wa} conversas não lidas (WhatsApp/SMS)`, `${n.wa} unread conversations (WhatsApp/SMS)`, `${n.wa} conversaciones sin leer (WhatsApp/SMS)`)} />}
                 {n.reunioes > 0 && <Item href="/dashboard/appointments" icone="📅" cor="var(--accent-light)" texto={n.reunioes === 1
                   ? L('1 compromisso nos próximos 90 min', '1 appointment in the next 90 min', '1 cita en los próximos 90 min')
                   : L(`${n.reunioes} compromissos nos próximos 90 min`, `${n.reunioes} appointments in the next 90 min`, `${n.reunioes} citas en los próximos 90 min`)} />}

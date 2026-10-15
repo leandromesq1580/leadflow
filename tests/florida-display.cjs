@@ -116,7 +116,7 @@ test('mobile received list displays exact delivery time', () => {
 
 test('mobile conversation formats actual sent_at in account locale and Florida time', () => {
   for (const locale of ['pt', 'en', 'es']) {
-    const Page = load('src/app/m/whatsapp/[leadId]/page.tsx', clientDeps([null, lead, [{ id: 'test-message', direction: 'in', body: 'Synthetic message', sent_at: lead.created_at }], '', false, null, ''], locale)).default
+    const Page = load('src/app/m/whatsapp/[leadId]/page.tsx', clientDeps([null, lead, [{ id: 'test-message', direction: 'in', body: 'Synthetic message', sent_at: lead.created_at }], null, '', false, null, ''], locale)).default
     const html = renderToStaticMarkup(React.createElement(Page))
     assert.match(html, /06:47/)
     assert.doesNotMatch(html, /10:47/)

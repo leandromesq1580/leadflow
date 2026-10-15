@@ -11,7 +11,7 @@ function load(file, mocks, globals = {}) {
   const loadedModule = { exports: {} };
   vm.runInNewContext(code, { module: loadedModule, exports: loadedModule.exports, console, URL, Response,
     fetch: () => { throw Error('NETWORK FORBIDDEN'); }, ...globals,
-    require: name => { if (Object.hasOwn(mocks, name)) return mocks[name]; if (name === '@/lib/privacy-mode') return { usePrivacy: () => ({ enabled: privacyEnabled }) }; if (['@/lib/pipeline-follow-ups', '@/components/follow-up-badge', '@/lib/pipeline-ordering', '@/lib/pipeline-drag-order'].includes(name)) return load('src/' + name.slice(2) + (name.includes('components') ? '.tsx' : '.ts'), mocks); if (name === 'react/jsx-runtime') return req(name); throw Error('Unmocked import: ' + name); }
+    require: name => { if (Object.hasOwn(mocks, name)) return mocks[name]; if (name === '@/lib/privacy-mode') return { usePrivacy: () => ({ enabled: privacyEnabled }) }; if (['@/lib/pipeline-follow-ups', '@/components/follow-up-badge', '@/components/reply-badges', '@/lib/pipeline-ordering', '@/lib/pipeline-drag-order'].includes(name)) return load('src/' + name.slice(2) + (name.includes('components') ? '.tsx' : '.ts'), mocks); if (name === 'react/jsx-runtime') return req(name); throw Error('Unmocked import: ' + name); }
   }, { filename: file }); return loadedModule.exports;
 }
 const fu = { type: 'call', description: 'Conversei sobre a cobertura.\nEnviar proposta amanhã.', status: 'pending', completed_at: null, scheduled_at: null, created_at: '2026-09-14T14:35:00Z' };

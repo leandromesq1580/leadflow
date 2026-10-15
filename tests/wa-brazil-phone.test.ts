@@ -9,6 +9,7 @@ import { createClient } from '@supabase/supabase-js'
 import * as routing from '../src/lib/wa-conversation-routing'
 import * as content from '../src/lib/wa-message-content'
 import * as history from '../src/lib/wa-message-history'
+import * as receipts from '../src/lib/conversation-read-receipt'
 
 // Fictional fixtures only. No bridge, database, or message transport is contacted.
 const short = '556998765432', long = '5569998765432'
@@ -294,6 +295,7 @@ test('real UI history GET returns both phone forms by authorized lead ID, never 
   let loaded!: () => void
   const finished = new Promise<void>(resolve => { loaded = resolve })
   const Inbox = load('../src/components/whatsapp-inbox.tsx', {
+    '@/lib/conversation-read-receipt': receipts,
     'react/jsx-runtime': jsxRuntime,
     react: {
       useState: (initial: any) => {

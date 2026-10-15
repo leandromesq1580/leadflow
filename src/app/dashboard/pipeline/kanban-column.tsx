@@ -28,13 +28,14 @@ interface Props {
   items: PipelineLead[]
   onLeadClick: (lead: PipelineLead) => void
   unreadCounts?: Record<string, number>
+  smsCounts?: Record<string, number>
   teamMembers?: TeamMember[]
   onAssigned?: () => void
   onArchived?: () => void
   viewedMemberId?: string | null
 }
 
-export function KanbanColumn({ stage, actions, returnTo, items, onLeadClick, unreadCounts = {}, teamMembers, onAssigned, onArchived, viewedMemberId }: Props) {
+export function KanbanColumn({ stage, actions, returnTo, items, onLeadClick, unreadCounts = {}, smsCounts = {}, teamMembers, onAssigned, onArchived, viewedMemberId }: Props) {
   const t = useT()
   const { setNodeRef, isOver } = useDroppable({ id: stage.id })
 
@@ -85,6 +86,7 @@ export function KanbanColumn({ stage, actions, returnTo, items, onLeadClick, unr
               viewedMemberId={viewedMemberId}
               onClick={() => onLeadClick(item)}
               unreadCount={unreadCounts[item.lead.id] || 0}
+              smsUnreadCount={smsCounts[item.lead.id] || 0}
             />
           ))}
         </SortableContext>

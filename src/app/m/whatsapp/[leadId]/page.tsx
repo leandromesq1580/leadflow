@@ -1,4 +1,5 @@
 'use client'
+import { acknowledgeConversation } from '@/lib/conversation-read-receipt'
 
 import { formatFloridaDateTime } from '@/lib/florida-time'
 
@@ -31,6 +32,7 @@ export default function MobileThread() {
   const [buyerId, setBuyerId] = useState<string | null>(null)
   const [lead, setLead] = useState<(LeadLanguageFields & { name: string; phone: string }) | null>(null)
   const [msgs, setMsgs] = useState<Msg[] | null>(null)
+  const [loadedForLead, setLoadedForLead] = useState<string | null>(null)
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -41,14 +43,25 @@ export default function MobileThread() {
     if (!leadId) return
     fetch('/api/m/team-context', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d?.buyer_id) setBuyerId(d.buyer_id) }).catch(() => {})
     fetch(`/api/leads/${leadId}`, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d?.lead) setLead(d.lead) }).catch(() => {})
-    const load = () => fetch(`/api/whatsapp/messages?lead_id=${leadId}`, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d) setMsgs(d.messages || []) }).catch(() => {})
+    let cancelled = false
+    const load = () => fetch(`/api/whatsapp/messages?lead_id=${leadId}`, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => {
+      if (d && !cancelled) { setMsgs(d.messages || []); setLoadedForLead(leadId) }
+    }).catch(() => {})
     load()
-    fetch('/api/whatsapp/messages', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lead_id: leadId }) }).catch(() => {})
+
     const timer = setInterval(load, 5000)
-    return () => clearInterval(timer)
+    return () => { cancelled = true; clearInterval(timer) }
   }, [leadId])
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'auto' }) }, [msgs?.length])
+  useEffect(() => {
+    const mark = () => {
+      if (loadedForLead === leadId && msgs?.length && document.visibilityState === 'visible') acknowledgeConversation(leadId, msgs).catch(() => {})
+    }
+    mark()
+    document.addEventListener('visibilitychange', mark)
+    return () => document.removeEventListener('visibilitychange', mark)
+  }, [leadId, msgs, loadedForLead])
 
   async function send() {
     const body = text.trim()
@@ -112,7 +125,9 @@ export default function MobileThread() {
         {!msgs && <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 40 }}><div className="m-spin" /></div>}
         {msgs && msgs.length === 0 && <p className="m-muted" style={{ textAlign: 'center', paddingTop: 40, fontSize: 13 }}>{L('Nenhuma mensagem ainda. Mande a primeira.', 'No messages yet. Send the first.', 'Sin mensajes. Envía el primero.')}</p>}
         {(msgs || []).map(m => (
-          <div key={m.id} className={`m-bubble ${m.direction === 'out' ? 'm-bubble-out' : 'm-bubble-in'}`}>
+          <div key={m.id} className={`m-bubble ${m.direction === 'out' ? 'm-bubble-out' : 'm-bubble-in'}`}
+            style={m.channel === 'sms' && m.direction === 'in' ? { background: '#dbeafe', color: '#172554', border: '1px solid #93c5fd' } : undefined}>
+            {m.channel === 'sms' && <span style={{ display: 'block', fontWeight: 800, fontSize: 11, marginBottom: 4 }}>SMS</span>}
             {m.media_url && (
               m.media_type === 'image'
                 ? <img src={m.media_url} alt="" style={{ maxWidth: '100%', borderRadius: 10, marginBottom: m.body ? 6 : 0, display: 'block' }} />
