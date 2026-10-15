@@ -74,17 +74,20 @@ export async function POST(request: NextRequest) {
   const { data: dup } = await db.from('sms_messages').select('id').eq('twilio_sid', sid).maybeSingle()
   if (dup) return twiml()
 
-  // Casa o lead pelos últimos 10 dígitos (mesmo padrão do webhook do WhatsApp).
+  // Compara os dígitos normalizados: phone pode conter espaços/parênteses.
   // Um mesmo telefone pode ter MAIS DE UM cadastro de lead (duplicidade legítima:
   // reimportação, novo formulário, etc.), cada um com um dono (assigned_to)
   // diferente. Pegar sempre "o mais recente" (bug real, 2026-09-22) faz a
   // resposta do cliente cair no dono ERRADO quando o cadastro mais novo nunca
   // trocou mensagem com esse contato — mistura a conversa entre duas contas.
   const digits = from.replace(/\D/g, '')
-  const last10 = digits.slice(-10)
+  // Só NANP admite a variante nacional sem +1. Nunca use sufixos de outros países.
+  const phones = digits.length === 11 && digits.startsWith('1')
+    ? [digits, digits.slice(1)]
+    : digits.length === 10 ? [digits, `1${digits}`] : [digits]
   const { data: candidates } = await db.from('leads')
     .select('id, name, assigned_to, created_at')
-    .or(`phone.ilike.%${last10},phone.eq.${digits},phone.eq.+${digits}`)
+    .in('phone_digits', phones)
     .order('created_at', { ascending: false })
     .limit(10)
   const lead = await resolveLeadForInboundSms(db, candidates || [])
