@@ -42,6 +42,7 @@ export default function PipelinePage() {
   const [teamLeads, setTeamLeads] = useState<any[]>([])
   const [teamMembers, setTeamMembers] = useState<any[]>([])
   const [isAgency, setIsAgency] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   // Espelho do pipeline de um membro do time
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
   const [memberPipeline, setMemberPipeline] = useState<Pipeline | null>(null)
@@ -96,6 +97,7 @@ export default function PipelinePage() {
     const buyer = await r.json()
     setBuyerId(buyer.id)
     setIsAgency(buyer.is_agency || false)
+    setIsAdmin(buyer.is_admin === true)
     loadPipelines(buyer.id)
     if (buyer.is_agency) loadTeamData(buyer.id)
   }
@@ -586,6 +588,7 @@ export default function PipelinePage() {
                 <div className="flex gap-4" style={{ minWidth: (memberPipeline.stages.length || 1) * 306 }}>
                   {memberPipeline.stages.map(stage => (
                     <KanbanColumn
+                      canAssignAsNew={isAdmin}
                       key={stage.id}
                       stage={stage}
                       actions={memberActions}
@@ -719,6 +722,7 @@ export default function PipelinePage() {
           <div className="flex gap-4" style={{ minWidth: (activePipeline?.stages.length || 1) * 306 }}>
             {activePipeline?.stages.map(stage => (
               <KanbanColumn
+                canAssignAsNew={isAdmin}
                 key={stage.id}
                 stage={stage}
                 actions={ownActions}

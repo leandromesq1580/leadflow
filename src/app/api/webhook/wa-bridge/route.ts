@@ -166,6 +166,7 @@ export async function POST(request: NextRequest) {
       .from('leads')
       .select('id, assigned_to, assigned_to_member, phone, name, created_at, assigned_at')
       .in('phone_digits', contactPhones)
+      .is('redelivered_to_lead_id', null) // Nova entrega encerra o cadastro anterior, sem copiar sua conversa.
       .order('created_at', { ascending: false })
       .limit(100)
     if (candidatesError) throw candidatesError

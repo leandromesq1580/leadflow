@@ -6,6 +6,7 @@ import {
   redistributePendingLeads,
   tryAdminRule,
 } from '@/lib/distribute'
+import { drainAdminNewLeadAssignmentEffects } from '@/lib/admin-new-lead-assignment-effects'
 import { dispatchScheduledSms } from '@/lib/sms-auto'
 import { releasePendingRewards } from '@/lib/referral'
 import { dripLegacyCrmBonusLeads } from '@/lib/crm-bonus-drip'
@@ -81,6 +82,11 @@ export async function GET(request: Request) {
   if (!secret || !allowedSecrets.includes(secret)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  // Independent durable work: manual delivery does not depend on Meta token,
+  // poll lease, or the original 72h notification reconciliation window.
+  try { await drainAdminNewLeadAssignmentEffects() }
+  catch { console.warn('[Poll] administrative delivery effects deferred') }
 
   const pageToken = (process.env.META_PAGE_TOKEN || '').trim().replace(/\\n/g, '')
   if (!pageToken) {
@@ -311,6 +317,7 @@ export async function GET(request: Request) {
           .not('assigned_to', 'is', null)
           .not('meta_lead_id', 'is', null)
           .is('notified_at', null)
+          .is('redelivered_to_lead_id', null)
           .gte('assigned_at', cutoff)
           .limit(25)
         if (mErr) throw mErr

@@ -30,6 +30,7 @@ interface Props {
   lastFollowUp?: LastFollowUp | null
   teamMembers?: TeamMember[]
   onAssigned?: () => void
+  canAssignAsNew?: boolean
   onArchived?: () => void
   viewedMemberId?: string | null
 }
@@ -42,7 +43,7 @@ function timeAgo(date: string) {
   return `${Math.floor(s / 86400)}d`
 }
 
-export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, unreadCount = 0, lastFollowUp, teamMembers, onAssigned, onArchived, viewedMemberId }: Props) {
+export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, unreadCount = 0, lastFollowUp, teamMembers, onAssigned, onArchived, canAssignAsNew = false, viewedMemberId }: Props) {
   const t = useT()
   const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const privacy = usePrivacy()
@@ -114,6 +115,7 @@ export function LeadCard({ pipelineLeadId, lead, onClick, stageColor, movedAt, u
           members={teamMembers || []}
           currentMemberId={lead.assigned_to_member}
           canReclaim={lead.can_reclaim}
+          canAssignAsNew={canAssignAsNew}
           viewedMemberId={viewedMemberId}
           onAssigned={onAssigned}
           onArchived={onArchived}

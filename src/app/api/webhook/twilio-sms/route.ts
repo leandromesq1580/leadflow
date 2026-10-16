@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
   const { data: candidates } = await db.from('leads')
     .select('id, name, phone, assigned_to, created_at')
     .in('phone_digits', phones)
+    .is('redelivered_to_lead_id', null) // Atendimento anterior preservado, mas encerrado pela nova entrega.
     .order('created_at', { ascending: false })
     .limit(10)
   // Remetente Twilio já inclui país. Cadastro nacional de 10 dígitos é NANP;

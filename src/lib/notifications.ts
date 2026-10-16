@@ -356,26 +356,44 @@ function leadOriginLines(lead: { campaign_name?: string | null; raw_data?: unkno
   return lines.join('\n')
 }
 
+/** Canonical authorization, not caller-supplied provenance. Manual imports stay silent. */
+async function notificationSource(leadId?: string) {
+  if (!leadId) return null
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const db = createAdminClient()
+    const { data: src, error } = await db.from('leads')
+      .select('id, assigned_to, assigned_to_member, meta_lead_id, lead_language, form_name, campaign_name, raw_data, redelivery_source_id, redelivered_to_lead_id, delivery_credit_id, notified_at')
+      .eq('id', leadId).maybeSingle()
+    if (error || !src || src.redelivered_to_lead_id) return null
+    if (src.redelivery_source_id) {
+      const { data: receipt, error: receiptError } = await db.from('admin_new_lead_assignments')
+        .select('lead_id, source_lead_id, buyer_id, credit_id').eq('lead_id', leadId).maybeSingle()
+      if (receiptError || !receipt || receipt.lead_id !== leadId
+        || receipt.source_lead_id !== src.redelivery_source_id
+        || !src.assigned_to || receipt.buyer_id !== src.assigned_to
+        || !src.delivery_credit_id || receipt.credit_id !== src.delivery_credit_id) return null
+    } else if (!src.meta_lead_id || (src.raw_data as any)?.source === 'manual'
+      || src.campaign_name === 'Manual' || src.form_name === 'manual_entry') return null
+    return src
+  } catch {
+    // A failed guard is not permission to send through another channel.
+    return null
+  }
+}
+
 /**
  * Send email notification to buyer when a new lead is assigned.
  */
 export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead): Promise<boolean> {
-  // REGRA UNIVERSAL: lead MANUAL (sem meta_lead_id) NUNCA gera notificacao de "novo
-  // lead". Cadastro/upload do proprio comprador NAO e entrega da plataforma —
-  // notificar quebra a confianca (cliente acha que mexemos no lead dele).
-  try {
-    if ((lead as any).id) {
-      const { createAdminClient } = await import('@/lib/supabase/admin')
-      const { data: src } = await createAdminClient()
-        .from('leads').select('meta_lead_id, lead_language, form_name, campaign_name, raw_data').eq('id', (lead as any).id).maybeSingle()
-      if (src && !src.meta_lead_id) {
-        console.log(`[Notify] Lead ${(lead as any).id} e MANUAL — pula notificacao (regra: manual nao notifica).`)
-        return false
-      }
-      // Also hydrate narrow callers (retry/reassignment) from the canonical row.
-      if (src) lead = { ...lead, ...src }
-    }
-  } catch { /* se a checagem falhar, segue o fluxo normal */ }
+  const src = await notificationSource(lead.id)
+  if (!src) return false
+  // Ordinary Meta alerts retain their existing retry semantics. A paid clone is
+  // accepted only for the ledger's current owner; stale caller data cannot revive it.
+  const isRedelivery = !!src.redelivery_source_id
+  if (isRedelivery && src.assigned_to !== (buyer as any).id) return false
+  if (isRedelivery && src.notified_at) return true
+  lead = { ...lead, ...src }
 
   // Idioma do corretor pros avisos abaixo (push, email, WhatsApp). Cron/webhook não
   // enxerga o cookie de idioma → busca no settings; qualquer falha cai em 'pt'.
@@ -511,8 +529,21 @@ ${language}
   // (dado), não transitório — reenviar não resolve. Bridge caída → groupOk=false →
   // não carimba → reenvia quando voltar (esse é o retry legítimo).
   const buyerNotified = !buyer.phone || buyerOk
-  if (groupOk && !buyerNotified) {
+  if (groupOk && !buyerNotified && !isRedelivery) {
     console.error(`[Notify] grupo OK mas COMPRADOR falhou (telefone ${buyer.phone} inválido?) — lead ${(lead as any).id} carimbado p/ NÃO spammar. Corrigir o telefone do comprador.`)
+  }
+  // Paid deliveries have a durable outbox: partial/uncertain transport or stamp
+  // persistence must quarantine that effect, not silently retry all channels.
+  if (isRedelivery) {
+    if (!groupOk || !buyerNotified) return false
+    try {
+      const { createAdminClient } = await import('@/lib/supabase/admin')
+      const { data: stamped, error } = await createAdminClient().from('leads')
+        .update({ notified_at: new Date().toISOString() }).eq('id', lead.id!)
+        .eq('assigned_to', src.assigned_to).is('redelivered_to_lead_id', null)
+        .select('notified_at').single()
+      return !error && !!stamped?.notified_at
+    } catch { return false }
   }
   if (groupOk && (lead as any).id) {
     try {
@@ -664,26 +695,11 @@ interface TeamMember {
  * Send notification to a team member when a lead is assigned to them.
  */
 export async function sendTeamMemberNotification(member: TeamMember, lead: Lead, bridge?: { url: string; key: string } | null) {
-  // REGRA UNIVERSAL: lead MANUAL (sem meta_lead_id) NUNCA notifica — nem o membro do
-  // time. Mesmo guard do sendLeadNotificationEmail; FALTAVA aqui → lead manual
-  // delegado a um membro vazava o "Novo Lead" (caso SHARON E PEOPLES).
-  try {
-    if ((lead as any).id) {
-      const { createAdminClient } = await import('@/lib/supabase/admin')
-      const { data: src } = await createAdminClient()
-        .from('leads').select('campaign_name, form_name, raw_data, lead_language, meta_lead_id').eq('id', (lead as any).id).maybeSingle()
-      const isManual = !!src && (
-        (src.raw_data as any)?.source === 'manual' ||
-        src.campaign_name === 'Manual' ||
-        src.form_name === 'manual_entry'
-      )
-      if (isManual) {
-        console.log(`[Notify team] Lead ${(lead as any).id} e MANUAL — pula notificacao ao membro (regra: manual nao notifica).`)
-        return
-      }
-      if (src) lead = { ...lead, ...src }
-    }
-  } catch { /* se a checagem falhar, segue o fluxo normal */ }
+  // Same fail-closed provenance guard as buyer alerts. Delegation does not make
+  // an ordinary manual import a platform delivery or revive a retired source.
+  const src = await notificationSource(lead.id)
+  if (!src || (src.redelivery_source_id && src.assigned_to_member !== member.id)) return
+  lead = { ...lead, ...src }
 
   // Idioma do membro: locale é por buyer, então só existe se ele tem conta própria
   // (auth_user_id → buyers). Membro sem conta segue em 'pt' (comportamento de sempre).

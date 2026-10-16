@@ -191,7 +191,9 @@ test('automatic SMS uses the lead language now and rechecks messages queued befo
       const db = database(q => {
         if (q.table === 'leads') return { data: lead }
         if (q.table === 'buyers') return { data: { name: 'Agent Fixture' } }
-        if (q.table === 'sms_messages' && q.calls.some(c => c[0] === 'lte')) return { data: [{ id: 'sms', lead_id: 'lead', to_phone: '14075550100', body: 'Texto em português enfileirado antes da correção' }] }
+        if (q.table === 'sms_messages' && q.calls.some(c => c[0] === 'lte')) return { data: [{ id: 'sms', lead_id: 'lead', direction: 'out', to_phone: '14075550100', body: 'Texto em português enfileirado antes da correção' }] }
+        // Reservation/finish and history writes now require confirmed returned IDs.
+        if (['sms_messages', 'follow_ups'].includes(q.table) && q.calls.some(c => ['insert', 'update'].includes(c[0]))) return { data: { id: q.table === 'sms_messages' ? 'sms' : 'note' }, error: null }
         return { data: null, count: 0, error: null }
       })
       const app = load('lib/sms-auto.ts', {
