@@ -1,4 +1,4 @@
-import test from 'node:test'
+import test, { type TestContext } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
@@ -12,22 +12,24 @@ function load(file: string, dependencies: Record<string, unknown>) {
   const compiled = transpileModule(readFileSync(`src/lib/${file}.ts`, 'utf8'), {
     compilerOptions: { module: ModuleKind.CommonJS, target: ScriptTarget.ES2022 },
   }).outputText
-  const module = { exports: {} as any }
+  const loaded = { exports: {} as Record<string, (...args: unknown[]) => Promise<unknown>> }
   new Function('require', 'module', 'exports', compiled)((id: string) => {
     assert.ok(id in dependencies, `Unexpected dependency ${id}`)
     return dependencies[id]
-  }, module, module.exports)
-  return module.exports
+  }, loaded, loaded.exports)
+  return loaded.exports
 }
 
+// Synthetic PostgREST rows intentionally span multiple unrelated table schemas.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Row = Record<string, any>
 type Request = { table: string; method: string; url: URL; body: Row | null }
 function database(tables: Record<string, Row[]>) {
   const requests: Request[] = []
   let counter = 0
-  const io = {
-    before: async (_r: Request): Promise<Response | void> => {},
-    after: async (_r: Request, _rows: Row[]): Promise<void> => {},
+  const io: { before(request: Request): Promise<Response | void>; after(request: Request, rows: Row[]): Promise<void> } = {
+    before: async () => {},
+    after: async () => {},
   }
   const db = createClient('https://database.example.invalid', 'fixture-only', {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -81,12 +83,12 @@ const contact = { id: 'lead', name: 'Fixture Lead', phone: '15555550101', city: 
 const canonical = () => ({ ...contact, assigned_to: 'buyer', assigned_to_member: 'member', meta_lead_id: null,
   lead_language: 'es', redelivery_source_id: 'source', redelivered_to_lead_id: null, notified_at: null, delivery_credit_id: 'credit' })
 const ledger = () => ({ lead_id: 'lead', buyer_id: 'buyer', source_lead_id: 'source', credit_id: 'credit' })
-function notifications(t: any, lead: Row | null = canonical(), receipt: Row | null = ledger()) {
+function notifications(t: TestContext, lead: Row | null = canonical(), receipt: Row | null = ledger()) {
   const f = database({ leads: lead ? [lead] : [], admin_new_lead_assignments: receipt ? [receipt] : [] })
   const sends: Row[] = []
-  t.mock.method(globalThis, 'fetch', async (url: string, options: any) => {
+  t.mock.method(globalThis, 'fetch', async (url: string, options: RequestInit) => {
     assert.equal(url, 'https://bridge.example.invalid/send')
-    sends.push({ channel: 'whatsapp', ...JSON.parse(options.body) })
+    sends.push({ channel: 'whatsapp', ...JSON.parse(String(options.body)) })
     return Response.json({ success: true, id: 'fixture-confirmation' })
   })
   const old = process.env.WA_BRIDGE_URL
@@ -145,8 +147,8 @@ for (const scenario of ['manual', 'forged', 'ledger-error', 'ledger-throw', 'lea
 for (const failureMode of ['stamp-error', 'stamp-throw', 'stamp-missing', 'stamp-owner-change', 'buyer-transport']) {
   test(`clone notification quarantines unconfirmed ${failureMode}`, async t => {
     const f = notifications(t)
-    if (failureMode === 'buyer-transport') t.mock.method(globalThis, 'fetch', async (_url: string, options: any) => {
-      const payload = JSON.parse(options.body)
+    if (failureMode === 'buyer-transport') t.mock.method(globalThis, 'fetch', async (_url: string, options: RequestInit) => {
+      const payload = JSON.parse(String(options.body))
       f.sends.push({ channel: 'whatsapp', ...payload })
       return Response.json(payload.number !== buyer.phone ? { success: true, id: 'fixture-confirmation' } : { success: false })
     })
@@ -171,9 +173,9 @@ test('notified clone still rejects a stale recipient and missing caller buyer ID
 
 for (const scenario of ['manual', 'retired', 'missing', 'error']) {
   test(`team notifier also fails closed: ${scenario}`, async t => {
-    const source = { ...canonical(), meta_lead_id: 'meta', redelivery_source_id: null }
-    if (scenario === 'manual') source.meta_lead_id = null as any
-    if (scenario === 'retired') source.redelivered_to_lead_id = 'clone' as any
+    const source: Row = { ...canonical(), meta_lead_id: 'meta', redelivery_source_id: null }
+    if (scenario === 'manual') source.meta_lead_id = null
+    if (scenario === 'retired') source.redelivered_to_lead_id = 'clone'
     const f = notifications(t, scenario === 'missing' ? null : source, null)
     if (scenario === 'error') f.io.before = async () => failure('read_unavailable')
     await f.api.sendTeamMemberNotification({ ...buyer, id: 'member', whatsapp: buyer.phone }, contact)
@@ -181,7 +183,7 @@ for (const scenario of ['manual', 'retired', 'missing', 'error']) {
   })
 }
 
-function sms(t: any, scheduled = true) {
+function sms(t: TestContext, scheduled = true) {
   t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-09-07T16:00:00Z') })
   const f = database({ leads: [{ ...canonical(), redelivery_source_id: null, sms_opted_out: false }],
     buyers: [buyer], follow_ups: [], whatsapp_messages: [], sms_messages: scheduled ? [{ id: 'sms', lead_id: 'lead', direction: 'out', status: 'scheduled',
