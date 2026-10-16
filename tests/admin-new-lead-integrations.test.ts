@@ -86,6 +86,7 @@ const ledger = () => ({ lead_id: 'lead', buyer_id: 'buyer', source_lead_id: 'sou
 function notifications(t: TestContext, lead: Row | null = canonical(), receipt: Row | null = ledger()) {
   const f = database({ leads: lead ? [lead] : [], admin_new_lead_assignments: receipt ? [receipt] : [] })
   const sends: Row[] = []
+  const fallback = { calls: 0 }
   t.mock.method(globalThis, 'fetch', async (url: string, options: RequestInit) => {
     assert.equal(url, 'https://bridge.example.invalid/send')
     sends.push({ channel: 'whatsapp', ...JSON.parse(String(options.body)) })
@@ -100,9 +101,9 @@ function notifications(t: TestContext, lead: Row | null = canonical(), receipt: 
     './insurance-policies': {}, './lead-message-locale': language,
     '@/lib/supabase/admin': { createAdminClient: () => f.db },
     '@/lib/push-notify': { pushToBuyer: async () => { sends.push({ channel: 'push' }); return 1 } },
-    '@/lib/wa-bridge': { pickFallbackBridge: async () => null },
+    '@/lib/wa-bridge': { pickFallbackBridge: async () => { fallback.calls++; return null } },
   })
-  return { ...f, api, sends }
+  return { ...f, api, sends, fallback }
 }
 
 test('notifier permits a ledger-proven clone and respects canonical notified_at on replay', async t => {
@@ -116,6 +117,82 @@ test('notifier permits a ledger-proven clone and respects canonical notified_at 
   assert.equal(await f.api.sendLeadNotificationEmail(buyer, contact), true)
   assert.equal(f.sends.length, count)
 })
+
+for (const destination of ['buyer', 'group', 'admin', 'secondary'] as const) {
+  test(`paid clone never replays a remotely accepted ${destination} alert with a lost response`, async t => {
+    const f = notifications(t)
+    const recipient = { ...buyer, notification_phone_2: '15555550103' }
+    const accepted: string[] = []
+    const selected = (phone: string) => destination === 'buyer' ? phone === buyer.phone
+      : destination === 'secondary' ? phone === recipient.notification_phone_2
+        : destination === 'group' ? phone.includes('@g.us')
+          : phone !== buyer.phone && phone !== recipient.notification_phone_2 && !phone.includes('@g.us')
+    t.mock.method(globalThis, 'fetch', async (url: string, options: RequestInit) => {
+      assert.equal(url, 'https://bridge.example.invalid/send')
+      const payload = JSON.parse(String(options.body))
+      accepted.push(payload.number)
+      // The remote accepted the first send, but its HTTP response was lost.
+      // A second call would acknowledge, hiding the duplicate from the outbox.
+      if (selected(payload.number) && accepted.filter(n => n === payload.number).length === 1) throw new Error('synthetic acknowledgement lost after acceptance')
+      return Response.json({ success: true, id: 'synthetic-confirmation' })
+    })
+    assert.equal(await f.api.sendLeadNotificationEmail(recipient, contact), false)
+    assert.equal(accepted.filter(selected).length, 1)
+    assert.equal(f.fallback.calls, 0)
+    assert.equal(f.tables.leads[0].notified_at, null)
+  })
+}
+
+test('ordinary Meta alerts keep their preexisting retry policy', async t => {
+  const f = notifications(t, { ...canonical(), meta_lead_id: 'synthetic-meta', redelivery_source_id: null }, null)
+  let buyerAttempts = 0
+  t.mock.method(globalThis, 'fetch', async (_url: string, options: RequestInit) => {
+    const payload = JSON.parse(String(options.body))
+    if (payload.number === buyer.phone && ++buyerAttempts === 1) throw new Error('synthetic ordinary retry')
+    return Response.json({ success: true, id: 'synthetic-confirmation' })
+  })
+  assert.equal(await f.api.sendLeadNotificationEmail(buyer, contact), true)
+  assert.equal(buyerAttempts, 2)
+})
+
+test('late bridge completion after a lost acknowledgement never starts a second paid alert', async t => {
+  const f = notifications(t)
+  const timeout = AbortSignal.timeout.bind(AbortSignal)
+  t.mock.method(AbortSignal, 'timeout', () => timeout(10))
+  let buyerAttempts = 0, lateCompletions = 0
+  t.mock.method(globalThis, 'fetch', async (_url: string, options: RequestInit) => {
+    const payload = JSON.parse(String(options.body))
+    if (payload.number !== buyer.phone) return Response.json({ success: true, id: 'synthetic-ack' })
+    buyerAttempts++
+    return new Promise<Response>((resolve, reject) => {
+      options.signal!.addEventListener('abort', () => reject(new Error('synthetic acknowledgement timeout')), { once: true })
+      setTimeout(() => { lateCompletions++; resolve(Response.json({ success: true, id: 'synthetic-late-ack' })) }, 40)
+    })
+  })
+  assert.equal(await f.api.sendLeadNotificationEmail(buyer, contact), false)
+  await new Promise(resolve => setTimeout(resolve, 60))
+  assert.equal(lateCompletions, 1)
+  assert.equal(buyerAttempts, 1)
+  assert.equal(f.tables.leads[0].notified_at, null)
+})
+
+for (const outcome of ['rejected', 'malformed', 'missing-id', 'server-error'] as const) {
+  test(`paid clone quarantines ${outcome} without hidden retries or fallback`, async t => {
+    const f = notifications(t)
+    let attempts = 0
+    t.mock.method(globalThis, 'fetch', async (_url: string, options: RequestInit) => {
+      if (JSON.parse(String(options.body)).number !== buyer.phone) return Response.json({ success: true, id: 'synthetic-ack' })
+      attempts++
+      if (outcome === 'malformed') return new Response('{', { status: 200 })
+      if (outcome === 'missing-id') return Response.json({ success: true })
+      return Response.json({ success: false }, { status: outcome === 'rejected' ? 422 : 503 })
+    })
+    assert.equal(await f.api.sendLeadNotificationEmail(buyer, contact), false)
+    assert.equal(attempts, 1)
+    assert.equal(f.fallback.calls, 0)
+    assert.equal(f.tables.leads[0].notified_at, null)
+  })
+}
 
 for (const scenario of ['manual', 'forged', 'ledger-error', 'ledger-throw', 'lead-error', 'lead-throw', 'missing', 'missing-id', 'wrong-owner', 'wrong-ledger-owner', 'wrong-source', 'wrong-credit', 'retired', 'retired-meta', 'forged-meta', 'already-notified'] as const) {
   test(`notifier guard: ${scenario}`, async t => {

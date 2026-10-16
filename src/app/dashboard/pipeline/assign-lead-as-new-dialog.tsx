@@ -111,7 +111,11 @@ export function AssignLeadAsNewDialog({ leadId, onClose, onDone }: { leadId: str
 
   const frozen = saving || !!attempt || !!delivered
   const date = delivered?.assigned_at ? new Intl.DateTimeFormat(t._locale === 'pt' ? 'pt-BR' : t._locale === 'es' ? 'es-US' : 'en-US', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/New_York', hour12: true }).format(new Date(delivered.assigned_at)) : ''
-  const close = () => { if (!sending.current) onClose() }
+  const close = () => {
+    if (sending.current) return
+    if (delivered) onDone()
+    onClose()
+  }
   return createPortal(
     <dialog ref={dialog} aria-labelledby="assign-new-title" aria-describedby="assign-new-description"
       onCancel={e => { e.preventDefault(); close() }} onClick={e => e.stopPropagation()} onPointerDown={e => e.stopPropagation()}
@@ -133,7 +137,7 @@ export function AssignLeadAsNewDialog({ leadId, onClose, onDone }: { leadId: str
             <p className="text-sm" style={{ color: 'var(--fg-muted)' }}>{delivered.notifications_pending
               ? L('O aviso ao destinatário está pendente. Não repita a entrega.', 'The recipient notification is pending. Do not repeat the delivery.', 'El aviso al destinatario está pendiente. No repitas la entrega.')
               : L('A entrega foi registrada com 1 crédito descontado.', 'Delivery was recorded with 1 credit deducted.', 'La entrega se registró con 1 crédito descontado.')}</p>
-            <button type="button" onClick={() => { onDone(); onClose() }} className="w-full rounded-xl px-4 py-3 font-semibold text-white" style={{ background: 'var(--accent)' }}>{L('Concluir', 'Done', 'Concluir')}</button>
+            <button type="button" onClick={close} className="w-full rounded-xl px-4 py-3 font-semibold text-white" style={{ background: 'var(--accent)' }}>{L('Concluir', 'Done', 'Concluir')}</button>
           </div>
         ) : (
           <>

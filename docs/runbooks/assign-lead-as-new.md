@@ -16,6 +16,10 @@ O destinatário recebe **um novo atendimento**, não uma alteração da data de 
 
 Sem crédito líquido/idioma, comprador inativo, funil padrão ausente/ambíguo, origem não administrativa, arquivada, fechada, bloqueio de contato ou envio anterior reservado/sem confirmação: não entregar nem debitar. Não remover STOP/supressões para tentar novamente. Inscrições anteriores são encerradas e SMS agendados são cancelados, sem apagar registros.
 
+A migration serializa a entrada de respostas, a entrega e a permissão de envio pela raiz imutável da cadeia. Um STOP atrasado acompanha a cadeia até o atendimento atual; somente o bloqueio acompanha, nunca o texto privado ou o dono da mensagem. Inscrições do novo ciclo avaliam respostas desde o horário da entrega, não desde o poll posterior. Falha na gravação obrigatória de SMS retorna 503, sem confirmar nem disparar avisos posteriores. Travas são limitadas a 500 ms.
+
+Na instalação, a migration não faz backfill nem reescreve registros existentes. Ela adiciona colunas/tabelas/triggers e preserva as implementações anteriores de três funções de sequência sob nomes internos privados, mantendo as assinaturas públicas por wrappers. A política de leads comuns continua delegada às implementações antigas; as novas garantias de consentimento aplicam-se aos ciclos de entrega administrativa.
+
 A origem pode ser entregue uma vez. Repetição para o mesmo destinatário, inclusive com novo identificador de tentativa, devolve o resultado existente sem outro débito. Destinatário diferente após conclusão é conflito, não uma segunda venda.
 
 ## Componentes
@@ -42,7 +46,7 @@ Em perda de conexão, a tela congela o destinatário e reutiliza o mesmo pedido.
 
 Efeitos são persistidos junto à entrega e executados pelo poll, normalmente no ciclo seguinte. O aviso usa o canal normal da plataforma; as automações ficam limitadas ao novo lead e as inscrições não reativam registros parados.
 
-Sem canal disponível, o aviso continua pendente. Transporte de resultado ambíguo fica `unknown`, não é reenviado automaticamente: canais externos não oferecem confirmação transacional junto ao banco. A tela confirma **entrega**, não chegada de WhatsApp no aparelho.
+Sem canal disponível, o aviso continua pendente. Na entrega administrativa, cada chamada do transporte WhatsApp faz no máximo uma tentativa: o helper não faz retry nem troca de bridge depois da tentativa, inclusive se a resposta chegar tarde ou o corpo não confirmar o envio. Qualquer resultado não confirmado (também no backup administrativo ou segundo número) impede o carimbo e fica `unknown`, sem reenvio automático. A política antiga de retry dos avisos Meta comuns não mudou. Canais externos não oferecem confirmação transacional junto ao banco; a tela confirma **entrega**, não chegada de WhatsApp no aparelho.
 
 Para investigar: consultar `admin_new_lead_assignments`, `admin_new_lead_assignment_requests`, `admin_new_lead_effects`, `lead_delivery_receipts` e a linha do novo lead. `done` de efeito não equivale a leitura pelo comprador. Em `unknown`, cruzar comprovantes do provedor/canal antes de qualquer reenvio; reenvio é ação externa que exige autorização. Não limpar o estado para forçar nova cobrança/envio.
 

@@ -73,11 +73,24 @@ END $$;
 REVOKE ALL ON FUNCTION public.admin_new_lead_source_error(uuid) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_new_lead_source_error(uuid) TO service_role;
 
+-- One immutable family key serializes assignment, inbound, enrollment and send
+-- admission BEFORE any row lock. Ancestors remain private conversation owners.
+CREATE FUNCTION public.admin_new_lead_family(p_lead uuid) RETURNS bigint
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
+ WITH RECURSIVE ancestors AS (
+  SELECT id,redelivery_source_id FROM leads WHERE id=p_lead
+  UNION
+  SELECT l.id,l.redelivery_source_id FROM leads l JOIN ancestors a ON l.id=a.redelivery_source_id
+ ) SELECT hashtextextended(coalesce((SELECT id::text FROM ancestors WHERE redelivery_source_id IS NULL),p_lead::text),71002)
+$$;
+REVOKE ALL ON FUNCTION public.admin_new_lead_family(uuid) FROM PUBLIC,anon,authenticated,service_role;
+
 CREATE FUNCTION public.admin_assign_lead_as_new(p_actor uuid,p_source uuid,p_buyer uuid,p_request uuid)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp SET lock_timeout='500ms' AS $$
 DECLARE l public.leads; a public.buyers; receipt public.admin_new_lead_assignments; credit uuid; balance bigint; pipe uuid; stage uuid; target uuid:=gen_random_uuid(); t timestamptz; why text;
 BEGIN
  IF p_actor IS NULL OR p_source IS NULL OR p_buyer IS NULL OR p_request IS NULL THEN RAISE EXCEPTION 'invalid_request'; END IF;
+ PERFORM pg_advisory_xact_lock(admin_new_lead_family(p_source));
  -- Buyer-before-lead matches enroll_sequence/suspension. Ordered SHARE locks
  -- protect authorization and target activity without incompatible FK upgrades.
  PERFORM 1 FROM buyers WHERE auth_user_id=p_actor OR id=p_buyer OR id=(SELECT assigned_to FROM leads WHERE id=p_source) ORDER BY id FOR SHARE;
@@ -207,6 +220,9 @@ CREATE FUNCTION public.enroll_admin_new_lead_sequence(p_effect uuid,p_token uuid
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp SET lock_timeout='500ms' AS $$
 DECLARE e public.admin_new_lead_effects; r public.admin_new_lead_assignments; s public.sequences;
 BEGIN
+ SELECT a.* INTO r FROM admin_new_lead_effects f JOIN admin_new_lead_assignments a ON a.request_id=f.request_id WHERE f.id=p_effect;
+ IF NOT FOUND THEN RETURN false; END IF;
+ PERFORM pg_advisory_xact_lock(admin_new_lead_family(r.lead_id));
  SELECT * INTO e FROM admin_new_lead_effects WHERE id=p_effect AND token=p_token AND kind='enrollment' AND state='processing' AND lease_until>clock_timestamp() FOR UPDATE;
  IF NOT FOUND THEN RETURN false; END IF;
  SELECT * INTO r FROM admin_new_lead_assignments WHERE request_id=e.request_id;
@@ -216,7 +232,7 @@ BEGIN
  IF NOT FOUND THEN RETURN false; END IF;
  -- Existing means done, including stopped/completed/paused. Never reactivate.
  IF EXISTS(SELECT 1 FROM sequence_enrollments WHERE sequence_id=s.id AND lead_id=r.lead_id) THEN RETURN true; END IF;
- IF ai_sequence_block(r.buyer_id,r.lead_id,s.id) IS NOT NULL OR NOT EXISTS(SELECT 1 FROM pipeline_leads WHERE lead_id=r.lead_id AND stage_id=r.stage_id) THEN RETURN false; END IF;
+ IF ai_sequence_block(r.buyer_id,r.lead_id,s.id,r.assigned_at) IS NOT NULL OR NOT EXISTS(SELECT 1 FROM pipeline_leads WHERE lead_id=r.lead_id AND stage_id=r.stage_id) THEN RETURN false; END IF;
  INSERT INTO sequence_enrollments(sequence_id,lead_id,buyer_id,mode,current_step,next_run_at,status)
  VALUES(s.id,r.lead_id,r.buyer_id,s.mode,0,greatest(p_due,clock_timestamp()),'active') ON CONFLICT(sequence_id,lead_id) DO NOTHING;
  RETURN true;
@@ -228,10 +244,16 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp SET lock_timeou
 DECLARE target uuid;
 BEGIN
  IF NEW.lead_id IS NULL THEN RETURN NEW; END IF;
+ PERFORM pg_advisory_xact_lock(admin_new_lead_family(NEW.lead_id));
  -- The reservation and assignment use the same source row lock. A reservation
  -- committed first is visible to source_busy; assignment first rejects the run.
  SELECT redelivered_to_lead_id INTO target FROM leads WHERE id=NEW.lead_id FOR NO KEY UPDATE;
  IF target IS NOT NULL THEN RAISE EXCEPTION 'source_redelivered'; END IF;
+ IF EXISTS(SELECT 1 FROM admin_new_lead_assignments WHERE lead_id=NEW.lead_id)
+ AND (EXISTS(SELECT 1 FROM leads WHERE id=NEW.lead_id AND sms_opted_out)
+  OR EXISTS(SELECT 1 FROM ai_sequence_suppressions WHERE lead_id=NEW.lead_id AND reason='optout')) THEN
+  RAISE EXCEPTION 'contact_blocked';
+ END IF;
  RETURN NEW;
 END $$;
 REVOKE ALL ON FUNCTION public.block_redelivered_source_work() FROM PUBLIC,anon,authenticated;
@@ -256,4 +278,104 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION public.protect_admin_redelivery_links() FROM PUBLIC,anon,authenticated;
 CREATE TRIGGER protect_admin_redelivery_links BEFORE INSERT OR UPDATE ON public.leads FOR EACH ROW EXECUTE FUNCTION public.protect_admin_redelivery_links();
+-- Preserve the existing policies verbatim for unrelated leads. For a paid cycle,
+-- every caller (claim, begin, manual enrollment and recheck) uses the immutable
+-- receipt boundary, even when an enrollment is created after the reply.
+ALTER FUNCTION public.ai_sequence_block(uuid,uuid,uuid,timestamptz) RENAME TO ai_sequence_block_before_admin_redelivery;
+REVOKE ALL ON FUNCTION public.ai_sequence_block_before_admin_redelivery(uuid,uuid,uuid,timestamptz) FROM PUBLIC,anon,authenticated,service_role;
+CREATE FUNCTION public.ai_sequence_block(p_buyer uuid,p_lead uuid,p_sequence uuid,p_since timestamptz DEFAULT NULL) RETURNS text
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+DECLARE boundary timestamptz;
+BEGIN
+ SELECT assigned_at INTO boundary FROM admin_new_lead_assignments WHERE lead_id=p_lead;
+ RETURN ai_sequence_block_before_admin_redelivery(p_buyer,p_lead,p_sequence,coalesce(boundary,p_since));
+END $$;
+REVOKE ALL ON FUNCTION public.ai_sequence_block(uuid,uuid,uuid,timestamptz) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.ai_sequence_block(uuid,uuid,uuid,timestamptz) TO service_role;
+
+-- Acquire before the old AFTER trigger's lead/enrollment locks, including leads
+-- that have not been redelivered YET. Thus INSERT first and assignment first both
+-- see the other's committed decision. Timeout aborts the whole INSERT for retry.
+CREATE FUNCTION public.fence_admin_new_lead_inbound() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+BEGIN
+ -- Transaction-local also bounds the established AFTER trigger's row locks.
+ -- The webhook must retry the entire INSERT on a timeout, not drop the event.
+ PERFORM set_config('lock_timeout','500ms',true);
+ PERFORM pg_advisory_xact_lock(admin_new_lead_family(NEW.lead_id));
+ RETURN NEW;
+END $$;
+CREATE TRIGGER admin_new_lead_inbound_fence BEFORE INSERT ON public.sms_messages
+ FOR EACH ROW WHEN (NEW.direction='in' AND NEW.lead_id IS NOT NULL) EXECUTE FUNCTION public.fence_admin_new_lead_inbound();
+CREATE TRIGGER admin_new_lead_inbound_fence BEFORE INSERT ON public.whatsapp_messages
+ FOR EACH ROW WHEN (NEW.direction='in' AND NEW.lead_id IS NOT NULL) EXECUTE FUNCTION public.fence_admin_new_lead_inbound();
+
+-- Only consent metadata follows the immutable chain, NEVER message text, owner,
+-- lead_id or event timestamp. STOP is timeless; ordinary reply applies only to
+-- receipts already issued at the message's original event time.
+CREATE FUNCTION public.propagate_admin_new_lead_inbound() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp SET lock_timeout='500ms' AS $$
+DECLARE l public.leads; target uuid:=NEW.lead_id; event_at timestamptz; reason text; boundary timestamptz;
+BEGIN
+ SELECT * INTO l FROM leads WHERE id=target;
+ IF l.redelivery_source_id IS NULL AND l.redelivered_to_lead_id IS NULL THEN RETURN NEW; END IF;
+ IF TG_TABLE_NAME='whatsapp_messages' THEN
+  IF NEW.buyer_id IS DISTINCT FROM l.assigned_to THEN RETURN NEW; END IF;
+  event_at:=NEW.sent_at;
+ ELSE event_at:=NEW.created_at; END IF;
+ reason:=CASE WHEN lower(trim(coalesce(NEW.body,''))) ~ '^(stop|stopall|cancel|end|quit|parar|pare|sair|cancelar|unsubscribe|baja|no me contacte)[.! ]*$' THEN 'optout' ELSE 'replied' END;
+ WHILE target IS NOT NULL LOOP
+  SELECT * INTO l FROM leads WHERE id=target FOR NO KEY UPDATE;
+  EXIT WHEN NOT FOUND;
+  SELECT assigned_at INTO boundary FROM admin_new_lead_assignments WHERE lead_id=target;
+  IF l.assigned_to IS NOT NULL AND (reason='optout' OR event_at>=boundary) THEN
+   PERFORM 1 FROM sequence_enrollments WHERE lead_id=target ORDER BY id FOR UPDATE;
+   INSERT INTO ai_sequence_suppressions(buyer_id,lead_id,reason) VALUES(l.assigned_to,target,reason)
+   ON CONFLICT(buyer_id,lead_id) DO UPDATE SET reason=CASE WHEN ai_sequence_suppressions.reason='optout' THEN 'optout' ELSE excluded.reason END;
+   UPDATE sequence_enrollments SET status='stopped',stop_reason=reason,completed_at=clock_timestamp()
+    WHERE lead_id=target AND buyer_id=l.assigned_to AND mode IN ('legacy','ai_until_reply') AND status IN ('active','paused');
+   IF reason='optout' AND l.sms_opted_out IS DISTINCT FROM true THEN
+    UPDATE leads SET sms_opted_out=true WHERE id=target;
+   END IF;
+  END IF;
+  target:=l.redelivered_to_lead_id;
+ END LOOP;
+ RETURN NEW;
+END $$;
+-- Run AFTER the established reply-stage trigger so its existing intent survives.
+CREATE TRIGGER zz_admin_new_lead_inbound AFTER INSERT ON public.sms_messages
+ FOR EACH ROW WHEN (NEW.direction='in' AND NEW.lead_id IS NOT NULL) EXECUTE FUNCTION public.propagate_admin_new_lead_inbound();
+CREATE TRIGGER zz_admin_new_lead_inbound AFTER INSERT ON public.whatsapp_messages
+ FOR EACH ROW WHEN (NEW.direction='in' AND NEW.lead_id IS NOT NULL) EXECUTE FUNCTION public.propagate_admin_new_lead_inbound();
+REVOKE ALL ON FUNCTION public.fence_admin_new_lead_inbound(),public.propagate_admin_new_lead_inbound() FROM PUBLIC,anon,authenticated,service_role;
+
+-- Do not wait for inbound while holding an enrollment. No transport permission
+-- may escape while that contact's inbound/assignment transaction is undecided.
+-- Old functions are private implementations, not alternative service RPCs.
+ALTER FUNCTION public.begin_sequence_batch(uuid,uuid,text,text) RENAME TO begin_sequence_batch_before_admin_redelivery;
+REVOKE ALL ON FUNCTION public.begin_sequence_batch_before_admin_redelivery(uuid,uuid,text,text) FROM PUBLIC,anon,authenticated,service_role;
+CREATE FUNCTION public.begin_sequence_batch(p_id uuid,p_token uuid,p_sender text,p_body text) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+DECLARE target uuid;
+BEGIN
+ SELECT l.id INTO target FROM sequence_enrollments e JOIN leads l ON l.id=e.lead_id WHERE e.id=p_id
+  AND (l.redelivery_source_id IS NOT NULL OR l.redelivered_to_lead_id IS NOT NULL);
+ IF target IS NOT NULL AND NOT pg_try_advisory_xact_lock(admin_new_lead_family(target)) THEN
+  RETURN jsonb_build_object('allowed',false);
+ END IF;
+ RETURN begin_sequence_batch_before_admin_redelivery(p_id,p_token,p_sender,p_body);
+END $$;
+ALTER FUNCTION public.begin_ai_send(uuid,uuid,text) RENAME TO begin_ai_send_before_admin_redelivery;
+REVOKE ALL ON FUNCTION public.begin_ai_send_before_admin_redelivery(uuid,uuid,text) FROM PUBLIC,anon,authenticated,service_role;
+CREATE FUNCTION public.begin_ai_send(p_id uuid,p_token uuid,p_body text) RETURNS SETOF public.sequence_enrollments
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+DECLARE target uuid;
+BEGIN
+ SELECT l.id INTO target FROM sequence_enrollments e JOIN leads l ON l.id=e.lead_id WHERE e.id=p_id
+  AND (l.redelivery_source_id IS NOT NULL OR l.redelivered_to_lead_id IS NOT NULL);
+ IF target IS NOT NULL AND NOT pg_try_advisory_xact_lock(admin_new_lead_family(target)) THEN RETURN; END IF;
+ RETURN QUERY SELECT * FROM begin_ai_send_before_admin_redelivery(p_id,p_token,p_body);
+END $$;
+REVOKE ALL ON FUNCTION public.begin_sequence_batch(uuid,uuid,text,text),public.begin_ai_send(uuid,uuid,text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.begin_sequence_batch(uuid,uuid,text,text),public.begin_ai_send(uuid,uuid,text) TO service_role;
 COMMIT;

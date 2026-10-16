@@ -15,7 +15,7 @@ function getResend(): Resend {
  * Send WhatsApp notification via wa-bridge (whatsapp-web.js).
  * Supports both direct (phone number) and groups (JID@g.us).
  */
-async function sendWhatsApp(phone: string, message: string, bridge?: { url: string; key: string } | null, opts?: { noFallback?: boolean }): Promise<boolean> {
+async function sendWhatsApp(phone: string, message: string, bridge?: { url: string; key: string } | null, opts?: { noFallback?: boolean; noReplay?: boolean }): Promise<boolean> {
   const clean = (s: string) => String(s).trim().replace(/\\n/g, '').replace(/\s+$/, '').replace(/\/$/, '')
   const bridgeUrl = clean(bridge?.url || process.env.WA_BRIDGE_URL || 'http://62.146.229.13:3457')
   const bridgeKey = (bridge?.key || process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026').trim()
@@ -34,7 +34,7 @@ async function sendWhatsApp(phone: string, message: string, bridge?: { url: stri
   // Uma tentativa REAL: checa res.ok E o corpo (a bridge devolve {success, id}).
   // "200 sem id" ou "success:false" = NÃO entregou — conta como falha (antes
   // engolia tudo como sucesso, por isso falhas sumiam sem ninguém ver).
-  const attempt = async (): Promise<boolean> => {
+  const attempt = async (): Promise<'confirmed' | 'rejected' | 'unknown'> => {
     try {
       const res = await fetch(`${bridgeUrl}/send`, {
         method: 'POST',
@@ -43,19 +43,25 @@ async function sendWhatsApp(phone: string, message: string, bridge?: { url: stri
         signal: AbortSignal.timeout(10000),
       })
       const data: any = await res.json().catch(() => null)
-      const ok = res.ok && !!(data && (data.success === true || data.id))
+      const ok = res.ok && !!(data && (opts?.noReplay ? data.success === true && data.id : data.success === true || data.id))
       console.log(`[WhatsApp] ${cleanNumber} — ${res.status} ${ok ? 'OK' : 'FALHOU'}`)
-      return ok
+      if (ok) return 'confirmed'
+      // Only an explicit pre-transport rejection is classified as rejected.
+      // A timeout, malformed acknowledgement or 5xx may follow remote acceptance.
+      return [400, 401, 403, 404, 422].includes(res.status) && data?.success === false ? 'rejected' : 'unknown'
     } catch (err) {
       console.error('[WhatsApp] Failed:', err)
-      return false
+      return 'unknown'
     }
   }
 
   // Retry 1x: os flaps da bridge ("Promise was collected") são transitórios.
-  if (await attempt()) return true
+  if (await attempt() === 'confirmed') return true
+  // The paid-delivery outbox owns reconciliation. Never replay inside a single
+  // effect, including fallback, when a bridge may already have accepted it.
+  if (opts?.noReplay) return false
   await new Promise(r => setTimeout(r, 1500))
-  if (await attempt()) return true
+  if (await attempt() === 'confirmed') return true
 
   // BRIDGE RESERVA (2026-09-27): o bridge escolhido está fora (deslogado/QR/morto).
   // Tenta 1x por outro bridge de conta admin que esteja ready — o aviso chega
@@ -394,6 +400,12 @@ export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead): Promi
   if (isRedelivery && src.assigned_to !== (buyer as any).id) return false
   if (isRedelivery && src.notified_at) return true
   lead = { ...lead, ...src }
+  let transportUnconfirmed = false
+  const sendDeliveryWhatsApp = async (phone: string, message: string) => {
+    const confirmed = await sendWhatsApp(phone, message, undefined, isRedelivery ? { noReplay: true } : undefined)
+    if (isRedelivery && !confirmed) transportUnconfirmed = true
+    return confirmed
+  }
 
   // Idioma do corretor pros avisos abaixo (push, email, WhatsApp). Cron/webhook não
   // enxerga o cookie de idioma → busca no settings; qualquer falha cai em 'pt'.
@@ -472,9 +484,9 @@ ${leadOriginLines(lead)}
 📧 ${buyer.email}`
 
   // Send to group (primary) + admin direct (backup)
-  const groupOk = await sendWhatsApp(adminGroupId, adminMsg)
+  const groupOk = await sendDeliveryWhatsApp(adminGroupId, adminMsg)
   const adminPhone = process.env.ADMIN_WHATSAPP || '18632808023'
-  if (adminPhone) await sendWhatsApp(adminPhone, adminMsg)
+  if (adminPhone) await sendDeliveryWhatsApp(adminPhone, adminMsg)
 
   // WhatsApp notification to BUYER
   let buyerOk = false
@@ -500,20 +512,23 @@ ${language}
     // A bridge própria do comprador é pra ELE falar com os leads dele, não pra
     // receber alerta da plataforma. (Self-message só se o comprador for o número
     // da própria bridge global — aí o bridge ainda devolve success, não trava.)
-    if (buyer.phone) buyerOk = await sendWhatsApp(buyer.phone, whatsappMsg)
+    if (buyer.phone) buyerOk = await sendDeliveryWhatsApp(buyer.phone, whatsappMsg)
 
     // 2º NÚMERO (opcional): recebe o MESMO alerta de Novo Lead.
     // 3 blindagens, todas de propósito:
-    //  (a) BEST-EFFORT — o resultado é IGNORADO. Se a falha dele contasse pra
+    //  (a) Aviso Meta antigo: BEST-EFFORT — o resultado é IGNORADO. Se a falha dele contasse pra
     //      buyerOk/notified_at, a reconciliação reenviaria o lead a cada 2min
     //      = o loop de spam (150 msgs) que já aconteceu. NUNCA acoplar.
     //  (b) Pula se for o MESMO número do principal (senão o cara recebe 2x no
     //      mesmo aparelho). Compara só dígitos: "+1 786…" == "1786…".
     //  (c) Não conecta bridge nenhuma — sai pela bridge GLOBAL, igual o principal.
+    // Entrega administrativa: nenhuma tentativa é repetida; resultado incerto
+    // em qualquer destino mantém o efeito para reconciliação, sem reenvio.
     if (phone2 && onlyDigits(phone2) !== onlyDigits(buyer.phone)) {
       try {
-        const ok2 = await sendWhatsApp(phone2, whatsappMsg)
-        if (!ok2) console.warn(`[Notify] 2o numero (${phone2}) nao entregou — ignorado de proposito (nao afeta notified_at)`)
+        const ok2 = await sendDeliveryWhatsApp(phone2, whatsappMsg)
+        if (!ok2) console.warn(isRedelivery ? '[Notify] administrative secondary alert unconfirmed; reconcile without replay'
+          : `[Notify] 2o numero (${phone2}) nao entregou — ignorado de proposito (nao afeta notified_at)`)
       } catch (e: any) {
         console.warn('[Notify] 2o numero falhou (ignorado de proposito):', e?.message)
       }
@@ -535,7 +550,7 @@ ${language}
   // Paid deliveries have a durable outbox: partial/uncertain transport or stamp
   // persistence must quarantine that effect, not silently retry all channels.
   if (isRedelivery) {
-    if (!groupOk || !buyerNotified) return false
+    if (!groupOk || !buyerNotified || transportUnconfirmed) return false
     try {
       const { createAdminClient } = await import('@/lib/supabase/admin')
       const { data: stamped, error } = await createAdminClient().from('leads')

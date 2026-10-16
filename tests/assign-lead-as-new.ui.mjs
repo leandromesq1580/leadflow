@@ -69,6 +69,11 @@ try{
  check('explicit UUID operation matches chosen source and buyer',posts[0].lead_id===source&&posts[0].to_buyer_id===buyer&&/^[0-9a-f-]{36}$/.test(posts[0].request_id))
  check('success says notifications may still be pending',await page.getByText(/aviso.*pendente/i).count()>0)
  await page.getByRole('button',{name:'Concluir',exact:true}).click();check('parent board reloads after completed delivery',await page.evaluate(()=>window.assigned)===1)
+ for(const method of ['close','escape']){
+  page=await fresh();await open(page);await page.getByRole('button',{name:/Cliente de fora do time/}).click();await page.getByRole('button',{name:'Entregar e descontar 1 crédito',exact:true}).click();await page.getByText('Lead entregue como novo.',{exact:true}).waitFor()
+  if(method==='close')await page.getByRole('button',{name:'Fechar',exact:true}).click();else await page.keyboard.press('Escape')
+  check(`successful delivery refreshes the board on ${method}`,await page.evaluate(()=>window.assigned)===1)
+ }
  page=await fresh('?ordinary');await page.getByRole('button',{name:'Atribuir ao time',exact:true}).click();check('ordinary user does not see paid new assignment',await page.getByRole('button',{name:'Atribuir lead como novo',exact:true}).count()===0)
  check('ordinary member assignment is preserved',await page.getByRole('button',{name:'Equipe sintética',exact:true}).count()===1)
  page=await fresh();mode='list-error';await open(page);await page.getByRole('alert').waitFor();check('failed lookup is shown instead of fake empty list',await page.getByRole('alert').textContent().then(t=>t.includes('indisponível')));mode='normal';await page.getByRole('button',{name:'Tentar novamente',exact:true}).click();await page.getByRole('button',{name:/Cliente de fora do time/}).waitFor()

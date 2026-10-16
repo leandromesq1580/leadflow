@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
   })
   const lead = await resolveLeadForInboundSms(db, matching)
 
-  await db.from('sms_messages').insert({
+  const { error: insertError } = await db.from('sms_messages').insert({
     lead_id: lead?.id || null,
     direction: 'in',
     from_phone: digits,
@@ -110,6 +110,12 @@ export async function POST(request: NextRequest) {
     status: 'received',
     twilio_sid: sid,
   })
+  // The SQL consent fence is part of this INSERT. A timeout/error must be
+  // retried, never acknowledged or followed by notifications before it commits.
+  if (insertError) {
+    if (insertError.code === '23505') return twiml()
+    return new Response('Inbound persistence unavailable', { status: 503 })
+  }
 
   // Opt-out: marca o lead e NÃO alerta o grupo (é despedida, não interesse)
   if (isOptOut(body)) {

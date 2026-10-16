@@ -14,8 +14,8 @@ const cmd=(file:string,args:string[])=>execFileSync(file,args,{env,encoding:'utf
 const psql=(sql:string,db='postgres')=>cmd('/usr/bin/psql',['-X','-h',socket,'-p','55493','-U','fixture','-d',db,'-v','ON_ERROR_STOP=1','-At','-c',sql]).trim()
 let started=false
 const call=(source=41,buyer=2,request=91)=>`select admin_assign_lead_as_new('${uuid(11)}','${uuid(source)}','${uuid(buyer)}','${uuid(request)}')`
-const background=(sql:string,db:string)=>{
- const proc=spawn('/usr/bin/psql',['-X','-h',socket,'-p','55493','-U','fixture','-d',db,'-v','ON_ERROR_STOP=1','-At','-c',`set application_name='redelivery_blocker';begin;${sql};select pg_sleep(2);commit;`],{env})
+const background=(sql:string,db:string,holdSeconds=2)=>{
+ const proc=spawn('/usr/bin/psql',['-X','-h',socket,'-p','55493','-U','fixture','-d',db,'-v','ON_ERROR_STOP=1','-At','-c',`set application_name='redelivery_blocker';begin;${sql};select pg_sleep(${holdSeconds});commit;`],{env})
  let output='';proc.stdout.on('data',d=>output+=d);proc.stderr.on('data',d=>output+=d)
  const done=new Promise<void>((resolve,reject)=>proc.on('exit',code=>code===0?resolve():reject(new Error(output))))
  return {done}
@@ -76,6 +76,84 @@ try{
   assert.equal(psql("select claim_admin_new_lead_effect('notification') is null",db),'t')
   await other.done
   assert.equal(psql("select attempts from admin_new_lead_effects where kind='notification'",db),'1')
+ })
+ const inbound=(channel:string,id:string,buyer=2,body='Original reply',time='clock_timestamp()')=>channel==='sms'
+  ? `insert into sms_messages(lead_id,direction,body,status,twilio_sid,created_at) values('${id}','in','${body}','received','synthetic-${channel}',${time})`
+  : `insert into whatsapp_messages(buyer_id,lead_id,direction,body,from_phone,to_phone,wa_message_id,sent_at) values('${uuid(buyer)}','${id}','in','${body}','15555550100','15555550199','synthetic-${channel}',${time})`
+ for(const channel of ['sms','wa'])for(const order of ['inbound-first','assignment-first']) await scenario(`${channel} STOP ${order}: commit order, no private message transfer`,async db=>{
+  const insert=inbound(channel,uuid(41),1,'STOP',"'2020-02-03T04:05:06Z'")
+  if(order==='inbound-first'){
+   const other=background(insert,db,0.3);await wait(db)
+   assert.throws(()=>psql(call(),db),/contact_blocked/);await other.done
+   assert.equal(psql('select count(*) from admin_new_lead_assignments',db),'0')
+  }else{
+   // Exactly the stale SELECT -> assign commit -> INSERT schedule, across connections.
+   assert.equal(psql(`select id from leads where id='${uuid(41)}' and redelivered_to_lead_id is null`,db),uuid(41))
+   const other=background(call(),db,0.3);await wait(db)
+   psql(insert,db);await other.done
+   assert.equal(psql('select sms_opted_out from leads where redelivery_source_id is not null',db),'t')
+   assert.equal(psql("select count(*) from ai_sequence_suppressions where reason='optout'",db),'2')
+  }
+  const table=channel==='sms'?'sms_messages':'whatsapp_messages',time=channel==='sms'?'created_at':'sent_at'
+  assert.equal(psql(`select count(*) from ${table} where lead_id='${uuid(41)}' and body='STOP' and ${time}='2020-02-03T04:05:06Z'`,db),'1')
+ })
+ for(const channel of ['sms','wa'])for(const mode of ['legacy','ai_until_reply'])for(const order of ['inbound-first','enroll-first'])await scenario(`${channel}/${mode} ${order}: no until-reply enrollment survives`,async db=>{
+  psql(`insert into sequences(id,buyer_id,name,mode,trigger_stage_id,ai_config) values('${uuid(61)}','${uuid(2)}','Welcome','${mode}','${uuid(32)}','{"timezone":"UTC","start":"00:00","end":"23:59","days":[0,1,2,3,4,5,6]}')`,db)
+  const receipt=JSON.parse(psql(call(),db)),effect=JSON.parse(psql("select claim_admin_new_lead_effect('enrollment')",db))
+  const enroll=`select enroll_admin_new_lead_sequence('${effect.id}','${effect.token}','${uuid(61)}',clock_timestamp())`,insert=inbound(channel,receipt.lead_id)
+  if(order==='inbound-first'){
+   const other=background(insert,db,0.3);await wait(db);assert.equal(psql(enroll,db),'f');await other.done
+  }else{
+   const other=background(enroll,db,0.3);await wait(db);psql(insert,db);await other.done
+  }
+  assert.equal(psql("select count(*) from sequence_enrollments where status in ('active','paused')",db),'0')
+  assert.equal(psql(`select reason from ai_sequence_suppressions where lead_id='${receipt.lead_id}'`,db),'replied')
+  assert.equal(psql('select count(*) from sequence_batch_dispatches',db),'0')
+ })
+ for(const channel of ['sms','wa'])for(const mode of ['legacy','ai_until_reply'])await scenario(`${channel}/${mode} inbound holds commit: transport guard fails closed without waiting`,async db=>{
+  psql(`insert into sequences(id,buyer_id,name,mode,trigger_stage_id,ai_config) values('${uuid(61)}','${uuid(2)}','Welcome','${mode}','${uuid(32)}','{"timezone":"UTC","start":"00:00","end":"23:59","days":[0,1,2,3,4,5,6]}')`,db)
+  const receipt=JSON.parse(psql(call(),db)),effect=JSON.parse(psql("select claim_admin_new_lead_effect('enrollment')",db))
+  psql(`select enroll_admin_new_lead_sequence('${effect.id}','${effect.token}','${uuid(61)}',clock_timestamp())`,db)
+  const id=psql('select id from sequence_enrollments',db)
+  const claim=JSON.parse(psql(`select row_to_json(e) from claim_${mode==='legacy'?'legacy':'ai'}_sequence('${id}') e`,db))
+  const other=background(inbound(channel,receipt.lead_id),db);await wait(db)
+  const start=Date.now()
+  assert.equal(JSON.parse(psql(`select begin_sequence_batch('${id}','${claim.lease_token}','15555550199','Must not leave')`,db)).allowed,false)
+  assert.ok(Date.now()-start<500,'guard does not wait on reverse enrollment/lead locks')
+  assert.equal(psql(`select count(*) from begin_ai_send('${id}','${claim.lease_token}','Must not leave')`,db),'0')
+  assert.equal(psql('select count(*) from sequence_batch_dispatches',db),'0')
+  await other.done
+  assert.equal(psql("select count(*) from sequence_enrollments where status='stopped' and stop_reason='replied'",db),'1')
+ })
+ await scenario('inbound lock timeout is retryable, preserves exact message once, no partial consent',async db=>{
+  const other=background(call(),db);await wait(db)
+  const insert=inbound('sms',uuid(41),1,'STOP')
+  const start=Date.now();assert.throws(()=>psql(insert,db),/lock timeout/);assert.ok(Date.now()-start<1200)
+  assert.equal(psql("select count(*) from sms_messages where direction='in'",db),'0')
+  await other.done;psql(insert,db)
+  assert.equal(psql("select count(*) from sms_messages where direction='in'",db),'1')
+  assert.equal(psql('select sms_opted_out from leads where redelivery_source_id is not null',db),'t')
+ })
+ for(const order of ['assignment-first','inbound-first'])await scenario(`cascade assignment vs delayed original STOP ${order} shares the root fence`,async db=>{
+  psql(`update buyers set is_admin=true where id='${uuid(2)}';update credits set total_purchased=3`,db)
+  const first=JSON.parse(psql(call(),db))
+  const second=`select admin_assign_lead_as_new('${uuid(11)}','${first.lead_id}','${uuid(2)}','${uuid(92)}')`
+  const insert=inbound('wa',uuid(41),1,'STOP',"'2020-02-03T04:05:06Z'")
+  const other=background(order==='assignment-first'?second:insert,db,0.3);await wait(db)
+  if(order==='assignment-first')psql(insert,db)
+  else assert.throws(()=>psql(second,db),/contact_blocked/)
+  await other.done
+  assert.equal(psql('select count(*) from admin_new_lead_assignments',db),order==='assignment-first'?'2':'1')
+  assert.equal(psql('select count(*) from leads where sms_opted_out',db),order==='assignment-first'?'3':'2')
+  assert.equal(psql(`select count(*) from whatsapp_messages where lead_id='${uuid(41)}' and body='STOP'`,db),'1')
+ })
+ await scenario('private pre-fence implementations are not service-role bypass RPCs',async db=>{
+  for(const fn of ['begin_sequence_batch_before_admin_redelivery(uuid,uuid,text,text)','begin_ai_send_before_admin_redelivery(uuid,uuid,text)','ai_sequence_block_before_admin_redelivery(uuid,uuid,uuid,timestamptz)']){
+   assert.equal(psql(`select has_function_privilege('service_role','${fn}','execute')`,db),'f')
+  }
+  for(const fn of ['begin_sequence_batch(uuid,uuid,text,text)','begin_ai_send(uuid,uuid,text)','ai_sequence_block(uuid,uuid,uuid,timestamptz)']){
+   assert.equal(psql(`select has_function_privilege('service_role','${fn}','execute')`,db),'t')
+  }
  })
  log('SUMMARY',{passed:n,run})
 }finally{if(started)log('stop',cmd(`${bin}/pg_ctl`,['-D',`${run}/data`,'-m','immediate','-w','stop']))}
