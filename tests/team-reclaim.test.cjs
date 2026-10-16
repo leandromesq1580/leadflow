@@ -82,10 +82,11 @@ test('RPC failures and conflicts never masquerade as successful reclaim', async 
 })
 
 function menu(locale, response, props = {}) {
-  const states = [true, false, false, '', 'down']; let cursor = 0; let refreshed = 0; const requests = []
+  const states = [true, false, false, false, '', 'down']; let cursor = 0; let refreshed = 0; const requests = []
   const react = { useState(initial) { const i = cursor++; if (!(i in states)) states[i] = initial; return [states[i], v => { states[i] = v }] }, useRef: () => ({ current: null }), useLayoutEffect() {} }
   const { CardAssignMenu } = load('src/app/dashboard/pipeline/card-assign-menu.tsx', {
     react, '@/lib/i18n-client': { useT: () => ({ _locale: locale }) },
+    './assign-lead-as-new-dialog': { AssignLeadAsNewDialog: () => null },
   }, { fetch: async (url, init) => { requests.push({ url, body: JSON.parse(init.body) }); return response } })
   function render() { cursor = 0; return CardAssignMenu({ leadId, members: [{ id: memberId, name: 'Fictional employee' }], canReclaim: true, viewedMemberId: memberId, currentMemberId: null, onAssigned: () => refreshed++, ...props }) }
   function nodes(node) { if (!node || typeof node !== 'object') return []; return [node, ...[node.props?.children].flat(Infinity).flatMap(nodes)] }

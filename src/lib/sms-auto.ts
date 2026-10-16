@@ -101,6 +101,43 @@ async function leadRespondeu(db: Db, leadId: string, since: string): Promise<boo
   return false
 }
 
+/** Uncertainty is terminal for automatic retries. If this write fails, the
+ * original sending reservation still fences redelivery (migration071). */
+async function quarantineSms(db: Db, id: string) {
+  try {
+    const { error } = await db.from('sms_messages').update({ status: 'unknown', error: 'delivery_unknown' })
+      .eq('id', id).in('status', ['sending', 'sent'])
+    if (error) console.warn('[sms-auto] quarentena indisponível; manter reserva', id)
+  } catch { console.warn('[sms-auto] quarentena indisponível; manter reserva', id) }
+}
+
+/** Called ONLY after a durable reservation, never before INSERT/CAS succeeds. */
+async function sendReservedSms(db: Db, id: string, leadId: string, buyerId: string | null, phone: string, body: string, total: number): Promise<boolean> {
+  try {
+    const res = await sendSms(phone, body)
+    // The transport's ok:false includes timeouts/network errors, not proof that
+    // Twilio rejected the message. Even ok:true without a SID is unconfirmed.
+    if (!res.ok || !res.sid) throw new Error('delivery_unknown')
+    // Persist history before releasing sending so a failed note cannot allow a
+    // second immediate send through the daily/total limit check.
+    const note = await db.from('follow_ups').insert({
+      lead_id: leadId, buyer_id: buyerId, type: 'note',
+      description: `📱 SMS auto (${total + 1}/${SMS_MAX_TOTAL}) — tentativa de ligação sem contato`,
+      status: 'completed', completed_at: new Date().toISOString(),
+    }).select('id').single()
+    if (note.error || !note.data?.id) throw new Error('history_unconfirmed')
+    const finish = await db.from('sms_messages')
+      .update({ status: 'sent', body, twilio_sid: res.sid, error: null })
+      .eq('id', id).eq('status', 'sending').select('id').single()
+    if (finish.error || !finish.data?.id) throw new Error('finish_unconfirmed')
+    return true
+  } catch {
+    await quarantineSms(db, id)
+    console.warn('[sms-auto] entrega incerta; sem reenvio automático', id)
+    return false
+  }
+}
+
 /**
  * Chamado quando uma ligação termina SEM contato. Envia agora se estiver na janela;
  * senão AGENDA pro próximo horário permitido. Retorna o que fez (pra log).
@@ -108,21 +145,23 @@ async function leadRespondeu(db: Db, leadId: string, since: string): Promise<boo
 export async function sendOrScheduleAutoSms(
   db: Db, leadId: string, buyerId: string | null
 ): Promise<'sent' | 'scheduled' | 'skipped'> {
-  const { data: lead } = await db.from('leads')
-    .select('name, phone, state, sms_opted_out, lead_language, form_name, meta_lead_id').eq('id', leadId).maybeSingle()
+  const { data: lead, error: leadError } = await db.from('leads')
+    .select('name, phone, state, sms_opted_out, lead_language, form_name, meta_lead_id, redelivered_to_lead_id').eq('id', leadId).maybeSingle()
   const e164 = toE164(lead?.phone)
-  if (!lead || lead.sms_opted_out || !e164) return 'skipped'
+  if (leadError || !lead || lead.redelivered_to_lead_id || lead.sms_opted_out || !e164) return 'skipped'
 
   const tz = leadTimezone(lead.state)
   const { total, sentToday } = await smsHistory(db, leadId, tz)
   if (total >= SMS_MAX_TOTAL || sentToday) return 'skipped'
 
-  // já existe um agendado pendente? não duplica
+  // Pending AND uncertain transport fences a new immediate attempt. Read errors
+  // cannot be interpreted as an empty queue (or a missing migration bypass).
   try {
-    const { data: pend } = await db.from('sms_messages')
-      .select('id').eq('lead_id', leadId).eq('status', 'scheduled').limit(1).maybeSingle()
-    if (pend) return 'skipped'
-  } catch { /* coluna/migration ausente → segue */ }
+    const { data: pend, error } = await db.from('sms_messages')
+      .select('id').eq('lead_id', leadId).eq('direction', 'out')
+      .in('status', ['scheduled', 'sending', 'queued', 'unknown']).limit(1).maybeSingle()
+    if (error || pend) return 'skipped'
+  } catch { return 'skipped' }
 
   let buyerName = ''
   const locale = requireLeadMessageLocale(lead)
@@ -133,18 +172,18 @@ export async function sendOrScheduleAutoSms(
   const body = buildSmsBody(lead.name, buyerName, locale)
 
   if (isWithinSmsWindow(tz)) {
-    const res = await sendSms(e164, body)
-    if (!res.ok) { console.warn('[sms-auto] envio falhou:', res.error); return 'skipped' }
-    await db.from('sms_messages').insert({
-      lead_id: leadId, direction: 'out', to_phone: e164.replace(/\D/g, ''),
-      body, status: 'sent', twilio_sid: res.sid || null,
-    })
-    await db.from('follow_ups').insert({
-      lead_id: leadId, buyer_id: buyerId, type: 'note',
-      description: `📱 SMS auto (${total + 1}/${SMS_MAX_TOTAL}) — tentativa de ligação sem contato`,
-      status: 'completed', completed_at: new Date().toISOString(),
-    })
-    return 'sent'
+    // migration071 locks the source on INSERT. Retirement first rejects this
+    // reservation; reservation first makes redelivery return source_busy.
+    try {
+      const { data: reserved, error } = await db.from('sms_messages').insert({
+        lead_id: leadId, direction: 'out', to_phone: e164.replace(/\D/g, ''), body, status: 'sending',
+      }).select('id').single()
+      if (error || !reserved?.id) return 'skipped'
+      return await sendReservedSms(db, reserved.id, leadId, buyerId, e164, body, total) ? 'sent' : 'skipped'
+    } catch {
+      // An unconfirmed INSERT may have committed. Do not send or clear it.
+      return 'skipped'
+    }
   }
 
   // Fora da janela → agenda pro próximo horário permitido
@@ -172,54 +211,61 @@ export async function dispatchScheduledSms(): Promise<number> {
   let sent = 0
   let rows: any[] = []
   try {
-    const { data } = await db.from('sms_messages')
+    const { data, error } = await db.from('sms_messages')
       .select('id, lead_id, to_phone, body, scheduled_for')
-      .eq('status', 'scheduled').lte('scheduled_for', new Date().toISOString())
+      .eq('status', 'scheduled').eq('direction', 'out').lte('scheduled_for', new Date().toISOString())
       .order('scheduled_for').limit(30)
+    if (error) return 0
     rows = data || []
   } catch { return 0 } // migration 034 ainda não rodou
   if (rows.length === 0) return 0
 
   for (const row of rows) {
     try {
-      const { data: lead } = await db.from('leads')
-        .select('name, state, sms_opted_out, assigned_to, lead_language, form_name, meta_lead_id').eq('id', row.lead_id).maybeSingle()
-      if (!lead) { await db.from('sms_messages').update({ status: 'failed', error: 'lead removido' }).eq('id', row.id); continue }
+      const { data: lead, error: leadError } = await db.from('leads')
+        .select('name, state, sms_opted_out, assigned_to, lead_language, form_name, meta_lead_id, redelivered_to_lead_id').eq('id', row.lead_id).maybeSingle()
+      if (leadError) continue
+      if (!lead) { await db.from('sms_messages').update({ status: 'failed', error: 'lead removido' }).eq('id', row.id).eq('status', 'scheduled'); continue }
+      if (lead.redelivered_to_lead_id) {
+        await db.from('sms_messages').update({ status: 'canceled', error: 'source_redelivered' }).eq('id', row.id).eq('status', 'scheduled'); continue
+      }
 
       const tz = leadTimezone(lead.state)
       if (!isWithinSmsWindow(tz)) continue // ainda fora da janela → espera o próximo ciclo
 
       if (lead.sms_opted_out) {
-        await db.from('sms_messages').update({ status: 'canceled', error: 'opt-out' }).eq('id', row.id); continue
+        await db.from('sms_messages').update({ status: 'canceled', error: 'opt-out' }).eq('id', row.id).eq('status', 'scheduled'); continue
       }
       if (await leadRespondeu(db, row.lead_id, row.scheduled_for ? new Date(new Date(row.scheduled_for).getTime() - 24 * 3600_000).toISOString() : new Date(Date.now() - 24 * 3600_000).toISOString())) {
-        await db.from('sms_messages').update({ status: 'canceled', error: 'lead respondeu' }).eq('id', row.id); continue
+        await db.from('sms_messages').update({ status: 'canceled', error: 'lead respondeu' }).eq('id', row.id).eq('status', 'scheduled'); continue
       }
       const { total, sentToday } = await smsHistory(db, row.lead_id, tz)
       if (total >= SMS_MAX_TOTAL || sentToday) {
-        await db.from('sms_messages').update({ status: 'canceled', error: 'limite diário/total' }).eq('id', row.id); continue
+        await db.from('sms_messages').update({ status: 'canceled', error: 'limite diário/total' }).eq('id', row.id).eq('status', 'scheduled'); continue
       }
 
       // Resolve again at dispatch: even messages queued before this fix must use
       // the lead's current language. Never fall back to the previously queued text.
       const locale = requireLeadMessageLocale(lead)
       const copy = await translateLeadCopy(db, { body: row.body, subject: null }, locale)
-      const res = await sendSms(`+${String(row.to_phone).replace(/\D/g, '')}`, copy.body)
-      if (!res.ok) {
-        await db.from('sms_messages').update({ status: 'failed', error: (res.error || '').slice(0, 200) }).eq('id', row.id)
-        continue
-      }
-      await db.from('sms_messages').update({ status: 'sent', body: copy.body, twilio_sid: res.sid || null, error: null }).eq('id', row.id)
-      await db.from('follow_ups').insert({
-        lead_id: row.lead_id, buyer_id: lead.assigned_to || null, type: 'note',
-        description: `📱 SMS auto (${total + 1}/${SMS_MAX_TOTAL}) — tentativa de ligação sem contato`,
-        status: 'completed', completed_at: new Date().toISOString(),
-      })
+      // Batch reads do not reserve work. CAS plus migration071's source-row
+      // trigger serialize independent workers and retirement before transport.
+      const claim = await db.from('sms_messages').update({ status: 'sending', body: copy.body, error: null })
+        .eq('id', row.id).eq('lead_id', row.lead_id).eq('direction', 'out')
+        .eq('status', 'scheduled').select('id').maybeSingle()
+      if (claim.error || !claim.data?.id) continue
+      if (!await sendReservedSms(db, row.id, row.lead_id, lead.assigned_to || null,
+        `+${String(row.to_phone).replace(/\D/g, '')}`, copy.body, total)) continue
       sent++
       console.log(`[sms-auto] agendado despachado -> lead ${row.lead_id}`)
     } catch (e: any) {
-      await db.from('sms_messages').update({ error: String(e?.message || 'dispatch failed').slice(0, 300) }).eq('id', row.id)
-      console.error('[sms-auto] erro no despacho', row.id, e?.message)
+      // Pre-transport errors may be retried, but never touch another worker's
+      // sending/unknown row (including an unconfirmed claim that committed).
+      try {
+        await db.from('sms_messages').update({ error: String(e?.message || 'preflight unavailable').slice(0, 300) })
+          .eq('id', row.id).eq('status', 'scheduled')
+      } catch { /* keep existing reservation/status */ }
+      console.error('[sms-auto] preflight indisponível', row.id)
     }
   }
   if (sent > 0) console.log(`[sms-auto] ${sent} SMS agendado(s) enviados`)

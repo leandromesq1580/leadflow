@@ -142,6 +142,17 @@ test('real webhook retrieves both Brazil forms through applied Supabase phone_di
   }
 })
 
+test('new delivery retires the original WhatsApp conversation without overriding bridge ownership', async () => {
+  const source = { ...lead('old'), redelivered_to_lead_id: 'fresh' }
+  const fresh = { ...lead('fresh'), created_at: '2026-10-01T00:00:00Z' }
+  const f = fixture({ leads: [source, fresh], messages: [outbound('old-message', 'old')] })
+  assert.equal((await (await f.send()).json()).lead_id, 'fresh')
+  assert.equal(f.rows.whatsapp_messages.at(-1).lead_id, 'fresh')
+  const otherOwner = fixture({ leads: [source, { ...fresh, assigned_to: 'other' }] })
+  assert.equal((await (await otherOwner.send()).json()).skipped, 'not_owner_lead')
+  assert.equal(otherOwner.rows.whatsapp_messages.length, 0)
+})
+
 test('foreign suffixes, DDD collisions, fixed lines and misplaced ninth digits are not lead candidates', async () => {
   for (const [stored, incoming] of [[long, '5469998765432'], [long, '5568998765432'], [long, '15569998765432'], ['5569938765432', '556938765432'], [long, '5569987659432']]) {
     const f = fixture({ leads: [lead('lead', stored)] }); const r = await f.send({ from: incoming })

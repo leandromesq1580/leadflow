@@ -140,6 +140,12 @@ test('international formatted phone matches only its full country-qualified numb
 })
 
 const storedReply = (extra = {}) => ({ id: messageId, lead_id: null, direction: 'in', status: 'received', from_phone: '12025550123', to_phone: '18885550100', body: 'Synthetic historical reply', twilio_sid: 'SM_synthetic_historical', created_at: '2026-03-01T12:00:00Z', ...extra })
+test('reply after administrative new delivery does not return to the retired source with outbound history', async () => {
+  const f = fixture({ leads: [syntheticLead(undefined, { redelivered_to_lead_id: otherLeadId }), syntheticLead(undefined, { id: otherLeadId, assigned_to: otherBuyerId, created_at: '2026-03-01T00:00:00Z' })], messages: [{ id: 'old-send', lead_id: leadId, direction: 'out', created_at: '2026-02-01T00:00:00Z' }] })
+  await f.inbound()
+  assert.equal(f.tables.sms_messages.at(-1).lead_id, otherLeadId)
+  assert.equal(f.owner[0][0], otherBuyerId)
+})
 const storedOutbound = (extra = {}) => ({ id: '66666666-6666-4666-8666-666666666666', lead_id: leadId, direction: 'out', status: 'sent', to_phone: '12025550123', created_at: '2026-03-01T11:00:00Z', ...extra })
 
 test('admin links a saved reply without resending, copying, or changing its content/timestamp', async () => {

@@ -34,7 +34,7 @@ function periodKeyFor(auto: Automation): string | null {
  * Run enabled automations for a given buyer.
  * Called by cron (every 30min) and on pipeline_lead stage changes.
  */
-export async function runAutomations(buyerIds?: string[]): Promise<{ ran: number; failed: number }> {
+export async function runAutomations(buyerIds?: string[], onlyLeadIds?: string[]): Promise<{ ran: number; failed: number }> {
   const db = createAdminClient()
   let query = db.from('automations').select('*').eq('enabled', true)
   if (buyerIds && buyerIds.length > 0) query = query.in('buyer_id', buyerIds)
@@ -49,6 +49,7 @@ export async function runAutomations(buyerIds?: string[]): Promise<{ ran: number
       const targets = await findTargets(auto)
       const periodKey = periodKeyFor(auto)
       for (const target of targets) {
+        if (onlyLeadIds && (!target.lead_id || !onlyLeadIds.includes(target.lead_id))) continue
         // Idempotency: (automation_id, lead_id, meeting_id, period_key) — meeting_id NULL
         // para triggers sem reunião; period_key NULL para triggers de uma vez só (ver
         // periodKeyFor acima e migration 061 pro índice único correspondente).
@@ -327,6 +328,13 @@ async function findTargets(auto: Automation): Promise<Target[]> {
 
 async function executeAction(auto: Automation, target: Target): Promise<void> {
   const db = createAdminClient()
+  // Only administrative redelivery is terminal here; ordinary archived lead
+  // semantics are unchanged. SQL reservation guard closes the selection race.
+  if (target.lead_id) {
+    const { data: origin, error } = await db.from('leads').select('redelivered_to_lead_id').eq('id', target.lead_id).single()
+    if (error || !origin) throw new Error('Lead guard unavailable')
+    if (origin.redelivered_to_lead_id) return
+  }
 
   if (auto.action_type === 'send_template') {
     const templateId = auto.action_config.template_id

@@ -3,6 +3,7 @@
 import { useState, useRef, useLayoutEffect } from 'react'
 import { useT } from '@/lib/i18n-client'
 import { reclaimError } from '@/lib/team-reclaim'
+import { AssignLeadAsNewDialog } from './assign-lead-as-new-dialog'
 
 interface Member {
   id: string
@@ -14,6 +15,7 @@ interface Props {
   members: Member[]
   currentMemberId?: string | null
   canReclaim?: boolean
+  canAssignAsNew?: boolean
   viewedMemberId?: string | null
   onAssigned?: () => void
   onArchived?: () => void
@@ -24,10 +26,11 @@ interface Props {
  * Abre dropdown com lista de team members e botão "voltar pra mim".
  * Usa o mesmo endpoint e padrão visual do AssignButton de /dashboard/leads.
  */
-export function CardAssignMenu({ leadId, members, currentMemberId, canReclaim, viewedMemberId, onAssigned, onArchived }: Props) {
+export function CardAssignMenu({ leadId, members, currentMemberId, canReclaim, canAssignAsNew = false, viewedMemberId, onAssigned, onArchived }: Props) {
   const t = useT()
   const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [open, setOpen] = useState(false)
+  const [assignAsNew, setAssignAsNew] = useState(false)
   const [assigning, setAssigning] = useState(false)
   const [archiving, setArchiving] = useState(false)
   const [error, setError] = useState('')
@@ -40,11 +43,11 @@ export function CardAssignMenu({ leadId, members, currentMemberId, canReclaim, v
     const rect = buttonRef.current.getBoundingClientRect()
     const viewportH = window.innerHeight
     // height: header(26) + back(40 if member) + members*36 + separator(8) + archive(36) + cancel(30) + padding(16)
-    const dropdownHeight = 120 + members.length * 36 + (showReclaim ? 40 : 0)
+    const dropdownHeight = 120 + members.length * 36 + (showReclaim ? 40 : 0) + (canAssignAsNew ? 44 : 0)
     const spaceBelow = viewportH - rect.bottom
     const spaceAbove = rect.top
     setDirection(spaceBelow < dropdownHeight && spaceAbove > spaceBelow ? 'up' : 'down')
-  }, [open, members.length, showReclaim])
+  }, [open, members.length, showReclaim, canAssignAsNew])
 
   async function archive() {
     setArchiving(true)
@@ -134,6 +137,12 @@ export function CardAssignMenu({ leadId, members, currentMemberId, canReclaim, v
 
             {/* Separator + Archive action */}
             <div className="my-1" style={{ borderTop: '1px solid var(--bg-soft)' }} />
+            {canAssignAsNew && <button type="button" disabled={assigning || archiving}
+              onClick={() => { setOpen(false); setAssignAsNew(true) }}
+              className="w-full text-left px-3 py-2 rounded-lg text-[12px] font-semibold hover:bg-indigo-50 disabled:opacity-50"
+              style={{ color: 'var(--accent)' }}>
+              {L('Atribuir lead como novo', 'Assign lead as new', 'Asignar lead como nuevo')}
+            </button>}
             <button
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); archive() }}
               disabled={archiving}
@@ -156,6 +165,8 @@ export function CardAssignMenu({ leadId, members, currentMemberId, canReclaim, v
           </div>
         </>
       )}
+      {assignAsNew && canAssignAsNew && <AssignLeadAsNewDialog key={leadId} leadId={leadId}
+        onClose={() => setAssignAsNew(false)} onDone={() => onAssigned?.()} />}
     </div>
   )
 }

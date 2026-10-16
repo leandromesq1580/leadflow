@@ -218,6 +218,7 @@ function routeFixture(candidates, options = {}) {
       redistributePendingLeads: noop,
     },
     '@/lib/sms-auto': { dispatchScheduledSms: noop },
+    '@/lib/admin-new-lead-assignment-effects': { drainAdminNewLeadAssignmentEffects: noop },
     '@/lib/referral': { releasePendingRewards: noop },
     '@/lib/crm-bonus-drip': { dripLegacyCrmBonusLeads: noop },
     '@/lib/notifications': {

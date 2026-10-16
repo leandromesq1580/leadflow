@@ -15,7 +15,7 @@ function getResend(): Resend {
  * Send WhatsApp notification via wa-bridge (whatsapp-web.js).
  * Supports both direct (phone number) and groups (JID@g.us).
  */
-async function sendWhatsApp(phone: string, message: string, bridge?: { url: string; key: string } | null, opts?: { noFallback?: boolean }): Promise<boolean> {
+async function sendWhatsApp(phone: string, message: string, bridge?: { url: string; key: string } | null, opts?: { noFallback?: boolean; noReplay?: boolean }): Promise<boolean> {
   const clean = (s: string) => String(s).trim().replace(/\\n/g, '').replace(/\s+$/, '').replace(/\/$/, '')
   const bridgeUrl = clean(bridge?.url || process.env.WA_BRIDGE_URL || 'http://62.146.229.13:3457')
   const bridgeKey = (bridge?.key || process.env.WA_BRIDGE_KEY || 'leadflow-bridge-2026').trim()
@@ -34,7 +34,7 @@ async function sendWhatsApp(phone: string, message: string, bridge?: { url: stri
   // Uma tentativa REAL: checa res.ok E o corpo (a bridge devolve {success, id}).
   // "200 sem id" ou "success:false" = NÃO entregou — conta como falha (antes
   // engolia tudo como sucesso, por isso falhas sumiam sem ninguém ver).
-  const attempt = async (): Promise<boolean> => {
+  const attempt = async (): Promise<'confirmed' | 'rejected' | 'unknown'> => {
     try {
       const res = await fetch(`${bridgeUrl}/send`, {
         method: 'POST',
@@ -43,19 +43,25 @@ async function sendWhatsApp(phone: string, message: string, bridge?: { url: stri
         signal: AbortSignal.timeout(10000),
       })
       const data: any = await res.json().catch(() => null)
-      const ok = res.ok && !!(data && (data.success === true || data.id))
+      const ok = res.ok && !!(data && (opts?.noReplay ? data.success === true && data.id : data.success === true || data.id))
       console.log(`[WhatsApp] ${cleanNumber} — ${res.status} ${ok ? 'OK' : 'FALHOU'}`)
-      return ok
+      if (ok) return 'confirmed'
+      // Only an explicit pre-transport rejection is classified as rejected.
+      // A timeout, malformed acknowledgement or 5xx may follow remote acceptance.
+      return [400, 401, 403, 404, 422].includes(res.status) && data?.success === false ? 'rejected' : 'unknown'
     } catch (err) {
       console.error('[WhatsApp] Failed:', err)
-      return false
+      return 'unknown'
     }
   }
 
   // Retry 1x: os flaps da bridge ("Promise was collected") são transitórios.
-  if (await attempt()) return true
+  if (await attempt() === 'confirmed') return true
+  // The paid-delivery outbox owns reconciliation. Never replay inside a single
+  // effect, including fallback, when a bridge may already have accepted it.
+  if (opts?.noReplay) return false
   await new Promise(r => setTimeout(r, 1500))
-  if (await attempt()) return true
+  if (await attempt() === 'confirmed') return true
 
   // BRIDGE RESERVA (2026-09-27): o bridge escolhido está fora (deslogado/QR/morto).
   // Tenta 1x por outro bridge de conta admin que esteja ready — o aviso chega
@@ -356,26 +362,50 @@ function leadOriginLines(lead: { campaign_name?: string | null; raw_data?: unkno
   return lines.join('\n')
 }
 
+/** Canonical authorization, not caller-supplied provenance. Manual imports stay silent. */
+async function notificationSource(leadId?: string) {
+  if (!leadId) return null
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const db = createAdminClient()
+    const { data: src, error } = await db.from('leads')
+      .select('id, assigned_to, assigned_to_member, meta_lead_id, lead_language, form_name, campaign_name, raw_data, redelivery_source_id, redelivered_to_lead_id, delivery_credit_id, notified_at')
+      .eq('id', leadId).maybeSingle()
+    if (error || !src || src.redelivered_to_lead_id) return null
+    if (src.redelivery_source_id) {
+      const { data: receipt, error: receiptError } = await db.from('admin_new_lead_assignments')
+        .select('lead_id, source_lead_id, buyer_id, credit_id').eq('lead_id', leadId).maybeSingle()
+      if (receiptError || !receipt || receipt.lead_id !== leadId
+        || receipt.source_lead_id !== src.redelivery_source_id
+        || !src.assigned_to || receipt.buyer_id !== src.assigned_to
+        || !src.delivery_credit_id || receipt.credit_id !== src.delivery_credit_id) return null
+    } else if (!src.meta_lead_id || (src.raw_data as any)?.source === 'manual'
+      || src.campaign_name === 'Manual' || src.form_name === 'manual_entry') return null
+    return src
+  } catch {
+    // A failed guard is not permission to send through another channel.
+    return null
+  }
+}
+
 /**
  * Send email notification to buyer when a new lead is assigned.
  */
 export async function sendLeadNotificationEmail(buyer: Buyer, lead: Lead): Promise<boolean> {
-  // REGRA UNIVERSAL: lead MANUAL (sem meta_lead_id) NUNCA gera notificacao de "novo
-  // lead". Cadastro/upload do proprio comprador NAO e entrega da plataforma —
-  // notificar quebra a confianca (cliente acha que mexemos no lead dele).
-  try {
-    if ((lead as any).id) {
-      const { createAdminClient } = await import('@/lib/supabase/admin')
-      const { data: src } = await createAdminClient()
-        .from('leads').select('meta_lead_id, lead_language, form_name, campaign_name, raw_data').eq('id', (lead as any).id).maybeSingle()
-      if (src && !src.meta_lead_id) {
-        console.log(`[Notify] Lead ${(lead as any).id} e MANUAL — pula notificacao (regra: manual nao notifica).`)
-        return false
-      }
-      // Also hydrate narrow callers (retry/reassignment) from the canonical row.
-      if (src) lead = { ...lead, ...src }
-    }
-  } catch { /* se a checagem falhar, segue o fluxo normal */ }
+  const src = await notificationSource(lead.id)
+  if (!src) return false
+  // Ordinary Meta alerts retain their existing retry semantics. A paid clone is
+  // accepted only for the ledger's current owner; stale caller data cannot revive it.
+  const isRedelivery = !!src.redelivery_source_id
+  if (isRedelivery && src.assigned_to !== (buyer as any).id) return false
+  if (isRedelivery && src.notified_at) return true
+  lead = { ...lead, ...src }
+  let transportUnconfirmed = false
+  const sendDeliveryWhatsApp = async (phone: string, message: string) => {
+    const confirmed = await sendWhatsApp(phone, message, undefined, isRedelivery ? { noReplay: true } : undefined)
+    if (isRedelivery && !confirmed) transportUnconfirmed = true
+    return confirmed
+  }
 
   // Idioma do corretor pros avisos abaixo (push, email, WhatsApp). Cron/webhook não
   // enxerga o cookie de idioma → busca no settings; qualquer falha cai em 'pt'.
@@ -454,9 +484,9 @@ ${leadOriginLines(lead)}
 📧 ${buyer.email}`
 
   // Send to group (primary) + admin direct (backup)
-  const groupOk = await sendWhatsApp(adminGroupId, adminMsg)
+  const groupOk = await sendDeliveryWhatsApp(adminGroupId, adminMsg)
   const adminPhone = process.env.ADMIN_WHATSAPP || '18632808023'
-  if (adminPhone) await sendWhatsApp(adminPhone, adminMsg)
+  if (adminPhone) await sendDeliveryWhatsApp(adminPhone, adminMsg)
 
   // WhatsApp notification to BUYER
   let buyerOk = false
@@ -482,20 +512,23 @@ ${language}
     // A bridge própria do comprador é pra ELE falar com os leads dele, não pra
     // receber alerta da plataforma. (Self-message só se o comprador for o número
     // da própria bridge global — aí o bridge ainda devolve success, não trava.)
-    if (buyer.phone) buyerOk = await sendWhatsApp(buyer.phone, whatsappMsg)
+    if (buyer.phone) buyerOk = await sendDeliveryWhatsApp(buyer.phone, whatsappMsg)
 
     // 2º NÚMERO (opcional): recebe o MESMO alerta de Novo Lead.
     // 3 blindagens, todas de propósito:
-    //  (a) BEST-EFFORT — o resultado é IGNORADO. Se a falha dele contasse pra
+    //  (a) Aviso Meta antigo: BEST-EFFORT — o resultado é IGNORADO. Se a falha dele contasse pra
     //      buyerOk/notified_at, a reconciliação reenviaria o lead a cada 2min
     //      = o loop de spam (150 msgs) que já aconteceu. NUNCA acoplar.
     //  (b) Pula se for o MESMO número do principal (senão o cara recebe 2x no
     //      mesmo aparelho). Compara só dígitos: "+1 786…" == "1786…".
     //  (c) Não conecta bridge nenhuma — sai pela bridge GLOBAL, igual o principal.
+    // Entrega administrativa: nenhuma tentativa é repetida; resultado incerto
+    // em qualquer destino mantém o efeito para reconciliação, sem reenvio.
     if (phone2 && onlyDigits(phone2) !== onlyDigits(buyer.phone)) {
       try {
-        const ok2 = await sendWhatsApp(phone2, whatsappMsg)
-        if (!ok2) console.warn(`[Notify] 2o numero (${phone2}) nao entregou — ignorado de proposito (nao afeta notified_at)`)
+        const ok2 = await sendDeliveryWhatsApp(phone2, whatsappMsg)
+        if (!ok2) console.warn(isRedelivery ? '[Notify] administrative secondary alert unconfirmed; reconcile without replay'
+          : `[Notify] 2o numero (${phone2}) nao entregou — ignorado de proposito (nao afeta notified_at)`)
       } catch (e: any) {
         console.warn('[Notify] 2o numero falhou (ignorado de proposito):', e?.message)
       }
@@ -511,8 +544,21 @@ ${language}
   // (dado), não transitório — reenviar não resolve. Bridge caída → groupOk=false →
   // não carimba → reenvia quando voltar (esse é o retry legítimo).
   const buyerNotified = !buyer.phone || buyerOk
-  if (groupOk && !buyerNotified) {
+  if (groupOk && !buyerNotified && !isRedelivery) {
     console.error(`[Notify] grupo OK mas COMPRADOR falhou (telefone ${buyer.phone} inválido?) — lead ${(lead as any).id} carimbado p/ NÃO spammar. Corrigir o telefone do comprador.`)
+  }
+  // Paid deliveries have a durable outbox: partial/uncertain transport or stamp
+  // persistence must quarantine that effect, not silently retry all channels.
+  if (isRedelivery) {
+    if (!groupOk || !buyerNotified || transportUnconfirmed) return false
+    try {
+      const { createAdminClient } = await import('@/lib/supabase/admin')
+      const { data: stamped, error } = await createAdminClient().from('leads')
+        .update({ notified_at: new Date().toISOString() }).eq('id', lead.id!)
+        .eq('assigned_to', src.assigned_to).is('redelivered_to_lead_id', null)
+        .select('notified_at').single()
+      return !error && !!stamped?.notified_at
+    } catch { return false }
   }
   if (groupOk && (lead as any).id) {
     try {
@@ -664,26 +710,11 @@ interface TeamMember {
  * Send notification to a team member when a lead is assigned to them.
  */
 export async function sendTeamMemberNotification(member: TeamMember, lead: Lead, bridge?: { url: string; key: string } | null) {
-  // REGRA UNIVERSAL: lead MANUAL (sem meta_lead_id) NUNCA notifica — nem o membro do
-  // time. Mesmo guard do sendLeadNotificationEmail; FALTAVA aqui → lead manual
-  // delegado a um membro vazava o "Novo Lead" (caso SHARON E PEOPLES).
-  try {
-    if ((lead as any).id) {
-      const { createAdminClient } = await import('@/lib/supabase/admin')
-      const { data: src } = await createAdminClient()
-        .from('leads').select('campaign_name, form_name, raw_data, lead_language, meta_lead_id').eq('id', (lead as any).id).maybeSingle()
-      const isManual = !!src && (
-        (src.raw_data as any)?.source === 'manual' ||
-        src.campaign_name === 'Manual' ||
-        src.form_name === 'manual_entry'
-      )
-      if (isManual) {
-        console.log(`[Notify team] Lead ${(lead as any).id} e MANUAL — pula notificacao ao membro (regra: manual nao notifica).`)
-        return
-      }
-      if (src) lead = { ...lead, ...src }
-    }
-  } catch { /* se a checagem falhar, segue o fluxo normal */ }
+  // Same fail-closed provenance guard as buyer alerts. Delegation does not make
+  // an ordinary manual import a platform delivery or revive a retired source.
+  const src = await notificationSource(lead.id)
+  if (!src || (src.redelivery_source_id && src.assigned_to_member !== member.id)) return
+  lead = { ...lead, ...src }
 
   // Idioma do membro: locale é por buyer, então só existe se ele tem conta própria
   // (auth_user_id → buyers). Membro sem conta segue em 'pt' (comportamento de sempre).

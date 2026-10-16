@@ -28,6 +28,7 @@ function fakeDb(selectQueues) {
       const q = {
         select: () => q,
         or: () => q,
+        is: () => q,
         eq: (...a) => { events.push({ table, op: 'eq', args: a }); return q },
         in: (...a) => { events.push({ table, op: 'in', args: a }); return q },
         order: () => q,
