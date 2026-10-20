@@ -26,6 +26,7 @@ CREATE TABLE automation_runs(id uuid primary key default gen_random_uuid(),lead_
   }
   if (existsSync('supabase/migrations/071_admin_new_lead_assignment.sql')) sql += readFileSync('supabase/migrations/071_admin_new_lead_assignment.sql', 'utf8')
   if (existsSync('supabase/migrations/072_assign_new_ignore_email_suppression.sql')) sql += readFileSync('supabase/migrations/072_assign_new_ignore_email_suppression.sql', 'utf8')
+  if (existsSync('supabase/migrations/073_legacy_sequence_internal_owner.sql')) sql += readFileSync('supabase/migrations/073_legacy_sequence_internal_owner.sql', 'utf8')
   return sql
 }
 export async function fixture() {
