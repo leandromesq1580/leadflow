@@ -20,17 +20,22 @@ export function validateFilters(input: unknown): {ok:true;value:CampaignFilters}
   if(f.since && f.until && Date.parse(String(f.since))>=Date.parse(String(f.until))) return {ok:false,error:'O fim deve ser posterior ao início.'}
   return {ok:true,value:f as CampaignFilters}
 }
+const CAMPAIGN_FIELD_LABELS:Record<string,string>={name:'Nome da campanha',subject_pt:'Assunto em português',body_pt:'Mensagem em português',subject_es:'Assunto em espanhol (aba Español)',body_es:'Mensagem em espanhol (aba Español)'}
 export function validateCampaign(input: unknown): {ok:true;value:CampaignDraft}|{ok:false;error:string} {
   if(!input||typeof input!=='object'||Array.isArray(input)) return {ok:false,error:'Campanha inválida.'}
   const c=input as Record<string,unknown>,keys=['name','subject_pt','body_pt','subject_es','body_es','filters']
   if(Object.keys(c).some(k=>!keys.includes(k))) return {ok:false,error:'Campo de campanha desconhecido.'}
   for(const key of keys.filter(k=>k!=='filters')){
     const v=c[key],max=key==='name'?100:key.startsWith('subject')?160:20000
+    const label=CAMPAIGN_FIELD_LABELS[key]
+    if(typeof v==='string'&&!v.trim())return {ok:false,error:'Falta preencher: '+label+'.'}
     const rich=typeof v==='string'&&key.startsWith('body')&&isRichCampaignBody(v)
-    if(typeof v!=='string'||!v.trim()||v.length>max||(!rich&&/<[^>]*>/.test(v))||(/subject|name/.test(key)&&/[\r\n]/.test(v))) return {ok:false,error:'Revise o campo '+key+'. Use o editor para inserir HTML seguro.'}
+    if(typeof v!=='string'||!v.trim()||v.length>max||(!rich&&/<[^>]*>/.test(v))||(/subject|name/.test(key)&&/[\r\n]/.test(v))) return {ok:false,error:'Revise o campo "'+label+'". Use o editor para inserir HTML seguro.'}
     if(rich&&!campaignBodyToText(v).trim()&&!/<img\b/.test(campaignRichHtml(v)))return {ok:false,error:'A mensagem não pode ficar vazia.'}
     if([...v.matchAll(/{{([^}]+)}}/g)].some(m=>m[1].trim()!=='nome')||v.replace(/{{\s*nome\s*}}/g,'').includes('{{')) return {ok:false,error:'A variável permitida é {{nome}}.'}
   }
+  // Aba Español copiada do português: o lead em espanhol receberia e-mail em português.
+  if(String(c.subject_es).trim()===String(c.subject_pt).trim()||(!isRichCampaignBody(String(c.body_es))&&String(c.body_es).trim()===String(c.body_pt).trim()))return {ok:false,error:'A aba Español está com o mesmo texto do português. Escreva o assunto e a mensagem em espanhol.'}
   const f=validateFilters(c.filters??{})
   if(!f.ok)return f
   const body=(v:string)=>isRichCampaignBody(v)?encodeCampaignHtml(campaignRichHtml(v)):v.trim()
