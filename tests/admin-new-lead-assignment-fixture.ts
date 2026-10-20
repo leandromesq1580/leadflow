@@ -25,6 +25,7 @@ CREATE TABLE automation_runs(id uuid primary key default gen_random_uuid(),lead_
     sql += readFileSync(`supabase/migrations/${name}.sql`, 'utf8').replace('CREATE EXTENSION IF NOT EXISTS pgcrypto;', '')
   }
   if (existsSync('supabase/migrations/071_admin_new_lead_assignment.sql')) sql += readFileSync('supabase/migrations/071_admin_new_lead_assignment.sql', 'utf8')
+  if (existsSync('supabase/migrations/072_assign_new_ignore_email_suppression.sql')) sql += readFileSync('supabase/migrations/072_assign_new_ignore_email_suppression.sql', 'utf8')
   return sql
 }
 export async function fixture() {
