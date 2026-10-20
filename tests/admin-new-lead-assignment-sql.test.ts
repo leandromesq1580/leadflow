@@ -31,7 +31,6 @@ test('eligibility rejects unsafe sources/targets atomically and never bypasses c
       [`update leads set assigned_to='${uuid(2)}'`, /source_not_admin/],
       [`update leads set sms_opted_out=true`, /contact_blocked/],
       [`insert into ai_sequence_suppressions(buyer_id,lead_id,reason) values('${uuid(1)}','${uuid(41)}','manual')`, /contact_blocked/],
-      [`insert into email_campaign_contacts(email,suppressed_at) values('fixture@example.test',now())`, /contact_blocked/],
       [`update buyers set is_active=false where id='${uuid(2)}'`, /buyer_unavailable/],
       [`update leads set lead_language='en'; update credits set lead_language='en'`, /unsupported_language/],
       [`update pipelines set is_default=false where id='${uuid(22)}'`, /pipeline_unavailable/],
@@ -165,5 +164,25 @@ test('paid new cycle preserves original audit and creates a current clean lead w
     assert.equal((await q('select stage_id from pipeline_leads where lead_id=$1', [result.lead_id]))[0].stage_id, uuid(32))
     assert.equal((await q('select count(*)::int n from pipeline_leads where lead_id=$1', [uuid(41)]))[0].n, 1)
     assert.equal((await q('select count(*)::int n from follow_ups where lead_id=$1', [result.lead_id]))[0].n, 0)
+  } finally { await db.close() }
+})
+
+test('email-campaign suppression (bounce/unsubscribe) does not block a WhatsApp/SMS lead; STOP and AI blocks still do', async () => {
+  const { db, q, call } = await fixture()
+  try {
+    await q(`insert into email_campaign_contacts(email,suppressed_at) values('fixture@example.test',now())`)
+    assert.equal((await q(`select count(*)::int n from leads where lower(email)='fixture@example.test'`))[0].n, 1, 'fixture lead has the suppressed e-mail')
+    const result = await call()
+    assert.equal(result.success, true)
+    assert.equal((await q('select count(*)::int n from admin_new_lead_assignments'))[0].n, 1)
+    assert.equal((await q('select total_used from credits where id=$1', [uuid(52)]))[0].total_used, 3, 'exactly one credit debited from recipient')
+  } finally { await db.close() }
+})
+
+test('real STOP still blocks even when e-mail is not suppressed', async () => {
+  const { db, q, call } = await fixture()
+  try {
+    await q('update leads set sms_opted_out=true')
+    await assert.rejects(call(), /contact_blocked/)
   } finally { await db.close() }
 })
