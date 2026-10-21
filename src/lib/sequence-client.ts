@@ -35,3 +35,6 @@ export async function saveSequenceDraft(url:string,payload:unknown,close:()=>voi
  close()
  try{await reload()}catch{throw new Error('Salvo, mas não foi possível recarregar a lista. Atualize a página; não salve novamente.')}
 }
+
+/** Sequência ativada sem etapa gatilho só inscreve manualmente: nunca dispara sozinha. */
+export function sequenceNeedsTrigger(s:{enabled?:boolean;trigger_stage_id?:string|null}):boolean{return !!s.enabled&&!s.trigger_stage_id}
