@@ -5,7 +5,7 @@ import { durationSummary } from '@/lib/ai-sequence-form'
 import { AISequenceFields } from '@/components/ai-sequence-fields'
 import { SequenceEnrollmentPanel } from '@/components/sequence-enrollment-panel'
 import { defaultAIConfig, validAISchedule, type AISequenceConfig } from '@/lib/ai-sequence-config'
-import { sequenceJSON, saveSequenceDraft, duplicateSequenceDraft } from '@/lib/sequence-client'
+import { sequenceJSON, saveSequenceDraft, duplicateSequenceDraft, sequenceNeedsTrigger} from '@/lib/sequence-client'
 import { useT } from '@/lib/i18n-client'
 import { useActionEditLink } from '@/lib/use-action-edit-link'
 
@@ -123,6 +123,7 @@ export default function SequencesPage() {
               <div className="min-w-0 flex-1 basis-[60%] sm:basis-0 break-words">
                 <p className="text-[15px] font-bold" style={{ color: 'var(--fg)' }}>{s.name}</p>
                 {s.description && <p className="text-[12px]" style={{ color: 'var(--fg-secondary)' }}>{s.description}</p>}
+                {sequenceNeedsTrigger(s) && <p data-testid="no-trigger-warning-list" className="mt-1 text-[12px] font-medium text-amber-700">Sem etapa gatilho: esta sequência não inscreve ninguém sozinha. Clique em Editar e escolha a etapa.</p>}
               </div>
               <button onClick={() => setExpanded(expanded === s.id ? null : s.id)} className="text-[12px] font-bold">Inscrições</button>
               <button onClick={() => { setEditing(s); setDuplicate(null); setShowNew(true) }} className="text-[12px] font-bold" style={{ color: 'var(--accent)' }}>{L('Editar', 'Edit', 'Editar')}</button>
@@ -249,6 +250,7 @@ function SequenceForm({ buyerId, templates, pipelines, editing, duplicate, onClo
                 className="w-full min-w-0 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15" /></div>
             <div className="min-w-0"><label htmlFor="sequence-mode" className="mb-2 block text-sm font-medium">Modo</label><select id="sequence-mode" disabled={!!seed} value={mode} onChange={e => setMode(e.target.value as 'legacy' | 'ai_until_reply')} className="w-full min-w-0 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2.5 text-sm disabled:opacity-60"><option value="legacy">Passos tradicionais</option><option value="ai_until_reply">WhatsApp IA até responder</option></select></div>
           </div>
+          {!triggerStageId && <p data-testid="no-trigger-warning-form" className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">Sem etapa gatilho, esta sequência não inscreve ninguém sozinha (só inscrição manual). Abra “Inscrição e descrição” e escolha a etapa do funil.</p>}
           <details className="mb-5 rounded-lg border border-[var(--border)] text-sm">
             <summary className="cursor-pointer px-3 py-2.5 font-medium">Inscrição e descrição <span className="ml-1 text-xs font-normal text-[var(--fg-secondary)]">· {triggerStageId ? 'por estágio' : 'inscrição manual'}</span></summary>
             <div className="space-y-3 border-t border-[var(--border)] p-3">
