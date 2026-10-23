@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CallScriptPanel } from './call-script-panel'
 import { useT } from '@/lib/i18n-client'
 import { createDeviceActivator, type ActivationReason } from './softphone-activation'
-import { classifyCallFailure } from './softphone-errors'
+import { classifyCallFailure, isUnansweredRingOut } from './softphone-errors'
 
 /** Dispara uma ligação de qualquer lugar do app: callLead('+1...', 'Nome', leadId). */
 export function callLead(phone: string, name?: string, leadId?: string) {
@@ -36,6 +36,7 @@ export function Softphone() {
   const buyerIdRef = useRef<string>('')
   const timerRef = useRef<any>(null)
   const leadIdRef = useRef<string>('')
+  const callStateRef = useRef({ ringing: false, accepted: false })
   const signalingErrorRef = useRef<{ device: unknown; code: number | null } | null>(null)
 
   const mountedRef = useRef(true)
@@ -132,14 +133,15 @@ export function Softphone() {
     deviceRef.current = r.device
     const device = deviceRef.current
     signalingErrorRef.current = null
+    callStateRef.current = { ringing: false, accepted: false }
     setInfo({ name: detail.name, phone: detail.phone }); setMuted(false); setStatus('connecting')
     leadIdRef.current = detail.leadId || ''
     try {
       const call = await device.connect({ params: { To: detail.phone, leadId: detail.leadId || '', buyerId: buyerIdRef.current } })
       callRef.current = call
       if (detail.leadId) logCallAttempt(detail.leadId) // registra a tentativa já na saída da chamada
-      call.on('ringing', () => setStatus('ringing'))
-      call.on('accept', () => { setStatus('incall'); startTimer(); try { setCallSid(call.parameters?.CallSid || '') } catch {} })
+      call.on('ringing', () => { callStateRef.current.ringing = true; setStatus('ringing') })
+      call.on('accept', () => { callStateRef.current.accepted = true; setStatus('incall'); startTimer(); try { setCallSid(call.parameters?.CallSid || '') } catch {} })
       call.on('disconnect', endUi)
       call.on('cancel', endUi)
       call.on('reject', endUi)
@@ -155,6 +157,8 @@ export function Softphone() {
   function handleCallFailure(error: unknown) {
     const failure = classifyCallFailure(error)
     console.warn('[softphone] call:', failure)
+    // Tocou e ninguém atendeu: fim normal de ligação não atendida (o resultado vem dos callbacks de status).
+    if (isUnansweredRingOut(failure, callStateRef.current)) { endUi(); return }
     // Uma autorização expirada não pode deixar a aba presa ao mesmo Device/token.
     // Não rediscamos: o próximo clique autorizado pelo usuário busca outro token.
     if (failure.reason === 'authentication') {
