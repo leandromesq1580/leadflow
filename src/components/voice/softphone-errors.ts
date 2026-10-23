@@ -9,3 +9,12 @@ export function classifyCallFailure(error: unknown): { reason: CallFailureReason
   if (code !== null && [31003, 31005, 31009, 53000, 53001, 53405].includes(code)) return { reason: 'connection', code }
   return { reason: 'unknown', code }
 }
+
+/**
+ * Ligação que tocou e ninguém atendeu: o Twilio encerra a perna do navegador com o erro genérico 31000.
+ * Não é falha do telefone — o resultado "não atendeu" já chega pelos callbacks de status.
+ * Só vale se a chamada chegou a tocar e nunca foi atendida; sem tocar, 31000 continua sendo falha.
+ */
+export function isUnansweredRingOut(failure: { code: number | null; reason?: string }, state: { ringing: boolean; accepted: boolean }): boolean {
+  return failure.code === 31000 && state.ringing && !state.accepted
+}
