@@ -247,8 +247,11 @@ client.on("message", async (msg) => {
   try {
     if (msg.fromMe) return;
     if (msg.from.endsWith("@g.us")) return;
-
-    const { media_url, media_type, media_mimetype } = await extractMedia(msg, "Media IN");
+    // Status (stories dos contatos), canais e listas de transmissão NUNCA são conversa de
+    // lead. 25/10/2026: a mídia era baixada e subida ANTES do descarte por remetente não
+    // numérico → 228 GB de stories no bucket público wa-media, o Supabase bloqueou o
+    // projeto por cota de armazenamento e a plataforma ficou ~28 h fora do ar.
+    if (msg.isStatus || /@(broadcast|newsletter)$/i.test(msg.from || "")) return;
 
     let fromNumber = msg.from.replace("@c.us", "").replace("@lid", "");
     if (msg.from.endsWith("@lid")) {
@@ -266,6 +269,9 @@ client.on("message", async (msg) => {
       }
     }
     if (!/^[0-9]+$/.test(fromNumber)) { console.warn(`[${INSTANCE_NAME}][IN] skip non-numeric:`, fromNumber); return; }
+
+    // Só baixa/sobe a mídia DEPOIS de saber que o remetente é um telefone de verdade.
+    const { media_url, media_type, media_mimetype } = await extractMedia(msg, "Media IN");
 
     const pushName = (msg._data && msg._data.notifyName) ? String(msg._data.notifyName).trim().slice(0, 80) : null;
     console.log(`[${INSTANCE_NAME}][IN]`, fromNumber, msg.type, media_type || "text", "name=" + (pushName || "-"), (msg.body || "").slice(0, 40));
