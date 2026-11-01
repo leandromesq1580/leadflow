@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { WA_DISCONNECT_ALERT_PAUSE_KEY, isWaDisconnectAlertPaused } from './wa-alert-pause'
 import { localeDoBuyer, trad, type BuyerLocale } from './buyer-locale'
 import { orientarPendencia, type PolicyChangeAlert, type PolicyStatus } from './insurance-policies'
 import { leadNotificationLanguageLabel, type LeadLanguageFields } from './lead-message-locale'
@@ -650,6 +651,13 @@ export async function checkAllBridgesAndAlert(): Promise<{ checked: number; down
     prev = ((data?.value as any) || {}) as Record<string, string>
   } catch {}
 
+  // Pausa pedida pelo dono: não avisa admins, mas segue medindo e gravando o estado (sem rajada ao voltar).
+  let alertsPaused = false
+  try {
+    const { data } = await db.from('settings').select('value').eq('key', WA_DISCONNECT_ALERT_PAUSE_KEY).maybeSingle()
+    alertsPaused = isWaDisconnectAlertPaused(data?.value)
+  } catch {}
+
   const next: Record<string, string> = {}
   let down = 0
   let alerts = 0
@@ -679,13 +687,13 @@ export async function checkAllBridgesAndAlert(): Promise<{ checked: number; down
           // ALARME DE INCÊNDIO: tem que chegar. Só-grupo ficou MUDO em 2026-07-14/16
           // (piroli, Davi Vaz e Leonel caíram e o alerta se perdeu no grupo) — por
           // isso ninguém soube que estava tudo quebrado. Agora vai no direto também.
-          await notifyAdmins(`⚠️ WhatsApp de *${who}*${ph} DESCONECTOU. Peça pra reconectar: Configurações → Conectar WhatsApp → escanear o QR. Enquanto isso, as mensagens dele falham.`)
+          if (!alertsPaused) await notifyAdmins(`⚠️ WhatsApp de *${who}*${ph} DESCONECTOU. Peça pra reconectar: Configurações → Conectar WhatsApp → escanear o QR. Enquanto isso, as mensagens dele falham.`)
           await db.from('buyers').update({ wa_bridge_status: 'disconnected' }).eq('id', b.id)
         } else {
-          await notifyAdmins(`✅ WhatsApp de *${who}*${ph} reconectou — voltou a enviar normal.`)
+          if (!alertsPaused) await notifyAdmins(`✅ WhatsApp de *${who}*${ph} reconectou — voltou a enviar normal.`)
           await db.from('buyers').update({ wa_bridge_status: 'connected' }).eq('id', b.id)
         }
-        alerts++
+        if (!alertsPaused) alerts++
       } catch (e) { console.error('[BridgeMonitor] alert err:', (e as any)?.message) }
     }
   }
