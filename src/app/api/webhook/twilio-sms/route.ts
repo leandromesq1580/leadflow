@@ -126,9 +126,13 @@ export async function POST(request: NextRequest) {
     return twiml()
   }
 
-  // Alerta o grupo de controle (não bloqueia a resposta ao Twilio)
-  try { await notifyGroupSmsReply(lead?.name || null, digits, body) } catch (e) {
-    console.error('[Twilio SMS] alerta grupo falhou:', (e as any)?.message)
+  // Grupo admin (+ número do dono da plataforma) só vê resposta SEM dono (número desconhecido ou lead
+  // não atribuído) — alguém precisa tratar. Lead de cliente: só o dono é avisado (02/11/2026: a cópia
+  // levava a conversa dos leads dos clientes para o WhatsApp da equipe). Não bloqueia a resposta ao Twilio.
+  if (!lead?.assigned_to) {
+    try { await notifyGroupSmsReply(lead?.name || null, digits, body) } catch (e) {
+      console.error('[Twilio SMS] alerta grupo falhou:', (e as any)?.message)
+    }
   }
 
   // Avisa o DONO do lead (caso Robson, 2026-08-10): antes o corretor mandava SMS,
