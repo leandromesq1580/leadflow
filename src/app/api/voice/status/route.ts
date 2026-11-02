@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendOrScheduleAutoSms } from '@/lib/sms-auto'
+import { extractCallDiagnostics } from '@/lib/voice-call-diagnostics'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,6 +37,15 @@ export async function POST(request: NextRequest) {
         await db.from('calls').upsert(row, { onConflict: 'call_sid' })
       } catch {
         // tabela `calls` ainda não migrada — ignora (piloto tolerante)
+      }
+      // Causa da falha (SIP/erro do Twilio). Update À PARTE: se a migration 075 ainda não rodou, o registro
+      // principal acima não é afetado. Ligação normal (completed) não é tocada.
+      if (status && status !== 'completed') {
+        const diag = extractCallDiagnostics(p)
+        if (diag.sip_response_code !== null || diag.error_code !== null) {
+          try { await db.from('calls').update(diag).eq('call_sid', callSid) } catch {}
+        }
+        console.warn(`[voice/status] não completou: sid=${callSid} status=${status} sip=${diag.sip_response_code} err=${diag.error_code} params=${Object.keys(p).join(',')}`)
       }
     }
 
