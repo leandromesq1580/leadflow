@@ -112,3 +112,25 @@ test('single matching lead is used directly without querying outbound history', 
   const historyLookup = f.events.find(e => e.table === 'sms_messages' && e.op === 'in')
   assert.equal(historyLookup, undefined, 'no ambiguity → no need to query outbound history')
 })
+
+// 02/11/2026: a resposta de SMS de um lead de CLIENTE ia também para o grupo admin e para o número do Leandro
+// ("RESPOSTA DE SMS"). Agora só o dono é avisado; o grupo admin só vê lead SEM dono.
+test('lead com dono: avisa só o dono, sem cópia para o grupo admin', async () => {
+  const f = fixture({
+    sms_messages: [{ data: null, error: null }],
+    leads: [{ data: [{ id: OLD_LEAD, name: 'Andi Salustiano', phone: '9095550473', assigned_to: BUYER_DAVI, created_at: '2026-04-15T03:58:56Z' }], error: null }],
+  })
+  await f.post()
+  assert.equal(f.notify.ownerCalls.length, 1)
+  assert.equal(f.notify.groupCalls.length, 0, 'não pode copiar o grupo admin quando o lead tem dono')
+})
+
+test('lead sem dono ou número desconhecido: o grupo admin continua sendo avisado', async () => {
+  const f = fixture({
+    sms_messages: [{ data: null, error: null }],
+    leads: [{ data: [{ id: OLD_LEAD, name: 'Andi Salustiano', phone: '9095550473', assigned_to: null, created_at: '2026-04-15T03:58:56Z' }], error: null }],
+  })
+  await f.post()
+  assert.equal(f.notify.ownerCalls.length, 0)
+  assert.equal(f.notify.groupCalls.length, 1)
+})
