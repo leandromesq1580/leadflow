@@ -28,3 +28,14 @@ test('outros códigos nunca são tratados como não atendida', () => {
     assert.equal(isUnansweredRingOut({ reason: 'unknown', code }, { ringing: true, accepted: false }), false)
   }
 })
+
+// 02/11/2026: erro 31480 (SIP 480) = telefone do lead indisponível (desligado/fora de área) e 31486 = ocupado.
+// A tela mandava "enviar ao suporte" para algo que é só o estado do telefone do lead.
+test('31480 e 31486 são telefone do lead indisponível/ocupado, não falha do sistema', () => {
+  assert.deepEqual(classifyCallFailure({ code: 31480 }), { reason: 'callee_unavailable', code: 31480 })
+  assert.deepEqual(classifyCallFailure({ code: 31486 }), { reason: 'callee_unavailable', code: 31486 })
+})
+test('31000 e outros códigos seguem como antes', () => {
+  assert.equal(classifyCallFailure({ code: 31000 }).reason, 'unknown')
+  assert.equal(classifyCallFailure({ code: 31005 }).reason, 'connection')
+})
