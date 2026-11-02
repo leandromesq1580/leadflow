@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
         // tabela `calls` ainda não migrada — ignora (piloto tolerante)
       }
       // Causa da falha (SIP/erro do Twilio). Update À PARTE: se a migration 075 ainda não rodou, o registro
-      // principal acima não é afetado. Ligação normal (completed) não é tocada.
-      if (status && status !== 'completed') {
+      // principal acima não é afetado. Só estados finais de falha (initiated/ringing/in-progress/completed não são tocados).
+      if (status && ['failed', 'busy', 'no-answer', 'canceled'].includes(status)) {
         const diag = extractCallDiagnostics(p)
         if (diag.sip_response_code !== null || diag.error_code !== null) {
           try { await db.from('calls').update(diag).eq('call_sid', callSid) } catch {}
