@@ -101,7 +101,10 @@ export async function POST(request: NextRequest) {
         const cfg = campaignConfiguration(process.env)
         if (!cfg.ready) return fail('Envio de e-mail não está pronto: ' + cfg.issues.join(' '))
         const session = await createServerSupabase()
-        const email = (await session.auth.getUser()).data.user?.email
+        // Por padrão o teste vai para o e-mail de quem está logado; o admin pode indicar UM outro endereço (só teste, sempre com [TESTE] no assunto).
+        const asked = typeof body.to === 'string' ? body.to.trim().toLowerCase() : ''
+        if (asked && !/^[^\s@<>,;]+@[^\s@<>,;]+\.[a-z]{2,}$/.test(asked)) return fail('E-mail de teste inválido.')
+        const email = asked || (await session.auth.getUser()).data.user?.email
         if (!email) return fail('Não achei o seu e-mail.')
         const { data: c } = await db.from('recruit_campaigns').select('*').eq('id', body.id).maybeSingle()
         if (!c) return fail('Campanha não encontrada.', 404)
