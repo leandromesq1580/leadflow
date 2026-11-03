@@ -31,22 +31,21 @@ test('filtros: idioma, UF e status válidos; resto é rejeitado', () => {
   assert.equal(validateRecruitFilters([]).ok, false)
   assert.deepEqual(validateRecruitFilters(undefined), { ok: true, value: {} })
 })
-test('o modelo inicial NÃO pode ser enviado: tem [[PREENCHER]] nos 3 idiomas', () => {
-  assert.equal(hasPlaceholder(RECRUIT_TEMPLATE), true)
-  for (const l of ['en', 'pt', 'es'] as const) assert.match((RECRUIT_TEMPLATE as Record<string, string>)['body_' + l], /\[\[PREENCHER/)
-  assert.equal(hasPlaceholder(full), false)
-})
-test('modelo traz a comissão real (65%) nos 3 idiomas e ainda exige preencher leads e assinatura', () => {
+test('modelo: sem trechos a preencher, 65%, link no idioma certo, sem "Re:" no assunto, {{nome}} presente', () => {
+  assert.equal(hasPlaceholder(RECRUIT_TEMPLATE), false)
+  assert.equal(hasPlaceholder({ ...RECRUIT_TEMPLATE, body_pt: 'falta [[PREENCHER]]' }), true)
   for (const l of ['en', 'pt', 'es'] as const) {
-    const b = (RECRUIT_TEMPLATE as Record<string, string>)['body_' + l]
-    assert.match(b, /65%/)
-    assert.equal((b.match(/\[\[PREENCHER/g) || []).length, 2) // leads/custo + assinatura
+    const T = RECRUIT_TEMPLATE as Record<string, string>
+    assert.match(T['body_' + l], /65%/)
+    assert.match(T['body_' + l], /\{\{nome\}\}/)
+    assert.match(T['body_' + l], /WDT\/Lead4Pro/)
+    assert.doesNotMatch(T['subject_' + l], /^\s*(re|fw|fwd):/i)
+    assert.ok(T['subject_' + l].length <= 160)
   }
-})
-test('modelo leva o link da página de benefícios no idioma certo', () => {
   assert.match(RECRUIT_TEMPLATE.body_pt, /lead4producers\.com\/equipe(?!\/)/)
   assert.match(RECRUIT_TEMPLATE.body_en, /lead4producers\.com\/equipe\/en/)
   assert.match(RECRUIT_TEMPLATE.body_es, /lead4producers\.com\/equipe\/es/)
+  assert.equal(validateRecruitCampaign({ name: 'x', ...RECRUIT_TEMPLATE, filters: {}, daily_limit: 200 }).ok, true)
 })
 test('e-mail: idioma, nome, descadastro, endereço e escape de HTML', () => {
   const c = { subject_en: 'Hi {{nome}}', body_en: 'EN <b>x</b> https://a.com/p', subject_pt: 'Oi {{nome}}', body_pt: 'PT', subject_es: 'Hola {{nome}}', body_es: 'ES' }

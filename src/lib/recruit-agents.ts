@@ -154,12 +154,13 @@ export async function dispatchRecruit(db: CampaignDb, provider: CampaignProvider
   return result
 }
 
-// ---------- modelo inicial (os números reais da oferta ficam para o admin preencher) ----------
+// ---------- modelo inicial (texto aprovado pelo dono em 02/11; sem trechos a preencher) ----------
+// Assunto sem "Re:": fingir resposta a uma conversa que não existiu é assunto enganoso (CAN-SPAM).
 export const RECRUIT_TEMPLATE: Pick<RecruitDraft, 'subject_en' | 'body_en' | 'subject_pt' | 'body_pt' | 'subject_es' | 'body_es'> = {
-  subject_en: '{{nome}}, congrats on your new license — what\'s next?',
-  body_en: `Hi {{nome}},\n\nCongratulations on getting your life insurance license. A license alone doesn't pay the bills — you need leads, carrier contracts and a system to follow up.\n\nAt Lead4Pro we give new agents:\n• Commission starting at 65%\n• Our own CRM, built for insurance agents\n• Leads: [[PREENCHER: quantidade de leads e custo, se houver]]\n\nSee all the benefits: https://lead4producers.com/equipe/en\n\nIf you'd like to talk for 10 minutes, just reply to this email with the best time and phone number.\n\nBest,\n[[PREENCHER: nome de quem assina]]`,
-  subject_pt: '{{nome}}, parabéns pela licença — e agora?',
-  body_pt: `Olá {{nome}},\n\nParabéns pela sua licença de seguro de vida. Só a licença não paga as contas: é preciso ter leads, contrato com seguradoras e um sistema para acompanhar os clientes.\n\nNa Lead4Pro oferecemos ao agente novo:\n• Comissão a partir de 65%\n• CRM próprio, feito para agentes de seguro\n• Leads: [[PREENCHER: quantidade de leads e custo, se houver]]\n\nVeja todos os benefícios: https://lead4producers.com/equipe\n\nSe quiser conversar 10 minutos, responda este e-mail com o melhor horário e telefone.\n\nAbraço,\n[[PREENCHER: nome de quem assina]]`,
-  subject_es: '{{nome}}, felicidades por tu licencia — ¿y ahora qué?',
-  body_es: `Hola {{nome}},\n\nFelicidades por tu licencia de seguro de vida. La licencia sola no paga las cuentas: necesitas leads, contratos con aseguradoras y un sistema para dar seguimiento.\n\nEn Lead4Pro ofrecemos al agente nuevo:\n• Comisión desde el 65%\n• CRM propio, hecho para agentes de seguros\n• Leads: [[PREENCHER: cantidad de leads y costo, si hay]]\n\nMira todos los beneficios: https://lead4producers.com/equipe/es\n\nSi quieres hablar 10 minutos, responde este correo con el mejor horario y teléfono.\n\nSaludos,\n[[PREENCHER: nombre de quien firma]]`,
+  subject_en: 'Congratulations on your new Life Insurance license',
+  body_en: `Congratulations, {{nome}}! All of us at WDT/Lead4Pro are very happy about your achievement, and we would like to introduce you to the benefits and a unique opportunity to work with an agency that offers commission starting at 65%, our own CRM, and unique leads that are not shared with anyone else!\n\nClick the link to learn more: https://lead4producers.com/equipe/en\n\nWDT/Lead4Pro Team`,
+  subject_pt: 'Parabéns pela sua nova licença de Seguro de Vida',
+  body_pt: `Parabéns, {{nome}}! Nós da WDT/Lead4Pro estamos muito felizes com a sua conquista e gostaríamos de lhe apresentar os benefícios e a oportunidade única de trabalhar com uma agência que oferece comissões a partir de 65%, CRM próprio e leads únicos, que não são compartilhados com mais ninguém!\n\nClique no link para saber mais: https://lead4producers.com/equipe\n\nEquipe WDT/Lead4Pro`,
+  subject_es: 'Felicidades por tu nueva licencia de Seguro de Vida',
+  body_es: `¡Felicidades, {{nome}}! Todos en WDT/Lead4Pro estamos muy felices por tu logro y queremos presentarte los beneficios y la oportunidad única de trabajar con una agencia que ofrece comisiones desde el 65%, CRM propio y leads únicos que no se comparten con nadie más.\n\nHaz clic en el enlace para saber más: https://lead4producers.com/equipe/es\n\nEquipo WDT/Lead4Pro`,
 }
