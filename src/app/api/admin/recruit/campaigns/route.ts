@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       return data ? NextResponse.json({ campaign: data }, { headers: NO_STORE }) : fail('Campanha não encontrada.', 404)
     }
     const campaigns = await rpc(a.db!, 'rc_list')
-    return NextResponse.json({ campaigns, template: RECRUIT_TEMPLATE, config: { ready: cfg.ready, issues: cfg.issues, from: cfg.from, dailyLimit: cfg.dailyLimit } }, { headers: NO_STORE })
+    return NextResponse.json({ config: { ready: cfg.ready, issues: cfg.issues, from: cfg.from, dailyLimit: cfg.dailyLimit }, campaigns, template: RECRUIT_TEMPLATE }, { headers: NO_STORE })
   } catch (e) { return fail(e instanceof Error ? e.message : 'Falha.', 500) }
 }
 
