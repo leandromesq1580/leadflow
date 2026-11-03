@@ -36,6 +36,13 @@ test('o modelo inicial NÃO pode ser enviado: tem [[PREENCHER]] nos 3 idiomas', 
   for (const l of ['en', 'pt', 'es'] as const) assert.match((RECRUIT_TEMPLATE as Record<string, string>)['body_' + l], /\[\[PREENCHER/)
   assert.equal(hasPlaceholder(full), false)
 })
+test('modelo traz a comissão real (65%) nos 3 idiomas e ainda exige preencher leads e assinatura', () => {
+  for (const l of ['en', 'pt', 'es'] as const) {
+    const b = (RECRUIT_TEMPLATE as Record<string, string>)['body_' + l]
+    assert.match(b, /65%/)
+    assert.equal((b.match(/\[\[PREENCHER/g) || []).length, 2) // leads/custo + assinatura
+  }
+})
 test('e-mail: idioma, nome, descadastro, endereço e escape de HTML', () => {
   const c = { subject_en: 'Hi {{nome}}', body_en: 'EN <b>x</b> https://a.com/p', subject_pt: 'Oi {{nome}}', body_pt: 'PT', subject_es: 'Hola {{nome}}', body_es: 'ES' }
   const pt = renderRecruitEmail({ name: 'MARIA SILVA', language: 'pt', unsubscribe_token: TOKEN, campaign: c }, CFG)
