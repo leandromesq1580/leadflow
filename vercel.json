@@ -3,6 +3,7 @@
     { "path": "/api/poll-leads", "schedule": "*/2 * * * *" },
     { "path": "/api/cron/run-all", "schedule": "*/5 * * * *" },
     { "path": "/api/cron/ai-sequences", "schedule": "* * * * *" },
-    { "path": "/api/cron/email-campaigns", "schedule": "* * * * *" }
+    { "path": "/api/cron/email-campaigns", "schedule": "* * * * *" },
+    { "path": "/api/cron/recruit", "schedule": "* * * * *" }
   ]
 }

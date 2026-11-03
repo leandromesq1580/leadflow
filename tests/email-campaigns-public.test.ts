@@ -32,3 +32,15 @@ test('unsubscribe GET is a confirmation only; POST permanently suppresses by opa
  assert.equal(post.status,200);assert.equal(calls.length,1);assert.equal(calls[0][0],'ec_unsubscribe');assert.equal(calls[0][1].p_token,id)
  assert.equal((await handler(new Request('https://example.invalid'), 'bad')).status,404)
 })
+
+test('recrutamento: retorno do Resend vai para rc_event (não para ec_event); descadastro usa rc_unsubscribe',async()=>{
+ const calls:[string,Record<string,unknown>][]=[];const db=()=>({rpc:async(n:string,a:Record<string,unknown>)=>{calls.push([n,a]);return {data:true,error:null}}})
+ const event={type:'email.bounced',created_at:new Date().toISOString(),data:{email_id:'prov-9',tags:{module:'admin_recruit_campaigns',recipient:id}}}
+ const handler=createCampaignWebhook({secret:()=> 'synthetic-secret',verify:()=>event,db})
+ const res=await handler(new Request('https://example.invalid',{method:'POST',headers:{'svix-id':'e1'},body:'{}'}))
+ assert.equal(res.status,200);assert.equal(calls.length,1);assert.equal(calls[0][0],'rc_event');assert.equal(calls[0][1].p_provider,'prov-9');assert.equal(calls[0][1].p_kind,'email.bounced')
+ event.data.tags.module='admin_recruit_campaigns_test';assert.equal((await handler(new Request('https://example.invalid',{method:'POST',headers:{'svix-id':'e2'},body:'{}'}))).status,200);assert.equal(calls.length,1)
+ const unsub=createCampaignUnsubscribe({db,rpc:'rc_unsubscribe'})
+ await unsub(new Request('https://example.invalid',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:'confirm=1'}),id)
+ assert.equal(calls[1][0],'rc_unsubscribe')
+})
