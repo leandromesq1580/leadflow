@@ -43,6 +43,11 @@ test('modelo traz a comissão real (65%) nos 3 idiomas e ainda exige preencher l
     assert.equal((b.match(/\[\[PREENCHER/g) || []).length, 2) // leads/custo + assinatura
   }
 })
+test('modelo leva o link da página de benefícios no idioma certo', () => {
+  assert.match(RECRUIT_TEMPLATE.body_pt, /lead4producers\.com\/equipe(?!\/)/)
+  assert.match(RECRUIT_TEMPLATE.body_en, /lead4producers\.com\/equipe\/en/)
+  assert.match(RECRUIT_TEMPLATE.body_es, /lead4producers\.com\/equipe\/es/)
+})
 test('e-mail: idioma, nome, descadastro, endereço e escape de HTML', () => {
   const c = { subject_en: 'Hi {{nome}}', body_en: 'EN <b>x</b> https://a.com/p', subject_pt: 'Oi {{nome}}', body_pt: 'PT', subject_es: 'Hola {{nome}}', body_es: 'ES' }
   const pt = renderRecruitEmail({ name: 'MARIA SILVA', language: 'pt', unsubscribe_token: TOKEN, campaign: c }, CFG)
