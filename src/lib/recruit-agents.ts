@@ -222,3 +222,9 @@ export function withRecruitInfo<T extends { name: string; email: string }>(list:
     return { ...a, language: (r?.language ?? guessLanguage(a.name)) as RecruitLang, status: (r?.status ?? null) as RecruitStatus | null }
   })
 }
+
+/** Ambiente do recrutamento: remetente próprio (EMAIL_RECRUIT_FROM_EMAIL) quando existir; senão o mesmo das campanhas. Isola a reputação do recrutamento sem mexer na ferramenta antiga. */
+export function recruitEnv(env: Record<string, string | undefined>): Record<string, string | undefined> {
+  const own = (env.EMAIL_RECRUIT_FROM_EMAIL || '').trim()
+  return own ? { ...env, EMAIL_CAMPAIGNS_FROM_EMAIL: own } : env
+}

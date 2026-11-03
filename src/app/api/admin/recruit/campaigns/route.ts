@@ -4,7 +4,7 @@ import { createServerSupabase } from '@/lib/supabase/server'
 import { callerBuyer } from '@/lib/api-auth'
 import { campaignConfiguration, CAMPAIGN_UUID } from '@/lib/email-campaigns'
 import { campaignProvider } from '@/lib/email-campaign-provider'
-import { RECRUIT_LANGS, RECRUIT_MODULE_TAG, RECRUIT_TEMPLATE, hasPlaceholder, renderRecruitEmail, validateRecruitCampaign, validateRecruitFilters, type RecruitLang } from '@/lib/recruit-agents'
+import { RECRUIT_LANGS, RECRUIT_MODULE_TAG, RECRUIT_TEMPLATE, hasPlaceholder, renderRecruitEmail, validateRecruitCampaign, validateRecruitFilters, type RecruitLang, recruitEnv } from '@/lib/recruit-agents'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -39,7 +39,7 @@ async function rpc<T>(db: ReturnType<typeof createAdminClient>, name: string, ar
 export async function GET(request: NextRequest) {
   const a = await auth(request, false); if (a.err) return a.err
   try {
-    const cfg = campaignConfiguration(process.env)
+    const cfg = campaignConfiguration(recruitEnv(process.env))
     const id = request.nextUrl.searchParams.get('id')
     if (id) {
       if (!CAMPAIGN_UUID.test(id)) return fail('Campanha inválida.')
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
         if (body.confirm !== true) return fail('Confirmação necessária.')
         const expected = Number(body.expected)
         if (!Number.isInteger(expected) || expected < 1) return fail('Informe quantos destinatários você conferiu.')
-        const cfg = campaignConfiguration(process.env)
+        const cfg = campaignConfiguration(recruitEnv(process.env))
         if (!cfg.ready) return fail('Envio de e-mail não está pronto: ' + cfg.issues.join(' '))
         const { data: c } = await db.from('recruit_campaigns').select('*').eq('id', body.id).maybeSingle()
         if (!c) return fail('Campanha não encontrada.', 404)
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
       case 'test': {
         // Envia UM e-mail de teste só para o e-mail do admin logado (não toca em nenhum agente).
         if (typeof body.id !== 'string' || !CAMPAIGN_UUID.test(body.id) || !RECRUIT_LANGS.includes(body.language)) return fail('Pedido inválido.')
-        const cfg = campaignConfiguration(process.env)
+        const cfg = campaignConfiguration(recruitEnv(process.env))
         if (!cfg.ready) return fail('Envio de e-mail não está pronto: ' + cfg.issues.join(' '))
         const session = await createServerSupabase()
         // Por padrão o teste vai para o e-mail de quem está logado; o admin pode indicar UM outro endereço (só teste, sempre com [TESTE] no assunto).

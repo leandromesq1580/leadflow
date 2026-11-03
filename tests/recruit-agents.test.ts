@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { sanitizeEmailHtml, isHtmlBody, htmlToText, withRecruitInfo, guessLanguage, validateRecruitCampaign, validateRecruitFilters, hasPlaceholder, renderRecruitEmail, recruitBodyToHtml, dispatchRecruit, RECRUIT_TEMPLATE } from '../src/lib/recruit-agents'
+import { recruitEnv, sanitizeEmailHtml, isHtmlBody, htmlToText, withRecruitInfo, guessLanguage, validateRecruitCampaign, validateRecruitFilters, hasPlaceholder, renderRecruitEmail, recruitBodyToHtml, dispatchRecruit, RECRUIT_TEMPLATE } from '../src/lib/recruit-agents'
 
 const TOKEN = '11111111-2222-4333-8444-555555555555'
 const CFG = { postal: '1 Main St, Miami FL 33101' }
@@ -151,4 +151,10 @@ test('idioma: sinais contraditórios (sobrenome PT + ES) caem em inglês; sinal 
   assert.equal(guessLanguage('ANA SILVA'), 'pt')
   assert.equal(guessLanguage('ANA GARCIA'), 'es')
   assert.equal(guessLanguage('JOHN SMITH'), 'en')
+})
+
+test('remetente do recrutamento: variável própria vence; sem ela, usa o das campanhas', () => {
+  assert.equal(recruitEnv({ EMAIL_CAMPAIGNS_FROM_EMAIL: 'a@x.com', EMAIL_RECRUIT_FROM_EMAIL: ' b@y.com ' }).EMAIL_CAMPAIGNS_FROM_EMAIL, 'b@y.com')
+  assert.equal(recruitEnv({ EMAIL_CAMPAIGNS_FROM_EMAIL: 'a@x.com' }).EMAIL_CAMPAIGNS_FROM_EMAIL, 'a@x.com')
+  assert.equal(recruitEnv({ EMAIL_CAMPAIGNS_FROM_EMAIL: 'a@x.com', EMAIL_RECRUIT_FROM_EMAIL: '  ' }).EMAIL_CAMPAIGNS_FROM_EMAIL, 'a@x.com')
 })
