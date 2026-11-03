@@ -4,8 +4,10 @@ import { useMemo, useState } from 'react'
 
 /** /admin/novos-agentes — lista de agentes com licença Life & Annuity nova (Florida DFS), por período. */
 
-type Agent = { name: string; license: string; address: string; city: string; state: string; zip: string; county: string; email: string; phone: string; npn: string }
-type Result = { from: string; to: string; total: number; agents: Agent[]; fetchedAt: string }
+type Agent = { name: string; license: string; address: string; city: string; state: string; zip: string; county: string; email: string; phone: string; npn: string; language: 'en' | 'pt' | 'es'; status: string | null }
+type Result = { from: string; to: string; total: number; saved: number; agents: Agent[]; fetchedAt: string }
+const LANG: Record<string, string> = { en: 'Inglês', pt: 'Português', es: 'Espanhol' }
+const STATUS: Record<string, string> = { new: 'Novo', contacted: 'Contatado', replied: 'Respondeu', interested: 'Interessado', joined: 'Entrou', declined: 'Recusou' }
 
 const PAGE = 100
 const iso = (d: Date) => d.toISOString().slice(0, 10)
@@ -19,10 +21,14 @@ export default function NovosAgentesPage() {
   const [res, setRes] = useState<Result | null>(null)
   const [state, setState] = useState('')
   const [q, setQ] = useState('')
+  const [lang, setLang] = useState('')
+  const [st, setSt] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState('')
   const [page, setPage] = useState(0)
 
   async function search() {
-    setLoading(true); setError(''); setRes(null); setPage(0)
+    setLoading(true); setError(''); setMsg(''); setRes(null); setPage(0)
     try {
       const r = await fetch(`/api/admin/novos-agentes?from=${from}&to=${to}`, { cache: 'no-store' })
       const j = await r.json().catch(() => ({}))
@@ -30,6 +36,18 @@ export default function NovosAgentesPage() {
       setRes(j)
     } catch (e) { setError(e instanceof Error ? e.message : 'Falha na consulta.') }
     setLoading(false)
+  }
+
+  async function saveAll() {
+    setSaving(true); setError(''); setMsg('')
+    try {
+      const r = await fetch('/api/admin/recruit/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ from, to }) })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok) throw new Error(j.error || `Erro ${r.status}`)
+      setMsg(`${j.inserted} novos salvos na lista de recrutamento · ${j.alreadyKnown} já estavam. Nada foi enviado a ninguém.`)
+      await search()
+    } catch (e) { setError(e instanceof Error ? e.message : 'Falha ao salvar.') }
+    setSaving(false)
   }
 
   const states = useMemo(() => {
@@ -42,6 +60,8 @@ export default function NovosAgentesPage() {
     const t = q.trim().toLowerCase()
     return (res?.agents || []).filter(a =>
       (!state || (a.state || '—') === state) &&
+      (!lang || a.language === lang) &&
+      (!st || (st === 'none' ? !a.status : a.status === st)) &&
       (!t || `${a.name} ${a.email} ${a.phone} ${a.city} ${a.npn}`.toLowerCase().includes(t)))
   }, [res, state, q])
 
@@ -67,10 +87,12 @@ export default function NovosAgentesPage() {
           className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-[14px] font-bold disabled:opacity-50">
           {loading ? 'Buscando…' : 'Buscar'}
         </button>
+        {res && <button onClick={saveAll} disabled={saving} className="px-4 py-2.5 rounded-xl bg-gray-900 text-white text-[14px] font-semibold disabled:opacity-50">{saving ? 'Salvando…' : '🤝 Salvar na lista de recrutamento'}</button>}
         {res && <a href={csvHref} className="px-4 py-2.5 rounded-xl border border-gray-300 text-[14px] font-semibold text-gray-700">⬇️ Baixar CSV</a>}
         <span className="text-[11px] text-gray-400 w-full">Máximo de 62 dias por busca. Pode levar até 15 segundos.</span>
       </div>
 
+      {msg && <div className="mt-4 rounded-xl bg-green-50 border border-green-200 text-green-800 text-[13px] px-4 py-3">{msg}</div>}
       {error && <div className="mt-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-[13px] px-4 py-3">{error}</div>}
 
       {res && (
@@ -81,12 +103,21 @@ export default function NovosAgentesPage() {
               <option value="">Todos os estados</option>
               {states.map(([s, n]) => <option key={s} value={s}>{s} ({n})</option>)}
             </select>
+            <select value={lang} onChange={e => { setLang(e.target.value); setPage(0) }} className="border rounded-xl px-3 py-2 text-[13px]">
+              <option value="">Todos os idiomas</option>
+              {Object.entries(LANG).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+            <select value={st} onChange={e => { setSt(e.target.value); setPage(0) }} className="border rounded-xl px-3 py-2 text-[13px]">
+              <option value="">Todos os status</option>
+              <option value="none">Não salvo ainda</option>
+              {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
             <input value={q} onChange={e => { setQ(e.target.value); setPage(0) }} placeholder="Buscar nome, e-mail, cidade…" className="border rounded-xl px-3 py-2 text-[13px] flex-1 min-w-[200px]" />
           </div>
           <div className="bg-white border border-gray-200 rounded-2xl overflow-x-auto">
             <table className="w-full text-[13px]">
               <thead className="bg-gray-50 text-left text-gray-500 text-[11px] uppercase">
-                <tr><th className="px-3 py-2">Nome</th><th className="px-3 py-2">Cidade / UF</th><th className="px-3 py-2">E-mail</th><th className="px-3 py-2">Telefone</th><th className="px-3 py-2">Licença</th><th className="px-3 py-2">NPN</th></tr>
+                <tr><th className="px-3 py-2">Nome</th><th className="px-3 py-2">Cidade / UF</th><th className="px-3 py-2">E-mail</th><th className="px-3 py-2">Telefone</th><th className="px-3 py-2">Licença</th><th className="px-3 py-2">NPN</th><th className="px-3 py-2">Idioma</th><th className="px-3 py-2">Status</th></tr>
               </thead>
               <tbody>
                 {shown.map(a => (
@@ -97,9 +128,11 @@ export default function NovosAgentesPage() {
                     <td className="px-3 py-2 whitespace-nowrap">{a.phone}</td>
                     <td className="px-3 py-2">{a.license}</td>
                     <td className="px-3 py-2">{a.npn}</td>
+                    <td className="px-3 py-2">{LANG[a.language]}</td>
+                    <td className="px-3 py-2">{a.status ? STATUS[a.status] : <span className="text-gray-400">Não salvo</span>}</td>
                   </tr>
                 ))}
-                {!shown.length && <tr><td colSpan={6} className="px-3 py-8 text-center text-gray-400">Nenhum agente nesse filtro.</td></tr>}
+                {!shown.length && <tr><td colSpan={8} className="px-3 py-8 text-center text-gray-400">Nenhum agente nesse filtro.</td></tr>}
               </tbody>
             </table>
           </div>

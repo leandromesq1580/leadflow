@@ -107,19 +107,48 @@ export function recruitBodyToHtml(body: string): string {
   }).join('')
 }
 
+/** O texto da campanha é HTML quando contém tags comuns de e-mail; senão é texto simples. */
+export function isHtmlBody(body: string): boolean {
+  return /<\/?(p|div|a|table|tbody|tr|td|th|br|h[1-6]|ul|ol|li|strong|b|em|i|u|span|img|center|hr|font)\b/i.test(body)
+}
+
+/** HTML escrito pelo admin: tira o que executa código ou puxa conteúdo de fora (script, iframe, form, onclick, javascript:). Estilo inline continua. */
+export function sanitizeEmailHtml(html: string): string {
+  return html
+    .replace(/<(script|iframe|object|embed|form|input|textarea|select|link|meta|base|svg|math)\b[\s\S]*?(<\/\1\s*>|$)/gi, '')
+    .replace(/<\/?(script|iframe|object|embed|form|input|textarea|select|link|meta|base|svg|math)\b[^>]*>/gi, '')
+    .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/\s(href|src|action|formaction|xlink:href)\s*=\s*("\s*(javascript|vbscript|data):[^"]*"|'\s*(javascript|vbscript|data):[^']*')/gi, ' $1="#"')
+    .replace(/expression\s*\(|url\s*\(\s*['"]?\s*javascript:/gi, '')
+}
+
+/** Versão em texto puro do HTML (parte "text/plain" do e-mail). */
+export function htmlToText(html: string): string {
+  return html
+    .replace(/<(style|script)\b[\s\S]*?<\/\1>/gi, '')
+    .replace(/<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_m, href, t) => { const label = t.replace(/<[^>]+>/g, '').trim(); return label && label !== href ? `${label} (${href})` : href })
+    .replace(/<(br|\/p|\/div|\/h[1-6]|\/tr|\/li|hr)\b[^>]*>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
+}
+
 type SendRow = { name: string; language: RecruitLang; unsubscribe_token: string; campaign: Pick<RecruitDraft, 'subject_en' | 'body_en' | 'subject_pt' | 'body_pt' | 'subject_es' | 'body_es'> }
 export function renderRecruitEmail(row: SendRow, config: Pick<CampaignConfiguration, 'postal'>) {
   if (!CAMPAIGN_UUID.test(row.unsubscribe_token) || !RECRUIT_LANGS.includes(row.language)) throw new Error('invalid_recipient')
   const l = row.language, lab = LABELS[l]
   const nome = firstName(row.name) || lab.greet
-  const fill = (s: string) => s.replace(/{{\s*nome\s*}}/gi, () => nome)
+  const fill = (s: string, safe = false) => s.replace(/{{\s*nome\s*}}/gi, () => (safe ? esc(nome) : nome))
   const subject = fill(row.campaign[('subject_' + l) as 'subject_en']).replace(/[\r\n]/g, ' ')
-  const body = fill(row.campaign[('body_' + l) as 'body_en'])
+  const raw = row.campaign[('body_' + l) as 'body_en']
   const unsubscribe = `${CAMPAIGN_URL}/api/recruit/unsubscribe/${row.unsubscribe_token}`
+  const html = isHtmlBody(raw)
+  const bodyText = html ? htmlToText(fill(sanitizeEmailHtml(raw))) : fill(raw).trim()
+  const bodyHtml = html ? `<div>${fill(sanitizeEmailHtml(raw), true)}</div>` : recruitBodyToHtml(fill(raw))
   return {
     subject,
-    text: `${body.trim()}\n\n--\nLead4Pro · ${config.postal}\n${lab.why}\n${lab.unsub}: ${unsubscribe}`,
-    html: `<div style="font:16px/1.6 Arial,sans-serif;color:#0f172a">${recruitBodyToHtml(body)}<hr/><p style="font-size:12px;color:#475569">Lead4Pro · ${esc(config.postal)}<br/>${esc(lab.why)}<br/><a href="${unsubscribe}">${lab.unsub}</a></p></div>`,
+    text: `${bodyText}\n\n--\nLead4Pro · ${config.postal}\n${lab.why}\n${lab.unsub}: ${unsubscribe}`,
+    html: `<div style="font:16px/1.6 Arial,sans-serif;color:#0f172a">${bodyHtml}<hr style="border:0;border-top:1px solid #e2e8f0;margin:24px auto 16px;max-width:560px"/><p style="font-size:12px;line-height:1.5;color:#475569;max-width:560px;margin:0 auto">Lead4Pro · ${esc(config.postal)}<br/>${esc(lab.why)}<br/><a href="${unsubscribe}">${lab.unsub}</a></p></div>`,
     headers: { 'List-Unsubscribe': `<${unsubscribe}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
   }
 }
@@ -154,13 +183,40 @@ export async function dispatchRecruit(db: CampaignDb, provider: CampaignProvider
   return result
 }
 
-// ---------- modelo inicial (texto aprovado pelo dono em 02/11; sem trechos a preencher) ----------
+// ---------- modelo inicial (texto aprovado pelo dono em 02/11, agora em HTML estilizado) ----------
 // Assunto sem "Re:": fingir resposta a uma conversa que não existiu é assunto enganoso (CAN-SPAM).
+const PAGE = 'https://lead4producers.com/equipe'
+function styledBody(o: { hi: string; intro: string; items: string[]; cta: string; url: string; sign: string }) {
+  const li = o.items.map(t => `<tr><td style="padding:6px 0;font-size:16px;color:#0f172a"><span style="color:#6366f1;font-weight:bold">✔</span>&nbsp; ${t}</td></tr>`).join('')
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;font-family:Arial,sans-serif">
+<tr><td style="background:#0b1020;color:#ffffff;padding:18px 24px;font-size:22px;font-weight:bold;border-radius:12px 12px 0 0">Lead<span style="color:#818cf8">4Pro</span></td></tr>
+<tr><td style="background:#f8fafc;padding:26px 24px;border:1px solid #e2e8f0;border-top:0;border-radius:0 0 12px 12px">
+<h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;color:#0f172a">${o.hi}</h1>
+<p style="margin:0 0 14px;font-size:16px;line-height:1.6;color:#334155">${o.intro}</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 20px">${li}</table>
+<p style="margin:0 0 22px"><a href="${o.url}" style="display:inline-block;background:#6366f1;color:#ffffff;text-decoration:none;font-weight:bold;font-size:16px;padding:13px 26px;border-radius:10px">${o.cta}</a></p>
+<p style="margin:0;font-size:15px;color:#334155">${o.sign}</p>
+</td></tr></table>`
+}
 export const RECRUIT_TEMPLATE: Pick<RecruitDraft, 'subject_en' | 'body_en' | 'subject_pt' | 'body_pt' | 'subject_es' | 'body_es'> = {
   subject_en: 'Congratulations on your new Life Insurance license',
-  body_en: `Congratulations, {{nome}}! All of us at WDT/Lead4Pro are very happy about your achievement, and we would like to introduce you to the benefits and a unique opportunity to work with an agency that offers commission starting at 65%, our own CRM, and unique leads that are not shared with anyone else!\n\nClick the link to learn more: https://lead4producers.com/equipe/en\n\nWDT/Lead4Pro Team`,
+  body_en: styledBody({ hi: 'Congratulations, {{nome}}!', intro: 'All of us at <b>WDT/Lead4Pro</b> are very happy about your achievement, and we would like to introduce you to the benefits and a unique opportunity to work with an agency that offers:',
+    items: ['Commission starting at <b>65%</b>', 'Our own <b>CRM</b>', '<b>Unique leads</b> that are not shared with anyone else'], cta: 'Click to learn more →', url: PAGE + '/en', sign: 'WDT/Lead4Pro Team' }),
   subject_pt: 'Parabéns pela sua nova licença de Seguro de Vida',
-  body_pt: `Parabéns, {{nome}}! Nós da WDT/Lead4Pro estamos muito felizes com a sua conquista e gostaríamos de lhe apresentar os benefícios e a oportunidade única de trabalhar com uma agência que oferece comissões a partir de 65%, CRM próprio e leads únicos, que não são compartilhados com mais ninguém!\n\nClique no link para saber mais: https://lead4producers.com/equipe\n\nEquipe WDT/Lead4Pro`,
+  body_pt: styledBody({ hi: 'Parabéns, {{nome}}!', intro: 'Nós da <b>WDT/Lead4Pro</b> estamos muito felizes com a sua conquista e gostaríamos de lhe apresentar os benefícios e a oportunidade única de trabalhar com uma agência que oferece:',
+    items: ['Comissões a partir de <b>65%</b>', '<b>CRM</b> próprio', '<b>Leads únicos</b>, que não são compartilhados com mais ninguém'], cta: 'Clique para saber mais →', url: PAGE, sign: 'Equipe WDT/Lead4Pro' }),
   subject_es: 'Felicidades por tu nueva licencia de Seguro de Vida',
-  body_es: `¡Felicidades, {{nome}}! Todos en WDT/Lead4Pro estamos muy felices por tu logro y queremos presentarte los beneficios y la oportunidad única de trabajar con una agencia que ofrece comisiones desde el 65%, CRM propio y leads únicos que no se comparten con nadie más.\n\nHaz clic en el enlace para saber más: https://lead4producers.com/equipe/es\n\nEquipo WDT/Lead4Pro`,
+  body_es: styledBody({ hi: '¡Felicidades, {{nome}}!', intro: 'Todos en <b>WDT/Lead4Pro</b> estamos muy felices por tu logro y queremos presentarte los beneficios y la oportunidad única de trabajar con una agencia que ofrece:',
+    items: ['Comisiones desde el <b>65%</b>', '<b>CRM</b> propio', '<b>Leads únicos</b> que no se comparten con nadie más'], cta: 'Haz clic para saber más →', url: PAGE + '/es', sign: 'Equipo WDT/Lead4Pro' }),
+}
+
+// ---------- tela "Novos Agentes": junta a lista do DFS com o que já foi salvo no recrutamento ----------
+export type SavedRecruit = { email: string; language: RecruitLang; status: RecruitStatus }
+/** Idioma e status de cada agente do DFS. Quem ainda não foi salvo vem com idioma provável e status null. */
+export function withRecruitInfo<T extends { name: string; email: string }>(list: T[], saved: SavedRecruit[]) {
+  const by = new Map(saved.map(r => [r.email.trim().toLowerCase(), r]))
+  return list.map(a => {
+    const r = by.get((a.email || '').trim().toLowerCase())
+    return { ...a, language: (r?.language ?? guessLanguage(a.name)) as RecruitLang, status: (r?.status ?? null) as RecruitStatus | null }
+  })
 }
