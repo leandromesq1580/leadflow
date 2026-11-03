@@ -1,6 +1,7 @@
 'use client'
 
 import { Fragment, useCallback, useEffect, useState } from 'react'
+import { isHtmlBody, recruitBodyToHtml, sanitizeEmailHtml } from '@/lib/recruit-agents'
 
 /** /admin/recrutamento — agentes recém-licenciados (Florida DFS): acompanhamento + campanha de e-mail em 3 idiomas. */
 
@@ -232,8 +233,12 @@ function Editor({ initial, cfg, onDone }: { initial: { id: string | null; d: Dra
       </div>
       <label className="block mt-3 text-[12px] font-semibold text-gray-600">Assunto — {LANG[lang]}
         <input value={d[`subject_${lang}` as 'subject_en']} onChange={e => set({ [`subject_${lang}`]: e.target.value } as Partial<Draft>)} maxLength={160} className="mt-1 block w-full border rounded-xl px-3 py-2 text-[14px] font-normal" /></label>
-      <label className="block mt-3 text-[12px] font-semibold text-gray-600">Texto — {LANG[lang]} <span className="font-normal text-gray-400">(use {'{{nome}}'} para o primeiro nome)</span>
-        <textarea value={d[`body_${lang}` as 'body_en']} onChange={e => set({ [`body_${lang}`]: e.target.value } as Partial<Draft>)} rows={12} maxLength={20000} className="mt-1 block w-full border rounded-xl px-3 py-2 text-[14px] font-normal font-mono" /></label>
+      <label className="block mt-3 text-[12px] font-semibold text-gray-600">Texto — {LANG[lang]} <span className="font-normal text-gray-400">(HTML ou texto simples · {'{{nome}}'} vira o primeiro nome)</span>
+        <textarea value={d[`body_${lang}` as 'body_en']} onChange={e => set({ [`body_${lang}`]: e.target.value } as Partial<Draft>)} rows={12} maxLength={20000} className="mt-1 block w-full border rounded-xl px-3 py-2 text-[13px] font-normal font-mono" /></label>
+      <div className="mt-3">
+        <div className="text-[12px] font-semibold text-gray-600 mb-1">Prévia — {LANG[lang]} (como o agente vê; “Maria” no lugar de {'{{nome}}'})</div>
+        <iframe title="Prévia do e-mail" sandbox="" className="w-full h-[420px] rounded-xl border border-gray-200 bg-white" srcDoc={`<div style="font:16px/1.6 Arial,sans-serif;color:#0f172a;padding:12px">${(isHtmlBody(d[`body_${lang}` as 'body_en']) ? sanitizeEmailHtml(d[`body_${lang}` as 'body_en']) : recruitBodyToHtml(d[`body_${lang}` as 'body_en'])).replace(/{{\s*nome\s*}}/gi, 'Maria')}</div>`} />
+      </div>
       {placeholder && <div className="mt-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[12px] px-3 py-2">Ainda há trechos <b>[[PREENCHER…]]</b> nos textos. Troque pelos dados reais (comissão, leads, assinatura) nos 3 idiomas — com eles a campanha não pode ser agendada.</div>}
       <div className="text-[11px] text-gray-400 mt-1">O rodapé com endereço e o link para cancelar recebimento entra sozinho, no idioma de cada agente.</div>
 

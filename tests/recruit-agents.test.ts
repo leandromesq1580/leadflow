@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { guessLanguage, validateRecruitCampaign, validateRecruitFilters, hasPlaceholder, renderRecruitEmail, recruitBodyToHtml, dispatchRecruit, RECRUIT_TEMPLATE } from '../src/lib/recruit-agents'
+import { sanitizeEmailHtml, isHtmlBody, htmlToText, withRecruitInfo, guessLanguage, validateRecruitCampaign, validateRecruitFilters, hasPlaceholder, renderRecruitEmail, recruitBodyToHtml, dispatchRecruit, RECRUIT_TEMPLATE } from '../src/lib/recruit-agents'
 
 const TOKEN = '11111111-2222-4333-8444-555555555555'
 const CFG = { postal: '1 Main St, Miami FL 33101' }
@@ -48,7 +48,7 @@ test('modelo: sem trechos a preencher, 65%, link no idioma certo, sem "Re:" no a
   assert.equal(validateRecruitCampaign({ name: 'x', ...RECRUIT_TEMPLATE, filters: {}, daily_limit: 200 }).ok, true)
 })
 test('e-mail: idioma, nome, descadastro, endereço e escape de HTML', () => {
-  const c = { subject_en: 'Hi {{nome}}', body_en: 'EN <b>x</b> https://a.com/p', subject_pt: 'Oi {{nome}}', body_pt: 'PT', subject_es: 'Hola {{nome}}', body_es: 'ES' }
+  const c = { subject_en: 'Hi {{nome}}', body_en: 'EN 1 < 2 & https://a.com/p', subject_pt: 'Oi {{nome}}', body_pt: 'PT', subject_es: 'Hola {{nome}}', body_es: 'ES' }
   const pt = renderRecruitEmail({ name: 'MARIA SILVA', language: 'pt', unsubscribe_token: TOKEN, campaign: c }, CFG)
   assert.equal(pt.subject, 'Oi Maria')
   assert.match(pt.text, /Cancelar recebimento: https:\/\/lead4producers\.com\/api\/recruit\/unsubscribe\/11111111/)
@@ -57,7 +57,7 @@ test('e-mail: idioma, nome, descadastro, endereço e escape de HTML', () => {
   const es = renderRecruitEmail({ name: '', language: 'es', unsubscribe_token: TOKEN, campaign: c }, CFG)
   assert.equal(es.subject, 'Hola Hola') // sem nome → saudação do idioma
   const en = renderRecruitEmail({ name: 'Bob', language: 'en', unsubscribe_token: TOKEN, campaign: c }, CFG)
-  assert.match(en.html, /&lt;b&gt;x&lt;\/b&gt;/)
+  assert.match(en.html, /1 &lt; 2 &amp;/)
   assert.match(en.html, /<a href="https:\/\/a\.com\/p">/)
   assert.match(en.text, /Unsubscribe:/)
   assert.throws(() => renderRecruitEmail({ name: 'x', language: 'en', unsubscribe_token: 'bad', campaign: c }, CFG))
@@ -116,4 +116,32 @@ test('configuração não pronta: não consulta o banco', async () => {
   const h = harness(); (h.config as { ready: boolean }).ready = false
   const r = await dispatchRecruit(h.db, h.provider as never, h.config)
   assert.equal(r.blocked, true); assert.equal(h.calls.length, 0)
+})
+
+test('Novos Agentes: usa idioma/status salvos; quem não foi salvo ganha idioma provável e status null', () => {
+  const out = withRecruitInfo(
+    [{ name: 'MARIA SILVA', email: 'Maria@X.com ' }, { name: 'JOHN SMITH', email: 'john@x.com' }, { name: 'ANA', email: '' }],
+    [{ email: 'maria@x.com', language: 'es', status: 'contacted' }])
+  assert.deepEqual(out.map(a => [a.language, a.status]), [['es', 'contacted'], ['en', null], ['en', null]])
+})
+
+test('corpo em HTML: mantém estilo, tira script/onclick/javascript:, troca {{nome}} escapado, mantém rodapé e texto puro', () => {
+  const evil = '<p style="color:red" onclick="x()">Oi {{nome}} <a href="javascript:alert(1)">a</a><script>alert(1)</script><iframe src="//e"></iframe> <a href="https://ok.com" style="color:blue">ok</a></p>'
+  assert.equal(isHtmlBody(evil), true); assert.equal(isHtmlBody('texto simples'), false)
+  const clean = sanitizeEmailHtml(evil)
+  assert.doesNotMatch(clean, /script|iframe|onclick|javascript:/i)
+  assert.match(clean, /style="color:red"/); assert.match(clean, /href="https:\/\/ok\.com"/)
+  const c = { subject_en: 's', body_en: evil, subject_pt: 's', body_pt: evil, subject_es: 's', body_es: evil }
+  const r = renderRecruitEmail({ name: 'A<i>B', language: 'pt', unsubscribe_token: TOKEN, campaign: c }, CFG)
+  assert.doesNotMatch(r.html, /<script|onclick|javascript:/i)
+  assert.match(r.html, /Cancelar recebimento/); assert.match(r.html, /1 Main St/)
+  assert.match(r.text, /Oi A<i>B|Oi A/); assert.doesNotMatch(r.text, /<p|<a /)
+  assert.match(htmlToText('<p>Oi</p><a href="https://x.com">clique</a>'), /Oi\s+clique \(https:\/\/x\.com\)/)
+})
+test('modelo em HTML estilizado: é HTML, sem script, com 65%, link do idioma e {{nome}}', () => {
+  for (const l of ['en', 'pt', 'es'] as const) {
+    const b = (RECRUIT_TEMPLATE as Record<string, string>)['body_' + l]
+    assert.equal(isHtmlBody(b), true); assert.equal(sanitizeEmailHtml(b), b)
+    assert.match(b, /65%/); assert.match(b, /\{\{nome\}\}/)
+  }
 })
