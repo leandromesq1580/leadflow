@@ -16,6 +16,7 @@ export interface Copy {
   usT: string; usBig: string; usP: string; usList: string[]
   calc: { h: string; sub: string; label: string; others: string; us: string; month: string; year: string; disc: string }
   crmK: string; crmH: string; crmSub: string; feats: Item[]
+  fK: string; fH: string; fP: string
   mock: { tag: string; cols: string[]; cards: { n: string; w: string; col: number }[]; ill: string }
   ai: { h: string; p: string; said: string; says: string; sug: string; ill: string }
   leadsK: string; leadsH: string; leadsSub: string; leads: Item[]
@@ -58,7 +59,8 @@ export const COPY: Record<Lang, Copy> = {
       { i: '🧑‍🏫', h: 'Especialista de IA 24/7', p: 'Dúvida de produto às 22h? Pergunta em português e a resposta vem em segundos.' },
       { i: '🧮', h: 'Calculadora e notas', p: 'Faça a conta com o cliente e registre tudo na mesma ficha.' },
     ],
-    mock: { tag: 'Pipeline', cols: ['Novo cliente', 'Contatado', 'Cotação', 'Fechado'], cards: [{ n: 'Mariana S.', w: 'Orlando, FL', col: 0 }, { n: 'Roberto L.', w: 'Tampa, FL', col: 0 }, { n: 'Carlos F.', w: 'Miami, FL', col: 1 }, { n: 'Família Duarte', w: 'Boca Raton, FL', col: 2 }, { n: 'Paulo M.', w: 'Kissimmee, FL', col: 3 }], ill: 'Ilustração com nomes fictícios' },
+    fK: 'QUEM ESTÁ POR TRÁS', fH: 'Você entra numa operação de verdade, com gente que você conhece.', fP: 'Leandro e Regiane construíram o Lead4Pro. Chame no WhatsApp, conte sua situação e a gente mostra o CRM, os leads e o treinamento antes de você decidir.',
+  mock: { tag: 'Pipeline', cols: ['Novo cliente', 'Contatado', 'Cotação', 'Fechado'], cards: [{ n: 'Mariana S.', w: 'Orlando, FL', col: 0 }, { n: 'Roberto L.', w: 'Tampa, FL', col: 0 }, { n: 'Carlos F.', w: 'Miami, FL', col: 1 }, { n: 'Família Duarte', w: 'Boca Raton, FL', col: 2 }, { n: 'Paulo M.', w: 'Kissimmee, FL', col: 3 }], ill: 'Ilustração com nomes fictícios' },
     ai: { h: 'A IA que sopra a resposta na hora certa', p: 'O cliente diz “tá caro”. A resposta aparece na sua tela, dentro do seu roteiro. Um gerente experiente ao seu lado em todas as ligações.', said: 'Cliente', says: '“Gostei, mas achei caro. Não sei se cabe agora.”', sug: 'IA sugere: “Entendo. Por menos de $5 por dia, sua família não fica desprotegida. Posso te mostrar como cabe no seu orçamento?”', ill: 'Cenário ilustrativo da mecânica' },
     leadsK: 'OS LEADS', leadsH: 'Os leads mais qualificados do mercado, com enorme subsídio para a nossa equipe.', leadsSub: 'Quem está no time compra leads com preço diferenciado. A casa banca boa parte do custo para você vender mais e gastar menos.',
     leads: [
@@ -114,7 +116,8 @@ export const COPY: Record<Lang, Copy> = {
       { i: '🧑‍🏫', h: 'AI specialist 24/7', p: 'Product question at 10 pm? Ask and get the answer in seconds.' },
       { i: '🧮', h: 'Calculator and notes', p: 'Run the numbers with the client and log everything on the same record.' },
     ],
-    mock: { tag: 'Pipeline', cols: ['New client', 'Contacted', 'Quote', 'Closed'], cards: [{ n: 'Mariana S.', w: 'Orlando, FL', col: 0 }, { n: 'Roberto L.', w: 'Tampa, FL', col: 0 }, { n: 'Carlos F.', w: 'Miami, FL', col: 1 }, { n: 'Duarte family', w: 'Boca Raton, FL', col: 2 }, { n: 'Paulo M.', w: 'Kissimmee, FL', col: 3 }], ill: 'Illustration with fictional names' },
+    fK: 'WHO IS BEHIND IT', fH: 'You join a real operation, with people you can talk to.', fP: 'Leandro and Regiane built Lead4Pro. Message us on WhatsApp, tell us your situation, and we will show you the CRM, the leads and the training before you decide.',
+  mock: { tag: 'Pipeline', cols: ['New client', 'Contacted', 'Quote', 'Closed'], cards: [{ n: 'Mariana S.', w: 'Orlando, FL', col: 0 }, { n: 'Roberto L.', w: 'Tampa, FL', col: 0 }, { n: 'Carlos F.', w: 'Miami, FL', col: 1 }, { n: 'Duarte family', w: 'Boca Raton, FL', col: 2 }, { n: 'Paulo M.', w: 'Kissimmee, FL', col: 3 }], ill: 'Illustration with fictional names' },
     ai: { h: 'The AI that whispers the answer at the right time', p: 'The client says “it’s expensive”. The answer shows up on your screen, inside your script. An experienced manager next to you on every call.', said: 'Client', says: '“I liked it, but it’s expensive. Not sure it fits right now.”', sug: 'AI suggests: “I understand. For less than $5 a day, your family is not left unprotected. Can I show you how it fits your budget?”', ill: 'Illustrative scenario of how it works' },
     leadsK: 'THE LEADS', leadsH: 'The most qualified leads on the market, with a huge subsidy for our team.', leadsSub: 'Team members buy leads at special pricing. The house covers a big part of the cost so you sell more and spend less.',
     leads: [
@@ -170,7 +173,8 @@ export const COPY: Record<Lang, Copy> = {
       { i: '🧑‍🏫', h: 'Especialista de IA 24/7', p: '¿Duda de producto a las 10 pm? Pregunta y recibe la respuesta en segundos.' },
       { i: '🧮', h: 'Calculadora y notas', p: 'Haz la cuenta con el cliente y registra todo en la misma ficha.' },
     ],
-    mock: { tag: 'Pipeline', cols: ['Nuevo cliente', 'Contactado', 'Cotización', 'Cerrado'], cards: [{ n: 'Mariana S.', w: 'Orlando, FL', col: 0 }, { n: 'Roberto L.', w: 'Tampa, FL', col: 0 }, { n: 'Carlos F.', w: 'Miami, FL', col: 1 }, { n: 'Familia Duarte', w: 'Boca Raton, FL', col: 2 }, { n: 'Paulo M.', w: 'Kissimmee, FL', col: 3 }], ill: 'Ilustración con nombres ficticios' },
+    fK: 'QUIÉN ESTÁ DETRÁS', fH: 'Entras a una operación real, con personas con quienes puedes hablar.', fP: 'Leandro y Regiane construyeron Lead4Pro. Escríbenos por WhatsApp, cuéntanos tu situación y te mostramos el CRM, los leads y el entrenamiento antes de que decidas.',
+  mock: { tag: 'Pipeline', cols: ['Nuevo cliente', 'Contactado', 'Cotización', 'Cerrado'], cards: [{ n: 'Mariana S.', w: 'Orlando, FL', col: 0 }, { n: 'Roberto L.', w: 'Tampa, FL', col: 0 }, { n: 'Carlos F.', w: 'Miami, FL', col: 1 }, { n: 'Familia Duarte', w: 'Boca Raton, FL', col: 2 }, { n: 'Paulo M.', w: 'Kissimmee, FL', col: 3 }], ill: 'Ilustración con nombres ficticios' },
     ai: { h: 'La IA que te sopla la respuesta en el momento justo', p: 'El cliente dice “está caro”. La respuesta aparece en tu pantalla, dentro de tu guion. Un gerente con experiencia a tu lado en cada llamada.', said: 'Cliente', says: '“Me gustó, pero me parece caro. No sé si me conviene ahora.”', sug: 'IA sugiere: “Entiendo. Por menos de $5 al día, tu familia no queda desprotegida. ¿Te muestro cómo cabe en tu presupuesto?”', ill: 'Escenario ilustrativo de cómo funciona' },
     leadsK: 'LOS LEADS', leadsH: 'Los leads más calificados del mercado, con un enorme subsidio para nuestro equipo.', leadsSub: 'Quien está en el equipo compra leads con precio diferenciado. La casa cubre buena parte del costo para que vendas más y gastes menos.',
     leads: [

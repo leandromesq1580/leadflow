@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import Image from 'next/image'
 import Calc from './Calc'
+import { AgendaViz, CallViz, DashboardViz, FlowViz, PipelineViz, RingViz, RoutineViz, SequenceViz, WhatsViz } from './Visuals'
 import { COPY, type Lang } from './copy'
 
 /**
@@ -137,6 +139,61 @@ const CSS = `
  .eq-sticky .eq-btn{width:100%;padding:13px}
 }
 @media (max-width:520px){.eq-calc{padding:20px 16px}.eq-big-num{font-size:34px}.eq-feats,.eq-4{grid-template-columns:1fr}.eq-cols{grid-template-columns:repeat(2,1fr)}.eq-pane .eq-num{font-size:56px}}
+
+.eq-g2{display:grid;grid-template-columns:1.35fr 1fr;gap:14px;margin-top:22px;text-align:left;align-items:stretch}
+.eq-wide{margin-top:14px;text-align:left}
+.eq-g3{display:grid;grid-template-columns:1fr 1.3fr;gap:14px;margin-top:14px;text-align:left;align-items:start}
+.eq-stack{display:grid;gap:14px}
+.vz-frame{border-radius:18px;border:1px solid var(--line);background:#0a0e1a;overflow:hidden;box-shadow:0 20px 50px -28px rgba(124,58,237,.55)}
+.vz-bar{display:flex;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid var(--line);font-size:12px;color:var(--mut)}
+.vz-bar i{width:9px;height:9px;border-radius:50%;background:#2a3350}.vz-bar span{margin-left:8px;font-weight:600;color:#d8def0}.vz-bar em{margin-left:auto;font-style:normal;color:#f87171;font-weight:700;font-size:11px}
+.vz-body{padding:12px}
+.vz-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.vz-kpi{background:rgba(255,255,255,.04);border-radius:10px;padding:8px}.vz-kpi small,.vz-card small{display:block;font-size:12px;color:var(--mut)}.vz-kpi b{font-size:22px;letter-spacing:-.5px}
+.vz-row2{display:grid;grid-template-columns:1.6fr 1fr;gap:8px;margin-bottom:8px}
+.vz-card{background:rgba(255,255,255,.04);border-radius:12px;padding:10px}
+.vz-svg{width:100%;height:auto;display:block;margin-top:4px}.vz-svg-s{width:92px;display:block;margin:6px auto 0}.vz-donut{text-align:center}
+.vz-fun{display:grid;gap:7px;margin-top:8px}.vz-fun-r{display:grid;grid-template-columns:78px 1fr 26px;gap:8px;align-items:center;font-size:12px;color:var(--mut)}.vz-fun-r b{color:#fff;text-align:right}
+.vz-fun-r div{height:10px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}.vz-fun-r u{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#7c3aed,#a78bfa)}
+.vz-cols{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.vz-col{background:rgba(255,255,255,.03);border-radius:12px;padding:10px;min-height:190px;border-top:2px solid var(--cc)}
+.vz-col h5{display:flex;align-items:center;gap:5px;margin:0 0 8px;font-size:11px;letter-spacing:.3px;text-transform:uppercase;color:#d8def0}.vz-col h5 i{width:7px;height:7px;border-radius:50%;background:var(--cc)}.vz-col h5 b{margin-left:auto;background:rgba(255,255,255,.08);border-radius:99px;padding:0 7px;font-size:11px}
+.vz-kc{display:grid;grid-template-columns:auto 1fr;gap:6px 7px;align-items:center;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:10px;padding:7px;margin-bottom:7px;font-size:12px}
+.vz-kc strong{display:block;font-size:13px;white-space:nowrap}.vz-kc small{display:block;font-size:11.5px;color:var(--mut);white-space:nowrap}.vz-kc>div:nth-child(2){min-width:0;overflow:hidden}
+.vz-kc em{grid-column:1/-1;font-style:normal;font-size:9.5px;font-weight:800;color:#1c1300;background:#fbbf24;border-radius:6px;padding:1px 6px;justify-self:start}.vz-kc>span{grid-column:1/-1;font-size:11.5px;color:var(--mut)}
+.vz-av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex:none}.vz-av-g{background:linear-gradient(135deg,#059669,#34d399);width:34px;height:34px;font-size:14px}
+.vz-phone{display:flex;flex-direction:column;border-radius:30px;border:6px solid #1b2240;background:#0b1220;overflow:hidden;box-shadow:0 24px 60px -26px rgba(16,185,129,.4)}
+.vz-ph-top{display:flex;align-items:center;gap:9px;padding:10px;background:#0f2a24;font-size:13px}.vz-ph-top small{display:block;color:#6ee7b7;font-size:11px}.vz-ph-top span{margin-left:auto}
+.vz-chat{flex:1;padding:12px 10px;display:grid;align-content:start;gap:8px;min-height:240px;background:#0b1220}
+.vz-b{max-width:88%;border-radius:12px;padding:8px 10px;font-size:12.5px;line-height:1.35}.vz-b small{display:block;font-size:11px;color:rgba(255,255,255,.65);margin-top:3px;text-align:right}
+.vz-b-o{background:#0e5a45;justify-self:end;border-top-right-radius:3px}.vz-b-i{background:#1c2540;justify-self:start;border-top-left-radius:3px}
+.vz-ph-in{display:flex;justify-content:space-between;margin:8px;padding:9px 12px;border-radius:99px;background:#1c2540;color:var(--mut);font-size:12px}.vz-ph-in span{color:#34d399}
+.vz-call{display:grid;gap:10px}.vz-call-top{display:flex;align-items:center;gap:9px;font-size:13px}.vz-call-top small{display:block;color:var(--mut);font-size:11px}.vz-call-top b{margin-left:auto;font-size:20px;font-variant-numeric:tabular-nums;color:#f87171}
+.vz-wave{width:100%;height:44px}
+.vz-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;font-size:11.5px;color:#c3cadc;text-align:center}.vz-steps div{display:grid;gap:3px;justify-items:center}
+.vz-steps i{width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:10px;font-weight:800}.vz-steps .done i{background:#10b981;color:#04120c}.vz-steps .now i{background:#8b5cf6;color:#fff;box-shadow:0 0 0 4px rgba(139,92,246,.3)}.vz-steps .now{color:#fff}
+.vz-cli{font-size:12px;color:#d8def0;background:rgba(255,255,255,.06);border-radius:10px;padding:8px 10px}
+.vz-aisug{font-size:12.5px;background:rgba(16,185,129,.13);border:1px solid rgba(52,211,153,.4);border-radius:10px;padding:9px 11px;color:#d5f7e8}.vz-aisug b{display:block;font-size:11px;margin-bottom:3px;color:#6ee7b7}
+.vz-seq{position:relative;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;text-align:center;padding:6px 0 2px}.vz-seq-line{position:absolute;left:10%;right:10%;top:25px;height:2px;background:linear-gradient(90deg,#34d399,#60a5fa,#a78bfa,#fbbf24,#34d399);opacity:.6}
+.vz-seq-n{position:relative;display:grid;gap:2px;justify-items:center;font-size:11px}.vz-seq-n small{color:var(--mut);font-size:11.5px}.vz-seq-i{width:38px;height:38px;border-radius:50%;background:#0a0e1a;border:2px solid var(--cc);display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:3px}
+.vz-note{margin:8px 0 0;font-size:12px;color:#6ee7b7;text-align:center}
+.vz-cal{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;min-height:110px}.vz-cal-c{background:rgba(255,255,255,.03);border-radius:8px;padding:5px;min-width:0}.vz-cal-c small{display:block;font-size:10px;color:var(--mut);text-align:center;margin-bottom:3px}
+.vz-ev{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:rgba(124,58,237,.3);border-left:3px solid #a78bfa;border-radius:5px;padding:4px 5px;font-size:11px;line-height:1.25}.vz-ev em{font-style:normal;color:#6ee7b7;font-weight:800}
+.vz-pol{display:grid;gap:5px;margin-top:8px}.vz-pol-r{display:flex;align-items:center;gap:7px;font-size:12px;background:rgba(255,255,255,.04);border-radius:8px;padding:6px 8px}.vz-pol-r em{margin-left:auto;font-style:normal;font-size:10.5px}.vz-pol-r em.ok{color:#6ee7b7}.vz-pol-r em.warn{color:#fbbf24}
+.vz-dot{width:8px;height:8px;border-radius:50%}.vz-dot.ok{background:#34d399}.vz-dot.warn{background:#fbbf24}
+.vz-flow{display:grid;grid-template-columns:repeat(3,1fr);gap:56px;margin:6px 0 18px}
+.vz-flow-s{position:relative;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px 12px;display:grid;gap:3px;justify-items:center;text-align:center}.vz-flow-s small{color:var(--mut);font-size:13px}
+.vz-flow-i{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,rgba(124,58,237,.5),rgba(167,139,250,.2));display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:6px}
+.vz-arrow{position:absolute;right:-45px;top:50%;width:34px;transform:translateY(-50%)}
+.vz-routine{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin:6px 0 18px}.vz-routine small{display:block;color:var(--mut);font-size:13px;margin-bottom:10px}
+.vz-routine>div{display:grid;grid-template-columns:repeat(4,1fr);gap:30px}.vz-rt{position:relative;display:grid;justify-items:center;gap:4px;background:rgba(255,255,255,.04);border-radius:14px;padding:14px 6px}.vz-rt i{font-style:normal;font-size:26px}.vz-rt b{font-size:14px}.vz-rt span{position:absolute;right:-24px;top:50%;transform:translateY(-50%);color:var(--vio3);font-weight:800;font-size:20px;width:18px;text-align:center}
+.vz-ring{width:min(340px,86vw);height:auto;display:block;margin:0 auto}
+.eq-founders{display:grid;grid-template-columns:380px 1fr;gap:44px;align-items:center;text-align:left;max-width:900px;margin:0 auto}
+.eq-ph{width:100%;height:auto;border-radius:24px;border:1px solid rgba(167,139,250,.5);box-shadow:0 30px 70px -30px rgba(124,58,237,.8)}
+.eq-ph-cap{margin:14px 0 0;font-size:13px;color:var(--mut);font-weight:600}
+@media (max-width:980px){.eq-g2,.eq-g3{grid-template-columns:1fr}.vz-phone{max-width:340px;margin:0 auto}}
+@media (max-width:860px){.eq-founders{grid-template-columns:1fr;gap:24px;text-align:center}.eq-founders h2{text-align:center!important}.eq-ph{max-width:300px;margin:0 auto;display:block}.vz-flow{grid-template-columns:1fr;gap:30px}.vz-arrow{right:auto;left:50%;top:auto;bottom:-27px;transform:translateX(-50%) rotate(90deg)}.vz-routine>div{grid-template-columns:repeat(2,1fr);gap:10px}.vz-rt span{display:none}.vz-phone{max-width:340px;margin:0 auto}}
+@media (max-width:520px){.vz-cols{grid-template-columns:repeat(2,1fr)}.vz-col{min-height:0}.vz-kpis{grid-template-columns:repeat(2,1fr)}.vz-row2{grid-template-columns:1fr}}
 `
 
 export default async function EquipePage({ params }: { params: Promise<{ lang?: string[] }> }) {
@@ -190,27 +247,10 @@ export default async function EquipePage({ params }: { params: Promise<{ lang?: 
           <span className="eq-kick">{t.crmK}</span>
           <h2>{t.crmH}</h2>
           <p className="eq-lead">{t.crmSub}</p>
-          <div className="eq-duo">
-            <div className="eq-mock">
-              <div className="eq-mock-top"><span className="eq-dot" /><span className="eq-dot" /><span className="eq-dot" /><span style={{ marginLeft: 8 }}>{t.mock.tag}</span></div>
-              <div className="eq-cols">
-                {t.mock.cols.map((c, ci) => (
-                  <div key={c} className="eq-col">
-                    <h5>{c}</h5>
-                    {t.mock.cards.filter(k => k.col === ci).map(k => <div key={k.n} className={`eq-kc${ci === 3 ? ' eq-kc-ok' : ''}`}>{k.n}<small>{k.w}</small></div>)}
-                  </div>
-                ))}
-              </div>
-              <p className="eq-ill">{t.mock.ill}</p>
-            </div>
-            <div className="eq-ai">
-              <h3>🤖 {t.ai.h}</h3>
-              <p>{t.ai.p}</p>
-              <div className="eq-bub eq-bub-c"><b>{t.ai.said}</b>{t.ai.says}</div>
-              <div className="eq-bub eq-bub-a">{t.ai.sug}</div>
-              <p className="eq-ill" style={{ margin: 0 }}>{t.ai.ill}</p>
-            </div>
-          </div>
+          <div className="eq-g2"><DashboardViz lang={lang} /><WhatsViz lang={lang} /></div>
+          <div className="eq-wide"><PipelineViz lang={lang} /></div>
+          <div className="eq-g3"><CallViz lang={lang} /><div className="eq-stack"><SequenceViz lang={lang} /><AgendaViz lang={lang} /></div></div>
+          <p className="eq-ill" style={{ textAlign: 'center' }}>{t.mock.ill}</p>
           <div className="eq-feats">{t.feats.map(f => <div key={f.h} className="eq-feat"><i>{f.i}</i><h4>{f.h}</h4><p>{f.p}</p></div>)}</div>
         </section>
 
@@ -218,6 +258,7 @@ export default async function EquipePage({ params }: { params: Promise<{ lang?: 
           <span className="eq-kick">{t.leadsK}</span>
           <h2>{t.leadsH}</h2>
           <p className="eq-lead">{t.leadsSub}</p>
+          <FlowViz lang={lang} />
           <div className="eq-4">{t.leads.map(c => <div key={c.h} className="eq-card"><i>{c.i}</i><h4>{c.h}</h4><p>{c.p}</p></div>)}</div>
         </section>
 
@@ -225,12 +266,13 @@ export default async function EquipePage({ params }: { params: Promise<{ lang?: 
           <span className="eq-kick">{t.trK}</span>
           <h2>{t.trH}</h2>
           <p className="eq-lead">{t.trSub}</p>
+          <RoutineViz lang={lang} />
           <div className="eq-4">{t.tr.map(c => <div key={c.h} className="eq-card"><i>{c.i}</i><h4>{c.h}</h4><p>{c.p}</p></div>)}</div>
         </section>
 
         <section className="eq-20k">
           <span className="eq-kick">{t.mK}</span>
-          <div className="eq-k20">20K</div>
+          <RingViz lang={lang} />
           <h2>{t.mH}</h2>
           <p className="eq-lead" style={{ margin: '0 auto' }}>{t.mSub}</p>
           <div className="eq-formula">
@@ -242,6 +284,19 @@ export default async function EquipePage({ params }: { params: Promise<{ lang?: 
             ))}
           </div>
           <p className="eq-tiny" style={{ marginTop: 16 }}>{t.mDisc}</p>
+        </section>
+
+        <section className="eq-sec">
+          <div className="eq-founders">
+            <Image src="/quem-somos.jpg" alt="Leandro & Regiane — Lead4Pro" width={840} height={1260} sizes="(max-width:860px) 80vw, 380px" className="eq-ph" priority />
+            <div>
+              <span className="eq-kick">{t.fK}</span>
+              <h2 style={{ textAlign: 'left', margin: '14px 0 12px' }}>{t.fH}</h2>
+              <p className="eq-lead" style={{ margin: '0 0 22px' }}>{t.fP}</p>
+              <a className="eq-btn" href={link}>{t.cta} →</a>
+              <p className="eq-ph-cap">Leandro &amp; Regiane · Lead4Pro</p>
+            </div>
+          </div>
         </section>
 
         <section className="eq-sec">
