@@ -29,6 +29,14 @@ export async function GET() {
         .slice(0, 8)
         .map((m: { created_at?: string; to?: string[]; subject?: string; last_event?: string }) => ({ created_at: m.created_at, to: m.to, subject: m.subject, last_event: m.last_event }))
       out.recentAll = rows.slice(0, 8).map((m: { created_at?: string; last_event?: string }) => ({ created_at: m.created_at, last_event: m.last_event }))
+      // Resumo por domínio do destinatário (só o domínio, nunca o endereço): o Gmail está aceitando e-mails deste remetente?
+      const byDomain: Record<string, Record<string, number>> = {}
+      for (const m of rows as { to?: string[]; last_event?: string }[]) {
+        const d = String((m.to || [])[0] || '').split('@')[1]?.toLowerCase() || '?'
+        const e = m.last_event || '?'
+        byDomain[d] = byDomain[d] || {}; byDomain[d][e] = (byDomain[d][e] || 0) + 1
+      }
+      out.byRecipientDomain = byDomain
     }
   } catch { out.listStatus = 'erro_de_rede' }
   return NextResponse.json(out, { headers: NO_STORE })
