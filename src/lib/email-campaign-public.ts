@@ -11,7 +11,7 @@ export function createCampaignCron(deps:{secret:()=>string|undefined;runtime:()=
  }
 }
 const events=new Set(['email.sent','email.delivered','email.opened','email.clicked','email.bounced','email.complained','email.failed','email.suppressed'])
-export function createCampaignWebhook(deps:{secret:()=>string|undefined;verify:(payload:string,headers:{id:string;timestamp:string;signature:string},secret:string)=>{type:string;data?:{email_id?:string;tags?:Record<string,string>};created_at?:string};db:()=>CampaignDb}){
+export function createCampaignWebhook(deps:{secret:()=>string|undefined;verify:(payload:string,headers:{id:string;timestamp:string;signature:string},secret:string)=>{type:string;data?:{email_id?:string;tags?:Record<string,string>;bounce?:{type?:string;subType?:string;message?:string};failed?:{reason?:string}};created_at?:string};db:()=>CampaignDb}){
  return async(request:Request)=>{
   const secret=(deps.secret()||'').trim();if(!secret)return json({error:'Retornos não configurados.'},503)
   const headers={id:request.headers.get('svix-id')||'',timestamp:request.headers.get('svix-timestamp')||'',signature:request.headers.get('svix-signature')||''}
@@ -20,6 +20,11 @@ export function createCampaignWebhook(deps:{secret:()=>string|undefined;verify:(
    const raw=await request.text();if(raw.length>25000)return json({error:'Pedido muito grande.'},413)
    event=deps.verify(raw,headers,secret)
   }catch{return json({error:'Assinatura inválida.'},401)}
+  // Diagnóstico: o motivo da recusa (bounce/falha) vinha no retorno do provedor e era descartado. Vai para o log (sem corpo do e-mail), cortado e sem quebras de linha.
+  if(event.type==='email.bounced'||event.type==='email.failed'||event.type==='email.suppressed'){
+   const d=event.data,clip=(x?:string)=>(x||'').replace(/\s+/g,' ').slice(0,300)
+   console.warn('[email-bounce]',JSON.stringify({type:event.type,module:d?.tags?.module||null,email_id:d?.email_id||null,bounce_type:clip(d?.bounce?.type),sub_type:clip(d?.bounce?.subType),message:clip(d?.bounce?.message||d?.failed?.reason)}))
+  }
   // Retornos do recrutamento de agentes (tabela própria): mesma assinatura e mesmo endpoint do Resend.
   if(events.has(event.type)&&event.data?.tags?.module==='admin_recruit_campaigns'&&CAMPAIGN_UUID.test(event.data?.tags?.recipient||'')){
    const pid=event.data?.email_id,when=event.created_at
