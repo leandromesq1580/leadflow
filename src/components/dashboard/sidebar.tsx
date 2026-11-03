@@ -204,6 +204,7 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, podeVerApo
     { href: '/admin/revenue', label: 'Receita', icon: '💰' },
     { href: '/admin/precos', label: 'Preços de Leads', icon: '🏷️' },
     { href: '/admin/novos-agentes', label: 'Novos Agentes', icon: '🆕' },
+    { href: '/admin/recrutamento', label: 'Recrutamento', icon: '🤝' },
     { href: '/admin/email-campaigns', label: 'Campanhas de E-mail', icon: '✉️' },
     { href: '/admin/chargebacks', label: 'Chargebacks', icon: '🛡️' },
     { href: '/admin/settings', label: t.sidebar.settings, icon: '⚙️' },
