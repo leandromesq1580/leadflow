@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { callerBuyer } from '@/lib/api-auth'
+import { recruitEnv } from '@/lib/recruit-agents'
 import { campaignConfiguration } from '@/lib/email-campaigns'
 import { campaignProvider } from '@/lib/email-campaign-provider'
 
@@ -14,7 +15,7 @@ export async function GET() {
   const caller = await callerBuyer(createAdminClient())
   if (!caller) return NextResponse.json({ error: 'Entre novamente na sua conta.' }, { status: 401, headers: NO_STORE })
   if (!caller.isAdmin) return NextResponse.json({ error: 'Apenas administradores.' }, { status: 403, headers: NO_STORE })
-  const cfg = campaignConfiguration(process.env)
+  const cfg = campaignConfiguration(recruitEnv(process.env))
   if (!cfg.key) return NextResponse.json({ error: 'Falta a chave do provedor.' }, { status: 409, headers: NO_STORE })
   const out: Record<string, unknown> = { from: cfg.from, domain: cfg.domain, ready: cfg.ready, issues: cfg.issues }
   try { out.domainVerified = await campaignProvider(cfg).verifyDomain(cfg.domain) } catch { out.domainVerified = null }
