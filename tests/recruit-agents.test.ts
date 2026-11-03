@@ -145,3 +145,10 @@ test('modelo em HTML estilizado: é HTML, sem script, com 65%, link do idioma e 
     assert.match(b, /65%/); assert.match(b, /\{\{nome\}\}/)
   }
 })
+
+test('idioma: sinais contraditórios (sobrenome PT + ES) caem em inglês; sinal único mantém', () => {
+  assert.equal(guessLanguage('ANA SILVA GARCIA'), 'en')
+  assert.equal(guessLanguage('ANA SILVA'), 'pt')
+  assert.equal(guessLanguage('ANA GARCIA'), 'es')
+  assert.equal(guessLanguage('JOHN SMITH'), 'en')
+})

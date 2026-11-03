@@ -25,8 +25,10 @@ export function guessLanguage(name: string): RecruitLang {
   const raw = (name || '').toLowerCase()
   if (/[ãõç]/.test(raw)) return 'pt'
   const tokens = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(/[^a-z]+/).filter(t => t.length > 2)
-  if (tokens.some(t => PT.has(t))) return 'pt'
-  if (tokens.some(t => ES.has(t))) return 'es'
+  const pt = tokens.some(t => PT.has(t)), es = tokens.some(t => ES.has(t))
+  if (pt && es) return 'en' // sinais contraditórios (ex.: um sobrenome de cada língua): na dúvida, inglês
+  if (pt) return 'pt'
+  if (es) return 'es'
   if (tokens.length > 1 && /^[a-z]{4,}ez$/.test(tokens[tokens.length - 1])) return 'es'
   return 'en'
 }
