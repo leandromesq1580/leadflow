@@ -19,6 +19,8 @@ export async function GET() {
   if (!cfg.key) return NextResponse.json({ error: 'Falta a chave do provedor.' }, { status: 409, headers: NO_STORE })
   const out: Record<string, unknown> = { from: cfg.from, domain: cfg.domain, ready: cfg.ready, issues: cfg.issues }
   try { out.domainVerified = await campaignProvider(cfg).verifyDomain(cfg.domain) } catch { out.domainVerified = null }
+  // Rastreio de abertura/clique do domínio (efetivo: só vale com o CNAME de tracking verificado). Sem isso, "0 abertos" não prova nada.
+  try { out.tracking = await campaignProvider(cfg).trackingStatus(cfg.domain) } catch { out.tracking = null }
   try {
     const r = await fetch('https://api.resend.com/emails?limit=40', { headers: { Authorization: `Bearer ${cfg.key}` }, cache: 'no-store', signal: AbortSignal.timeout(12000) })
     out.listStatus = r.status
