@@ -39,3 +39,8 @@ test('31000 e outros códigos seguem como antes', () => {
   assert.equal(classifyCallFailure({ code: 31000 }).reason, 'unknown')
   assert.equal(classifyCallFailure({ code: 31005 }).reason, 'connection')
 })
+
+// 04/11/2026: erro 31603 (SIP 603 Decline) = telefone do lead recusou a ligação; antes caía no aviso genérico "envie ao suporte".
+test('31603 é telefone do lead que recusou, não falha do sistema', () => {
+  assert.deepEqual(classifyCallFailure({ code: 31603 }), { reason: 'callee_declined', code: 31603 })
+})

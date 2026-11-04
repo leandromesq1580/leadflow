@@ -1,4 +1,4 @@
-export type CallFailureReason = 'microphone_permission' | 'authentication' | 'connection' | 'callee_unavailable' | 'unknown'
+export type CallFailureReason = 'microphone_permission' | 'authentication' | 'connection' | 'callee_unavailable' | 'callee_declined' | 'unknown'
 
 /** Retorna só categoria e código numérico; nunca encaminha mensagem/token do SDK à tela. */
 export function classifyCallFailure(error: unknown): { reason: CallFailureReason; code: number | null } {
@@ -8,6 +8,8 @@ export function classifyCallFailure(error: unknown): { reason: CallFailureReason
   if (code !== null && [20101, 20104, 20151, 31202, 31204, 31205, 31207, 31102].includes(code)) return { reason: 'authentication', code }
   // SIP 480/486: o telefone do lead está indisponível (desligado, fora de área) ou ocupado — não é falha nossa.
   if (code === 31480 || code === 31486) return { reason: 'callee_unavailable', code }
+  // SIP 603 (Decline): o destino (telefone/operadora) recusou a chamada — não é falha nossa.
+  if (code === 31603) return { reason: 'callee_declined', code }
   if (code !== null && [31003, 31005, 31009, 53000, 53001, 53405].includes(code)) return { reason: 'connection', code }
   return { reason: 'unknown', code }
 }
