@@ -43,6 +43,15 @@ export async function GET(request: NextRequest) {
     const id = request.nextUrl.searchParams.get('id')
     if (id) {
       if (!CAMPAIGN_UUID.test(id)) return fail('Campanha inválida.')
+      if (request.nextUrl.searchParams.get('recipients') === '1') {
+        // Quem abriu/clicou: destinatários da campanha com telefone do cadastro (para a ligação). Só admin, sem segredos.
+        const { data: sends } = await a.db!.from('recruit_sends').select('agent_id,name,email,language,state,delivered_at,opened_at,clicked_at').eq('campaign_id', id).order('opened_at', { ascending: false, nullsFirst: false }).limit(2000)
+        const ids = (sends || []).filter(x => x.opened_at || x.clicked_at).map(x => x.agent_id)
+        const phones: Record<string, string | null> = {}
+        if (ids.length) { const { data: ag } = await a.db!.from('recruit_agents').select('id,phone').in('id', ids); for (const x of ag || []) phones[x.id] = x.phone }
+        const recipients = (sends || []).map(x => ({ name: x.name, email: x.email, language: x.language, state: x.state, delivered_at: x.delivered_at, opened_at: x.opened_at, clicked_at: x.clicked_at, phone: phones[x.agent_id] ?? null }))
+        return NextResponse.json({ recipients }, { headers: NO_STORE })
+      }
       const { data } = await a.db!.from('recruit_campaigns').select('*').eq('id', id).maybeSingle()
       return data ? NextResponse.json({ campaign: data }, { headers: NO_STORE }) : fail('Campanha não encontrada.', 404)
     }

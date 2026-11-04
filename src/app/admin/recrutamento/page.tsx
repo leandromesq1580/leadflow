@@ -143,11 +143,34 @@ function NoteBox({ value, onSave }: { value: string; onSave: (v: string) => void
     <button disabled={v === value} onClick={() => onSave(v)} className="px-4 rounded-xl bg-gray-900 text-white text-[13px] font-semibold disabled:opacity-40">Salvar</button></div>
 }
 
+type Rcp = { name: string; email: string; language: string; state: string; delivered_at: string | null; opened_at: string | null; clicked_at: string | null; phone: string | null }
+function Recipients({ id }: { id: string }) {
+  const [rows, setRows] = useState<Rcp[] | null>(null); const [all, setAll] = useState(false); const [err, setErr] = useState('')
+  useEffect(() => { api('/api/admin/recruit/campaigns?id=' + id + '&recipients=1').then(r => setRows(r.recipients)).catch(e => setErr(e instanceof Error ? e.message : 'Falha.')) }, [id])
+  if (err) return <div className="mt-3 text-[12px] text-red-700">{err}</div>
+  if (!rows) return <div className="mt-3 text-[12px] text-gray-400">Carregando…</div>
+  const shown = all ? rows : rows.filter(r => r.opened_at || r.clicked_at)
+  const fmt = (v: string | null) => v ? new Date(v).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'
+  return (
+    <div className="mt-3 border-t pt-3">
+      <div className="flex items-center gap-3 mb-2 text-[12px]">
+        <b>{all ? 'Todos os destinatários' : 'Quem abriu ou clicou'} ({shown.length})</b>
+        <button onClick={() => setAll(!all)} className="ml-auto px-2.5 py-1 rounded-lg border font-semibold">{all ? 'Só quem abriu/clicou' : 'Ver todos'}</button>
+      </div>
+      <div className="overflow-x-auto"><table className="w-full text-[12px]"><thead><tr className="text-left text-gray-500"><th className="py-1 pr-3">Nome</th><th className="pr-3">E-mail</th><th className="pr-3">Telefone</th><th className="pr-3">Idioma</th><th className="pr-3">Abriu</th><th>Clicou</th></tr></thead>
+        <tbody>{shown.map(r => <tr key={r.email} className="border-t"><td className="py-1 pr-3 font-medium">{r.name}</td><td className="pr-3">{r.email}</td><td className="pr-3">{r.phone || '—'}</td><td className="pr-3 uppercase">{r.language}</td>
+          <td className="pr-3">{r.opened_at ? <span className="text-green-700">{fmt(r.opened_at)}</span> : '—'}</td><td>{r.clicked_at ? <b className="text-blue-700">{fmt(r.clicked_at)}</b> : '—'}</td></tr>)}
+          {!shown.length && <tr><td colSpan={6} className="py-3 text-center text-gray-400">Ninguém registrado ainda.</td></tr>}</tbody></table></div>
+      <p className="mt-2 text-[11px] text-gray-400">Abertura é indício (alguns leitores de e-mail abrem sozinhos); clique é o sinal mais confiável. Só e-mails enviados depois de 03/11 22:00 (NY) têm rastreio.</p>
+    </div>
+  )
+}
+
 function CampaignsTab() {
   const [list, setList] = useState<Camp[]>([]); const [tpl, setTpl] = useState<Draft | null>(null)
   const [cfg, setCfg] = useState<{ ready: boolean; issues: string[] } | null>(null)
   const [edit, setEdit] = useState<{ id: string | null; d: Draft } | null>(null)
-  const [err, setErr] = useState(''); const [msg, setMsg] = useState('')
+  const [err, setErr] = useState(''); const [msg, setMsg] = useState(''); const [who, setWho] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try { const r = await api('/api/admin/recruit/campaigns'); setList(r.campaigns); setTpl({ name: '', ...r.template, filters: { statuses: ['new'] }, daily_limit: 200 }); setCfg(r.config); setErr('') }
@@ -190,7 +213,9 @@ function CampaignsTab() {
               <span>Abertos {c.stats.opened}</span><span>Cliques {c.stats.clicked}</span>
               {c.stats.bounced > 0 && <span className="text-red-600">Devolvidos {c.stats.bounced}</span>}{c.stats.complained > 0 && <span className="text-red-600">Denúncias {c.stats.complained}</span>}
               {c.stats.refused > 0 && <span className="text-red-600">Recusados {c.stats.refused}</span>}{c.stats.unknown > 0 && <span className="text-amber-600">Incertos {c.stats.unknown}</span>}
+              {c.stats.delivered > 0 && <button onClick={() => setWho(who === c.id ? null : c.id)} className="ml-auto px-2.5 py-1 rounded-lg border border-blue-200 text-blue-700 font-semibold">{who === c.id ? 'Ocultar' : 'Quem abriu / clicou'}</button>}
             </div>}
+            {who === c.id && <Recipients id={c.id} />}
           </div>
         ))}
         {!list.length && <div className="text-center text-gray-400 py-10 text-[13px]">Nenhuma campanha ainda.</div>}
