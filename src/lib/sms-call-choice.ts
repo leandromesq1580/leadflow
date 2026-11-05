@@ -68,3 +68,18 @@ export async function loadSmsPlan(db: Db, buyerId: string, leadId: string): Prom
     return { kind: 'default' }
   }
 }
+
+/** Aviso de opt-out no fim de todo SMS pós-ligação (05/11/2026, ordem do dono). Idioma do LEAD. */
+const STOP_FOOTER: Record<'pt' | 'es' | 'en', string> = {
+  pt: 'Responda STOP para parar.',
+  es: 'Responde STOP para parar.',
+  en: 'Reply STOP to stop.',
+}
+
+/** Idempotente: se o texto já tem "STOP" (re-tradução de agendado, modelo que já traz o aviso), não duplica. */
+export function withStopFooter(body: string, locale: string): string {
+  const text = String(body || '').trim()
+  if (/\bSTOP\b/i.test(text)) return text
+  const f = STOP_FOOTER[(locale === 'es' || locale === 'en') ? locale : 'pt']
+  return text ? `${text}\n${f}` : text
+}

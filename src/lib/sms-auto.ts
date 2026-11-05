@@ -3,7 +3,7 @@ import { sendSms, toE164 } from './twilio'
 import { buyerTimezone } from './availability'
 import { requireLeadMessageLocale, type LeadMessageLocale } from './lead-message-locale'
 import { translateLeadCopy } from './lead-message-template'
-import { loadSmsPlan, renderSmsTemplate } from './sms-call-choice'
+import { loadSmsPlan, renderSmsTemplate, withStopFooter } from './sms-call-choice'
 
 /**
  * SMS AUTOMÁTICO pós-ligação sem contato — regras e fila.
@@ -184,6 +184,7 @@ export async function sendOrScheduleAutoSms(
       if (custom) body = custom
     } catch (e: any) { console.warn('[sms-auto] modelo indisponível, usando texto padrão:', String(e?.message).slice(0, 120)) }
   }
+  body = withStopFooter(body, locale) // todo SMS leva o aviso de opt-out, no idioma do lead
 
   if (isWithinSmsWindow(tz)) {
     // migration071 locks the source on INSERT. Retirement first rejects this
@@ -262,6 +263,7 @@ export async function dispatchScheduledSms(): Promise<number> {
       // the lead's current language. Never fall back to the previously queued text.
       const locale = requireLeadMessageLocale(lead)
       const copy = await translateLeadCopy(db, { body: row.body, subject: null }, locale)
+      copy.body = withStopFooter(copy.body, locale) // idempotente: agendado já salvo com o aviso não duplica
       // Batch reads do not reserve work. CAS plus migration071's source-row
       // trigger serialize independent workers and retirement before transport.
       const claim = await db.from('sms_messages').update({ status: 'sending', body: copy.body, error: null })
