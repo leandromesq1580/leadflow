@@ -3,6 +3,7 @@ import { sendSms, toE164 } from './twilio'
 import { buyerTimezone } from './availability'
 import { requireLeadMessageLocale, type LeadMessageLocale } from './lead-message-locale'
 import { translateLeadCopy } from './lead-message-template'
+import { loadSmsPlan, renderSmsTemplate } from './sms-call-choice'
 
 /**
  * SMS AUTOMÁTICO pós-ligação sem contato — regras e fila.
@@ -150,6 +151,11 @@ export async function sendOrScheduleAutoSms(
   const e164 = toE164(lead?.phone)
   if (leadError || !lead || lead.redelivered_to_lead_id || lead.sms_opted_out || !e164) return 'skipped'
 
+  // Personalização do comprador (chave geral / "não enviar nesta ligação" / modelo). Só decide texto ou pular;
+  // janela, limites e opt-out abaixo continuam valendo para qualquer modelo.
+  const plan = buyerId ? await loadSmsPlan(db, buyerId, leadId) : ({ kind: 'default' } as const)
+  if (plan.kind === 'skip') { console.log(`[sms-auto] não enviado (${plan.why}) lead ${leadId}`); return 'skipped' }
+
   const tz = leadTimezone(lead.state)
   const { total, sentToday } = await smsHistory(db, leadId, tz)
   if (total >= SMS_MAX_TOTAL || sentToday) return 'skipped'
@@ -169,7 +175,15 @@ export async function sendOrScheduleAutoSms(
     const { data: b } = await db.from('buyers').select('name').eq('id', buyerId).maybeSingle()
     buyerName = b?.name || ''
   }
-  const body = buildSmsBody(lead.name, buyerName, locale)
+  let body = buildSmsBody(lead.name, buyerName, locale)
+  if (plan.kind === 'template') {
+    try {
+      // Traduz o modelo para o idioma do LEAD antes de preencher nome/corretor. Falhou = texto padrão do sistema (idioma certo).
+      const copy = await translateLeadCopy(db, { body: plan.body, subject: null }, locale)
+      const custom = renderSmsTemplate(copy.body, { leadName: lead.name, buyerName, buyerFallback: locale === 'es' ? 'tu agente' : locale === 'en' ? 'your agent' : 'seu corretor' })
+      if (custom) body = custom
+    } catch (e: any) { console.warn('[sms-auto] modelo indisponível, usando texto padrão:', String(e?.message).slice(0, 120)) }
+  }
 
   if (isWithinSmsWindow(tz)) {
     // migration071 locks the source on INSERT. Retirement first rejects this
