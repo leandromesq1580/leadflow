@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { pickSmsPlan, validateSmsTemplate, renderSmsTemplate, SMS_CHOICE_MAX_AGE_MS } from '../src/lib/sms-call-choice'
+import { withStopFooter, pickSmsPlan, validateSmsTemplate, renderSmsTemplate, SMS_CHOICE_MAX_AGE_MS } from '../src/lib/sms-call-choice'
 
 const now = Date.parse('2026-11-05T15:00:00Z')
 const ago = (ms: number) => new Date(now - ms).toISOString()
@@ -44,4 +44,14 @@ test('validação: variável desconhecida, chave solta, vazio e tamanho', () => 
 test('render: primeiro nome do lead, corretor e fallback sem nome', () => {
   assert.equal(renderSmsTemplate('Oi {nome}! Aqui é {corretor}.', { leadName: 'Maria Luisa Fernández', buyerName: 'Sebastian Franco' }), 'Oi Maria! Aqui é Sebastian Franco.')
   assert.equal(renderSmsTemplate('Aqui é {corretor}.', { leadName: 'Maria', buyerName: '', buyerFallback: 'seu corretor' }), 'Aqui é seu corretor.')
+})
+
+test('aviso de STOP no idioma do lead, sem duplicar', () => {
+  assert.equal(withStopFooter('Oi Maria!', 'pt'), 'Oi Maria!\nResponda STOP para parar.')
+  assert.equal(withStopFooter('Hi Maria!', 'en'), 'Hi Maria!\nReply STOP to stop.')
+  assert.equal(withStopFooter('¡Hola!', 'es'), '¡Hola!\nResponde STOP para parar.')
+  const once = withStopFooter('Oi!', 'pt')
+  assert.equal(withStopFooter(once, 'pt'), once)
+  assert.equal(withStopFooter('Reply STOP to opt out', 'en'), 'Reply STOP to opt out')
+  assert.equal(withStopFooter('Oi!', 'xx'), 'Oi!\nResponda STOP para parar.')
 })

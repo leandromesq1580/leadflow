@@ -5,6 +5,7 @@ import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
 import { createClient } from '@supabase/supabase-js'
 import * as language from '../src/lib/lead-message-locale'
 import * as twilio from '../src/lib/twilio'
+import * as smsChoice from '../src/lib/sms-call-choice'
 
 // Compile the actual modules. Only database/network IO is replaced; the Supabase
 // serializer, eligibility, templates, reservation and dispatch code are real.
@@ -276,6 +277,7 @@ function sms(t: TestContext, scheduled = true) {
     './twilio': { ...twilio, sendSms: (phone: string, body: string) => transport.send(phone, body) },
     './availability': { buyerTimezone: () => 'America/New_York' }, './lead-message-locale': language,
     './lead-message-template': { translateLeadCopy: async (_db: unknown, _copy: unknown, locale: string) => ({ body: `translated-${locale}`, subject: null }) },
+    './sms-call-choice': { ...smsChoice, loadSmsPlan: async () => ({ kind: 'default' }) },
   })
   return { ...f, sends, transport, api }
 }
@@ -294,7 +296,7 @@ test('two independently compiled dispatchers claim the same scheduled SMS only o
   assert.equal(f.sends.length, 1)
   assert.equal(f.tables.sms_messages[0].status, 'sent')
   assert.equal(f.tables.follow_ups.length, 1)
-  assert.equal(f.sends[0].body, 'translated-es')
+  assert.equal(f.sends[0].body, smsChoice.withStopFooter('translated-es', 'es')) // todo SMS termina com o aviso de STOP
 })
 
 for (const phase of ['after-batch', 'before-claim']) {
@@ -384,7 +386,7 @@ test('immediate normal path reserves, sends localized copy and persists history 
   const f = sms(t, false), api = f.api()
   assert.equal(await api.sendOrScheduleAutoSms(f.db, 'lead', 'buyer'), 'sent')
   assert.equal(f.sends.length, 1)
-  assert.equal(f.sends[0].body, api.buildSmsBody(contact.name, buyer.name, 'es'))
+  assert.equal(f.sends[0].body, smsChoice.withStopFooter(api.buildSmsBody(contact.name, buyer.name, 'es') as unknown as string, 'es'))
   assert.equal(f.tables.sms_messages[0].status, 'sent')
   assert.equal(f.tables.follow_ups.length, 1)
   assert.equal(await api.sendOrScheduleAutoSms(f.db, 'lead', 'buyer'), 'skipped')

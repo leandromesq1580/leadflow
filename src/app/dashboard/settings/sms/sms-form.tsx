@@ -105,9 +105,9 @@ export function SmsForm() {
       )}
 
       <p className="text-[12px]" style={{ color: 'var(--fg-muted)' }}>
-        {L('Regras que não mudam, para proteger você: só entre 8h e 21h no horário do lead (fora disso, fica agendado), no máximo 1 SMS por dia por lead, 14 no total, e nunca se o lead pediu STOP ou já respondeu.',
-           'Rules that never change, to protect you: only 8 AM–9 PM in the lead’s time (outside that, it is scheduled), at most 1 SMS per day per lead, 14 in total, and never if the lead sent STOP or already replied.',
-           'Reglas que no cambian, para protegerte: solo de 8 a 21 h en la hora del lead (fuera de eso queda programado), máximo 1 SMS al día por lead, 14 en total, y nunca si el lead envió STOP o ya respondió.')}
+        {L('Todo SMS termina com “Responda STOP para parar.” (no idioma do lead), automaticamente. Regras que não mudam, para proteger você: só entre 8h e 21h no horário do lead (fora disso, fica agendado), no máximo 1 SMS por dia por lead, 14 no total, e nunca se o lead pediu STOP ou já respondeu.',
+           'Every SMS ends with “Reply STOP to stop.” (in the lead’s language), automatically. Rules that never change, to protect you: only 8 AM–9 PM in the lead’s time (outside that, it is scheduled), at most 1 SMS per day per lead, 14 in total, and never if the lead sent STOP or already replied.',
+           'Todo SMS termina con «Responde STOP para parar.» (en el idioma del lead), automáticamente. Reglas que no cambian, para protegerte: solo de 8 a 21 h en la hora del lead (fuera de eso queda programado), máximo 1 SMS al día por lead, 14 en total, y nunca si el lead envió STOP o ya respondió.')}
       </p>
     </div>
   )
