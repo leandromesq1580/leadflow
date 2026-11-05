@@ -172,6 +172,7 @@ export function Sidebar({ type, userName, isAgency, buyerId, crmPlan, podeVerApo
         { href: '/dashboard/automations', label: t.sidebar.automations, icon: '⚡' },
         { href: '/dashboard/sequences', label: t.sidebar.sequences, icon: '🔁' },
         { href: '/dashboard/settings/notifications', label: L3('Avisos', 'Reminders', 'Recordatorios'), icon: '🔔' },
+        { href: '/dashboard/settings/sms', label: L3('SMS pós-ligação', 'Post-call SMS', 'SMS tras llamada'), icon: '📱' },
         { href: '/dashboard/notas', label: L3('Notas', 'Notes', 'Notas'), icon: '🗒️' },
       ],
     },

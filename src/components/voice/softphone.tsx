@@ -5,6 +5,7 @@ import { CallScriptPanel } from './call-script-panel'
 import { useT } from '@/lib/i18n-client'
 import { createDeviceActivator, type ActivationReason } from './softphone-activation'
 import { classifyCallFailure, isUnansweredRingOut } from './softphone-errors'
+import { SmsChoice } from './sms-choice'
 
 /** Dispara uma ligação de qualquer lugar do app: callLead('+1...', 'Nome', leadId). */
 export function callLead(phone: string, name?: string, leadId?: string) {
@@ -229,6 +230,7 @@ export function Softphone() {
           background: '#ef4444', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
         }}>{L('Desligar', 'Hang up', 'Colgar')}</button>
       </div>
+      {leadIdRef.current && <SmsChoice leadId={leadIdRef.current} L={L} />}
     </div>
     </>
   )
