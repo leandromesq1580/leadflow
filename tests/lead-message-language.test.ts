@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import { ModuleKind, transpileModule } from 'typescript'
 import * as locale from '../src/lib/lead-message-locale'
 import * as templates from '../src/lib/lead-message-template'
+import * as smsChoice from '../src/lib/sms-call-choice'
 import * as systemTemplates from '../src/lib/system-template-i18n'
 import * as renderer from '../src/lib/template-render'
 import * as batch from '../src/lib/sequence-batch'
@@ -206,18 +207,19 @@ test('automatic SMS uses the lead language now and rechecks messages queued befo
           assert.equal(resolved, language)
           return { body: `translated-${resolved}`, subject: null }
         } },
+        './sms-call-choice': { ...smsChoice, loadSmsPlan: async () => ({ kind: 'default' }) },
       })
       if (scheduled) {
         assert.equal(await app.dispatchScheduledSms(), language ? 1 : 0)
-        if (language) assert.equal(sends[0], `translated-${language}`)
+        if (language) assert.equal(sends[0], smsChoice.withStopFooter(`translated-${language}`, language))
       } else if (language) {
         assert.equal(await app.sendOrScheduleAutoSms(db, 'lead', 'buyer'), 'sent')
-        assert.equal(sends[0], app.buildSmsBody(lead.name, 'Agent Fixture', language))
+        assert.equal(sends[0], smsChoice.withStopFooter(app.buildSmsBody(lead.name, 'Agent Fixture', language) as string, language))
       } else {
         await assert.rejects(app.sendOrScheduleAutoSms(db, 'lead', 'buyer'), /\[lead-language\]/)
       }
       assert.equal(sends.length, language ? 1 : 0)
-      if (scheduled && language) assert.ok(db.queries.some(q => q.calls.some(c => c[0] === 'update' && c[1].body === `translated-${language}`)))
+      if (scheduled && language) assert.ok(db.queries.some(q => q.calls.some(c => c[0] === 'update' && c[1].body === smsChoice.withStopFooter(`translated-${language}`, language))))
     }
   }
 })
