@@ -44,3 +44,8 @@ test('31000 e outros códigos seguem como antes', () => {
 test('31603 é telefone do lead que recusou, não falha do sistema', () => {
   assert.deepEqual(classifyCallFailure({ code: 31603 }), { reason: 'callee_declined', code: 31603 })
 })
+
+// 10/11/2026: 31404 (SIP 404 / Twilio 13224) = operadora não achou o número; antes caía em "envie ao suporte".
+test('31404 é número não encontrado, não falha do sistema', () => {
+  assert.deepEqual(classifyCallFailure({ code: 31404 }), { reason: 'number_not_found', code: 31404 })
+})

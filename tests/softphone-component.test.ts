@@ -46,6 +46,7 @@ function harness(options: { connectError?: object; deviceAuthError?: boolean; lo
         if (id === '@twilio/voice-sdk') return { Device: FakeDevice }
         if (id === '@/lib/i18n-client') return { useT: () => ({ _locale: options.locale || 'pt' }) }
         if (id === './call-script-panel') return { CallScriptPanel: () => null }
+        if (id === './sms-choice') return { SmsChoice: () => null } // seletor de SMS pós-ligação: não faz parte do fluxo de chamada testado aqui
         if (id.startsWith('./softphone-')) return load(`src/components/voice/${id.slice(2)}.ts`)
         throw new Error(`import não permitido: ${id}`)
       },
