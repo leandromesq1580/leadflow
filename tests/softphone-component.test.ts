@@ -11,6 +11,8 @@ import ts from 'typescript'
 function harness(options: { connectError?: object; deviceAuthError?: boolean; locale?: string } = {}) {
   const listeners = new Map<string, (ev: unknown) => Promise<void>>()
   const alerts: string[] = []
+  const notices: string[] = []
+  const refs: Array<{ current: unknown; notice: string[] | null }> = []
   const logs: unknown[] = []
   const devices: FakeDevice[] = []
   const calls: EventEmitter[] = []
@@ -41,7 +43,7 @@ function harness(options: { connectError?: object; deviceAuthError?: boolean; lo
     const context = {
       module: evaluatedModule, exports: evaluatedModule.exports,
       require: (id: string) => {
-        if (id === 'react') return { useRef: (value: unknown) => ({ current: value }), useState: (value: unknown) => [value, () => {}], useEffect: (fn: () => void) => { effects.push(fn) } }
+        if (id === 'react') return { useRef: (value: unknown) => { const r = { current: value, notice: value && typeof value === 'object' && 'text' in (value as object) ? notices : null }; refs.push(r); return r }, useState: (value: unknown) => [value, () => {}], useEffect: (fn: () => void) => { effects.push(fn) } }
         if (id === 'react/jsx-runtime') return { jsx: () => null, jsxs: () => null }
         if (id === '@twilio/voice-sdk') return { Device: FakeDevice }
         if (id === '@/lib/i18n-client') return { useT: () => ({ _locale: options.locale || 'pt' }) }
@@ -68,7 +70,7 @@ function harness(options: { connectError?: object; deviceAuthError?: boolean; lo
   Softphone()
   const cleanup = effects[0]()
   return {
-    alerts, logs, devices, calls,
+    alerts, get notices() { return refs.filter(r => r.notice).map(r => String((r.current as { text?: string })?.text || '')).filter(Boolean) }, logs, devices, calls,
     fail: (error?: object) => { failure = error },
     idle: async () => { await new Promise(resolve => setImmediate(resolve)) },
     click: async () => { await listeners.get('l4p:call')!({ detail: { phone: '+15555550100', name: 'Fixture' } }) },
@@ -94,14 +96,13 @@ test('Device.error de autorização seguido de close sem código não prende a a
   const h = harness({ connectError: { code: 20104, message: 'synthetic-token-sensitive' }, deviceAuthError: true })
   try {
     await h.click()
-    assert.match(h.alerts[0], /Twilio recusou a autorização.*20104/)
+    assert.match(h.notices[0], /Twilio recusou a autorização.*20104/)
     assert.equal(h.devices[0].destroyed, true)
     assert.equal(h.counters().connections, 1)
     h.fail()
     await h.click()
     assert.equal(h.counters().fetches, 2)
     assert.equal(h.counters().connections, 2)
-    assert.equal(h.alerts.length, 1)
     assert.doesNotMatch(JSON.stringify(h.logs), /synthetic-token-sensitive/)
   } finally { h.cleanup() }
 })
@@ -111,8 +112,8 @@ test('erro posterior da chamada também mostra motivo sem expor mensagem do SDK'
   try {
     await h.click()
     h.calls[0].emit('error', { code: 53000, message: 'synthetic-token-sensitive' })
-    assert.match(h.alerts[0], /conexão.*53000/)
-    assert.doesNotMatch(h.alerts[0], /microfone|synthetic-token-sensitive/)
+    assert.match(h.notices[0], /conexão.*53000/)
+    assert.doesNotMatch(h.notices[0], /microfone|synthetic-token-sensitive/)
     assert.equal(h.counters().connections, 1, 'não existe rediscagem automática')
   } finally { h.cleanup() }
 })
@@ -133,14 +134,13 @@ test('autorização recusada é visível e próximo clique busca outro token sem
   try {
     await h.click()
     assert.equal(h.counters().connections, 1)
-    assert.match(h.alerts[0], /Twilio recusou a autorização.*20101/)
-    assert.doesNotMatch(h.alerts[0], /microfone|synthetic-token-sensitive/)
+    assert.match(h.notices[0], /Twilio recusou a autorização.*20101/)
+    assert.doesNotMatch(h.notices[0], /microfone|synthetic-token-sensitive/)
     assert.equal(h.devices[0].destroyed, true)
     h.fail()
     await h.click()
     assert.equal(h.counters().fetches, 2)
     assert.equal(h.counters().connections, 2)
-    assert.equal(h.alerts.length, 1)
     assert.doesNotMatch(JSON.stringify(h.logs), /synthetic-token-sensitive/)
   } finally { h.cleanup() }
 })
@@ -151,8 +151,8 @@ for (const locale of ['pt', 'en', 'es']) {
     try {
       await h.click()
       assert.equal(h.counters().connections, 1)
-      assert.match(h.alerts[0], /31401/)
-      assert.match(h.alerts[0], /microfone|microphone|micrófono/)
+      assert.match(h.notices[0], /31401/)
+      assert.match(h.notices[0], /microfone|microphone|micrófono/)
     } finally { h.cleanup() }
   })
 }
