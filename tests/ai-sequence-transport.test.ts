@@ -12,6 +12,7 @@ function adapter(rate=true){
   './ai-sequence-config':config,'./ai-sequence-copy':{...copy,generateSequenceCopy:()=>{throw Error('Not used')}},
   './wa-bridge':{getBridgeForBuyer:async()=>({url:'https://bridge.invalid',key:'fixture',ownerBuyerId:'buyer',phone:'15555550100'})},
   './send-guard':{checkSendRate:async()=>({ok:rate})}, './sequence-batch':batch,
+  './lead-message-locale':{}, './wa-cloud-automation':{},
  }
  new Function('require','module','exports',transpileModule(readFileSync('src/lib/ai-sequence-engine.ts','utf8'),{compilerOptions:{module:ModuleKind.CommonJS,target:ScriptTarget.ES2022}}).outputText)((name:string)=>{assert.ok(name in dependencies,name);return dependencies[name]},loaded,loaded.exports)
  return {...loaded.exports.aiEnginePorts({rpc:async()=>({data:true,error:null})} as never), run:loaded.exports.runAIEnrollment}

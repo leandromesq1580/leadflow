@@ -7,6 +7,9 @@ import { Resend } from 'resend'
 import { systemTemplateNames } from '@/lib/system-template-i18n'
 import { localizeLeadTemplate } from '@/lib/lead-message-template'
 import { requireLeadMessageLocale } from '@/lib/lead-message-locale'
+import { cloudAutomationEnabled, isCompanyWhatsAppSender } from '@/lib/wa-cloud'
+import { CloudMessageWithheld, dispatchCloudMessage, prepareCloudMessage } from '@/lib/wa-cloud-automation'
+import { verifiedSequenceBridge } from '@/lib/sequence-batch'
 
 interface Automation {
   id: string
@@ -129,9 +132,10 @@ export async function runAutomations(buyerIds?: string[], onlyLeadIds?: string[]
           continue
         }
 
+        if (!reserva) continue
         try {
-          await executeAction(auto, target)
-          if (reserva?.id) await db.from('automation_runs').update({ status: 'success' }).eq('id', reserva.id)
+          await executeAction(auto, target, reserva.id)
+          await db.from('automation_runs').update({ status: 'success' }).eq('id', reserva.id)
           ran++
         } catch (err: any) {
           if (reserva?.id) {
@@ -326,7 +330,7 @@ async function findTargets(auto: Automation): Promise<Target[]> {
   return []
 }
 
-async function executeAction(auto: Automation, target: Target): Promise<void> {
+async function executeAction(auto: Automation, target: Target, runId: string): Promise<void> {
   const db = createAdminClient()
   // Only administrative redelivery is terminal here; ordinary archived lead
   // semantics are unchanged. SQL reservation guard closes the selection race.
@@ -353,38 +357,74 @@ async function executeAction(auto: Automation, target: Target): Promise<void> {
     if (agent.is_active === false) { console.log(`[Automation] buyer ${auto.buyer_id} suspenso — skip`); return }
 
     const loc = requireLeadMessageLocale(lead)
-    const localizedTemplate = await localizeLeadTemplate(db, template, lead)
-    const body = renderTemplate(localizedTemplate.body, lead, agent, loc)
+    let templateLabel = template.name
+    const localize = () => localizeLeadTemplate(db, template, lead)
 
     if (template.type === 'whatsapp') {
       if (!lead.phone) throw new Error('Lead sem telefone')
-      // Envia pela bridge do DONO do lead (não pela global/Regiane)
+      // Identifica o remetente configurado para a conta antes de escolher o transporte.
       // 🛑 LIMITADOR por conta — automação também respeita o teto (2026-07-31)
       const rate = await checkSendRate(db, auto.buyer_id)
       if (!rate.ok) { console.error('[automation] envio bloqueado pelo limitador:', rate.reason); return }
       const sb = await resolveSendBridge(db, auto.buyer_id)
-      const cleanPhone = lead.phone.replace(/[\s\-()]/g, '').replace(/^\+/, '')
-      const res = await fetch(`${sb.url}/send`, {
-        method: 'POST',
-        headers: { apikey: sb.key, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ number: cleanPhone, message: body }),
-      })
-      if (!res.ok) throw new Error(`wa-bridge ${res.status}`)
-      const { id: waId } = await res.json().catch(() => ({ id: null }))
+      const cloudEnabled = cloudAutomationEnabled()
+      let from = sb.phone
+      let to = lead.phone.replace(/[\s\-()]/g, '').replace(/^\+/, '')
+      let messageBody: string
+      let messageId: string | null
 
-      // Salva na thread de conversa
-      await db.from('whatsapp_messages').insert({
+      // A known retired bridge can be identified from its configuration. Other
+      // bridges must confirm their current sender before using WhatsApp Web.
+      const isCompanySender = cloudEnabled && (isCompanyWhatsAppSender(sb)
+        || isCompanyWhatsAppSender(await verifiedSequenceBridge({
+          ...sb, phone: sb.phone || undefined, ownerBuyerId: auto.buyer_id,
+        })))
+      if (isCompanySender) {
+        const plan = await prepareCloudMessage(db, {
+          phone: lead.phone, buyerId: auto.buyer_id, leadId: target.lead_id,
+          templateKey: `automation:${auto.id}`, locale: loc,
+        })
+        if (!plan) throw new CloudMessageWithheld()
+        if (plan.body === null) {
+          const localized = await localize()
+          templateLabel = localized.name
+          messageBody = renderTemplate(localized.body, lead, agent, loc)
+        } else {
+          messageBody = plan.body
+        }
+        const receipt = await dispatchCloudMessage(db, plan, { operationId: runId, body: messageBody })
+        from = receipt.from
+        to = receipt.to
+        messageId = receipt.id
+      } else {
+        const localized = await localize()
+        templateLabel = localized.name
+        messageBody = renderTemplate(localized.body, lead, agent, loc)
+        const res = await fetch(`${sb.url}/send`, {
+          method: 'POST',
+          headers: { apikey: sb.key, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ number: to, message: messageBody }),
+        })
+        if (!res.ok) throw new Error(`wa-bridge ${res.status}`)
+        messageId = (await res.json().catch(() => ({ id: null }))).id
+      }
+
+      const { error: inboxError } = await db.from('whatsapp_messages').insert({
         buyer_id: auto.buyer_id,
         lead_id: target.lead_id,
         direction: 'out',
-        from_phone: sb.phone,
-        to_phone: cleanPhone,
-        body,
-        wa_message_id: waId,
+        from_phone: from,
+        to_phone: to,
+        body: messageBody,
+        wa_message_id: messageId,
         status: 'sent',
       })
+      if (isCompanySender && inboxError) throw new Error('WhatsApp Cloud: registro no histórico indisponível')
     } else {
       if (!lead.email) throw new Error('Lead sem email')
+      const localizedTemplate = await localize()
+      templateLabel = localizedTemplate.name
+      const body = renderTemplate(localizedTemplate.body, lead, agent, loc)
       const resendKey = (process.env.RESEND_API_KEY || '').trim()
       if (!resendKey) throw new Error('Resend not configured')
       const resend = new Resend(resendKey)
@@ -403,7 +443,7 @@ async function executeAction(auto: Automation, target: Target): Promise<void> {
       lead_id: target.lead_id,
       buyer_id: auto.buyer_id,
       type: template.type,
-      description: `${loc === 'en' ? '[Automation]' : loc === 'es' ? '[Automatización]' : '[Automação]'} ${auto.name} → ${localizedTemplate.name}`,
+      description: `${loc === 'en' ? '[Automation]' : loc === 'es' ? '[Automatización]' : '[Automação]'} ${auto.name} → ${templateLabel}`,
       completed_at: new Date().toISOString(),
     })
     return
