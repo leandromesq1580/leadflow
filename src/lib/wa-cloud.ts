@@ -1,13 +1,15 @@
 import { OFFICIAL_WHATSAPP_NUMBER } from './official-whatsapp'
 
-export type WhatsAppCloudConfig = {
+type CloudIdentity = {
   phoneNumberId: string
   wabaId: string
   graphVersion: string
-  accessToken: string
-  appSecret: string
-  verifyToken: string
 }
+
+export type WhatsAppCloudConfig = CloudIdentity & (
+  | { provider: 'meta'; accessToken: string; appSecret: string; verifyToken: string }
+  | { provider: 'kapso'; apiKey: string; webhookSecret: string }
+)
 
 type CloudTemplate = { to: string; name: string; language: string; operationId: string }
 type CloudText = { to: string; body: string; operationId: string }
@@ -25,19 +27,29 @@ export function cloudAutomationEnabled(env: CloudEnv = process.env): boolean {
 }
 
 export function getWhatsAppCloudConfig(env: CloudEnv = process.env): WhatsAppCloudConfig | null {
+  const provider = env.WA_CLOUD_PROVIDER?.trim() ?? 'meta'
   const phoneNumberId = env.WA_CLOUD_PHONE_NUMBER_ID?.trim()
   const wabaId = env.WA_CLOUD_WABA_ID?.trim()
   const graphVersion = env.WA_CLOUD_GRAPH_VERSION?.trim()
-  const accessToken = env.WA_CLOUD_ACCESS_TOKEN?.trim()
-  const appSecret = env.WA_CLOUD_APP_SECRET?.trim()
-  const verifyToken = env.WA_CLOUD_VERIFY_TOKEN?.trim()
 
   if (!phoneNumberId || !/^[1-9]\d*$/.test(phoneNumberId)) return null
   if (!wabaId || !/^[1-9]\d*$/.test(wabaId)) return null
   if (!graphVersion || !/^v[1-9]\d\.\d$/.test(graphVersion)) return null
-  if (!accessToken || /[\r\n]/.test(accessToken) || !appSecret || !verifyToken) return null
+  const identity = { phoneNumberId, wabaId, graphVersion }
 
-  return { phoneNumberId, wabaId, graphVersion, accessToken, appSecret, verifyToken }
+  if (provider === 'kapso') {
+    const apiKey = env.WA_CLOUD_KAPSO_API_KEY?.trim()
+    const webhookSecret = env.WA_CLOUD_KAPSO_WEBHOOK_SECRET?.trim()
+    if (!apiKey || /[\r\n]/.test(apiKey) || !webhookSecret) return null
+    return { ...identity, provider, apiKey, webhookSecret }
+  }
+
+  if (provider !== 'meta') return null
+  const accessToken = env.WA_CLOUD_ACCESS_TOKEN?.trim()
+  const appSecret = env.WA_CLOUD_APP_SECRET?.trim()
+  const verifyToken = env.WA_CLOUD_VERIFY_TOKEN?.trim()
+  if (!accessToken || /[\r\n]/.test(accessToken) || !appSecret || !verifyToken) return null
+  return { ...identity, provider, accessToken, appSecret, verifyToken }
 }
 
 export function normalizeCloudRecipient(value: string): string | null {
@@ -53,6 +65,15 @@ export function normalizeCloudRecipient(value: string): string | null {
 
 export const COMPANY_WHATSAPP_PHONE = OFFICIAL_WHATSAPP_NUMBER
 const GRAPH_URL = 'https://graph.facebook.com'
+const KAPSO_GRAPH_URL = 'https://api.kapso.ai/meta/whatsapp'
+
+function cloudPhoneEndpoint(config: WhatsAppCloudConfig): { url: string; headers: Record<string, string> } {
+  const path = `/${config.graphVersion}/${config.phoneNumberId}`
+  if (config.provider === 'kapso') {
+    return { url: `${KAPSO_GRAPH_URL}${path}`, headers: { 'X-API-Key': config.apiKey } }
+  }
+  return { url: `${GRAPH_URL}${path}`, headers: { Authorization: `Bearer ${config.accessToken}` } }
+}
 
 export function isCloudMessageId(value: unknown): value is string {
   return typeof value === 'string' && value === value.trim() && /^wamid\.[A-Za-z0-9+/_=-]{1,506}$/.test(value)
@@ -84,10 +105,11 @@ export function isCompanyWhatsAppSender(
 }
 
 export async function verifyCompanyCloudPhone(config: WhatsAppCloudConfig, fetchImpl: typeof fetch = fetch): Promise<boolean> {
+  const endpoint = cloudPhoneEndpoint(config)
   try {
-    const response = await fetchImpl(`${GRAPH_URL}/${config.graphVersion}/${config.phoneNumberId}?fields=display_phone_number`, {
+    const response = await fetchImpl(`${endpoint.url}?fields=display_phone_number`, {
       method: 'GET',
-      headers: { Authorization: `Bearer ${config.accessToken}` },
+      headers: endpoint.headers,
       cache: 'no-store',
       redirect: 'error',
       signal: AbortSignal.timeout(5_000),
@@ -95,7 +117,7 @@ export async function verifyCompanyCloudPhone(config: WhatsAppCloudConfig, fetch
     if (!response.ok) return false
 
     const payload = await response.json()
-    return payload?.id === config.phoneNumberId
+    return !payload?.error && payload?.id === config.phoneNumberId
       && typeof payload.display_phone_number === 'string'
       && normalizeCloudRecipient(payload.display_phone_number) === COMPANY_WHATSAPP_PHONE
   } catch {
@@ -153,10 +175,11 @@ async function sendCloudMessage(
     return { kind: 'rejected', code: null }
   }
 
+  const endpoint = cloudPhoneEndpoint(config)
   try {
-    const response = await fetchImpl(`${GRAPH_URL}/${config.graphVersion}/${config.phoneNumberId}/messages`, {
+    const response = await fetchImpl(`${endpoint.url}/messages`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${config.accessToken}`, 'Content-Type': 'application/json' },
+      headers: { ...endpoint.headers, 'Content-Type': 'application/json' },
       cache: 'no-store',
       redirect: 'error',
       signal: AbortSignal.timeout(15_000),
@@ -175,6 +198,14 @@ async function sendCloudMessage(
 
     if (response.ok && !payload?.error && isCloudMessageId(messageId)) {
       return { kind: 'accepted', messageId }
+    }
+    // Kapso refuses these service messages before invoking Meta. An unrelated
+    // 409, including its message-in-flight response, cannot prove rejection.
+    const threadError = payload?.thread_error
+    if (config.provider === 'kapso' && response.status === 409 && message.type === 'text' && messages === undefined
+      && typeof payload?.error === 'string' && (threadError === 'thread_not_owner' || threadError === 'thread_ownership_unknown')
+      && (payload.code === threadError || payload.code === 'meta_business_agent_control')) {
+      return { kind: 'rejected', code: null }
     }
     if (response.status === 400 && messages === undefined && payload?.error?.is_transient !== true && code !== null && validationCodes.has(code)) {
       return { kind: 'rejected', code }

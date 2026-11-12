@@ -26,13 +26,14 @@ export type CloudMessagePlan = Omit<MessageContext, 'phone'> & {
 }
 
 type Dispatch = { operationId: string; body: string }
-let verifiedPhone: { id: string; version: string; until: number } | undefined
+let verifiedPhone: { provider: WhatsAppCloudConfig['provider']; id: string; version: string; until: number } | undefined
 
 async function confirmConfiguredPhone(config: WhatsAppCloudConfig): Promise<boolean> {
-  if (verifiedPhone?.id === config.phoneNumberId && verifiedPhone.version === config.graphVersion
+  if (verifiedPhone?.provider === config.provider && verifiedPhone.id === config.phoneNumberId
+    && verifiedPhone.version === config.graphVersion
     && verifiedPhone.until > Date.now()) return true
   if (!await verifyCompanyCloudPhone(config)) return false
-  verifiedPhone = { id: config.phoneNumberId, version: config.graphVersion, until: Date.now() + 60_000 }
+  verifiedPhone = { provider: config.provider, id: config.phoneNumberId, version: config.graphVersion, until: Date.now() + 60_000 }
   return true
 }
 

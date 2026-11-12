@@ -1,6 +1,11 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getWhatsAppCloudConfig } from '@/lib/wa-cloud'
-import { parseWhatsAppCloudEvents, verifyWhatsAppCloudSignature, whatsappCloudChallenge } from '@/lib/wa-cloud-webhook'
+import {
+  parseWhatsAppCloudEvents,
+  verifyKapsoWhatsAppSignature,
+  verifyWhatsAppCloudSignature,
+  whatsappCloudChallenge,
+} from '@/lib/wa-cloud-webhook'
 
 export const runtime = 'nodejs'
 const MAX_PAYLOAD_BYTES = 3 * 1024 * 1024
@@ -8,6 +13,7 @@ const MAX_PAYLOAD_BYTES = 3 * 1024 * 1024
 export function GET(request: Request) {
   const config = getWhatsAppCloudConfig()
   if (!config) return new Response(null, { status: 503 })
+  if (config.provider === 'kapso') return new Response(null, { status: 405, headers: { Allow: 'POST' } })
   const challenge = whatsappCloudChallenge(new URL(request.url).searchParams, config.verifyToken)
   return challenge === null
     ? new Response(null, { status: 403 })
@@ -26,9 +32,10 @@ export async function POST(request: Request) {
     return new Response(null, { status: 400 })
   }
   if (raw.length > MAX_PAYLOAD_BYTES) return new Response(null, { status: 413 })
-  if (!verifyWhatsAppCloudSignature(raw, request.headers.get('x-hub-signature-256'), config.appSecret)) {
-    return new Response(null, { status: 403 })
-  }
+  const validSignature = config.provider === 'kapso'
+    ? verifyKapsoWhatsAppSignature(raw, request.headers.get('x-webhook-signature'), config.webhookSecret)
+    : verifyWhatsAppCloudSignature(raw, request.headers.get('x-hub-signature-256'), config.appSecret)
+  if (!validSignature) return new Response(null, { status: 403 })
 
   let payload: unknown
   try {
@@ -41,7 +48,7 @@ export async function POST(request: Request) {
 
   try {
     const db = createAdminClient()
-    const deadline = AbortSignal.timeout(10_000)
+    const deadline = AbortSignal.timeout(config.provider === 'kapso' ? 8_000 : 10_000)
     for (const event of events) {
       const rpc = event.type === 'inbound'
         ? db.rpc('apply_wa_cloud_inbound', {

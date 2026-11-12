@@ -20,6 +20,15 @@ const env = {
   WA_CLOUD_VERIFY_TOKEN: 'fixture-verify',
 }
 const config = getWhatsAppCloudConfig(env)!
+const kapsoEnv = {
+  WA_CLOUD_PROVIDER: 'kapso',
+  WA_CLOUD_PHONE_NUMBER_ID: '123',
+  WA_CLOUD_WABA_ID: '456',
+  WA_CLOUD_GRAPH_VERSION: 'v24.0',
+  WA_CLOUD_KAPSO_API_KEY: 'fixture-kapso-api-key',
+  WA_CLOUD_KAPSO_WEBHOOK_SECRET: 'fixture-kapso-webhook-secret',
+}
+const kapso = getWhatsAppCloudConfig(kapsoEnv)!
 const template = { to: '(305) 555-0100', name: 'follow_up', language: 'pt_BR', operationId: 'test-operation' }
 
 test('Cloud automation is opt-in and requires complete Graph and webhook configuration', () => {
@@ -27,15 +36,31 @@ test('Cloud automation is opt-in and requires complete Graph and webhook configu
   assert.equal(cloudAutomationEnabled({ WA_CLOUD_AUTOMATION_ENABLED: '1' }), false)
   assert.equal(cloudAutomationEnabled(env), true)
   assert.deepEqual(config, {
-    phoneNumberId: '123', wabaId: '456', graphVersion: 'v25.0',
+    provider: 'meta', phoneNumberId: '123', wabaId: '456', graphVersion: 'v25.0',
     accessToken: 'fixture-access', appSecret: 'fixture-app', verifyToken: 'fixture-verify',
   })
+  assert.deepEqual(getWhatsAppCloudConfig({ ...env, WA_CLOUD_PROVIDER: 'meta' }), config)
   for (const key of Object.keys(env).filter(key => key !== 'WA_CLOUD_AUTOMATION_ENABLED')) {
     assert.equal(getWhatsAppCloudConfig({ ...env, [key]: ' ' }), null, key)
   }
   assert.equal(getWhatsAppCloudConfig({ ...env, WA_CLOUD_PHONE_NUMBER_ID: '123/messages' }), null)
   assert.equal(getWhatsAppCloudConfig({ ...env, WA_CLOUD_WABA_ID: '12abc' }), null)
   assert.equal(getWhatsAppCloudConfig({ ...env, WA_CLOUD_GRAPH_VERSION: '25.0' }), null)
+})
+
+test('Kapso requires explicit selection and its own API and webhook credentials', () => {
+  assert.deepEqual(kapso, {
+    provider: 'kapso', phoneNumberId: '123', wabaId: '456', graphVersion: 'v24.0',
+    apiKey: 'fixture-kapso-api-key', webhookSecret: 'fixture-kapso-webhook-secret',
+  })
+  assert.deepEqual(getWhatsAppCloudConfig({ ...env, ...kapsoEnv }), kapso)
+  assert.equal(getWhatsAppCloudConfig({ ...kapsoEnv, WA_CLOUD_PROVIDER: undefined }), null)
+  assert.equal(getWhatsAppCloudConfig({ ...env, WA_CLOUD_PROVIDER: '' }), null)
+  assert.equal(getWhatsAppCloudConfig({ ...env, WA_CLOUD_PROVIDER: 'other' }), null)
+  for (const key of Object.keys(kapsoEnv)) {
+    assert.equal(getWhatsAppCloudConfig({ ...env, ...kapsoEnv, [key]: ' ' }), null, key)
+  }
+  assert.equal(getWhatsAppCloudConfig({ ...kapsoEnv, WA_CLOUD_KAPSO_API_KEY: 'fixture\r\nbad' }), null)
 })
 
 test('Cloud recipients preserve explicit country codes and reject bridge addresses', () => {
@@ -75,6 +100,63 @@ test('the configured Graph phone ID must belong to the company number', async ()
   assert.equal(await verifyCompanyCloudPhone(config, async () => Response.json({ id: '123', display_phone_number: '+1 305-555-0100' })), false)
   assert.equal(await verifyCompanyCloudPhone(config, async () => Response.json({ id: '456', display_phone_number: '+1 786-744-2126' })), false)
   assert.equal(await verifyCompanyCloudPhone(config, async () => new Response('', { status: 500 })), false)
+})
+
+test('Kapso verifies the company number and sends with its Graph proxy and API key', async () => {
+  const requests: { url: string; init: RequestInit | undefined }[] = []
+  const request: typeof fetch = async (url, init) => {
+    requests.push({ url: String(url), init })
+    return init?.method === 'GET'
+      ? Response.json({ id: '123', display_phone_number: '+1 786-744-2126' })
+      : Response.json({ messages: [{ id: 'wamid.fixture' }] })
+  }
+
+  assert.equal(await verifyCompanyCloudPhone(kapso, request), true)
+  assert.deepEqual(await sendCloudTemplate(kapso, template, request), { kind: 'accepted', messageId: 'wamid.fixture' })
+  assert.equal(requests.length, 2)
+  const [verify, send] = requests
+  assert.equal(verify.url, 'https://api.kapso.ai/meta/whatsapp/v24.0/123?fields=display_phone_number')
+  assert.equal(verify.init?.method, 'GET')
+  assert.equal(send.url, 'https://api.kapso.ai/meta/whatsapp/v24.0/123/messages')
+  assert.equal(send.init?.method, 'POST')
+  assert.deepEqual(JSON.parse(String(send.init?.body)), {
+    messaging_product: 'whatsapp', recipient_type: 'individual', to: '13055550100',
+    type: 'template', template: { name: 'follow_up', language: { code: 'pt_BR' } }, biz_opaque_callback_data: 'test-operation',
+  })
+  for (const { init } of requests) {
+    const headers = new Headers(init?.headers)
+    assert.equal(headers.get('X-API-Key'), 'fixture-kapso-api-key')
+    assert.equal(headers.get('Authorization'), null)
+    assert.equal(headers.get('X-Kapso-Take-Control'), null)
+    assert.equal(init?.cache, 'no-store')
+    assert.equal(init?.redirect, 'error')
+  }
+  assert.equal(await verifyCompanyCloudPhone(kapso, async () => Response.json({ id: '123', display_phone_number: '+1 305-555-0100' })), false)
+})
+
+test('Kapso settles documented service-thread rejections without taking control or replaying', async () => {
+  const text = { to: template.to, body: 'Olá!', operationId: 'reply-op' }
+  const ownership = { error: 'fixture ownership error', code: 'thread_not_owner', thread_error: 'thread_not_owner' }
+  for (const [payload, status, kind] of [
+    [ownership, 409, 'rejected'],
+    [{ ...ownership, code: 'thread_ownership_unknown', thread_error: 'thread_ownership_unknown' }, 409, 'rejected'],
+    [{ ...ownership, code: 'meta_business_agent_control' }, 409, 'rejected'],
+    [ownership, 500, 'unknown'],
+    [{ ...ownership, thread_error: undefined }, 409, 'unknown'],
+    [{ error: 'fixture message-in-flight error' }, 409, 'unknown'],
+  ] as const) {
+    let requests = 0
+    const request: typeof fetch = async (_url, init) => {
+      requests++
+      assert.equal(new Headers(init?.headers).get('X-Kapso-Take-Control'), null)
+      return Response.json(payload, { status })
+    }
+    assert.deepEqual(await sendCloudText(kapso, text, request), { kind, code: null })
+    assert.equal(requests, 1)
+  }
+  const request: typeof fetch = async () => Response.json(ownership, { status: 409 })
+  assert.deepEqual(await sendCloudText(config, text, request), { kind: 'unknown', code: null })
+  assert.deepEqual(await sendCloudTemplate(kapso, template, request), { kind: 'unknown', code: null })
 })
 
 test('Cloud submits one static template or text with its callback correlation ID', async () => {
@@ -144,13 +226,15 @@ test('Cloud distinguishes definite validation rejections from ambiguous results 
     { response: () => new Response('malformed'), kind: 'unknown', code: null },
     { response: () => { throw new DOMException('fixture network details', 'TimeoutError') }, kind: 'unknown', code: null },
   ]
-  for (const { response, kind, code } of cases) {
-    let requests = 0
-    const request: typeof fetch = async () => {
-      requests++
-      return response()
+  for (const providerConfig of [config, kapso]) {
+    for (const { response, kind, code } of cases) {
+      let requests = 0
+      const request: typeof fetch = async () => {
+        requests++
+        return response()
+      }
+      assert.deepEqual(await sendCloudTemplate(providerConfig, template, request), { kind, code })
+      assert.equal(requests, 1)
     }
-    assert.deepEqual(await sendCloudTemplate(config, template, request), { kind, code })
-    assert.equal(requests, 1)
   }
 })

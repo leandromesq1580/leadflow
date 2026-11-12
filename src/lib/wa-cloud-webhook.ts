@@ -32,8 +32,17 @@ export function whatsappCloudChallenge(params: URLSearchParams, verifyToken: str
 
 export function verifyWhatsAppCloudSignature(raw: Uint8Array, signature: string | null, appSecret: string): boolean {
   const suppliedDigest = signature?.match(/^sha256=([\da-f]{64})$/i)?.[1]
-  if (!suppliedDigest || !appSecret) return false
-  const expected = createHmac('sha256', appSecret).update(raw).digest()
+  return verifyWebhookDigest(raw, suppliedDigest, appSecret)
+}
+
+export function verifyKapsoWhatsAppSignature(raw: Uint8Array, signature: string | null, webhookSecret: string): boolean {
+  if (signature?.length !== 64 || !/^[\da-f]{64}$/i.test(signature)) return false
+  return verifyWebhookDigest(raw, signature, webhookSecret)
+}
+
+function verifyWebhookDigest(raw: Uint8Array, suppliedDigest: string | undefined, secret: string): boolean {
+  if (!suppliedDigest || !secret) return false
+  const expected = createHmac('sha256', secret).update(raw).digest()
   return timingSafeEqual(Buffer.from(suppliedDigest, 'hex'), expected)
 }
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { createHmac } from 'node:crypto'
-import test from 'node:test'
+import test, { type TestContext } from 'node:test'
 import { GET, POST } from '../src/app/api/webhook/whatsapp-cloud/route'
 import { COMPANY_WHATSAPP_PHONE } from '../src/lib/wa-cloud'
 import { parseWhatsAppCloudEvents } from '../src/lib/wa-cloud-webhook'
@@ -11,7 +11,24 @@ const messageId = 'wamid.synthetic_reply'
 const operationId = '01a1d138-d396-4d13-a32e-dcc708553d68'
 const appSecret = 'synthetic-app-secret'
 const verifyToken = 'synthetic-verify-token'
+const webhookSecret = 'synthetic-kapso-webhook-secret'
 const callback = 'https://example.invalid/api/webhook/whatsapp-cloud'
+
+function setEnvironment(t: TestContext, values: Record<string, string>) {
+  for (const [name, value] of Object.entries(values)) {
+    const original = process.env[name]
+    process.env[name] = value
+    t.after(() => { if (original === undefined) delete process.env[name]; else process.env[name] = original })
+  }
+}
+
+const sharedEnv = {
+  WA_CLOUD_WABA_ID: sender.wabaId,
+  WA_CLOUD_PHONE_NUMBER_ID: sender.phoneNumberId,
+  WA_CLOUD_GRAPH_VERSION: 'v25.0',
+  NEXT_PUBLIC_SUPABASE_URL: 'https://example.invalid',
+  SUPABASE_SERVICE_ROLE_KEY: 'synthetic-service-key',
+}
 
 function textMessage(body: string, overrides: Record<string, unknown> = {}) {
   return { type: 'text', text: { body }, from: phone, id: messageId, timestamp: '1794487200', ...overrides }
@@ -94,21 +111,14 @@ test('valid statuses are delivery receipts with a UUID or exact-WAMID fallback',
 })
 
 test('webhook verifies raw bytes, handles Meta challenge and returns a retryable response on write failure', async t => {
-  const environment = {
-    WA_CLOUD_WABA_ID: sender.wabaId,
-    WA_CLOUD_PHONE_NUMBER_ID: sender.phoneNumberId,
-    WA_CLOUD_GRAPH_VERSION: 'v25.0',
+  setEnvironment(t, {
+    ...sharedEnv,
+    WA_CLOUD_PROVIDER: 'meta',
     WA_CLOUD_ACCESS_TOKEN: 'synthetic-token',
     WA_CLOUD_APP_SECRET: appSecret,
     WA_CLOUD_VERIFY_TOKEN: verifyToken,
-    NEXT_PUBLIC_SUPABASE_URL: 'https://example.invalid',
-    SUPABASE_SERVICE_ROLE_KEY: 'synthetic-service-key',
-  }
-  for (const [name, value] of Object.entries(environment)) {
-    const original = process.env[name]
-    process.env[name] = value
-    t.after(() => { if (original === undefined) delete process.env[name]; else process.env[name] = original })
-  }
+    WA_CLOUD_KAPSO_WEBHOOK_SECRET: webhookSecret,
+  })
 
   const challenge = new URL(callback)
   challenge.search = new URLSearchParams({ 'hub.mode': 'subscribe', 'hub.challenge': '0001234', 'hub.verify_token': verifyToken }).toString()
@@ -134,6 +144,9 @@ test('webhook verifies raw bytes, handles Meta challenge and returns a retryable
   assert.equal((await POST(request(raw, 'sha256=bad'))).status, 403)
   assert.equal((await POST(request(raw + '\n'))).status, 403)
   assert.equal((await POST(new Request(callback, {
+    method: 'POST', headers: { 'x-webhook-signature': createHmac('sha256', webhookSecret).update(raw).digest('hex') }, body: raw,
+  }))).status, 403)
+  assert.equal((await POST(new Request(callback, {
     method: 'POST', headers: { 'content-length': '3145729' },
   }))).status, 413)
   assert.deepEqual(rpcCalls, [])
@@ -151,4 +164,51 @@ test('webhook verifies raw bytes, handles Meta challenge and returns a retryable
   failWrite = true
   assert.equal((await POST(request(raw))).status, 500)
   assert.equal(rpcCalls.length, 3)
+})
+
+test('Kapso accepts only its signed raw Meta-format payloads and keeps the existing account and number checks', async t => {
+  setEnvironment(t, {
+    ...sharedEnv,
+    WA_CLOUD_PROVIDER: 'kapso',
+    WA_CLOUD_KAPSO_API_KEY: 'synthetic-kapso-api-key',
+    WA_CLOUD_KAPSO_WEBHOOK_SECRET: webhookSecret,
+    WA_CLOUD_APP_SECRET: appSecret,
+    WA_CLOUD_VERIFY_TOKEN: verifyToken,
+  })
+
+  const noChallenge = GET(new Request(`${callback}?hub.mode=subscribe&hub.challenge=0001234&hub.verify_token=${verifyToken}`))
+  assert.equal(noChallenge.status, 405)
+  assert.equal(noChallenge.headers.get('Allow'), 'POST')
+
+  const rpcCalls: Array<{ path: string; body: unknown }> = []
+  t.mock.method(globalThis, 'fetch', async (url: string, init?: RequestInit) => {
+    assert.ok(init?.signal instanceof AbortSignal)
+    rpcCalls.push({ path: new URL(url).pathname, body: JSON.parse(String(init?.body)) })
+    return Response.json(true)
+  })
+
+  const raw = JSON.stringify(payload(change({ messages: [textMessage('PARE')], statuses: [statusMessage()] })), null, 2)
+  const sign = (body: string) => createHmac('sha256', webhookSecret).update(body).digest('hex')
+  const request = (body: string, signature = sign(body)) => new Request(callback, {
+    method: 'POST', headers: { 'x-webhook-signature': signature, 'x-idempotency-key': 'delivery-fixture' }, body,
+  })
+
+  assert.equal((await POST(new Request(callback, {
+    method: 'POST', headers: { 'x-hub-signature-256': `sha256=${createHmac('sha256', appSecret).update(raw).digest('hex')}` }, body: raw,
+  }))).status, 403)
+  assert.equal((await POST(request(raw + '\n', sign(raw)))).status, 403)
+  assert.equal((await POST(request(raw, `sha256=${sign(raw)}`))).status, 403)
+  assert.equal((await POST(request(JSON.stringify(payload(change({ messages: [textMessage('STOP')] }, '900002')))))).status, 200)
+  assert.deepEqual(rpcCalls, [])
+
+  assert.equal((await POST(request(raw))).status, 200)
+  assert.deepEqual(rpcCalls, [
+    { path: '/rest/v1/rpc/apply_wa_cloud_inbound', body: {
+      p_phone: phone, p_event_at: new Date(1794487200 * 1000).toISOString(), p_message_id: messageId,
+      p_subscribed: false, p_body: 'PARE', p_reply_to: null,
+    } },
+    { path: '/rest/v1/rpc/apply_wa_cloud_status', body: {
+      p_operation_id: operationId, p_message_id: 'wamid.synthetic_out', p_status: 'delivered', p_phone: phone,
+    } },
+  ])
 })
