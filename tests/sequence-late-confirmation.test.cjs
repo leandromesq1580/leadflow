@@ -4,7 +4,10 @@ const fs = require('node:fs')
 const vm = require('node:vm')
 const ts = require('typescript')
 function load(fetch, signals) {
-  const box = { exports: {}, require: () => { throw Error('unexpected dependency') }, fetch, AbortSignal: {
+  const box = { exports: {}, require: name => {
+    assert.ok(['./official-whatsapp', './wa-cloud'].includes(name), name)
+    return {}
+  }, fetch, AbortSignal: {
     timeout(ms) { signals.push(ms); const c = new AbortController(); setTimeout(() => c.abort(), ms / 1000).unref(); return c.signal },
   }, setTimeout, console }
   vm.runInNewContext(ts.transpileModule(fs.readFileSync('src/lib/sequence-batch.ts', 'utf8'), {

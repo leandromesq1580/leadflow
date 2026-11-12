@@ -1,10 +1,11 @@
 import { nextSendAt, validateAIConfig, type AISequenceConfig } from './ai-sequence-config'
 import { generateSequenceCopy, generationStopReason } from './ai-sequence-copy'
-import type { LeadLanguageFields } from './lead-message-locale'
+import { leadMessageLocale, type LeadLanguageFields } from './lead-message-locale'
 import type { createAdminClient } from './supabase/admin'
-import { getBridgeForBuyer, type BridgeConfig } from './wa-bridge'
+import { getBridgeForBuyer } from './wa-bridge'
 import { checkSendRate } from './send-guard'
-import { SequenceWaiting, SequenceRejectedSettled, persistSequenceConfirmation, sendSequenceMessage, verifiedSequenceBridge } from './sequence-batch'
+import { SequenceWaiting, SequenceRejectedSettled, persistSequenceConfirmation, resolveSequenceSender, sendSequenceMessage, verifiedSequenceBridge } from './sequence-batch'
+import { beginCloudSequence, dispatchCloudMessage, prepareCloudMessage, type CloudMessagePlan } from './wa-cloud-automation'
 export interface AIEnrollment { id:string; buyer_id:string; lead_id:string; sequence_id:string; lease_token:string; current_step:number; recent_choices:string[]; enrolled_at?:string }
 type Context = {config:AISequenceConfig;lead:LeadLanguageFields;phone:string}
 type Sent = {id:string;from:string;to:string}
@@ -12,7 +13,7 @@ export interface AIEnginePorts {
   now(): Date
   claim(id:string):Promise<AIEnrollment|null>
   context(e:AIEnrollment):Promise<Context>
-  ready(e:AIEnrollment):Promise<void>
+  ready(e:AIEnrollment, ctx?:Context):Promise<{ approvedBody:string } | void>
   generate(c:AISequenceConfig,l:LeadLanguageFields,recent:string[]):Promise<{body:string;choice:string}>
   begin(e:AIEnrollment,body:string):Promise<boolean>
   send(e:AIEnrollment,c:Context,body:string):Promise<Sent>
@@ -32,9 +33,11 @@ export async function runAIEnrollment(id:string, io:AIEnginePorts):Promise<boole
     let allowed=nextSendAt(now,c)
     if(allowed.getTime()>now.getTime()){await io.defer(e,'outside_window',allowed,false);return false}
     phase='bridge_or_rate_unavailable'
-    await io.ready(e)
+    const ready=await io.ready(e,ctx)
     phase='generation_unavailable'
-    const generated=await io.generate(c,ctx.lead,e.recent_choices || [])
+    const generated=ready
+      ? {body:ready.approvedBody,choice:`draft:v1:${ready.approvedBody}`}
+      : await io.generate(c,ctx.lead,e.recent_choices || [])
     now=io.now();allowed=nextSendAt(now,c)
     if(allowed.getTime()>now.getTime()){await io.defer(e,'outside_window',allowed,false);return false}
     // This is the final atomic permission check. No recall is possible after transport starts.
@@ -53,8 +56,12 @@ export async function runAIEnrollment(id:string, io:AIEnginePorts):Promise<boole
 }
 
 type Db=ReturnType<typeof createAdminClient>
+type AITransport =
+  | { kind: 'bridge'; bridge: Awaited<ReturnType<typeof verifiedSequenceBridge>> }
+  | { kind: 'cloud'; plan: CloudMessagePlan }
+
 export function aiEnginePorts(db:Db):AIEnginePorts {
-  let bridge:(BridgeConfig & {phone:string})|null=null
+  let transport: AITransport | null = null
   async function rpc(name:string,args:Record<string,unknown>,signal?:AbortSignal) {
     const request=db.rpc(name,args)
     const {data,error}=await (signal && typeof request.abortSignal==='function' ? request.abortSignal(signal) : request)
@@ -72,21 +79,48 @@ export function aiEnginePorts(db:Db):AIEnginePorts {
       if(se||le||!s||!l?.phone)throw new Error('Context unavailable')
       return {config:validateAIConfig(s.ai_config),lead:l,phone:l.phone}
     },
-    ready:async e=>{
+    ready:async (e, ctx)=>{
+      transport = null
       const rate=await checkSendRate(db,e.buyer_id)
       if(!rate.ok)throw new SequenceWaiting()
-      bridge=await verifiedSequenceBridge(await getBridgeForBuyer(db,e.buyer_id))
-      const allowed=await rpc('preflight_sequence_batch',{p_id:e.id,p_token:e.lease_token,p_sender:bridge.phone})
+      const sender = await resolveSequenceSender(await getBridgeForBuyer(db,e.buyer_id), e.buyer_id)
+      const allowed=await rpc('preflight_sequence_batch',{p_id:e.id,p_token:e.lease_token,p_sender:sender.phone})
       if(!allowed)throw new SequenceWaiting()
+      if (sender.kind === 'bridge') {
+        transport = sender
+        return
+      }
+
+      const locale = leadMessageLocale(ctx?.lead)
+      if (!ctx || !locale) throw new SequenceWaiting()
+      const plan = await prepareCloudMessage(db, {
+        phone: ctx.phone, leadId: e.lead_id, buyerId: e.buyer_id,
+        templateKey: `ai:${e.sequence_id}:${e.current_step}`, locale,
+      })
+      if (!plan) throw new SequenceWaiting()
+      transport = { kind: 'cloud', plan }
+      if (plan.body !== null) return { approvedBody: plan.body }
     },
     generate:generateSequenceCopy,
     begin:async(e,body)=>{
-      bridge=await verifiedSequenceBridge(bridge)
+      if (transport?.kind === 'cloud') {
+        const allowed = await beginCloudSequence(db, transport.plan, { enrollmentId: e.id, operationId: e.lease_token, body })
+        if (!allowed) throw new SequenceWaiting()
+        return true
+      }
+
+      const bridge=await verifiedSequenceBridge(transport?.bridge ?? null)
+      transport = { kind: 'bridge', bridge }
       return (await rpc('begin_sequence_batch',{p_id:e.id,p_token:e.lease_token,p_sender:bridge.phone,p_body:body}))?.allowed===true
     },
     send:async(e,ctx,body)=>{
-      if(!bridge || bridge.ownerBuyerId!==e.buyer_id)throw new Error('No own bridge')
       const to=ctx.phone.replace(/\D/g,'')
+      if (transport?.kind === 'cloud') {
+        const sent = await dispatchCloudMessage(db, transport.plan, { operationId: e.lease_token, body, alreadyReserved: true })
+        return { ...sent, to }
+      }
+      const bridge=transport?.bridge
+      if(!bridge || bridge.ownerBuyerId!==e.buyer_id)throw new Error('No own bridge')
       const id=await sendSequenceMessage(bridge,e,to,body,rpc,20000)
       return {id,from:bridge.phone,to}
     },
