@@ -122,10 +122,11 @@ test('admin block stops actual TwiML transcription but keeps ordinary Dial and r
   assert.ok(xml.includes('<Dial'))
   assert.ok(xml.includes('record-from-answer-dual'))
 })
-test('admin grant activates actual TwiML without a subscription; other buyers cannot borrow its identity', async () => {
+test('transcrição ao vivo fica desligada para todos; a gravação continua', async () => {
   const f = fixture({ [`buyer_feature:ia_ligacao:${buyer}`]: { mode: 'enabled' } })
-  assert.ok((await (await outbound(f).POST(voiceRequest())).text()).includes('<Transcription'))
-  assert.ok(!(await (await outbound(f).POST(voiceRequest(other, buyer))).text()).includes('<Transcription'))
+  const xml = await (await outbound(f).POST(voiceRequest())).text()
+  assert.ok(!xml.includes('<Transcription'))
+  assert.ok(xml.includes('record-from-answer-dual'))
 })
 test('IA gate fails closed on storage failure, preserving the phone call', async () => {
   const f = fixture(); f.fail()
