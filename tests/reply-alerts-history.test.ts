@@ -7,7 +7,9 @@ import { ModuleKind, transpileModule } from 'typescript'
 // Real route code with only the network/auth boundaries replaced.
 function route(file: string, tables: Record<string, Record<string, unknown>[]>, pageCap = 1000, failTable = '', metadata: { failAt?: number; maxIn?: number; broken?: 'repeat' | 'reverse'; trace?: { ids: unknown[]; after: string | null; count: number }[] } = {}) {
   let metadataCalls = 0
-  const db = { from(table: string) {
+  // These fixtures contain only WhatsApp/client messages. New SMS RPC is an
+  // empty independent source; all original pagination/error assertions remain.
+  const db = { rpc: async () => ({ data: [], error: null }), from(table: string) {
     const filters: ((r: Record<string, unknown>) => boolean)[] = []
     let sort = 'id', asc = true, cap = pageCap
     let ids: unknown[] = [], after: string | null = null

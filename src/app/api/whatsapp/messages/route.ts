@@ -6,6 +6,7 @@ import { getBridgeForBuyer } from '@/lib/wa-bridge'
 import { callerBuyer, canActAs } from '@/lib/api-auth'
 import { renderTemplate } from '@/lib/template-render'
 import { readWhatsAppHistory, compareTimestamp } from '@/lib/wa-message-history'
+import { readSmsInbox, markSmsInboxRead } from '@/lib/sms-inbox'
 
 /** GET /api/whatsapp/messages?lead_id=X&buyer_id=Y — thread pra lead (com validacao de ownership) */
 export async function GET(request: NextRequest) {
@@ -41,39 +42,12 @@ export async function GET(request: NextRequest) {
     return q
   }).catch(() => null)
   if (!data) return NextResponse.json({ error: 'Conversation unavailable' }, { status: 503 })
-  data.sort(compareTimestamp(m => m.sent_at, 'asc'))
-
-  // A conversa do lead inclui os SMS (caso Robson, 2026-08-10): o lead respondia o
-  // SMS automático e a resposta ficava invisível — só o admin sabia, o dono do lead
-  // não via em lugar nenhum. Aqui os SMS entram na MESMA linha do tempo, marcados
-  // com channel:'sms' (a tela mostra a etiqueta; o composer continua só WhatsApp).
-  // Só o que materializou de verdade: sent/delivered/received/failed — agendado e
-  // cancelado não são eventos da conversa. Tolerante: sem tabela, segue só WhatsApp.
-  if (leadId) {
-    try {
-      const { data: sms } = await db.from('sms_messages')
-        .select('id, direction, from_phone, to_phone, body, status, created_at')
-        .eq('lead_id', leadId)
-        .in('status', ['sent', 'delivered', 'received', 'failed'])
-        .order('created_at', { ascending: true }).limit(200)
-      const smsMsgs = (sms || []).map(s => ({
-        id: `sms-${s.id}`,
-        direction: s.direction === 'in' ? 'in' : 'out',
-        body: s.body || '',
-        from_phone: s.from_phone || '',
-        to_phone: s.to_phone || '',
-        sent_at: s.created_at,
-        status: s.status,
-        read_at: s.created_at,   // SMS não participa do contador de não lidas
-        channel: 'sms',
-      }))
-      const tudo = [...(data || []), ...smsMsgs]
-        .sort((a: any, b: any) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime())
-      return NextResponse.json({ messages: tudo })
-    } catch { /* segue só com whatsapp */ }
-  }
-
-  return NextResponse.json({ messages: data || [] })
+  const sms = await readSmsInbox(db, {
+    buyerId: leadId ? caller.id : buyerId!, leadId, admin: !!leadId && caller.isAdmin,
+  }, !leadId).catch(() => null)
+  if (!sms) return NextResponse.json({ error: 'Conversation unavailable' }, { status: 503 })
+  const messages = [...data, ...sms].sort(compareTimestamp(m => m.sent_at, 'asc'))
+  return NextResponse.json({ messages }, { headers: { 'Cache-Control': 'private, no-store' } })
 }
 
 function classifyMedia(mime: string): string {
@@ -445,8 +419,11 @@ export async function DELETE(request: NextRequest) {
 
 /** PATCH /api/whatsapp/messages — mark as read */
 export async function PATCH(request: NextRequest) {
-  const { lead_id, buyer_id } = await request.json()
+  const { lead_id, buyer_id, sms_ids } = await request.json()
   if (!lead_id && !buyer_id) return NextResponse.json({ error: 'Missing' }, { status: 400 })
+  if (sms_ids !== undefined && (!Array.isArray(sms_ids) || sms_ids.length > 10000 || sms_ids.some(id => typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)))) {
+    return NextResponse.json({ error: 'Invalid sms_ids' }, { status: 400 })
+  }
 
   const db = createAdminClient()
   const caller = await callerBuyer(db)
@@ -462,6 +439,14 @@ export async function PATCH(request: NextRequest) {
   if (lead_id) query = query.eq('lead_id', lead_id)
   if (buyer_id) query = query.eq('buyer_id', buyer_id)
 
-  await query
+  const { error } = await query
+  if (error) return NextResponse.json({ error: 'Read state unavailable' }, { status: 503 })
+  try {
+    if (!lead_id || sms_ids !== undefined) await markSmsInboxRead(db, {
+      buyerId: buyer_id || caller.id, leadId: lead_id, admin: !!lead_id && !buyer_id && caller.isAdmin,
+    }, sms_ids === undefined ? undefined : Array.from(new Set<string>(sms_ids)))
+  } catch {
+    return NextResponse.json({ error: 'Read state unavailable' }, { status: 503 })
+  }
   return NextResponse.json({ success: true })
 }

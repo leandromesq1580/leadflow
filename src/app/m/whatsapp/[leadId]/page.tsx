@@ -10,7 +10,7 @@ import { getInitials } from '@/lib/utils'
 import { LeadLanguageBadge } from '@/components/lead-language-badge'
 import type { LeadLanguageFields } from '@/lib/lead-message-locale'
 
-interface Msg { id: string; direction: 'in' | 'out'; body: string | null; sent_at: string; status?: string; media_url?: string | null; media_type?: string | null; wa_message_id?: string | null; channel?: string }
+interface Msg { id: string; direction: 'in' | 'out'; body: string | null; sent_at: string; status?: string; media_url?: string | null; media_type?: string | null; wa_message_id?: string | null; channel?: string; read_at?: string | null }
 
 function avatarBg(name: string) {
   const h = ((name?.charCodeAt(0) || 65) * 37) % 360
@@ -39,13 +39,30 @@ export default function MobileThread() {
 
   useEffect(() => {
     if (!leadId) return
+    let active = true
+    let sequence = 0
+    setMsgs(null)
     fetch('/api/m/team-context', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d?.buyer_id) setBuyerId(d.buyer_id) }).catch(() => {})
     fetch(`/api/leads/${leadId}`, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d?.lead) setLead(d.lead) }).catch(() => {})
-    const load = () => fetch(`/api/whatsapp/messages?lead_id=${leadId}`, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d) setMsgs(d.messages || []) }).catch(() => {})
+    const load = async () => {
+      const current = ++sequence
+      try {
+        const response = await fetch(`/api/whatsapp/messages?lead_id=${leadId}`, { cache: 'no-store' })
+        if (!response.ok) return
+        const data = await response.json()
+        if (!active || current !== sequence || !Array.isArray(data.messages)) return
+        const messages: Msg[] = data.messages
+        setMsgs(messages)
+        if (document.visibilityState !== 'visible' || !messages.some(m => m.direction === 'in' && !m.read_at)) return
+        const read = await fetch('/api/whatsapp/messages', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lead_id: leadId, sms_ids: messages.filter(m => m.channel === 'sms' && m.direction === 'in' && !m.read_at).map(m => m.id.slice(4)) }) })
+        if (read.ok && active) window.dispatchEvent(new Event('wa-unread-changed'))
+      } catch {}
+    }
     load()
-    fetch('/api/whatsapp/messages', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lead_id: leadId }) }).catch(() => {})
     const timer = setInterval(load, 5000)
-    return () => clearInterval(timer)
+    const visible = () => { if (document.visibilityState === 'visible') void load() }
+    document.addEventListener('visibilitychange', visible)
+    return () => { active = false; clearInterval(timer); document.removeEventListener('visibilitychange', visible) }
   }, [leadId])
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'auto' }) }, [msgs?.length])

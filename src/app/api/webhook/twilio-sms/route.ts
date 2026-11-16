@@ -5,7 +5,24 @@ import { notifyGroupSmsReply, notifySmsReplyToOwner } from '@/lib/notifications'
 import { pushToBuyer } from '@/lib/push-notify'
 import { localeDoBuyer, trad } from '@/lib/buyer-locale'
 
-type LeadCandidate = { id: string; name: string | null; assigned_to: string | null; created_at: string }
+type LeadCandidate = { id: string; name: string | null; assigned_to: string | null; assigned_to_member?: string | null; created_at: string }
+
+// Same precedence as WhatsApp: member's own account wins over the agency.
+// A failed lookup is NOT evidence that the member has no account.
+async function smsOwner(db: ReturnType<typeof createAdminClient>, lead: LeadCandidate | null) {
+  if (lead?.assigned_to_member) {
+    const { data: member, error } = await db.from('team_members').select('auth_user_id')
+      .eq('id', lead.assigned_to_member).maybeSingle()
+    if (error) throw error
+    if (member?.auth_user_id) {
+      const { data: buyer, error: buyerError } = await db.from('buyers').select('id')
+        .eq('auth_user_id', member.auth_user_id).maybeSingle()
+      if (buyerError) throw buyerError
+      if (buyer?.id) return buyer.id as string
+    }
+  }
+  return lead?.assigned_to || null
+}
 
 /**
  * Escolhe QUAL cadastro de lead recebe a resposta quando o telefone bate em
@@ -18,11 +35,12 @@ async function resolveLeadForInboundSms(
   db: ReturnType<typeof createAdminClient>, candidates: LeadCandidate[]
 ): Promise<LeadCandidate | null> {
   if (candidates.length <= 1) return candidates[0] || null
-  const { data: outbound } = await db.from('sms_messages')
+  const { data: outbound, error } = await db.from('sms_messages')
     .select('lead_id, created_at')
     .eq('direction', 'out')
     .in('lead_id', candidates.map(c => c.id))
     .order('created_at', { ascending: false })
+  if (error) throw error
   const conversed = new Set((outbound || []).map((r: { lead_id: string }) => r.lead_id))
   const withHistory = candidates.filter(c => conversed.has(c.id))
   if (withHistory.length === 1) return withHistory[0]
@@ -71,7 +89,8 @@ export async function POST(request: NextRequest) {
   const db = createAdminClient()
 
   // Dedupe por SID (Twilio re-tenta o webhook em timeout)
-  const { data: dup } = await db.from('sms_messages').select('id').eq('twilio_sid', sid).maybeSingle()
+  const { data: dup, error: dedupeError } = await db.from('sms_messages').select('id').eq('twilio_sid', sid).maybeSingle()
+  if (dedupeError) return new Response('Inbound lookup unavailable', { status: 503 })
   if (dup) return twiml()
 
   // Compara os dígitos normalizados: phone pode conter espaços/parênteses.
@@ -85,12 +104,13 @@ export async function POST(request: NextRequest) {
   const phones = digits.length === 11 && digits.startsWith('1')
     ? [digits, digits.slice(1)]
     : [digits]
-  const { data: candidates } = await db.from('leads')
-    .select('id, name, phone, assigned_to, created_at')
+  const { data: candidates, error: candidatesError } = await db.from('leads')
+    .select('id, name, phone, assigned_to, assigned_to_member, created_at')
     .in('phone_digits', phones)
     .is('redelivered_to_lead_id', null) // Atendimento anterior preservado, mas encerrado pela nova entrega.
     .order('created_at', { ascending: false })
     .limit(10)
+  if (candidatesError) return new Response('Inbound lookup unavailable', { status: 503 })
   // Remetente Twilio já inclui país. Cadastro nacional de 10 dígitos é NANP;
   // um + explícito nunca ganha país inferido (ex.: +46 com dez dígitos).
   const matching = (candidates || []).filter(candidate => {
@@ -99,7 +119,14 @@ export async function POST(request: NextRequest) {
       ? `1${stored}` : stored
     return canonical === digits
   })
-  const lead = await resolveLeadForInboundSms(db, matching)
+  let lead: LeadCandidate | null
+  let ownerId: string | null
+  try {
+    lead = await resolveLeadForInboundSms(db, matching)
+    ownerId = await smsOwner(db, lead)
+  } catch {
+    return new Response('Inbound routing unavailable', { status: 503 })
+  }
 
   const { error: insertError } = await db.from('sms_messages').insert({
     lead_id: lead?.id || null,
@@ -129,7 +156,7 @@ export async function POST(request: NextRequest) {
   // Grupo admin (+ número do dono da plataforma) só vê resposta SEM dono (número desconhecido ou lead
   // não atribuído) — alguém precisa tratar. Lead de cliente: só o dono é avisado (02/11/2026: a cópia
   // levava a conversa dos leads dos clientes para o WhatsApp da equipe). Não bloqueia a resposta ao Twilio.
-  if (!lead?.assigned_to) {
+  if (!ownerId) {
     try { await notifyGroupSmsReply(lead?.name || null, digits, body) } catch (e) {
       console.error('[Twilio SMS] alerta grupo falhou:', (e as any)?.message)
     }
@@ -138,14 +165,14 @@ export async function POST(request: NextRequest) {
   // Avisa o DONO do lead (caso Robson, 2026-08-10): antes o corretor mandava SMS,
   // o lead respondia e só o admin ficava sabendo. WhatsApp pela bridge global +
   // push no celular; a resposta em si já aparece na aba Conversa (etiqueta SMS).
-  if (lead?.id && lead?.assigned_to) {
-    try { await notifySmsReplyToOwner(lead.assigned_to, lead.name || null, lead.id, body) } catch (e) {
+  if (lead?.id && ownerId) {
+    try { await notifySmsReplyToOwner(ownerId, lead.name || null, lead.id, body) } catch (e) {
       console.error('[Twilio SMS] aviso ao dono falhou:', (e as any)?.message)
     }
     try {
       // Idioma do dono do lead (settings, via buyer-locale) — webhook não tem cookie; falha vira 'pt'
-      const T = trad(await localeDoBuyer(db, lead.assigned_to))
-      await pushToBuyer(lead.assigned_to, {
+      const T = trad(await localeDoBuyer(db, ownerId))
+      await pushToBuyer(ownerId, {
         title: T(
           `💬 ${lead.name || 'Seu lead'} respondeu seu SMS`,
           `💬 ${lead.name || 'Your lead'} replied to your SMS`,
