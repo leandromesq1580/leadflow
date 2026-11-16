@@ -26,7 +26,7 @@ Esta implementação não confirma a causa de nenhum incidente específico de pr
 
 - `tests/sms-inbox-parity.test.ts`: contratos das rotas, contadores, histórico, snapshot, falhas fechadas e paginação, com dependências HTTP/DB sintéticas.
 - `tests/sms-inbox-sql.test.ts`: SQL real em PGlite; dono/membro/agência, isolamento, reatribuição, permissões, snapshot e idempotência.
-- `tests/reply-alerts-history.test.ts`: regressões anteriores preservadas; apenas o mock de banco foi estendido para representar a nova RPC como fonte SMS vazia nas fixtures WhatsApp.
+- `tests/reply-alerts-history.test.ts` e `tests/wa-brazil-phone.test.ts`: regressões anteriores preservadas; apenas os mocks de banco foram estendidos para representar a nova RPC como fonte SMS vazia nas fixtures WhatsApp, e a fixture de UI recebeu os eventos/visibilidade do navegador.
 - `tests/sms-inbox.ui.mjs`: componentes reais montados em Chromium com HTTP de loopback; sem copiar lógica de produção para o teste. Executar com `SMS_UI_TOOLS` apontando ao pacote Playwright, `SMS_UI_OUTPUT` ao diretório de evidências e, opcionalmente, `SMS_UI_CHROME` ao Chromium instalado. Realtime é stubado; a prova de eventos ocorre pelo polling/HTTP local, não pelo Supabase real.
 
 Executar suites/build somente em cópia sem `.env`, com credenciais de fixture e rede externa bloqueada, conforme o procedimento offline do projeto. Falhas gerais devem ser comparadas ao baseline, não desativadas para obter verde.

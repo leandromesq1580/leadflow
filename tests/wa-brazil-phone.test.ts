@@ -9,6 +9,7 @@ import { createClient } from '@supabase/supabase-js'
 import * as routing from '../src/lib/wa-conversation-routing'
 import * as content from '../src/lib/wa-message-content'
 import * as history from '../src/lib/wa-message-history'
+import * as smsInbox from '../src/lib/sms-inbox'
 
 // Fictional fixtures only. No bridge, database, or message transport is contacted.
 const short = '556998765432', long = '5569998765432'
@@ -63,6 +64,11 @@ function fixture(options: { leads?: any[]; buyers?: any[]; messages?: any[]; cal
     auth: { persistSession: false, autoRefreshToken: false },
     global: { fetch: async (input: any, init: any) => {
       const url = new URL(String(input)), table = url.pathname.split('/').at(-1)!
+      if (url.pathname === '/rest/v1/rpc/read_sms_inbox') {
+        assert.equal(init.method, 'POST')
+        assert.equal(rows.sms_messages.length, 0, 'WhatsApp fixtures contain no SMS')
+        return Response.json([])
+      }
       assert.ok(table in rows, `Unexpected table ${table}`)
       const params = url.searchParams, method = init.method || 'GET'
       queries.push({ table, method, params })
@@ -104,7 +110,7 @@ function fixture(options: { leads?: any[]; buyers?: any[]; messages?: any[]; cal
   const post = load('../src/app/api/webhook/wa-bridge/route.ts', dependencies).POST
   const get = load('../src/app/api/whatsapp/messages/route.ts', {
     ...dependencies, '@/lib/send-guard': {}, '@/lib/wa-bridge': {}, '@/lib/template-render': {},
-    '@/lib/wa-message-history': history,
+    '@/lib/wa-message-history': history, '@/lib/sms-inbox': smsInbox,
     '@/lib/api-auth': { callerBuyer: async () => options.caller === null ? null : options.caller || { id: 'agency', isAdmin: false }, canActAs: (caller: any, id: string) => caller.id === id },
     '@/lib/lead-ownership': { assertBuyerOwnsLead: async () => ({ ok: options.allowed !== false }) },
   }).GET
@@ -328,6 +334,8 @@ test('real UI history GET returns both phone forms by authorized lead ID, never 
       return f.get()
     },
     setInterval: () => 0, clearInterval: () => {},
+    document: Object.assign(new EventTarget(), { visibilityState: 'visible' }),
+    window: new EventTarget(),
   }).WhatsAppInbox
   Inbox({ leadId: 'lead', buyerId: 'agency' })
   const cleanup = effects[0]()
