@@ -65,27 +65,26 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const textRef = useRef<HTMLTextAreaElement>(null)
+  const activeLead = useRef(leadId)
+  activeLead.current = leadId
 
   useEffect(() => {
+    activeLead.current = leadId
+    setMessages([])
+    canalDefinido.current = false
     load()
-    // Marca como lido e dispara evento global pras sidebars/cards reagirem ja
-    fetch('/api/whatsapp/messages', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lead_id: leadId }),
-    })
-      .then(() => {
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('wa-unread-changed', { detail: { leadId } }))
-        }
-      })
-      .catch(() => {})
     // Fallback poll — 5s pra responsividade tipo chat. Realtime cobre
     // o caso normal; o poll garante que mesmo se WebSocket falhar a thread
     // atualiza em poucos segundos.
     const interval = setInterval(load, 5000)
-    return () => clearInterval(interval)
-  }, [leadId])
+    const visible = () => { if (document.visibilityState === 'visible') load() }
+    document.addEventListener('visibilitychange', visible)
+    return () => {
+      activeLead.current = ''
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', visible)
+    }
+  }, [leadId, buyerId])
 
   // Realtime: msg nova pro lead -> recarrega thread
   useRealtime(
@@ -108,7 +107,20 @@ export function WhatsAppInbox({ leadId, buyerId }: Props) {
       const r = await fetch(`/api/whatsapp/messages?lead_id=${leadId}`)
       if (r.ok) {
         const d = await r.json()
-        setMessages(d.messages || [])
+        if (activeLead.current !== leadId) return
+        const loaded: Message[] = d.messages || []
+        setMessages(loaded)
+        // Only a successfully loaded, visible thread acknowledges SMS. The IDs
+        // are the displayed snapshot: arrivals after GET stay unread until loaded.
+        if (document.visibilityState === 'visible' && loaded.some(m => m.direction === 'in' && !m.read_at)) {
+          const read = await fetch('/api/whatsapp/messages', {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lead_id: leadId, sms_ids: loaded.filter(m => m.channel === 'sms' && m.direction === 'in' && !m.read_at).map(m => m.id.slice(4)) }),
+          })
+          if (read.ok && activeLead.current === leadId) {
+            window.dispatchEvent(new CustomEvent('wa-unread-changed', { detail: { leadId } }))
+          }
+        }
         if (!canalDefinido.current) {
           const entradas = (d.messages || []).filter((m: any) => m.direction === 'in')
           const ultima = entradas[entradas.length - 1]

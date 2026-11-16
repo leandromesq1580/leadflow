@@ -52,8 +52,9 @@ export function TopBar({ buyerId }: { buyerId?: string }) {
     if (!buyerId) return
     let vivo = true
     let loading = false
+    let pending = false
     const carregar = async () => {
-      if (loading) return
+      if (loading) { pending = true; return }
       loading = true
       try {
         const [wa, com, reu, spd] = await Promise.all([
@@ -80,11 +81,20 @@ export function TopBar({ buyerId }: { buyerId?: string }) {
         })
       } catch {
         if (vivo) setN(previous => ({...previous, unavailable: true}))
-      } finally { loading = false }
+      } finally {
+        loading = false
+        if (pending && vivo) { pending = false; void carregar() }
+      }
     }
     carregar()
     const timer = setInterval(carregar, 60_000)
-    return () => { vivo = false; clearInterval(timer) }
+    window.addEventListener('wa-unread-changed', carregar)
+    window.addEventListener('focus', carregar)
+    return () => {
+      vivo = false; clearInterval(timer)
+      window.removeEventListener('wa-unread-changed', carregar)
+      window.removeEventListener('focus', carregar)
+    }
   }, [buyerId])
 
   useEffect(() => {
@@ -194,8 +204,8 @@ export function TopBar({ buyerId }: { buyerId?: string }) {
                   ? L('1 lead esperando o primeiro contato', '1 lead waiting for first contact', '1 lead esperando el primer contacto')
                   : L(`${n.semContato} leads esperando o primeiro contato`, `${n.semContato} leads waiting for first contact`, `${n.semContato} leads esperando el primer contacto`)} />}
                 {n.wa > 0 && <Item href="/dashboard/whatsapp" icone="💬" cor="var(--ok-soft)" texto={n.wa === 1
-                  ? L('1 conversa não lida no WhatsApp', '1 unread WhatsApp conversation', '1 conversación sin leer en WhatsApp')
-                  : L(`${n.wa} conversas não lidas no WhatsApp`, `${n.wa} unread WhatsApp conversations`, `${n.wa} conversaciones sin leer en WhatsApp`)} />}
+                  ? L('1 mensagem não lida · WhatsApp / SMS', '1 unread message · WhatsApp / SMS', '1 mensaje sin leer · WhatsApp / SMS')
+                  : L(`${n.wa} mensagens não lidas · WhatsApp / SMS`, `${n.wa} unread messages · WhatsApp / SMS`, `${n.wa} mensajes sin leer · WhatsApp / SMS`)} />}
                 {n.reunioes > 0 && <Item href="/dashboard/appointments" icone="📅" cor="var(--accent-light)" texto={n.reunioes === 1
                   ? L('1 compromisso nos próximos 90 min', '1 appointment in the next 90 min', '1 cita en los próximos 90 min')
                   : L(`${n.reunioes} compromissos nos próximos 90 min`, `${n.reunioes} appointments in the next 90 min`, `${n.reunioes} citas en los próximos 90 min`)} />}

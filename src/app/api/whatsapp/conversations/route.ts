@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { callerBuyer, canActAs } from '@/lib/api-auth'
 import { leadMessageLocale, type LeadMessageLocale } from '@/lib/lead-message-locale'
 import { readWhatsAppHistory, readConversationMetadata, compareTimestamp } from '@/lib/wa-message-history'
+import { readSmsInbox } from '@/lib/sms-inbox'
 
 interface Conversation {
   lead_id: string
@@ -41,11 +42,13 @@ export async function GET(request: NextRequest) {
     return q
   }).catch(() => null)
   if (!messages) return NextResponse.json({ error: 'Conversations unavailable' }, { status: 503 })
-  messages.sort(compareTimestamp(m => m.sent_at, 'desc'))
+  const sms = await readSmsInbox(db, { buyerId }).catch(() => null)
+  if (!sms) return NextResponse.json({ error: 'Conversations unavailable' }, { status: 503 })
+  const allMessages = [...messages, ...sms].sort(compareTimestamp(m => m.sent_at, 'desc'))
 
   // Agrupa por lead_id: pega a primeira msg (mais recente) + conta unread
   const byLead: Record<string, { last: any; unread: number }> = {}
-  for (const m of messages || []) {
+  for (const m of allMessages) {
     if (!m.lead_id) continue
     if (!byLead[m.lead_id]) byLead[m.lead_id] = { last: m, unread: 0 }
     if (m.direction === 'in' && !m.read_at) byLead[m.lead_id].unread++

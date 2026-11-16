@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { callerBuyer, canActAs } from '@/lib/api-auth'
 import { readWhatsAppHistory } from '@/lib/wa-message-history'
+import { readSmsInbox } from '@/lib/sms-inbox'
 
 /** Only actual, unread customer replies. Historical empty events stay in storage. */
 export async function GET(request: NextRequest) {
@@ -21,7 +22,8 @@ export async function GET(request: NextRequest) {
       return q
     })
     const counts: Record<string, number> = {}
-    for (const row of data) if (row.lead_id) counts[row.lead_id] = (counts[row.lead_id] || 0) + 1
+    const sms = await readSmsInbox(db, { buyerId }, true)
+    for (const row of [...data, ...sms]) if (row.lead_id) counts[row.lead_id] = (counts[row.lead_id] || 0) + 1
     const total = Object.values(counts).reduce((s, n) => s + n, 0)
     return NextResponse.json({ counts, total }, { headers: { 'Cache-Control': 'private, no-store' } })
   } catch {
