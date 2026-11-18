@@ -24,6 +24,10 @@ export function Softphone() {
   const t = useT()
   const L = (pt: string, en: string, es: string) => t._locale === 'en' ? en : t._locale === 'es' ? es : pt
   const [status, setStatus] = useState<Status>('off')
+  // Aviso da última ligação: fica DENTRO do painel e some sozinho. alert() travava a tela e a pessoa atualizava a página.
+  const noticeRef = useRef<{ text: string }>({ text: '' })
+  const [notice, setNotice] = useState('')
+  function showNotice(text: string) { noticeRef.current = { text }; setNotice(text) }
   const [info, setInfo] = useState<{ name?: string; phone?: string }>({})
   const [seconds, setSeconds] = useState(0)
   const [muted, setMuted] = useState(false)
@@ -182,7 +186,9 @@ export function Softphone() {
       : failure.reason === 'connection'
       ? L('A conexão com o serviço de ligações falhou. Tente novamente; se persistir, envie este aviso ao suporte.', 'The connection to the calling service failed. Try again; if it persists, send this notice to support.', 'La conexión con el servicio de llamadas falló. Inténtalo de nuevo; si persiste, envía este aviso al soporte.')
       : L('A ligação falhou. Envie este aviso ao suporte para verificarmos a causa.', 'The call failed. Send this notice to support so we can check the cause.', 'La llamada falló. Envía este aviso al soporte para revisar la causa.')
-    alert(failure.code === null ? message : `${message} (${failure.code})`)
+    const text = failure.code === null ? message : `${message} (${failure.code})`
+    showNotice(text)
+    setTimeout(() => { if (mountedRef.current && noticeRef.current.text === text) { noticeRef.current = { text: '' }; setNotice('') } }, 20000)
   }
 
   function endUi() {
@@ -202,7 +208,8 @@ export function Softphone() {
   function toggleMute() { const c = callRef.current; if (!c) return; const m = !muted; try { c.mute(m) } catch {}; setMuted(m) }
 
   const active = status === 'connecting' || status === 'ringing' || status === 'incall'
-  if (!active) return null
+  // O aviso nasce quando a ligação TERMINA: o painel precisa continuar visível para ele aparecer.
+  if (!active && !noticeRef.current.text) return null
 
   const label = status === 'connecting' ? L('Conectando…', 'Connecting…', 'Conectando…') : status === 'ringing' ? L('Chamando…', 'Ringing…', 'Llamando…') : fmt(seconds)
 
@@ -222,7 +229,11 @@ export function Softphone() {
           <p style={{ margin: 0, fontSize: 12, color: status === 'incall' ? '#34d399' : 'var(--fg-muted)' }}>{label}</p>
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 8 }}>
+      {noticeRef.current.text && <div style={{ marginBottom: 10, background: 'rgba(245,158,11,0.16)', border: '1px solid rgba(245,158,11,0.5)', borderRadius: 10, padding: '8px 10px', fontSize: 12, lineHeight: 1.45, color: '#fde68a' }}>
+        {noticeRef.current.text}
+        <button onClick={() => { noticeRef.current = { text: '' }; setNotice('') }} style={{ display: 'block', marginTop: 6, background: 'none', border: 'none', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', padding: 0 }}>{L('Fechar', 'Close', 'Cerrar')}</button>
+      </div>}
+      {active && <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={toggleMute} disabled={status !== 'incall'} style={{
           flex: 1, height: 40, borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)',
           background: muted ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.06)', color: 'var(--bg-card)', fontSize: 13, fontWeight: 600, cursor: status === 'incall' ? 'pointer' : 'default', opacity: status === 'incall' ? 1 : 0.5,
@@ -231,7 +242,7 @@ export function Softphone() {
           flex: 1, height: 40, borderRadius: 10, border: 'none',
           background: '#ef4444', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
         }}>{L('Desligar', 'Hang up', 'Colgar')}</button>
-      </div>
+      </div>}
       {leadIdRef.current && <SmsChoice leadId={leadIdRef.current} L={L} />}
     </div>
     </>
