@@ -50,6 +50,8 @@ function realEngineFixture() {
   const dependencies: Record<string, unknown> = {
     './ai-sequence-config': config,
     './sequence-batch': batch,
+    './lead-message-locale': {},
+    './wa-cloud-automation': {},
     './wa-bridge': { getBridgeForBuyer: async () => ownBridge },
     './send-guard': { checkSendRate: async () => ({ ok: true }) },
     './ai-sequence-copy': { ...copy, generateSequenceCopy: (...args: Parameters<typeof copy.generateSequenceCopy>) => {

@@ -1,7 +1,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { renderTemplate } from '@/lib/template-render'
 import { getBridgeForBuyer } from '@/lib/wa-bridge'
-import { SequenceWaiting, SequenceRejectedSettled, persistSequenceConfirmation, sendSequenceMessage, verifiedSequenceBridge } from './sequence-batch'
+import { SequenceWaiting, SequenceRejectedSettled, persistSequenceConfirmation, resolveSequenceSender, sendSequenceMessage } from './sequence-batch'
+import { beginCloudSequence, dispatchCloudMessage, prepareCloudMessage, type CloudMessagePlan } from './wa-cloud-automation'
 import { checkSendRate } from '@/lib/send-guard'
 import { Resend } from 'resend'
 import { localeDoBuyer, trad } from '@/lib/buyer-locale'
@@ -208,6 +209,7 @@ export async function processSequences(options: { mode?: 'legacy' | 'ai_until_re
 type LegacyEnrollment = { id:string; buyer_id:string; lead_id:string; sequence_id:string; current_step:number; lease_token:string; enrolled_at?:string }
 type Receipt = {id:string;from:string;to:string}
 type Db = ReturnType<typeof createAdminClient>
+type BeginStep = (sender: string | null, body: string, cloud?: CloudMessagePlan) => Promise<void>
 async function sequenceRpc(db:Db,name:string,args:Record<string,unknown>,signal?:AbortSignal) {
   const request=db.rpc(name,args)
   const {data,error}=await (signal && typeof request.abortSignal==='function' ? request.abortSignal(signal) : request)
@@ -222,9 +224,11 @@ export async function runLegacyEnrollment(id:string,db:Db=createAdminClient()):P
   try {
     const {data:steps,error}=await db.from('sequence_steps').select('*').eq('sequence_id',e.sequence_id).order('step_order')
     if(error)throw new Error('Steps unavailable')
-    const begin=async(sender:string|null,body:string)=>{
-      const result=await sequenceRpc(db,'begin_sequence_batch',{p_id:id,p_token:e.lease_token,p_sender:sender,p_body:body})
-      if(!result?.allowed)throw new SequenceWaiting()
+    const begin: BeginStep = async (sender, body, cloud) => {
+      const allowed = cloud
+        ? await beginCloudSequence(db, cloud, { enrollmentId: id, operationId: e.lease_token, body })
+        : (await sequenceRpc(db, 'begin_sequence_batch', { p_id: id, p_token: e.lease_token, p_sender: sender, p_body: body }))?.allowed
+      if (!allowed) throw new SequenceWaiting()
       sending=true
     }
     const step=steps?.[e.current_step]
@@ -244,7 +248,7 @@ export async function runLegacyEnrollment(id:string,db:Db=createAdminClient()):P
     return false
   }
 }
-async function executeStep(step: { step_type: string; template_id?: string | null; custom_body?: string | null; step_order: number }, enr: LegacyEnrollment, begin:(sender:string|null,body:string)=>Promise<void>,db:Db): Promise<Receipt|null> {
+async function executeStep(step: { step_type: string; template_id?: string | null; custom_body?: string | null; step_order: number }, enr: LegacyEnrollment, begin:BeginStep,db:Db): Promise<Receipt|null> {
 
   if (step.step_type === 'wait') { await begin(null,''); return null }
 
@@ -278,37 +282,46 @@ async function executeStep(step: { step_type: string; template_id?: string | nul
   // Comprador suspenso: não dispara mensagem (sequência fica parada até reativar)
   if (agent.is_active === false) throw new SequenceWaiting()
 
-  let body = ''
-  let type: 'whatsapp' | 'email' = 'whatsapp'
-  let subject: string | null = null
+  const template = step.template_id
+    ? (await db.from('templates').select('*').eq('id', step.template_id).single()).data
+    : step.custom_body ? { name: '', body: step.custom_body, type: 'whatsapp' } : null
+  if (!template) throw new Error(step.template_id ? 'Template not found' : 'Step has no template or custom_body')
+  const type: 'whatsapp' | 'email' = template.type
 
-  if (step.template_id) {
-    const { data: tpl } = await db.from('templates').select('*').eq('id', step.template_id).single()
-    if (!tpl) throw new Error('Template not found')
-    const localizedTemplate = await localizeLeadTemplate(db, tpl, lead)
-    body = renderTemplate(localizedTemplate.body, lead, agent, loc)
-    type = localizedTemplate.type
-    subject = localizedTemplate.subject ? renderTemplate(localizedTemplate.subject, lead, agent, loc) : null
-  } else if (step.custom_body) {
-    const copy = await localizeLeadTemplate(db, { name: '', body: step.custom_body }, lead)
-    body = renderTemplate(copy.body, lead, agent, loc)
-  } else {
-    throw new Error('Step has no template or custom_body')
-  }
-
-  let receipt:Receipt|null=null
+  let sender: Awaited<ReturnType<typeof resolveSequenceSender>> | null = null
+  let plan: CloudMessagePlan | null = null
   if (type === 'whatsapp') {
     if (!lead.phone) throw new Error('No phone')
-    // Envia pela bridge do DONO do lead (não pela global/Regiane)
-    // 🛑 LIMITADOR por conta — sequência também respeita o teto (2026-07-31)
     const rate = await checkSendRate(db, enr.buyer_id)
     if (!rate.ok) throw new SequenceWaiting()
-    const sb = await verifiedSequenceBridge(await getBridgeForBuyer(db, enr.buyer_id))
-    if(sb.ownerBuyerId!==enr.buyer_id)throw new SequenceWaiting()
-    await begin(sb.phone,body)
+    sender = await resolveSequenceSender(await getBridgeForBuyer(db, enr.buyer_id), enr.buyer_id)
+    if (sender.kind === 'cloud') {
+      plan = await prepareCloudMessage(db, {
+        phone: lead.phone, leadId: enr.lead_id, buyerId: enr.buyer_id,
+        templateKey: `legacy:${enr.sequence_id}:${step.step_order}`, locale: loc,
+      })
+      if (!plan) throw new SequenceWaiting()
+    }
+  }
+
+  let body = plan?.body ?? null
+  let subject: string | null = null
+  if (body === null) {
+    const copy = await localizeLeadTemplate(db, template, lead)
+    body = renderTemplate(copy.body, lead, agent, loc)
+    subject = copy.subject ? renderTemplate(copy.subject, lead, agent, loc) : null
+  }
+
+  let receipt: Receipt | null = null
+  if (plan && sender) {
+    await begin(sender.phone, body, plan)
+    const sent = await dispatchCloudMessage(db, plan, { operationId: enr.lease_token, body, alreadyReserved: true })
+    receipt = { ...sent, to: lead.phone.replace(/\D/g, '') }
+  } else if (sender?.kind === 'bridge') {
+    await begin(sender.phone, body)
     const cleanPhone = lead.phone.replace(/[\s\-()]/g, '').replace(/^\+/, '')
-    const waId=await sendSequenceMessage(sb,enr,cleanPhone,body,(name,args)=>sequenceRpc(db,name,args),15000)
-    receipt={id:waId,from:sb.phone,to:cleanPhone}
+    const waId = await sendSequenceMessage(sender.bridge, enr, cleanPhone, body, (name,args) => sequenceRpc(db,name,args), 15000)
+    receipt = { id: waId, from: sender.phone, to: cleanPhone }
   } else {
     if (!lead.email) throw new Error('No email')
     const resendKey = (process.env.RESEND_API_KEY || '').trim()

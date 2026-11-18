@@ -1,4 +1,6 @@
 import type { BridgeConfig } from './wa-bridge'
+import { OFFICIAL_WHATSAPP_NUMBER } from './official-whatsapp'
+import { cloudAutomationEnabled, isCompanyWhatsAppSender } from './wa-cloud'
 
 export class SequenceWaiting extends Error {
   constructor() { super('sequence_waiting') }
@@ -91,4 +93,18 @@ export async function verifiedSequenceBridge(bridge: BridgeConfig | null, reques
     // Do not retain raw network/body errors, which may contain private details.
     throw new SequenceWaiting()
   }
+}
+
+type SequenceSender =
+  | { kind: 'cloud'; phone: string }
+  | { kind: 'bridge'; phone: string; bridge: BridgeConfig & { phone: string } }
+
+/** The configured company line can move to Cloud API while its bridge is offline. */
+export async function resolveSequenceSender(bridge: BridgeConfig | null, buyerId: string): Promise<SequenceSender> {
+  if (!bridge || bridge.ownerBuyerId !== buyerId) throw new SequenceWaiting()
+  const useCloud = cloudAutomationEnabled()
+  if (useCloud && isCompanyWhatsAppSender(bridge)) return { kind: 'cloud', phone: OFFICIAL_WHATSAPP_NUMBER }
+  const verified = await verifiedSequenceBridge(bridge)
+  if (useCloud && verified.phone === OFFICIAL_WHATSAPP_NUMBER) return { kind: 'cloud', phone: OFFICIAL_WHATSAPP_NUMBER }
+  return { kind: 'bridge', phone: verified.phone, bridge: verified }
 }

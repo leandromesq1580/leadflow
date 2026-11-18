@@ -164,6 +164,10 @@ for (const engine of ['automation', 'sequence']) {
           '@/lib/lead-message-locale': locale,
           '@/lib/lead-message-template': templates,
           './sequence-batch': batch,
+          '@/lib/sequence-batch': batch,
+          '@/lib/wa-cloud': { cloudAutomationEnabled: () => false },
+          '@/lib/wa-cloud-automation': {},
+          './wa-cloud-automation': {},
           '@/lib/wa-bridge': { getBridgeForBuyer: async () => ({ url: 'https://bridge.example.invalid', key: 'fixture', phone: '14075550101',ownerBuyerId:'buyer' }), resolveSendBridge: async () => ({ url: 'https://bridge.example.invalid', key: 'fixture', phone: '14075550101' }) },
           '@/lib/send-guard': { checkSendRate: async () => ({ ok: true }) },
           '@/lib/buyer-locale': { localeDoBuyer: async () => { throw new Error('Customer send must never consult producer locale') } },
@@ -255,3 +259,62 @@ test('pipeline and mobile data retain contact language instead of dropping it be
     assert.match(readFileSync(new URL(`../src/${path}`, import.meta.url), 'utf8'), /<LeadLanguageBadge lead=/)
   }
 })
+
+for (const allowed of [true, false]) {
+  test(`final-2126 automation ${allowed ? 'uses the approved model' : 'holds without consent'} and never calls the bridge`, async t => {
+    const lead = { id: 'lead', phone: '+12025550145', lead_language: 'es' }
+    const auto = {
+      id: 'auto', buyer_id: 'buyer', name: 'Fixture', trigger_type: 'stage_entered', trigger_config: { stage_id: 'stage' },
+      action_type: 'send_template', action_config: { template_id: 'template' },
+    }
+    const db = database(q => {
+      switch (q.table) {
+        case 'automations': return { data: [auto] }
+        case 'pipelines': return { data: [{ id: 'pipe' }] }
+        case 'pipeline_leads': return { data: [{ id: 'card', lead_id: lead.id }] }
+        case 'automation_runs': return { data: q.calls.some(c => c[0] === 'insert') ? { id: 'reserved-run' } : null }
+        case 'templates': return { data: { type: 'whatsapp', name: 'Fixture', body: 'Texto legado' } }
+        case 'leads': return { data: lead }
+        case 'buyers': return { data: { is_active: true } }
+        case 'follow_ups':
+        case 'whatsapp_messages': return { data: null }
+        default: throw new Error(`Unexpected query ${q.table}`)
+      }
+    })
+    const fetchMock = t.mock.method(globalThis, 'fetch', async () => { throw new Error('Unexpected bridge request') })
+    const approved = { body: 'Texto aprobado' }
+    let dispatches = 0
+    const app = load('lib/automation-engine.ts', {
+      '@/lib/supabase/admin': { createAdminClient: () => db },
+      '@/lib/buyer-locale': {},
+      '@/lib/template-render': {},
+      '@/lib/lead-message-locale': locale,
+      '@/lib/lead-message-template': {},
+      '@/lib/system-template-i18n': systemTemplates,
+      '@/lib/sequence-batch': {},
+      '@/lib/send-guard': { checkSendRate: async () => ({ ok: true }) },
+      '@/lib/wa-bridge': { resolveSendBridge: async () => ({ phone: '17867442126', url: 'https://bridge.example.invalid' }) },
+      '@/lib/wa-cloud': { cloudAutomationEnabled: () => true, isCompanyWhatsAppSender: () => true },
+      '@/lib/wa-cloud-automation': {
+        CloudMessageWithheld: Error,
+        async prepareCloudMessage(_db: unknown, context: unknown) {
+          assert.deepEqual(context, { phone: lead.phone, leadId: lead.id, buyerId: 'buyer', templateKey: 'automation:auto', locale: 'es' })
+          return allowed ? approved : null
+        },
+        async dispatchCloudMessage(_db: unknown, plan: unknown, dispatch: unknown) {
+          assert.equal(plan, approved)
+          assert.deepEqual(dispatch, { operationId: 'reserved-run', body: approved.body })
+          dispatches++
+          return { id: 'wamid.automation', from: '17867442126', to: '12025550145' }
+        },
+      },
+      resend: {},
+    })
+    assert.deepEqual(await app.runAutomations(['buyer']), allowed ? { ran: 1, failed: 0 } : { ran: 0, failed: 1 })
+    assert.equal(dispatches, allowed ? 1 : 0)
+    assert.equal(fetchMock.mock.callCount(), 0)
+    const receipt = db.queries.find(q => q.table === 'whatsapp_messages')?.calls.find(c => c[0] === 'insert')?.[1]
+    assert.equal(receipt?.wa_message_id, allowed ? 'wamid.automation' : undefined)
+    assert.equal(receipt?.body, allowed ? approved.body : undefined)
+  })
+}
