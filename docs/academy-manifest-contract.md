@@ -1,0 +1,88 @@
+# Contrato do Manifest de Publicação — Academy (`/academy/`)
+
+Define o único insumo aceito por `scripts/academy-stage.py` para promover
+conteúdo da Academy para `public/academy/`. Nenhum arquivo é copiado sem
+constar, aprovado e com hash, neste manifesto. Testes de contrato em
+`tests/academy_staging_test.py` (16 casos, RED→GREEN).
+
+## Esquema (schemaVersion: 1)
+
+```json
+{
+  "schemaVersion": 1,
+  "publicationApproved": true,
+  "reviewedBy": "nome-ou-login-do-revisor-humano",
+  "reviewedAt": "2026-11-19T00:00:00+00:00",
+  "requiredPaths": ["index.html", "docs/aula1.html", "media/aula1.mp4"],
+  "assets": [
+    {
+      "path": "index.html",
+      "source": "index.html",
+      "sha256": "<sha256 hex do arquivo de origem>",
+      "approved": true
+    }
+  ]
+}
+```
+
+Campos exatos, sem extras e sem faltantes, em `manifest` e em cada item de
+`assets`.
+
+| Campo | Regra |
+|---|---|
+| `schemaVersion` | inteiro, deve ser `1` (sem outro tipo, ex. `"1"` rejeitado) |
+| `publicationApproved` | deve ser o booleano `true` (string `"true"` é rejeitada) |
+| `reviewedBy` | string não vazia — identifica a pessoa que revisou a mídia |
+| `reviewedAt` | timestamp ISO-8601 **com timezone** |
+| `requiredPaths` | lista completa e sem duplicatas dos caminhos relativos do release; deve conter `index.html` |
+| `assets[].path` | caminho relativo de destino (dentro de `public/academy/`) |
+| `assets[].source` | caminho relativo dentro do diretório `--source` (cópia privada) |
+| `assets[].sha256` | hex de 64 caracteres, hash sha256 do arquivo de origem no momento da revisão |
+| `assets[].approved` | deve ser o booleano `true` item a item — aprovação por arquivo, não só do release |
+
+Regras adicionais aplicadas por `validate()`:
+
+- `set(assets[].path) == set(requiredPaths)`: o release deve ser completo —
+  nem falta arquivo aprovado, nem sobra arquivo fora do inventário.
+- Caminhos (`path` e `source`) passam por `safe_path()`: regex restrito,
+  sem `..`, sem componente vazio, sem dotfile.
+- `source / asset.source` não pode ser symlink (nem nenhum ancestral) e deve
+  ser arquivo regular existente.
+- O hash do arquivo de origem é recalculado no momento da cópia; se não
+  bater com `sha256` do manifesto, a execução falha antes de copiar.
+- `destination` (ex. `public/academy/`) **não pode existir previamente** —
+  o script nunca mescla com um diretório já staged; cria um diretório novo,
+  escreve em um temporário e faz `rename` atômico ao final, após reler e
+  confirmar o conteúdo copiado.
+
+## Uso
+
+```
+python3 scripts/academy-stage.py \
+  --manifest <manifest.json aprovado> \
+  --source <diretório privado revisado> \
+  --destination public/academy
+```
+
+- `--source` deve apontar só para a cópia privada já revisada (nunca para o
+  diretório de originais não tratados).
+- Em caso de qualquer violação do contrato, o script falha (`ValueError`)
+  **antes** de copiar qualquer byte — não há escrita parcial de material não
+  aprovado.
+- `public/academy/` está no `.gitignore` do projeto: mesmo um staging válido
+  nunca entra no repositório por engano. Commits de código ficam livres de
+  mídia.
+
+## Estado atual (19/11/2026)
+
+- `academy-private-review/HANDOFF.md`: pacote **NÃO APTO** para publicação —
+  236 originais, 32 candidatas com `approved=false`, allowlist de hash vazia,
+  17 vídeos pendentes de revisão integral.
+- Nenhum manifesto real foi aprovado ainda. O manifesto só existe, até aqui,
+  em forma de **fixture sintético** (`academy-tech-verification/manifest.json`,
+  fora do repositório) usado para validar o mecanismo de staging e as rotas
+  do Next em ambiente local — nunca aplicado a conteúdo privado real.
+- Quando a revisão de mídia aprovar um release, o revisor preenche este
+  manifesto (com hashes calculados sobre os arquivos já tratados/aprovados)
+  e roda o comando acima; o staging resultante pode então ser testado e, só
+  então, considerado para publicação.

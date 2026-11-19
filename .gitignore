@@ -17,6 +17,10 @@
 /.next/
 /out/
 
+# Academy releases are promoted explicitly after private hash-based review.
+# Never bulk-add a private/mixed source tree here.
+/public/academy/
+
 # production
 /build
 

@@ -7,6 +7,12 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  async redirects() {
+    // Keep the original standalone HTML byte-for-byte. An explicit index URL
+    // gives its relative docs/media URLs the correct base, including #inicio.
+    // Do not change global trailingSlash behavior or the auth/native proxy.
+    return [{ source: "/academy", destination: "/academy/index.html", permanent: false }];
+  },
   async rewrites() {
     return [
       // landing v3 promovida a HOME (14/08) — antiga arquivada em /old
