@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Calc from './Calc'
+import BookingProvider, { BookingButton, LanguageLink } from './Booking'
 import { AgendaViz, CallViz, DashboardViz, FlowViz, PipelineViz, RingViz, RoutineViz, SequenceViz, WhatsViz } from './Visuals'
 import { COPY, type Lang } from './copy'
 
@@ -10,7 +11,7 @@ import { COPY, type Lang } from './copy'
  * Visual da home (public/nova): fundo escuro, violeta, cartões de vidro. Texto em ./copy.ts.
  * Link vai nos e-mails de recrutamento (src/lib/recruit-agents.ts).
  */
-const WA = 'https://wa.me/17867442126'
+
 const isLang = (s: string): s is Lang => s === 'pt' || s === 'en' || s === 'es'
 const langOf = (seg?: string[]): Lang | null => (!seg || seg.length === 0 ? 'pt' : seg.length === 1 && isLang(seg[0]) && seg[0] !== 'pt' ? (seg[0] as Lang) : null)
 const LOCALE: Record<Lang, string> = { pt: 'pt-BR', en: 'en-US', es: 'es-US' }
@@ -200,16 +201,17 @@ export default async function EquipePage({ params }: { params: Promise<{ lang?: 
   const lang = langOf((await params).lang)
   if (!lang) notFound()
   const t = COPY[lang]
-  const link = `${WA}?text=${encodeURIComponent(t.wa)}`
+
   return (
     <main className="eq" lang={LOCALE[lang]}>
+      <BookingProvider lang={lang}>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div className="eq-wrap">
         <nav className="eq-nav">
           <div className="eq-logo">Lead<span>4Pro</span></div>
           <div className="eq-nav-r">
-            {t.other.map(o => <a key={o.href} href={o.href}>{o.label}</a>)}
-            <a className="eq-btn eq-btn-sm" href={link}>{t.navCta}</a>
+            {t.other.map(o => <LanguageLink key={o.href} href={o.href}>{o.label}</LanguageLink>)}
+            <BookingButton small>{t.navCta}</BookingButton>
           </div>
         </nav>
 
@@ -217,7 +219,7 @@ export default async function EquipePage({ params }: { params: Promise<{ lang?: 
           <span className="eq-kick">{t.kicker}</span>
           <h1>{t.h1a}<span className="eq-grad">{t.h1b}</span></h1>
           <p className="eq-sub">{t.sub}</p>
-          <a className="eq-btn" href={link}>{t.cta} →</a>
+          <BookingButton>{t.cta} →</BookingButton>
           <div className="eq-chips">{t.chips.map(c => <span key={c} className="eq-chip">{c}</span>)}</div>
           <div className="eq-stats">{t.stats.map(s => <div key={s.l} className="eq-stat"><b>{s.n}</b><span>{s.l}</span></div>)}</div>
         </header>
@@ -293,7 +295,7 @@ export default async function EquipePage({ params }: { params: Promise<{ lang?: 
               <span className="eq-kick">{t.fK}</span>
               <h2 style={{ textAlign: 'left', margin: '14px 0 12px' }}>{t.fH}</h2>
               <p className="eq-lead" style={{ margin: '0 0 22px' }}>{t.fP}</p>
-              <a className="eq-btn" href={link}>{t.cta} →</a>
+              <BookingButton>{t.cta} →</BookingButton>
               <p className="eq-ph-cap">Leandro &amp; Regiane · Lead4Pro</p>
             </div>
           </div>
@@ -307,7 +309,7 @@ export default async function EquipePage({ params }: { params: Promise<{ lang?: 
         <section className="eq-final">
           <h2>{t.finalH}</h2>
           <p className="eq-lead" style={{ margin: '0 auto 24px' }}>{t.finalSub}</p>
-          <a className="eq-btn" href={link}>{t.cta} →</a>
+          <BookingButton>{t.cta} →</BookingButton>
           <p className="eq-tiny" style={{ marginTop: 14 }}>{t.note}</p>
         </section>
 
@@ -316,7 +318,8 @@ export default async function EquipePage({ params }: { params: Promise<{ lang?: 
           <p>© Lead4Pro · <a href="/privacy">{t.privacy}</a></p>
         </footer>
       </div>
-      <div className="eq-sticky"><a className="eq-btn" href={link}>{t.cta} →</a></div>
+      <div className="eq-sticky"><BookingButton>{t.cta} →</BookingButton></div>
+      </BookingProvider>
     </main>
   )
 }
