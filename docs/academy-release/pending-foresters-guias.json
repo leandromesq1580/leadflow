@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "publicationApproved": false,
+  "status": "PENDENTE: aguardando autorização explícita (sim) do dono; manifest/allowlist/authorization publicados NÃO foram alterados",
+  "provenance": "texto traduzido de PDFs oficiais fornecidos pelo proprietário em 20/11/2026; sem dados pessoais",
+  "sources": [
+    {
+      "product": "smart-ul",
+      "form": "503346 US 04/20",
+      "original": "docs/pdf/foresters-503346-smart-ul-original.pdf"
+    },
+    {
+      "product": "level-term",
+      "form": "504387 US 05/21",
+      "original": "docs/pdf/foresters-504387-level-term-original.pdf"
+    },
+    {
+      "product": "live-well-plus",
+      "form": "506014 US 04/25",
+      "original": "docs/pdf/foresters-506014-live-well-plus-original.pdf"
+    },
+    {
+      "product": "advantage-plus-ii",
+      "form": "504933 US 03/20",
+      "original": "docs/pdf/foresters-504933-advantage-plus-ii-original.pdf"
+    }
+  ],
+  "baseline": {
+    "index.html": "69e957612e32048204a01417697f4bc070fd3f4b58ff2ddd9d1f1f75044e554b",
+    "docs/foresters-guia.html": "a03c6c3d3ca81373c682dc7ce949051537c51649835e8f0d57ad0288ca7df2f3"
+  },
+  "assets": [
+    {
+      "path": "index.html",
+      "sha256": "0c68098391b6b9496166af4b3bcbffd279ca5fefc37ff97eb3a8b941401e254d",
+      "approved": false,
+      "kind": "modified"
+    },
+    {
+      "path": "docs/foresters-smart-ul.html",
+      "sha256": "66922b1a2750bc68c99133108847deaa71d79e38348fbebaadd5d06d665c1295",
+      "approved": false,
+      "kind": "new"
+    },
+    {
+      "path": "docs/pdf/foresters-smart-ul.pdf",
+      "sha256": "addc032131972e55596d5c68672146644c38225b09f47386d28c8031cff3309f",
+      "approved": false,
+      "kind": "new"
+    },
+    {
+      "path": "docs/pdf/foresters-503346-smart-ul-original.pdf",
+      "sha256": "81e6d0c8351ddd24831f8f5ee3cc27a07d4a4ee3857cbe1c9acafdbd3085fcce",
+      "approved": false,
+      "kind": "new"
+    },
+    {
+      "path": "docs/foresters-level-term.html",
+      "sha256": "9916eb81cb2c7b3c7aac757aa7ffccff514ca9840eb2b1279fd2c3332de20f7a",
+      "approved": false,
+      "kind": "new"
+    },
+    {
+      "path": "docs/pdf/foresters-level-term.pdf",
+      "sha256": "2865da75960f34cf27c7e05b31712dfa06d92308df01c315bd4791444c9998d8",
+      "approved": false,
+      "kind": "new"
+    },
+    {
+      "path": "docs/pdf/foresters-504387-level-term-original.pdf",
+      "sha256": "a8f86616c0a927eefacfefedc68cb872d781b7f8b429acddcb88e537b0edbc91",
+      "approved": false,
+      "kind": "new"
+    },
+    {
+      "path": "docs/foresters-live-well-plus.html",
+      "sha256": "9829064286346d1c49d106abd01af3b8bd57bc3d6538afb3c1529de6e0989798",
+      "approved": false,
+      "kind": "new"
+    },
+    {
+      "path": "docs/pdf/foresters-live-well-plus.pdf",
+      "sha256": "92d860d6f5ac9e71b0224b154dd6efc787681118517e2bee6be243a6a3342c39",
+      "approved": false,
+      "kind": "new"
+    },
+    {
+      "path": "docs/pdf/foresters-506014-live-well-plus-original.pdf",
+      "sha256": "6bde3dea8b3518761e685c9b37bec2e9bf865cc24198a85472aeb63535631e58",
+      "approved": false,
+      "kind": "new"
+    },
+    {
+      "path": "docs/foresters-advantage-plus-ii.html",
+      "sha256": "190a3676d793c94344d597056b35e46da4d1276b7843fb1ee41e0458aeae6479",
+      "approved": false,
+      "kind": "new"
+    },
+    {
+      "path": "docs/pdf/foresters-advantage-plus-ii.pdf",
+      "sha256": "17297b74d8d90efecc6b78d6f426c92909e01f588e155e81cb018da62222c012",
+      "approved": false,
+      "kind": "new"
+    },
+    {
+      "path": "docs/pdf/foresters-504933-advantage-plus-ii-original.pdf",
+      "sha256": "7291e70a3718e095465ee1394ba808e4dc51f786a5a80307b62f5d90e102355f",
+      "approved": false,
+      "kind": "new"
+    }
+  ],
+  "onPublish": [
+    "git add -f dos 13 arquivos (public/academy é ignorado)",
+    "adicionar os 12 novos ao allowlist.json e manifest.json e atualizar o hash de index.html",
+    "registrar a decisão em authorization.json e subir requiredPaths/assets de 236 para 249",
+    "rodar scripts/academy-stage.py com o manifesto novo e conferir hashes"
+  ]
+}

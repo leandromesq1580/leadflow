@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foresters Live Well Plus — WDT Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+@page { size: Letter; margin: 14mm 0 16mm 0;
+  @bottom-left { content: "WDT AGENCY · Academy"; font: 600 7.5pt Poppins, sans-serif; color: #0B1B3A; padding-left: 16mm; letter-spacing: 1px; }
+  @bottom-center { content: "Foresters Live Well Plus — guia de estudo WDT Agency (tradução de apoio). Uso exclusivo do agente."; font: 400 6.3pt Poppins, sans-serif; color: #6B7891; width: 120mm; text-align: center; }
+  @bottom-right { content: "pág. " counter(page); font: 600 7.5pt Poppins, sans-serif; color: #A8893A; padding-right: 16mm; }
+}
+@page :first { margin-top: 0; }
+:root{--navy:#0B1B3A;--navy2:#132A52;--gold:#C9A54C;--gold2:#DDBF73;--ink:#0E1A33;--muted:#5B6880;--line:#E2E7F0;--soft:#F1F4F9;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Poppins,system-ui,sans-serif;color:var(--ink);background:#fff;font-size:10.2pt;line-height:1.55;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+a{color:#1E3A6E}
+.hero{position:relative;overflow:hidden;color:#fff;padding:22mm 16mm 16mm;background:radial-gradient(520px 260px at 92% -10%,rgba(201,165,76,.55),transparent 62%),linear-gradient(160deg,#0B1B3A 0%,#132A52 65%,#1A3463 100%)}
+.hero .brand{font-weight:800;font-size:15pt;letter-spacing:.5px}
+.hero .brand span{color:var(--gold);font-weight:600;font-size:7.5pt;letter-spacing:4px;margin-left:6px}
+.hero .eyebrow{margin-top:14mm;font-size:7.8pt;letter-spacing:3px;font-weight:600;color:var(--gold);text-transform:uppercase}
+.hero h1{font-size:27pt;line-height:1.1;font-weight:700;margin:6px 0 4px}
+.hero .sub{font-size:12pt;color:var(--gold2);font-weight:500}
+.hero p.lead{margin-top:10px;color:#C9D2E4;max-width:150mm;font-size:10pt}
+.hero .chips{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px}
+.hero .chips span{border:1px solid rgba(221,191,115,.55);color:#F3E6C3;border-radius:99px;padding:3px 10px;font-size:7.6pt;font-weight:500}
+main{padding:8mm 16mm 4mm}
+.toc{background:var(--soft);border:1px solid #D9E0EC;border-radius:12px;padding:12px 16px;margin:2mm 0 8mm;columns:2;column-gap:12mm;font-size:8.8pt}
+.toc h4{column-span:all;font-size:8pt;letter-spacing:2px;text-transform:uppercase;color:#8A6A1C;margin-bottom:6px}
+.toc a{display:block;text-decoration:none;color:var(--ink);padding:1.5px 0;break-inside:avoid}
+.toc a b{display:inline-block;width:22px;color:#A8893A}
+section.sec{margin:0 0 7mm}
+.sec-h{display:flex;align-items:center;gap:10px;margin:0 0 8px;break-after:avoid}
+.sec-h .n{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--navy);color:#fff;border:2px solid var(--gold);font-weight:700;font-size:9.5pt}
+.sec-h h2{font-size:15pt;font-weight:700;color:var(--navy);line-height:1.2}
+.sec-h small{display:block;font-size:8.6pt;color:var(--muted);font-weight:400}
+h3{font-size:11pt;color:var(--navy);margin:10px 0 4px;break-after:avoid}
+h4{font-size:9.6pt;color:#1E3A6E;margin:8px 0 3px;break-after:avoid}
+p{margin:0 0 6px}
+ul,ol{margin:2px 0 8px 18px}
+li{margin:1.5px 0}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:6mm}
+.cols3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4mm}
+.card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;break-inside:avoid;margin-bottom:8px}
+.card.navy{background:linear-gradient(160deg,#0B1B3A,#132A52);color:#E6EBF5;border:0}
+.card.navy h3,.card.navy h4{color:var(--gold2)}
+.card.soft{background:var(--soft);border-color:#D9E0EC}
+.alert{background:#FBF7EC;border:1px solid #E8D7A8;border-left:4px solid var(--gold);border-radius:10px;padding:9px 12px;margin:6px 0 10px;font-size:9.4pt;break-inside:avoid}
+.alert b.t{display:block;color:#8A6A1C;font-size:7.8pt;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px}
+.term{background:#EEF2F8;border-radius:10px;padding:8px 12px;margin:6px 0 10px;font-size:8.8pt;color:#33415C;break-inside:avoid}
+.term b{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:4px 0 10px;font-size:8.8pt;break-inside:auto}
+thead{display:table-header-group}
+tr{break-inside:avoid}
+th{background:var(--navy);color:#fff;text-align:left;font-weight:600;padding:5px 7px;font-size:8.4pt}
+th.g{background:#A8893A}
+td{padding:4.5px 7px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:nth-child(even) td{background:#F7F9FC}
+td.c,th.c{text-align:center}
+.ok{color:#1E7A4F;font-weight:800}
+table.kv td:first-child{width:32%;font-weight:600;color:var(--navy);background:#F3F5FA}
+.pill{display:inline-block;font-size:7.6pt;font-weight:600;padding:1px 8px;border-radius:99px;background:#EEF2F8;color:#1E3A6E;margin:1px 2px 1px 0}
+.pill.g{background:#F7F0DF;color:#8A6A1C}
+.foot{font-size:7.6pt;color:var(--muted);border-top:1px solid var(--line);padding-top:5px;margin-top:6px}
+.steps{counter-reset:s;list-style:none;margin-left:0}
+.steps li{counter-increment:s;position:relative;padding-left:30px;margin:6px 0;break-inside:avoid}
+.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:21px;height:21px;border-radius:50%;border:2px solid var(--gold);color:var(--navy);font-weight:700;font-size:8.5pt;display:grid;place-items:center}
+.pb{break-before:page}
+.endnote{margin:6mm 0 0;padding:10px 14px;border-radius:10px;background:var(--soft);font-size:8pt;color:var(--muted)}
+.webbar{display:none}
+@media screen{
+  body{background:#EEF1F6}
+  .doc{max-width:216mm;margin:0 auto;background:#fff;box-shadow:0 10px 40px -20px rgba(11,27,58,.35)}
+  .webbar{display:flex;position:sticky;top:0;z-index:5;background:rgba(11,27,58,.97);color:#fff;padding:9px 18px;gap:14px;align-items:center;font-size:9.5pt}
+  .webbar a{color:#F3E6C3;text-decoration:none;font-weight:600}
+  .webbar b{font-weight:800}.webbar b span{color:var(--gold);font-size:7.5pt;letter-spacing:3px;margin-left:5px}
+  .webbar .sp{flex:1}
+  .webfoot{max-width:216mm;margin:0 auto 30px;padding:12px 16mm;font-size:8pt;color:var(--muted)}
+}
+@media print{.webfoot{display:none}}
+.inframe .webbar,.inframe .webfoot{display:none!important}.small{font-size:8pt;color:#5A6880}.ans{color:#8A6A1C;font-size:8.8pt}.alert ol{margin:4px 0 0 16px;padding:0}.dlpdf{display:inline-block;margin-top:14px;background:#C9A54C;color:#0B1B3A!important;font-weight:700;font-size:12px;padding:9px 16px;border-radius:8px;text-decoration:none}@media print{.dlpdf{display:none}}@media print{.sec{break-inside:avoid}.card,table,tr{break-inside:avoid}#s5 .card{padding:9px 12px;margin-bottom:8px}#s5 .card p,#s5 .card li{font-size:9.2pt;line-height:1.5}#s5 .card h4{font-size:10pt;margin-bottom:3px}#s5 .card ul{margin:3px 0 0 14px}}.destaque{margin:14px 0 0;border-radius:12px;background:linear-gradient(135deg,#0B1B3A,#16305E);color:#fff;padding:14px 18px;break-inside:avoid}.destaque .dh{font-size:8pt;letter-spacing:2.5px;color:#E6C878;font-weight:700;margin-bottom:4px}.destaque p{margin:0 0 8px;font-size:9.4pt;color:#DCE3F0}.destaque .dg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.destaque .dg div{background:rgba(255,255,255,.07);border:1px solid rgba(201,165,76,.45);border-radius:9px;padding:9px 11px}.destaque .dg b{display:block;font-size:15pt;color:#E6C878;line-height:1.1}.destaque .dg span{font-size:8.4pt;color:#E8ECF4;line-height:1.35;display:block;margin-top:3px}.destaque .dn{margin:8px 0 0;font-size:7.6pt;color:#AAB6CC}
+.src{font-size:8pt;color:#5A6880;margin:-2px 0 8px}.tag{display:inline-block;font-size:7.4pt;font-weight:600;padding:0 7px;border-radius:99px;background:#EEF2F8;color:#1E3A6E;margin-left:4px;vertical-align:1px}
+.amb{background:#FFF3F0;border:1px solid #F0C9C0;border-left:4px solid #C0452E;border-radius:10px;padding:9px 12px;margin:6px 0 10px;font-size:9.2pt;break-inside:avoid}
+.amb b.t{display:block;color:#9B2F1A;font-size:7.8pt;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px}
+.legal{font-size:8.2pt;color:#33415C;background:#F1F4F9;border-radius:10px;padding:8px 12px;margin:6px 0 10px;break-inside:avoid}
+table.wide{font-size:8.2pt}td.n,th.n{white-space:nowrap}
+.scroll{overflow-x:auto}@media print{.card{break-inside:auto}.sec{break-inside:auto}.sec-h{break-after:avoid}h3,h4{break-after:avoid}}
+@media screen and (max-width:640px){.hero{padding:18mm 6mm 10mm}main{padding:6mm 5mm}.toc{columns:1}.cols,.cols3{grid-template-columns:1fr}table{font-size:8.4pt}}
+</style></head><body>
+<div class="webbar"><a href="../index.html#inicio">← Voltar ao portal</a><span class="sp"></span><b>WDT<span>AGENCY</span></b></div>
+<div class="doc">
+<header class="hero"><div class="brand">WDT<span>AGENCY</span></div>
+<div class="eyebrow">WDT Agency · Foresters Financial · Guia de produto</div><h1>Foresters Live Well Plus</h1><div class="sub">Guia de produto em português · Seguro de vida inteira participante</div>
+<p class="lead">Tradução de apoio do <i>Foresters Live Well Plus Whole Life Insurance — Product Guide</i> (formulário 506014 US 04/25): especificações, dividendos, empréstimos, riders (inclusive paid-up additions) e contatos.</p><div class="chips"><span>Whole life participante</span><span>Subscrição acelerada</span><span>Idades 18–60</span><span>Paid up aos 100 · maturity aos 121</span><span>Form 506014 US 04/25</span></div><a class="dlpdf" href="pdf/foresters-live-well-plus.pdf" download>⬇ Baixar PDF em português</a></header>
+<main>
+<nav class="toc"><h4>Conteúdo</h4><a href="#s1"><b>01</b>Especificações do produto</a><a href="#s2"><b>02</b>Riders</a><a href="#s3"><b>03</b>Contatos-chave da Foresters</a></nav>
+<div class="legal"><b>Tradução de apoio — vale o texto original em inglês.</b> Fonte: <i>Foresters Live Well Plus Whole Life Insurance — Product Guide</i>, formulário <b>506014 US 04/25</b>. O original em inglês está disponível no PDF “Original (EN)”.<br>
+<b>Aviso do original (preservado):</b> “For Producer Use Only. Not For Use With The Public.” (<i>Somente para uso do produtor. Não usar com o público.</i>) — material interno, <b>não deve ser distribuído a clientes ou ao público</b>.<br>
+Este guia é apenas informativo e destina-se a responder perguntas e dar ideias para ajudar a vender o Foresters Live Well Plus (seguro de vida inteira participante, participating whole life). Consulte o site do produtor Foresters Financial™, ezbiz, para compreender melhor o produto e outras estratégias de venda. O produtor deve representar corretamente os produtos e características ao cliente ou prospect com base no texto real do certificado e dos riders do seu estado. O Foresters Live Well Plus e seus riders são subscritos pela The Independent Order of Foresters e podem não estar disponíveis ou aprovados em todos os estados; estão sujeitos à aprovação de subscrição, limitações, termos e condições do contrato e variações estaduais. O produto e suas características podem ser modificados de tempos em tempos e podem aplicar-se restrições; consulte o ezbiz para informação detalhada e disponibilidade atualizada. A Foresters e seus funcionários e representantes de seguro de vida não prestam, em nome da Foresters, aconselhamento financeiro, patrimonial, jurídico ou fiscal; a informação reflete o entendimento das leis e regulamentos atuais.</div>
+<section class="sec" id="s1"><div class="sec-h"><div class="n">1</div><h2>Especificações do produto<small>Product Specifications — descrição, idades, classes, valores segurados, prêmio, dividendos, empréstimos</small></h2></div>
+<p class="src">Valores em dólares americanos, no formato original do PDF (ex.: $10,000 = dez mil dólares). Idades pela “idade mais próxima do aniversário” (age nearest birthday).</p><div class="card"><h3>Descrição (Description)</h3><p>O Foresters Live Well Plus Participating Whole Life Insurance (Foresters Live Well Plus) é um produto de seguro de vida inteira participante (participating whole life) que oferece um valor de benefício por morte garantido, valor em dinheiro garantido e potencial de dividendos.</p><p>O Foresters Live Well Plus está disponível em base de <b>subscrição acelerada</b> (accelerated underwriting). A segurabilidade depende das respostas às perguntas médicas, outras perguntas da proposta e resultados de várias buscas de dados.</p></div>
+<div class="card"><h3>Tipo de cobertura (Coverage Type)</h3><p>Disponível para uma vida única no segurado principal (cobertura base) e para uma vida única no segurado secundário (por meio do Additional Insured Term Rider).</p></div>
+<div class="card"><h3>Idades de emissão (Issue Ages)</h3><p><b>18 a 60</b> — idade mais próxima do aniversário. Retroagir a data (backdating) para economizar idade não é permitido.</p></div>
+<div class="card"><h3>Período de prêmio e de benefício (Premium and Benefit Period)</h3><ul><li>Pago (paid up) aos 100 anos.</li><li>Vencimento (maturity) aos 121 anos (paga o valor de resgate em dinheiro aos 121 anos).</li></ul>
+</div>
+<div class="card"><h3>Classes de seguro (Insurance Classes)</h3><p>Variam por: idade de emissão; sexo ao nascer (feminino ou masculino); distinção entre fumante e não fumante.</p></div>
+<div class="card"><h3>Classes de subscrição (Underwriting Classes)</h3><div class="scroll"><table class=""><thead><tr><th>Idade de emissão</th><th>Classe de subscrição</th></tr></thead><tbody>
+<tr><td>18-60</td><td>Preferred Plus Non-Tobacco; Preferred Non-Tobacco; Non-Tobacco; Tobacco</td></tr>
+</tbody></table></div>
+<ul><li>Não fumante (non-tobacco) é definido como não uso de qualquer produto contendo nicotina nos últimos 12 meses.</li><li>Fumante (tobacco) é definido como uso de qualquer produto contendo nicotina nos últimos 12 meses.</li><li>Extras substandard estão disponíveis e serão determinados com base na subscrição: duas classes de classificação — <b>AU</b> (tabelas 1-3) e <b>AX</b> (tabelas 4-6).</li></ul>
+<div class="amb"><b class="t">Nota de conferência</b>O original usa “Non-Tobacco” e “Tobacco” na lista de classes de subscrição e “Standard” nas tabelas de valor segurado. O guia não explica a correspondência; ela é mantida como está, sem interpretação.</div>
+</div>
+<div class="card"><h3>Valor segurado mínimo e máximo (Minimum and Maximum Face Amounts)</h3><p><b>Para as classes de subscrição Preferred Plus e Preferred:</b></p><div class="scroll"><table class=""><thead><tr><th>Idade de emissão</th><th>18-50</th><th>51-60</th></tr></thead><tbody>
+<tr><td>Mínimo</td><td>$50,000</td><td>$50,000</td></tr>
+<tr><td>Máximo</td><td>$2,000,000</td><td>$1,250,000</td></tr>
+</tbody></table></div>
+<p><b>Para a classe de subscrição Standard:</b></p><div class="scroll"><table class=""><thead><tr><th>Idade de emissão</th><th>18-50</th><th>51-60</th></tr></thead><tbody>
+<tr><td>Mínimo</td><td>$25,000</td><td>$25,000</td></tr>
+<tr><td>Máximo</td><td>$1,750,000</td><td>$1,000,000</td></tr>
+</tbody></table></div>
+<p><b>Para a classe de subscrição Substandard:</b></p><div class="scroll"><table class=""><thead><tr><th>Idade de emissão</th><th>18-50</th><th>51-60</th></tr></thead><tbody>
+<tr><td>Mínimo</td><td>$25,000</td><td>$25,000</td></tr>
+<tr><td>Máximo (tabelas 1-3)</td><td>$1,000,000</td><td>$500,000</td></tr>
+<tr><td>Máximo (tabelas 4-6)</td><td>$500,000</td><td>$250,000</td></tr>
+</tbody></table></div>
+<p>O valor segurado máximo no segurado principal inclui a cobertura total do valor segurado base, mais qualquer Term Rider, mais o benefício por morte do Paid-up Additions Rider, mais qualquer cobertura de seguro de vida existente com a Foresters.</p></div>
+<div class="card"><h3>Faixas de prêmio (Premium Banding)</h3><div class="scroll"><table class=""><thead><tr><th>Faixa (Band)</th><th>Mínimo</th><th>Máximo</th></tr></thead><tbody>
+<tr><td>1</td><td>$25,000</td><td>$49,999</td></tr>
+<tr><td>2</td><td>$50,000</td><td>$249,999</td></tr>
+<tr><td>3</td><td>$250,000</td><td>$499,999</td></tr>
+<tr><td>4</td><td>$500,000</td><td>$2,000,000</td></tr>
+</tbody></table></div>
+<p>A faixa de prêmio aplica-se somente ao valor segurado base e exclui quaisquer riders.</p></div>
+<div class="card"><h3>Modos de prêmio, fatores modais, prêmio mínimo e taxas de certificado</h3><div class="scroll"><table class=""><thead><tr><th>Modo de prêmio</th><th>Fator modal (Modal Factor)</th><th>Prêmio mínimo (Minimum Premium)</th><th>Taxa de certificado (Certificate Fee)</th></tr></thead><tbody>
+<tr><td>Mensal (Monthly, PAC)</td><td>0.0875</td><td>$50</td><td>$6.30</td></tr>
+<tr><td>Trimestral (Quarterly)</td><td>0.26</td><td>$150</td><td>$18.72</td></tr>
+<tr><td>Semestral (Semi-Annual)</td><td>0.51</td><td>$300</td><td>$36.72</td></tr>
+<tr><td>Anual (Annual)</td><td>1.00</td><td>$600</td><td>$72.00</td></tr>
+</tbody></table></div>
+</div>
+<div class="card"><h3>Trocas 1035 e substituições (1035 Exchanges and Replacements)</h3><ul><li>Trocas 1035 <b>não são permitidas</b>.</li><li>Substituições (replacements) <b>não são permitidas</b>.</li></ul>
+</div>
+<div class="card"><h3>Empréstimo automático de prêmio e opções de não perda (Automatic Premium Loan and Nonforfeiture Options)</h3><p>Se um prêmio não for pago, a opção de Empréstimo Automático de Prêmio (Automatic Premium Loan, APL) pode ser escolhida na proposta para pagar o prêmio devido.</p><p>As opções de não perda (non-forfeiture) disponíveis são:</p><ul><li>Paid-up Reduzido (Reduced Paid-up, RPU), sujeito a um valor segurado residual mínimo de $1,000;</li><li>Resgate em dinheiro (Cash Surrender).</li></ul>
+<p>Se a opção APL não for escolhida, o padrão é RPU, a menos que o valor de resgate em dinheiro compre menos de $1,000 de valor segurado. Nessa situação, a Foresters pode resgatar o certificado e pagar o valor de resgate em dinheiro. Se o titular escolher APL, a Foresters mudará o modo de pagamento para mensal (se o certificado estiver em outro modo) caso o certificado entre em APL.</p></div>
+<div class="card"><h3>Valores em dinheiro (Cash Values)</h3><p>Os valores em dinheiro são garantidos e baseados na idade mais próxima do aniversário do segurado, distinguem sexo e usam a tabela de mortalidade final (ultimate) com distinção de fumante para a classe de classificação do segurado.</p></div>
+<div class="card"><h3>Dividendos (Dividends)</h3><p>Os dividendos <b>não são garantidos</b> e podem variar por sexo ao nascer, faixa (band), não fumante ou fumante, e classes de subscrição preferred/standard. Dividendos passados não são indicador de desempenho futuro de dividendos.</p><p>Opções de dividendos disponíveis:</p><ul><li>Paid-up Additions (PUA);</li><li>Em depósito com juros (on deposit with interest);</li><li>Para reduzir prêmios (to reduce premiums);</li><li>Pagos em dinheiro (paid in cash).</li></ul>
+<p>A opção de dividendos padrão é Paid-up Additions (PUA).</p></div>
+<div class="card"><h3>Resgates (Surrenders)</h3><p>O certificado pode ser resgatado parcial ou totalmente pelo seu valor de resgate em dinheiro a qualquer momento. Um certificado pode ser totalmente resgatado pelo seu valor em dinheiro garantido, mais o valor de quaisquer Paid-up Additions (PUA) ou dividendos acumulados em depósito, menos qualquer dívida pendente.</p><p>Um certificado também pode ser parcialmente resgatado resgatando Paid-up Additions (PUA). O benefício por morte sustentado pela PUA será reduzido de acordo. Cada resgate parcial deve ser de pelo menos <b>$500.00</b>.</p></div>
+<div class="card"><h3>Ilustrações (Illustrations)</h3><p>O Foresters Live Well Plus é um produto ilustrado. No ponto de venda (Point-of-Sale, POS), o produtor deve fornecer ao futuro titular uma ilustração correspondente ao produto solicitado na proposta. Uma cópia dessa ilustração deve ser assinada pelo produtor e pelo futuro titular e enviada com a proposta à Foresters.</p></div>
+<div class="card"><h3>Empréstimos (Loans)</h3><p>O titular pode tomar um empréstimo contra o valor de resgate em dinheiro do certificado, desde que:</p><ul><li>o certificado esteja em vigor e tenha valor de resgate em dinheiro positivo no momento do empréstimo;</li><li>o valor solicitado será ajustado se o valor de resgate em dinheiro for insuficiente;</li><li>o valor do empréstimo em qualquer momento é o saldo dos valores emprestados não pagos mais os juros acumulados.</li></ul>
+<h4>Juros do empréstimo (Loan Interest)</h4><p>Os juros são cobrados diariamente. A taxa de juros do empréstimo é determinada pelo menos uma vez por ano, mas nunca com mais frequência que uma vez em um período de três meses. A taxa de juros do empréstimo não excederá a taxa máxima de juros de empréstimo de <b>8.0%</b>.</p><h4>Pagamento do empréstimo (Loan Repayment)</h4><p>Todo ou parte de um empréstimo do certificado pode ser pago a qualquer momento enquanto o certificado estiver em vigor. Os pagamentos reduzirão o valor do empréstimo.</p><p>O benefício por morte pagável é reduzido pelo valor do empréstimo pendente (e juros acumulados). Se o valor do empréstimo exceder o valor em dinheiro mais (se houver) o valor presente das PUAs e o valor dos dividendos em depósito (se houver), o certificado terminará. Nesse caso, uma notificação será enviada ao titular. Se o certificado terminar/caducar havendo um empréstimo, o empréstimo será tratado como distribuição do certificado e pode haver consequências fiscais.</p></div>
+<div class="card"><h3>Disposição de benefício para caridade (Charity Benefit Provision)</h3><p>Disposição contratual incluída automaticamente, sem prêmio adicional. Quando um sinistro é pago aos beneficiários, a Foresters pagará (até um máximo de $100,000) <b>1%</b> adicional do valor segurado a uma organização sem fins lucrativos credenciada, conforme designada pelo titular. A organização de caridade designada deve ser uma organização 501(c)(3) credenciada segundo o Internal Revenue Code e elegível a receber contribuições de caridade conforme definido na seção 170(c) desse Código. O pagamento é feito como doação em nome do segurado. O pagamento é adicional ao valor segurado; não há redução no pagamento ao(s) beneficiário(s).</p><p>O titular pode designar a instituição na proposta, mas também pode acrescentar ou alterar a designação enquanto a cobertura estiver em vigor. Porém, se nenhum beneficiário for designado, o benefício não será pago. A doação geralmente é isenta de impostos.</p></div>
+<div class="card"><h3>Caducidade e período de carência (Lapse and Grace Period)</h3><p>Um certificado ficará com caducidade pendente e entrará em período de carência de <b>31 dias</b> se houver falta de pagamento do prêmio quando devido.</p><p>O período de carência dá tempo adicional para o pagamento de prêmio suficiente para manter o contrato de seguro em vigor. Se não for pago valor suficiente nesse período, o contrato de seguro caducará. Uma notificação será enviada ao titular e a qualquer cessionário pelo menos <b>31 dias</b> antes da caducidade.</p></div>
+<div class="card"><h3>Reinstalação (Reinstatement)</h3><p>A Foresters pode aprovar a reinstalação de um certificado caducado em até <b>três anos</b> da caducidade, sujeita a:</p><ul><li>evidência de segurabilidade aceita pela Foresters;</li><li>pagamento dos prêmios não pagos desde a caducidade, mais qualquer dívida existente na data da caducidade, mais os juros aplicáveis.</li></ul>
+<p>Os juros sobre os prêmios não pagos não excederão <b>6.0%</b>. Os juros sobre um empréstimo não excederão a taxa máxima contratual de empréstimo. A reinstalação não é permitida se o certificado terminou porque a dívida excedeu o valor patrimonial (debt exceeding equity).</p></div>
+</section>
+<section class="sec" id="s2"><div class="sec-h"><div class="n">2</div><h2>Riders<small>Term, Accelerated Death Benefit, Additional Insured, Family Health, Common Carrier, Accidental Death, Children’s Term, Waiver of Premium, Guaranteed Insurability, Paid-up Additions</small></h2></div>
+<div class="card"><h3>Term Rider — rider de seguro temporário</h3><p>Oferece seguro de vida temporário nivelado (level term) sobre a vida do segurado, com prêmios nivelados durante o prazo inicial. Após o prazo inicial, a cobertura pode continuar como seguro temporário anual renovável (yearly renewable term, com aumentos anuais de prêmio) até a data de vencimento. Somente um term rider é permitido no segurado principal.</p><div class="scroll"><table class=""><thead><tr><th>Item</th><th>Valor</th></tr></thead><tbody>
+<tr><td>Prazos (Term Lengths)</td><td>10 anos; 15 anos; 20 anos</td></tr>
+<tr><td>Idades de emissão (age nearest birthday)</td><td>18-60</td></tr>
+<tr><td>Valores de emissão (Issue Amounts)</td><td>Cobertura mínima: $25,000. Cobertura máxima: a cobertura do term rider, combinada com o valor segurado do certificado base, mais o valor do seguro adicional paid-up comprado sob um Single Payment Paid-up Additions Rider e/ou Flexible Payment Paid-up Additions Rider (se aplicável), mais qualquer outra cobertura atualmente em vigor com a Foresters, não pode exceder o valor segurado máximo do produto com base na classe de subscrição e idade de emissão.</td></tr>
+<tr><td>Conversão (Convertibility)</td><td>O rider é conversível durante o período de conversão para um produto aprovado pela Foresters então disponibilizado, com classe de subscrição semelhante, sujeito aos limites de idade de emissão e valor segurado desse plano.</td></tr>
+</tbody></table></div>
+<div class="scroll"><table class=""><thead><tr><th>Prazo</th><th>Período de renovação (Renewal Period)</th><th>Vencimento (Expiry Date)</th></tr></thead><tbody>
+<tr><td>10 anos (10 Years)</td><td>O maior entre 10 anos ou até o aniversário do certificado em que o segurado completa 65 anos.</td><td>O mais tardio entre 20 anos após a data de emissão do rider e o aniversário do certificado em que o segurado completa 65 anos.</td></tr>
+<tr><td>15 anos (15 Years)</td><td>O maior entre 10 anos ou até o aniversário do certificado em que o segurado completa 70 anos.</td><td>O mais tardio entre 25 anos após a data de emissão do rider e o aniversário do certificado em que o segurado completa 70 anos.</td></tr>
+<tr><td>20 anos (20 Years)</td><td>O maior entre 10 anos ou até o aniversário do certificado em que o segurado completa 75 anos.</td><td>O mais tardio entre 30 anos após a data de emissão do rider e o aniversário do certificado em que o segurado completa 75 anos.</td></tr>
+</tbody></table></div>
+</div>
+<div class="card"><h3>Accelerated Death Benefit Rider (ABR) — rider de antecipação do benefício por morte</h3><p><b>Disponível para:</b> segurado (life insured). Incluído automaticamente nos certificados elegíveis, sem prêmio adicional. Dá ao titular a opção de antecipar uma parte do benefício por morte elegível e receber um pagamento antecipado por diagnóstico de doença elegível.</p><p><b>Doenças elegíveis (Eligible Illness):</b> sujeito aos critérios de elegibilidade e variações estaduais, o rider pode ser emitido com uma ou mais das seguintes: doença crônica (chronic illness), doença crítica (critical illness), doença terminal (terminal illness).</p><div class="scroll"><table class=""><thead><tr><th>Doença crônica (Chronic Illness) — o segurado:</th><th>Doença crítica (Critical Illness) — as seguintes doenças:</th><th>Doença terminal (Terminal illness) — o segurado:</th></tr></thead><tbody>
+<tr><td>Está impossibilitado de realizar, sem assistência substancial de outra pessoa, pelo menos duas das atividades da vida diária por um período de pelo menos 90 dias, devido à perda de capacidade funcional; <b>ou</b> requer supervisão substancial de outra pessoa para protegê-lo de ameaças à saúde e segurança devido a comprometimento cognitivo grave.</td><td>Câncer com risco de vida (invasivo); infarto do miocárdio (Myocardial Infarction); acidente vascular cerebral (Stroke); doença de Alzheimer avançada (antes do 75º aniversário do segurado); insuficiência renal em estágio terminal; falência de órgão importante (Major Organ Failure); ELA (ALS) (conforme descrito mais detalhadamente no rider).</td><td>Tem uma doença ou condição física não corrigível que, razoavelmente, se espera resulte em morte em até 12 meses do diagnóstico.</td></tr>
+</tbody></table></div>
+<h4>Critérios de elegibilidade (Eligibility Criteria)</h4><div class="scroll"><table class=""><thead><tr><th>Doenças crônica e crítica</th><th>Doença terminal</th></tr></thead><tbody>
+<tr><td>Valor segurado na emissão de pelo menos $25,000; idade de emissão do segurado de 60 ou menos; classes de subscrição standard ou melhores.</td><td>Valor segurado na emissão de pelo menos $25,000; todas as idades; todas as classes de subscrição, inclusive substandard.</td></tr>
+</tbody></table></div>
+<h4>Valores de antecipação (Acceleration Amounts)</h4><div class="scroll"><table class=""><thead><tr><th>Item</th><th>Valor</th></tr></thead><tbody>
+<tr><td>Valor mínimo de antecipação (Minimum Acceleration Amount)</td><td>$4,500</td></tr>
+<tr><td>Máximo — Doença crônica</td><td>Em qualquer período de 12 meses, 24% do benefício por morte elegível na data efetiva do primeiro pagamento antecipado por doença crônica.</td></tr>
+<tr><td>Máximo — Doença crítica</td><td>O menor entre: a) 95% do benefício por morte elegível na data efetiva do pagamento antecipado aplicável por cada doença crítica; e b) $500,000.</td></tr>
+<tr><td>Máximo — Doença terminal</td><td>O menor entre: a) 95% do benefício por morte elegível na data efetiva do pagamento antecipado por doença terminal; e b) $500,000. Um pagamento por doença terminal é permitido — o rider terminará após um pagamento ABR por doença terminal.</td></tr>
+<tr><td>Máximo vitalício de antecipação (Lifetime Maximum Acceleration Amount)</td><td>O menor entre: a) 95% do benefício por morte elegível na época da primeira antecipação; e b) $500,000.</td></tr>
+<tr><td>Valor segurado base residual mínimo (Minimum Residual Base Face Amount)</td><td>$10,000</td></tr>
+</tbody></table></div>
+<p><b>Valor do pagamento (Payment Amount):</b> o pagamento, por diagnóstico de doença crítica e doença crônica elegíveis, será menor que o valor de antecipação, que será reduzido por: desconto atuarial (actuarial discount amount) e taxa de administração (administration fee; a taxa atual é <b>$300</b>). O desconto atuarial e a taxa de administração <b>não</b> se aplicam a um sinistro por doença terminal.</p><p><b>Desconto atuarial (Actuarial Discount Amount):</b> determinado pela Foresters; com base em fatores específicos do segurado, como idade, sexo ao nascer e classe de prêmio; com base na mortalidade futura do segurado usando a tabela de mortalidade determinada pela Foresters; na taxa de juros de benefício por morte antecipado aplicada pela Foresters; e leva em conta o valor presente do valor de antecipação e dos dividendos em relação a esse valor de antecipação.</p><p><b>Efeito da antecipação (Effect of Acceleration):</b> o pagamento do sinistro ABR reduzirá o valor segurado e, se houver, o seguro adicional paid-up, o valor em dinheiro e o valor do empréstimo. A redução do valor segurado pode ser maior que o valor do pagamento. O pagamento pode ser menor que o valor de antecipação, que pode estar sujeito a taxa, desconto atuarial e outras deduções aplicáveis. Após a antecipação, futuros dividendos creditados, se houver, serão como se o certificado tivesse sido emitido com o valor segurado reduzido. Qualquer empréstimo de certificado pendente será reduzido pelo valor de pagamento de empréstimo subtraído do valor de antecipação.</p></div>
+<div class="card"><h3>Additional Insured Term Rider — rider de seguro temporário para segurado adicional</h3><p>Oferece seguro de vida temporário nivelado sobre um segurado adicional, com prêmios nivelados durante o prazo inicial. Após o prazo inicial, a cobertura pode continuar como seguro temporário anual renovável (com aumentos anuais de prêmio) até a data de vencimento. Somente um term rider é permitido no segurado adicional.</p><div class="scroll"><table class=""><thead><tr><th>Item</th><th>Valor</th></tr></thead><tbody>
+<tr><td>Prazos (Term Lengths)</td><td>10 anos; 15 anos; 20 anos</td></tr>
+<tr><td>Idades de emissão (age nearest birthday)</td><td>18-60 (somente para idade de emissão 18, o segurado adicional deve ter a idade real).</td></tr>
+<tr><td>Segurado adicional (Additional Insured)</td><td>Deve ser o cônjuge legalmente casado do segurado principal, cônjuge de união estável (common-law spouse) ou parceiro de união civil.</td></tr>
+<tr><td>Valores de emissão (Issue Amounts)</td><td>Cobertura mínima: $25,000. Cobertura máxima: a cobertura do term rider não pode exceder o valor segurado máximo do produto com base na classe de subscrição e idade de emissão.</td></tr>
+<tr><td>Conversão (Convertibility)</td><td>O rider é conversível durante o período de conversão para um produto aprovado pela Foresters então disponibilizado, com classe de subscrição semelhante, sujeito aos limites de idade de emissão e valor segurado desse plano.</td></tr>
+</tbody></table></div>
+<div class="scroll"><table class=""><thead><tr><th>Prazo</th><th>Período de renovação (Renewal Period)</th><th>Vencimento (Expiry Date)</th></tr></thead><tbody>
+<tr><td>10 anos (10 Years)</td><td>O maior entre 10 anos ou até o aniversário do certificado em que o segurado completa 65 anos.</td><td>O mais tardio entre 20 anos após a data de emissão do rider e o aniversário do certificado em que o segurado completa 65 anos.</td></tr>
+<tr><td>15 anos (15 Years)</td><td>O maior entre 10 anos ou até o aniversário do certificado em que o segurado completa 70 anos.</td><td>O mais tardio entre 25 anos após a data de emissão do rider e o aniversário do certificado em que o segurado completa 70 anos.</td></tr>
+<tr><td>20 anos (20 Years)</td><td>O maior entre 10 anos ou até o aniversário do certificado em que o segurado completa 75 anos.</td><td>O mais tardio entre 30 anos após a data de emissão do rider e o aniversário do certificado em que o segurado completa 75 anos.</td></tr>
+</tbody></table></div>
+</div>
+<div class="card"><h3>Family Health Benefit Rider — rider de benefício de saúde familiar</h3><p>Incluído automaticamente nos certificados elegíveis, sem prêmio adicional. Paga benefícios por situações de saúde qualificadas para o segurado e sua família imediata que tenham sido transferidos de ambulância a um hospital nos Estados Unidos continentais, Alasca ou Havaí, ou que visitem a sala de emergência ou fiquem internados, em razão de um evento catastrófico oficialmente reconhecido e registrado pelo U.S. National Weather Service ou pelo U.S. Geological Survey. Esses eventos limitam-se a: tufão, furacão, tornado, terremoto, erupção vulcânica, tsunami ou queda de raio.</p><div class="scroll"><table class=""><thead><tr><th>Item</th><th>Valor</th></tr></thead><tbody>
+<tr><td>Idades de emissão (age nearest birthday)</td><td>18-60</td></tr>
+<tr><td>Evento qualificado e valor</td><td>Transporte de ambulância: $50; exame em sala de emergência hospitalar: $100; internação hospitalar: $100/dia (até 5 dias)</td></tr>
+<tr><td>Benefício máximo</td><td>$650 por pessoa, por incidente, com máximo familiar vitalício de $5,000.</td></tr>
+<tr><td>Vencimento (Expiry Date)</td><td>O que ocorrer primeiro: o aniversário do certificado em que o segurado completa 100 anos; o primeiro dia seguinte ao dia em que o total dos valores de benefícios específicos pagos sob este rider iguala o valor máximo de benefício familiar.</td></tr>
+</tbody></table></div>
+</div>
+<div class="card"><h3>Common Carrier Accidental Death Rider — morte acidental em transporte coletivo</h3><p>Incluído automaticamente nos certificados elegíveis, sem prêmio adicional. Paga um valor de benefício por morte de até duas vezes o valor segurado, até o máximo de $300,000, se o segurado morrer em até 180 dias de uma lesão corporal acidental ocorrida enquanto viajava em transporte coletivo (common carrier) como passageiro pagante.</p><div class="scroll"><table class=""><thead><tr><th>Item</th><th>Valor</th></tr></thead><tbody>
+<tr><td>Idades de emissão (age nearest birthday)</td><td>18-60</td></tr>
+<tr><td>Valor do benefício</td><td>Duas vezes o valor segurado, até o máximo de $300,000. O benefício também está sujeito a um máximo de $300,000 somando toda a cobertura de morte acidental da Foresters, no momento do pagamento.</td></tr>
+<tr><td>Vencimento</td><td>O aniversário do certificado em que o segurado completa 100 anos.</td></tr>
+</tbody></table></div>
+</div>
+<div class="card"><h3>Accidental Death Rider (ADR) — rider de morte acidental</h3><p>Oferece cobertura adicional em caso de morte acidental, causada por lesão corporal acidental, quando a morte ocorre em até 180 dias da lesão.</p><div class="scroll"><table class=""><thead><tr><th>Item</th><th>Valor</th></tr></thead><tbody>
+<tr><td>Idades de emissão (age nearest birthday)</td><td>18-60</td></tr>
+<tr><td>Valor mínimo</td><td>O valor mínimo de emissão é $25,000.</td></tr>
+<tr><td>Valor máximo</td><td>O valor máximo de emissão é 100% do valor segurado até $300,000. O valor emitido está sujeito a um máximo de $300,000 de cobertura de morte acidental somando todos os certificados da Foresters.</td></tr>
+<tr><td>Pagamento do benefício</td><td>Paga o benefício do rider se o segurado morrer em até 180 dias de, e em razão de, uma lesão corporal acidental.</td></tr>
+<tr><td>Mudanças após a emissão</td><td>O valor do benefício do rider pode ser reduzido após a emissão. Porém, aumento do valor do benefício após a emissão não é permitido.</td></tr>
+<tr><td>Vencimento</td><td>O aniversário do certificado em que o segurado completa 70 anos.</td></tr>
+<tr><td>Notas</td><td>O rider pode ser adicionado após a emissão e está disponível para casos com classificação substandard no certificado base.</td></tr>
+</tbody></table></div>
+</div>
+<div class="card"><h3>Children’s Term Rider (CTR) — rider de seguro temporário para filhos</h3><p>Oferece seguro temporário nivelado para cada filho segurado (conforme definido no rider; inclui filhos nascidos do segurado, adotados por ele, sob sua tutela legal, ou enteados).</p><div class="scroll"><table class=""><thead><tr><th>Item</th><th>Valor</th></tr></thead><tbody>
+<tr><td>Idades de emissão (age nearest birthday)</td><td>18-55 (para o segurado)</td></tr>
+<tr><td>Valor do benefício</td><td>Em incrementos de $1,000; mínimo de $10,000; máximo de $25,000.</td></tr>
+<tr><td>Prêmio</td><td>Um prêmio de rider cobre todos os filhos segurados e permanecerá o mesmo durante a vida do rider.</td></tr>
+<tr><td>Filhos segurados</td><td>Na emissão, cada filho que: tenha 15 dias ou mais na data da proposta; não tenha completado o 18º aniversário na emissão do rider; e não seja excluído pela Foresters. A cobertura será estendida a cada pessoa que se torne filho do segurado enquanto o rider estiver em vigor; esse filho deve ter pelo menos 15 dias e não ter completado o 18º aniversário.</td></tr>
+<tr><td>Filho deixa de ser segurado</td><td>No mais cedo entre: o 25º aniversário do filho; a data de conversão da cobertura desse filho segundo a disposição de conversão do rider; a data em que o rider termina.</td></tr>
+<tr><td>Conversão</td><td>Os filhos segurados podem converter a cobertura em um novo certificado de seguro de vida permanente (sem evidência de segurabilidade) durante o período de conversão. A conversão pode ser para qualquer produto permanente disponibilizado e subscrito pela The Independent Order of Foresters. O novo certificado, incluindo prêmios, será baseado na idade do filho na época da emissão.</td></tr>
+<tr><td>Valor de conversão</td><td>Até 1 vez o valor do benefício do rider, em ou antes do 21º aniversário do filho segurado; até 5 vezes o valor do benefício do rider após o 21º aniversário e antes do 25º aniversário do filho segurado, sujeito a um máximo geral de conversão, somando todos os produtos Foresters, de $100,000 por filho segurado. Qualquer seguro acima do valor de conversão e riders adicionados ao novo certificado de seguro de vida permanente estão sujeitos à aprovação de subscrição.</td></tr>
+<tr><td>Período de conversão</td><td>Começa quando o filho se torna filho segurado, até depois do primeiro entre: a data em que o rider termina; a morte do segurado; o 25º aniversário do filho segurado.</td></tr>
+<tr><td>Vencimento</td><td>O aniversário do certificado em que o segurado completa 65 anos.</td></tr>
+<tr><td>Notas</td><td>O rider pode ser adicionado após a emissão; a evidência de segurabilidade do(s) filho(s) segurado(s) é exigida somente no momento da proposta; o rider está disponível para casos com classificação substandard no certificado base.</td></tr>
+</tbody></table></div>
+<div class="amb"><b class="t">Nota de conferência</b>No original, o texto do “Conversion Period” diz “until after the earliest of” (sem “two months”, que aparece no guia Level Term). Traduzido como está, sem completar.</div>
+</div>
+<div class="card"><h3>Waiver of Premium Rider — isenção de prêmio</h3><p>Paga o prêmio caso o segurado fique totalmente incapacitado. Para ter direito ao benefício, o segurado deve estar totalmente incapacitado por um período contínuo de pelo menos seis (6) meses.</p><div class="scroll"><table class=""><thead><tr><th>Item</th><th>Valor</th></tr></thead><tbody>
+<tr><td>Idades de emissão (age nearest birthday)</td><td>18-55</td></tr>
+<tr><td>Definição de incapacidade total</td><td>Após a aprovação do pedido de incapacidade, se o modo de prêmio não for mensal, será alterado para mensal. “Total disability” é definida no rider.</td></tr>
+<tr><td>Vencimento</td><td>O aniversário do certificado em que o segurado completa 65 anos.</td></tr>
+</tbody></table></div>
+<h4>Isenção dos prêmios (Waiving Premiums)</h4><div class="scroll"><table class=""><thead><tr><th>Se a incapacidade total começar <b>antes</b> do aniversário do certificado em que o segurado completa 60 anos, e o segurado permanecer continuamente incapacitado após a data de vencimento do rider, o prêmio mensal continuará isento até o que ocorrer primeiro:</th><th>Se a incapacidade total começar <b>no</b> aniversário do certificado em que o segurado completa 60 anos <b>ou depois</b>, e o segurado permanecer continuamente incapacitado após esse aniversário, o prêmio mensal continuará isento até o que ocorrer primeiro:</th></tr></thead><tbody>
+<tr><td>a) a data em que o segurado deixar de estar totalmente incapacitado; ou b) o dia em que o certificado deixar de estar em vigor.</td><td>a) a data em que o segurado deixar de estar totalmente incapacitado; ou b) o aniversário do certificado em que o segurado completa 65 anos; ou c) o dia em que o certificado deixar de estar em vigor.</td></tr>
+</tbody></table></div>
+</div>
+<div class="card"><h3>Guaranteed Insurability Rider (GIR) — opção de segurabilidade garantida</h3><p>Dá a oportunidade de comprar seguro de vida adicional sobre a vida do segurado em uma data de opção, até o valor do benefício do rider, sem nova evidência de segurabilidade.</p><div class="scroll"><table class=""><thead><tr><th>Item</th><th>Valor</th></tr></thead><tbody>
+<tr><td>Disponível para</td><td>Segurado (life insured)</td></tr>
+<tr><td>Idades de emissão</td><td>18-37</td></tr>
+<tr><td>Datas de opção programadas</td><td>Aniversário do certificado em que o segurado tem 25, 28, 31, 34, 37 e 40 anos. Datas de opção aceleradas para casamento, nascimento ou adoção.</td></tr>
+<tr><td>Valor do benefício</td><td>O menor entre o valor segurado ou $50,000 por opção.</td></tr>
+<tr><td>Vencimento</td><td>O aniversário do certificado em que o segurado completa 40 anos.</td></tr>
+</tbody></table></div>
+</div>
+<div class="card"><h3>Single Payment Paid-up Additions Rider — adições paid-up de pagamento único</h3><p>Dá a oportunidade de uma compra única de seguro adicional paid-up (seguro de vida permanente e participante, com valores em dinheiro, que vence/endows aos 121 anos) sobre a vida do segurado.</p><div class="scroll"><table class=""><thead><tr><th>Item</th><th>Valor</th></tr></thead><tbody>
+<tr><td>Idades de emissão</td><td>18-60</td></tr>
+<tr><td>Valores de emissão</td><td>Pagamento mínimo: $600. Pagamento único máximo: $200,000 (conforme solicitado na emissão e sujeito à aprovação de subscrição).</td></tr>
+<tr><td>Deduções</td><td>Não há prêmios associados aos riders PUA; porém, uma taxa de despesa de pagamento (<b>6%</b>) é deduzida do pagamento aceito sob o rider, e o saldo é usado para comprar o seguro paid-up.</td></tr>
+<tr><td>Valor do benefício por morte</td><td>O valor do benefício por morte das paid-up additions compradas pelo pagamento varia conforme a idade do segurado no momento do pagamento. O benefício por morte máximo das paid-up additions variará conforme o benefício por morte máximo do Foresters Live Well Plus por idade de emissão e classe de subscrição. Veja “Valor segurado mínimo e máximo” (Minimum and Maximum Face Amounts) para os limites gerais.</td></tr>
+<tr><td>Vencimento</td><td>O que ocorrer primeiro: a data em que o pagamento único é aceito ou 60 dias após a data de emissão do rider. A Foresters pode aceitar um pagamento que chegue depois de 60 dias da data de emissão do rider se o atraso não for culpa do titular.</td></tr>
+</tbody></table></div>
+</div>
+<div class="card"><h3>Flexible Payment Paid-up Additions Rider — adições paid-up de pagamento flexível</h3><p>Dá a oportunidade contínua de comprar seguro adicional paid-up (seguro de vida permanente e participante, com valores em dinheiro, que vence/endows aos 121 anos) sobre a vida do segurado.</p><div class="scroll"><table class=""><thead><tr><th>Item</th><th>Valor</th></tr></thead><tbody>
+<tr><td>Idades de emissão</td><td>18-60</td></tr>
+<tr><td>Pagamento mínimo</td><td>$600 - Anual; $300 - Semestral; $150 - Trimestral; $50 - Mensal</td></tr>
+<tr><td>Pagamento anual máximo</td><td>$200,000 (solicitado e sujeito à aprovação de subscrição). Os pagamentos também estão sujeitos a um valor máximo vitalício de pagamento de $2,000,000.</td></tr>
+<tr><td>Reajuste do pagamento máximo</td><td>No 5º aniversário: redefinido para a média dos primeiros 5 anos de valores de pagamento efetivamente aceitos (inclusive pagamentos de recuperação, catch-up). No 10º aniversário: redefinido para a média do sexto ao décimo ano de valores de pagamento efetivamente aceitos (inclusive pagamentos de recuperação), que não pode ser maior que o valor redefinido no 5º aniversário. Do 11º aniversário em diante: redefinido anualmente, com base nos valores de pagamento efetivamente aceitos no ano anterior.</td></tr>
+<tr><td>Deduções</td><td>Não há prêmios associados aos riders PUA; porém, uma taxa de despesa de pagamento (<b>6%</b>) é deduzida de cada pagamento aceito sob o rider, e o saldo é usado para comprar o seguro paid-up.</td></tr>
+<tr><td>Valor do benefício por morte</td><td>O valor do benefício por morte das paid-up additions compradas por cada pagamento varia conforme a idade do segurado no momento do pagamento. O benefício por morte máximo das paid-up additions variará conforme o benefício por morte máximo do Foresters Live Well Plus por idade de emissão e classe de subscrição. Veja “Valor segurado mínimo e máximo” para os limites gerais.</td></tr>
+<tr><td>Modos de pagamento e cobrança</td><td>Pagamentos sob o rider podem ser feitos a qualquer momento; porém, na emissão a cobrança deve ser no mesmo modo dos pagamentos de prêmio do certificado base. Após a emissão, o modo de cobrança do rider pode ser alterado.</td></tr>
+<tr><td>Vencimento</td><td>O que ocorrer primeiro: 25 anos após a data de emissão do rider e o aniversário do certificado em que o segurado completa 80 anos.</td></tr>
+</tbody></table></div>
+</div>
+</section>
+<section class="sec" id="s3"><div class="sec-h"><div class="n">3</div><h2>Contatos-chave da Foresters<small>Key Contact Information</small></h2></div>
+<div class="card"><h3>Suporte de vendas (Sales Support)</h3><p>“Atendemos sua ligação com uma voz real.” A Equipe de Suporte de Vendas da Foresters é seu primeiro ponto de contato direto e ao vivo para todas as necessidades pré-venda. Ligue para <b>1-866-466-7166 Opção #1</b>, de segunda a sexta, das 9:00 am às 6:00 pm ET. Apoio com: voz ao vivo para responder suas perguntas; ideias e soluções de vendas; treinamento de produto Foresters; software de ilustração e suporte ao site; conceitos avançados de marketing, materiais e educação; ponto único de contato com a Foresters.</p><h3>Central de Serviço ao Produtor (Our Producer Service Center)</h3><p>Precisa consultar negócios enviados recentemente ou um certificado em vigor? Visite o site do produtor ezbiz (foresters.com) para opções de autoatendimento 24 horas. Se precisar de ajuda adicional, ligue para a Producer Support Line: <b>1-866-466-7166 Opção #2</b>, de segunda a sexta, das 9:00 am às 5:00 pm ET.</p></div>
+</section>
+
+<section class="sec"><h3>Teste seu conhecimento</h3><ol class="steps"><li><b>Que tipo de subscrição o Live Well Plus usa e quais as idades de emissão?</b><br><span class="ans">Subscrição acelerada; idades de emissão 18 a 60 (idade mais próxima do aniversário). Backdating para economizar idade não é permitido.</span></li><li><b>Até que idade o prêmio é pago e quando o certificado vence (maturity)?</b><br><span class="ans">Pago aos 100 anos; vencimento aos 121 anos (paga o valor de resgate em dinheiro).</span></li><li><b>Trocas 1035 e substituições são permitidas?</b><br><span class="ans">Não: trocas 1035 não são permitidas e substituições não são permitidas.</span></li><li><b>Os dividendos são garantidos? Qual a opção padrão?</b><br><span class="ans">Não são garantidos; a opção padrão é Paid-up Additions (PUA).</span></li><li><b>Qual a taxa máxima de juros de empréstimo?</b><br><span class="ans">8.0%.</span></li><li><b>Qual o período de carência e o prazo de reinstalação?</b><br><span class="ans">Carência de 31 dias; reinstalação em até três anos da caducidade.</span></li><li><b>Que taxa de despesa de pagamento se aplica aos riders PUA?</b><br><span class="ans">6% de cada pagamento aceito, com o saldo usado para comprar o seguro paid-up.</span></li></ol>
+</section>
+<div class="endnote"><b>Fonte:</b> Foresters Live Well Plus Whole Life Insurance — Product Guide, formulário 506014 US 04/25 (PDF oficial da seguradora fornecido pelo proprietário em 20/11/2026). Texto traduzido de PDFs oficiais fornecidos pelo proprietário em 20/11/2026; sem dados pessoais. Tradução de apoio: vale o texto original em inglês (“For Producer Use Only. Not For Use With The Public.”). Marcas: Foresters Financial, Foresters e Helping is Who We Are são nomes comerciais e marcas da The Independent Order of Foresters (sociedade fraternal, 789 Don Mills Road, Toronto, Ontario, Canada M3C 1T9) e subsidiárias. N808.<br><a href="pdf/foresters-506014-live-well-plus-original.pdf">Original (EN) — PDF da Foresters</a></div>
+</main></div>
+<div class="webfoot">WDT AGENCY · Academy — Material interno de estudo.</div>
+<script>try{if(window.self!==window.top||location.href==="about:srcdoc"){document.documentElement.classList.add("inframe")}}catch(e){}</script></body></html>

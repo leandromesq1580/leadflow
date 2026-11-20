@@ -359,7 +359,7 @@ const MODS = [
 /* Mapa de seguradoras: guia + vídeos */
 const CARRIERS = [
   {n:'National Life Group',tag:'Seguradora padrão',p:['Term','IUL','Whole Life'],tr:[['Guia de estudo da National Life','docs/nl-guia.html'],['Term — guia do produto','docs/nl-term.html'],['RapidProtect — guia do produto','docs/nl-rapidprotect.html'],['FlexLife — guia do produto','docs/nl-flexlife.html'],['Guia de Underwriting','docs/nl-underwriting.html']],g:[],v:[['Term','media/cot-term-nlg.mp4'],['IUL','media/cot-iul-nlg.mp4'],['Whole Life','1d_2yxW37RDZAmt0Wcft9f3LgF02CuCFh']],f:[['DocuSign NLG','1y8TDAl_Fokq6VD1a9Npi5iLz_X9NULua']]},
-  {n:'Foresters',p:['Term','Whole Life'],tr:[['Guia de estudo da Foresters','docs/foresters-guia.html']],g:['1F0_P8VLgskSqnQJavLrHM6GOP5r3JJ03','1PI3laNKMOOVywVNG4grmTMUcPyXDIVmC'],gn:['Ficha técnica ABR','Orphan Benefit'],v:[['Term','media/cot-term-foresters.mp4'],['Whole Life','media/cot-wl-foresters.mp4']]},
+  {n:'Foresters',p:['Term','Whole Life'],tr:[['Guia de estudo da Foresters','docs/foresters-guia.html'],['SMART UL — Guia em português','docs/foresters-smart-ul.html'],['SMART UL — Original (EN)','docs/pdf/foresters-503346-smart-ul-original.pdf','pdf'],['Level Term (Strong Foundation e Your Term) — Guia em português','docs/foresters-level-term.html'],['Level Term (Strong Foundation e Your Term) — Original (EN)','docs/pdf/foresters-504387-level-term-original.pdf','pdf'],['Live Well Plus — Guia em português','docs/foresters-live-well-plus.html'],['Live Well Plus — Original (EN)','docs/pdf/foresters-506014-live-well-plus-original.pdf','pdf'],['Advantage Plus II — Guia em português','docs/foresters-advantage-plus-ii.html'],['Advantage Plus II — Original (EN)','docs/pdf/foresters-504933-advantage-plus-ii-original.pdf','pdf']],g:['1F0_P8VLgskSqnQJavLrHM6GOP5r3JJ03','1PI3laNKMOOVywVNG4grmTMUcPyXDIVmC'],gn:['Ficha técnica ABR','Orphan Benefit'],v:[['Term','media/cot-term-foresters.mp4'],['Whole Life','media/cot-wl-foresters.mp4']]},
   {n:'F&G',p:['IUL'],tr:[['Guia de estudo da F&G','docs/fg-guia.html']],g:[],v:[['IUL','media/cot-iul-fg.mp4']],f:[['W-8 (só passaporte)','1W79kL_gKZP4ejgI7i7OyMjCJmbilVD9P']]},
   {n:'Transamerica',p:['Term','IUL'],tr:[['Guia de estudo da Transamerica','docs/transamerica-guia.html']],g:[],v:[['Term','media/cot-transamerica.mp4'],['IUL','media/cot-transamerica.mp4']]},
   {n:'Ameritas',p:['Term'],tr:[['Guia de estudo da Ameritas','docs/ameritas-guia.html']],g:[],v:[['Term','media/cot-term-ameritas.mp4']]},
@@ -413,7 +413,8 @@ function art(icon, seed){
 
 /* ================== monta o curso ================== */
 const EMBED = !/claude|anthropic/i.test(location.hostname) && location.protocol.startsWith('http');
-const isDoc = id => id.startsWith('docs/');
+const isDoc = id => id.startsWith('docs/') && !id.endsWith('.pdf');
+const isLocalPdf = id => id.startsWith('docs/') && id.endsWith('.pdf');
 const prev = id => 'https://drive.google.com/file/d/'+id+'/preview';
 const TNAME = {pdf:'PDF',video:'Vídeo',pptx:'Apresentação',img:'Imagem',guia:'Guia em PT-BR',doc:'Guia WDT'};
 const FT = {pdf:'PDF',video:'VÍDEO',pptx:'PPTX',img:'IMG',guia:'PT-BR',doc:'GUIA'};
@@ -449,7 +450,7 @@ addRow('row-mat','Materiais de apoio','Produtos, scripts, guias das seguradoras 
 // Seguradoras
 addRow('row-seg','Seguradoras','Guia, vídeos de cotação e formulários de cada seguradora',
   CARRIERS.map((c,i)=>({k:'s'+i,icon:'bank',n:c.n,d:c.tag?c.tag+' · '+c.p.join(' · '):c.p.join(' · ')||'Guia da seguradora',land:true,
-    lessons:[...(c.tr||[]).map(([n,id])=>({id,t:'guia',n})), ...c.g.map((id,j)=>({id,t:'pdf',n:c.gn?c.gn[j]:'Guia da seguradora'})), ...c.v.map(([p,id])=>({id,t:'video',n:'Cotação '+p})), ...(c.f||[]).map(([n,id])=>({id,t:'pdf',n}))]})), true);
+    lessons:[...(c.tr||[]).map(([n,id,t])=>({id,t:t||'guia',n})), ...c.g.map((id,j)=>({id,t:'pdf',n:c.gn?c.gn[j]:'Guia da seguradora'})), ...c.v.map(([p,id])=>({id,t:'video',n:'Cotação '+p})), ...(c.f||[]).map(([n,id])=>({id,t:'pdf',n}))]})), true);
 
 const modByKey = k => MODULES.find(m=>m.k===k);
 const lessonsAll = MODULES.flatMap(m=>m.lessons.map(l=>({...l,mk:m.k,mn:m.n})));
@@ -498,6 +499,7 @@ let curMod=null, curIdx=0;
 function openModule(k, idx){ location.hash = 'm-'+k+'-'+(idx||0); }
 function playerHTML(l){
   if(l.id.startsWith('media/')) return `<video controls playsinline preload="metadata" poster="${l.poster||l.id.replace(/\.mp4$/,'.jpg')}" src="${l.id}" style="position:absolute;inset:0;width:100%;height:100%;background:#000"></video>`;
+  if(isLocalPdf(l.id)) return `<a class="cover" href="${l.id}" target="_blank" rel="noopener"><div class="pl">⤢</div><b>${l.n}</b><small>Abrir o PDF original da seguradora (inglês)</small></a>`;
   if(isDoc(l.id)) return `<iframe class="docframe" data-doc="${l.id}" title="${l.n}" style="background:#fff"></iframe>`;
   if(EMBED) return `<iframe src="${prev(l.id)}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
   const v = l.t==='video';
