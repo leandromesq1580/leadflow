@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Configuração do CRM Lead4Pro — WDT Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+@page { size: Letter; margin: 14mm 0 16mm 0;
+  @bottom-left { content: "WDT AGENCY · Academy"; font: 600 7.5pt Poppins, sans-serif; color: #0B1B3A; padding-left: 16mm; letter-spacing: 1px; }
+  @bottom-center { content: "Guia de configuração do CRM Lead4Pro — material de treinamento interno."; font: 400 6.3pt Poppins, sans-serif; color: #6B7891; width: 120mm; text-align: center; }
+  @bottom-right { content: "pág. " counter(page); font: 600 7.5pt Poppins, sans-serif; color: #A8893A; padding-right: 16mm; }
+}
+@page :first { margin-top: 0; }
+:root{--navy:#0B1B3A;--navy2:#132A52;--gold:#C9A54C;--gold2:#DDBF73;--ink:#0E1A33;--muted:#5B6880;--line:#E2E7F0;--soft:#F1F4F9;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Poppins,system-ui,sans-serif;color:var(--ink);background:#fff;font-size:10.2pt;line-height:1.55;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+a{color:#1E3A6E}
+.hero{position:relative;overflow:hidden;color:#fff;padding:22mm 16mm 16mm;background:radial-gradient(520px 260px at 92% -10%,rgba(201,165,76,.55),transparent 62%),linear-gradient(160deg,#0B1B3A 0%,#132A52 65%,#1A3463 100%)}
+.hero .brand{font-weight:800;font-size:15pt;letter-spacing:.5px}
+.hero .brand span{color:var(--gold);font-weight:600;font-size:7.5pt;letter-spacing:4px;margin-left:6px}
+.hero .eyebrow{margin-top:14mm;font-size:7.8pt;letter-spacing:3px;font-weight:600;color:var(--gold);text-transform:uppercase}
+.hero h1{font-size:27pt;line-height:1.1;font-weight:700;margin:6px 0 4px}
+.hero .sub{font-size:12pt;color:var(--gold2);font-weight:500}
+.hero p.lead{margin-top:10px;color:#C9D2E4;max-width:150mm;font-size:10pt}
+.hero .chips{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px}
+.hero .chips span{border:1px solid rgba(221,191,115,.55);color:#F3E6C3;border-radius:99px;padding:3px 10px;font-size:7.6pt;font-weight:500}
+main{padding:8mm 16mm 4mm}
+.toc{background:var(--soft);border:1px solid #D9E0EC;border-radius:12px;padding:12px 16px;margin:2mm 0 8mm;columns:2;column-gap:12mm;font-size:8.8pt}
+.toc h4{column-span:all;font-size:8pt;letter-spacing:2px;text-transform:uppercase;color:#8A6A1C;margin-bottom:6px}
+.toc a{display:block;text-decoration:none;color:var(--ink);padding:1.5px 0;break-inside:avoid}
+.toc a b{display:inline-block;width:22px;color:#A8893A}
+section.sec{margin:0 0 7mm}
+.sec-h{display:flex;align-items:center;gap:10px;margin:0 0 8px;break-after:avoid}
+.sec-h .n{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--navy);color:#fff;border:2px solid var(--gold);font-weight:700;font-size:9.5pt}
+.sec-h h2{font-size:15pt;font-weight:700;color:var(--navy);line-height:1.2}
+.sec-h small{display:block;font-size:8.6pt;color:var(--muted);font-weight:400}
+h3{font-size:11pt;color:var(--navy);margin:10px 0 4px;break-after:avoid}
+h4{font-size:9.6pt;color:#1E3A6E;margin:8px 0 3px;break-after:avoid}
+p{margin:0 0 6px}
+ul,ol{margin:2px 0 8px 18px}
+li{margin:1.5px 0}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:6mm}
+.cols3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4mm}
+.card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;break-inside:avoid;margin-bottom:8px}
+.card.navy{background:linear-gradient(160deg,#0B1B3A,#132A52);color:#E6EBF5;border:0}
+.card.navy h3,.card.navy h4{color:var(--gold2)}
+.card.soft{background:var(--soft);border-color:#D9E0EC}
+.alert{background:#FBF7EC;border:1px solid #E8D7A8;border-left:4px solid var(--gold);border-radius:10px;padding:9px 12px;margin:6px 0 10px;font-size:9.4pt;break-inside:avoid}
+.alert b.t{display:block;color:#8A6A1C;font-size:7.8pt;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px}
+.term{background:#EEF2F8;border-radius:10px;padding:8px 12px;margin:6px 0 10px;font-size:8.8pt;color:#33415C;break-inside:avoid}
+.term b{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:4px 0 10px;font-size:8.8pt;break-inside:auto}
+thead{display:table-header-group}
+tr{break-inside:avoid}
+th{background:var(--navy);color:#fff;text-align:left;font-weight:600;padding:5px 7px;font-size:8.4pt}
+th.g{background:#A8893A}
+td{padding:4.5px 7px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:nth-child(even) td{background:#F7F9FC}
+td.c,th.c{text-align:center}
+.ok{color:#1E7A4F;font-weight:800}
+table.kv td:first-child{width:32%;font-weight:600;color:var(--navy);background:#F3F5FA}
+.pill{display:inline-block;font-size:7.6pt;font-weight:600;padding:1px 8px;border-radius:99px;background:#EEF2F8;color:#1E3A6E;margin:1px 2px 1px 0}
+.pill.g{background:#F7F0DF;color:#8A6A1C}
+.foot{font-size:7.6pt;color:var(--muted);border-top:1px solid var(--line);padding-top:5px;margin-top:6px}
+.steps{counter-reset:s;list-style:none;margin-left:0}
+.steps li{counter-increment:s;position:relative;padding-left:30px;margin:6px 0;break-inside:avoid}
+.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:21px;height:21px;border-radius:50%;border:2px solid var(--gold);color:var(--navy);font-weight:700;font-size:8.5pt;display:grid;place-items:center}
+.pb{break-before:page}
+.endnote{margin:6mm 0 0;padding:10px 14px;border-radius:10px;background:var(--soft);font-size:8pt;color:var(--muted)}
+.webbar{display:none}
+@media screen{
+  body{background:#EEF1F6}
+  .doc{max-width:216mm;margin:0 auto;background:#fff;box-shadow:0 10px 40px -20px rgba(11,27,58,.35)}
+  .webbar{display:flex;position:sticky;top:0;z-index:5;background:rgba(11,27,58,.97);color:#fff;padding:9px 18px;gap:14px;align-items:center;font-size:9.5pt}
+  .webbar a{color:#F3E6C3;text-decoration:none;font-weight:600}
+  .webbar b{font-weight:800}.webbar b span{color:var(--gold);font-size:7.5pt;letter-spacing:3px;margin-left:5px}
+  .webbar .sp{flex:1}
+  .webfoot{max-width:216mm;margin:0 auto 30px;padding:12px 16mm;font-size:8pt;color:var(--muted)}
+}
+@media print{.webfoot{display:none}}
+.inframe .webbar,.inframe .webfoot{display:none!important}
+.dlpdf{display:inline-block;margin-top:14px;background:#C9A54C;color:#0B1B3A!important;font-weight:700;font-size:12px;padding:9px 16px;border-radius:8px;text-decoration:none}@media print{.dlpdf{display:none}}
+figure{margin:6px 0 10px;break-inside:avoid}figure img{width:100%;display:block;border:1px solid #D9E0EC;border-radius:8px;box-shadow:0 6px 18px -12px rgba(11,27,58,.5)}
+figcaption{font-size:8pt;color:#5A6880;text-align:center;margin-top:4px}
+.figs{display:grid;grid-template-columns:1fr 1fr;gap:12px}.figs img{max-height:300px;object-fit:contain;background:#fff}
+.btn{display:inline-block;background:#0B1B3A;color:#F3E6C3;font-size:7.6pt;font-weight:700;padding:1px 8px;border-radius:5px;letter-spacing:.3px}
+code{background:#F7F0DF;color:#8A6A1C;padding:0 4px;border-radius:4px;font-size:8.6pt}
+h3.grp{font-size:8pt;letter-spacing:2px;text-transform:uppercase;color:#8A6A1C;margin:12px 0 6px}
+.tpl{border:1px solid #E1E6EF;border-left:4px solid #C9A54C;border-radius:8px;padding:7px 11px;margin:0 0 7px;background:#FBFCFE;break-inside:avoid}
+.tpl .th{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}.tpl .th b{color:#0B1B3A;font-size:9.4pt}
+.tpl .th span{font-size:6.8pt;font-weight:700;letter-spacing:1.5px;color:#fff;background:#1F7A4D;padding:1px 7px;border-radius:99px}
+.tpl p{margin:0;font-size:9pt;color:#33415C;line-height:1.5}
+.steps li li{counter-increment:none;padding-left:0;margin:2px 0;list-style:disc}.steps li li::before{content:none}.steps li ul{margin:4px 0 0 16px}</style></head><body>
+<div class="webbar"><a href="../index.html#m-mcrm-0">← Voltar ao portal</a><span class="sp"></span><b>WDT<span>AGENCY</span></b></div>
+<div class="doc">
+<header class="hero"><div class="brand">WDT<span>AGENCY</span></div>
+<div class="eyebrow">Guia passo a passo · CRM</div><h1>Configuração do CRM Lead4Pro</h1><div class="sub">Pipeline, modelos, automação e sequências</div>
+<p class="lead">Deixe o seu CRM no padrão do time em 4 passos: ajuste o funil, cadastre as mensagens prontas, ligue a automação de reunião e monte as sequências de follow-up.</p><div class="chips"><span>Passo 1 · Pipeline</span><span>Passo 2 · 17 modelos</span><span>Passo 3 · Automação</span><span>Passo 4 · Sequências</span></div><a class="dlpdf" href="pdf/guia-crm.pdf" download>⬇ Baixar PDF</a></header>
+<main>
+<nav class="toc"><h4>Conteúdo</h4><a href="#s1"><b>01</b>Ajustar o pipeline</a><a href="#s2"><b>02</b>Criar os modelos de mensagem</a><a href="#s3"><b>03</b>Criar a automação de reunião</a><a href="#s4"><b>04</b>Criar as sequências de follow-up</a><a href="#s5"><b>05</b>Pronto: confira tudo</a></nav>
+<section class="sec" id="s1"><div class="sec-h"><div class="n">1</div><h2>Ajustar o pipeline<small>Organize os estágios do funil na sequência padrão do time</small></h2></div>
+<ol class="steps">
+<li><b>Abra o gerenciador de pipeline.</b> Vá em <b>Pipeline</b> e, no canto direito da tela, clique em <span class="btn">+ GERENCIAR</span>.</li>
+<li><b>Ajuste os estágios na sequência.</b> Clique no nome do funil para abri-lo. Para renomear, use o ✏️ ou dê 2 cliques no nome; as setas ‹ › mudam a ordem dos funis. Dentro do funil, use as setas ↑ ↓ para mudar a ordem dos estágios e a lixeira para excluir. Deixe os dois funis exatamente nesta sequência:</li></ol>
+<table><thead><tr><th>#</th><th>Funil Vendas ★</th><th>#</th><th>Funil Pós Vendas</th></tr></thead><tbody><tr><td>1</td><td>Novo Lead</td><td>1</td><td>Subir Cotação</td></tr><tr><td>2</td><td>Em Atendimento</td><td>2</td><td>Reaplicar</td></tr><tr><td>3</td><td>Não Atendeu</td><td>3</td><td>Em Análise</td></tr><tr><td>4</td><td>Reunião</td><td>4</td><td>Pendente Seguradora</td></tr><tr><td>5</td><td>No Show</td><td>5</td><td>Exame</td></tr><tr><td>6</td><td>Envio Proposta</td><td>6</td><td>Aguardando Devolutiva</td></tr><tr><td>7</td><td>Fechado/Ganho</td><td>7</td><td>APROVADO</td></tr><tr><td>8</td><td>Final Expense 55+</td><td>8</td><td>PAGO</td></tr><tr><td>9</td><td>Quer Mais Tarde</td><td>9</td><td>Aprovado Não PAGO</td></tr><tr><td>10</td><td>E-mail</td><td>10</td><td>DELIVERY</td></tr><tr><td>11</td><td>Perdido</td><td>11</td><td>EFETIVADO</td></tr><tr><td>12</td><td>Novo Lead/Indicação</td><td>12</td><td>MEUS CONTATOS</td></tr><tr><td></td><td></td><td>13</td><td>NÃO APROVADO</td></tr></tbody></table>
+<div class="figs"><figure><img src="img/crm-funil-vendas.jpg"><figcaption>Funil Vendas</figcaption></figure><figure><img src="img/crm-funil-pos.jpg"><figcaption>Funil Pós Vendas</figcaption></figure></div>
+<div class="term"><b>Opcional:</b> se precisar de um funil a mais, crie pelo mesmo gerenciador e monte os estágios da mesma forma.</div></section>
+<section class="sec" id="s2"><div class="sec-h"><div class="n">2</div><h2>Criar os modelos de mensagem<small>Mensagens prontas de WhatsApp para cada etapa do atendimento</small></h2></div>
+<div class="cols"><div><ol class="steps">
+<li>Vá em <b>Modelos</b> e clique em <span class="btn">+ NOVO MODELO</span>.</li>
+<li><b>Nome:</b> use o nome do modelo exatamente como está abaixo.</li>
+<li><b>Tipo:</b> WhatsApp.</li>
+<li><b>Mensagem:</b> copie o texto. Os campos entre chaves, como <code>{primeiro_nome}</code> e <code>{agente}</code>, são preenchidos automaticamente pelo CRM. Veja a lista completa em ▸ Variáveis disponíveis.</li>
+<li>Clique em <span class="btn">SALVAR</span>. Repita para os 17 modelos.</li></ol></div>
+<div><figure><img src="img/crm-modelo.png"></figure></div></div>
+<h3>Os 17 modelos, prontos para copiar</h3><h3 class="grp">Primeiro contato</h3><div class="tpl"><div class="th"><b>Novo Lead</b><span>WHATSAPP</span></div><p>Oi <code>{primeiro_nome}</code>! Aqui é <code>{agente}</code>, recebi sua solicitação. *Posso te enviar sua cotação agora?*</p></div><div class="tpl"><div class="th"><b>Mensagem Inicial</b><span>WHATSAPP</span></div><p>Oi <code>{primeiro_nome}</code>, recebi sua solicitação. Posso te enviar sua cotação agora?</p></div><div class="tpl"><div class="th"><b>Primeiro Atendimento / Acabei de Ligar</b><span>WHATSAPP</span></div><p>Oi <code>{primeiro_nome}</code>! Aqui é <code>{agente}</code>. Você preencheu um formulário sobre seguro de vida resgatável no Facebook/Instagram. Acabei de entrar em contato e vou retornar mais tarde! Qual seria o melhor horário para eu explicar como funciona?</p></div><div class="tpl"><div class="th"><b>Não Atendeu</b><span>WHATSAPP</span></div><p>Oi <code>{primeiro_nome}</code>! Aqui é <code>{agente}</code>, acabei de entrar em contato contigo e você não atendeu. Vou retornar mais tarde, ok?</p></div><div class="tpl"><div class="th"><b>Liguei 2X</b><span>WHATSAPP</span></div><p>Olá <code>{primeiro_nome}</code>! Tentei te ligar 2x, por isso estou te mandando esta mensagem. Vou te ligar novamente às 2 horas, tudo bem?</p></div><div class="tpl"><div class="th"><b>Não Atendeu 3x / Combinado</b><span>WHATSAPP</span></div><p>Olá <code>{primeiro_nome}</code>! Tentei falar contigo hoje algumas vezes, acredito que está corrido por aí. Vou retornar amanhã, combinado?</p></div><div class="tpl"><div class="th"><b>Follow-up 24h Como Combinado</b><span>WHATSAPP</span></div><p>Olá <code>{primeiro_nome}</code>! Não consegui falar com você ontem. Como combinado, estou retornando. Ainda tem interesse em saber sobre o Seguro de Vida Resgatável? Qual seria o melhor horário?</p></div><h3 class="grp">Sem resposta</h3><div class="tpl"><div class="th"><b>Sem Retorno</b><span>WHATSAPP</span></div><p>Oi <code>{primeiro_nome}</code>! Tentei falar contigo e não tive mais seu retorno! Me responde aqui rapidinho: devo continuar mantendo seu nome na minha lista? Ainda tem interesse no Seguro de Vida?</p></div><div class="tpl"><div class="th"><b>Não Atende a Dias</b><span>WHATSAPP</span></div><p>Oi <code>{primeiro_nome}</code>! Estou tentando falar contigo já faz alguns dias. Me responde aqui rapidinho: devo continuar mantendo seu nome na minha lista? Ainda tem interesse no Seguro de Vida?</p></div><h3 class="grp">Reunião</h3><div class="tpl"><div class="th"><b>Aviso de Reunião</b><span>WHATSAPP</span></div><p>Oi <code>{primeiro_nome}</code>! Aqui é <code>{agente}</code>, passando para confirmar a nossa conversa sobre o seguro de vida daqui a 1 hora, ok?</p></div><div class="tpl"><div class="th"><b>No Show</b><span>WHATSAPP</span></div><p>Oi <code>{primeiro_nome}</code>! Combinamos de conversar sobre o seguro de vida, reservei este horário e você não atendeu! Aconteceu alguma coisa?</p></div><div class="tpl"><div class="th"><b>Tentar Reagendar</b><span>WHATSAPP</span></div><p>Oi <code>{primeiro_nome}</code>! Como não conseguimos falar hoje como combinado, vamos reagendar para esse mesmo horário amanhã?</p></div><h3 class="grp">Proposta e objeções</h3><div class="tpl"><div class="th"><b>Proposta Enviada 24h</b><span>WHATSAPP</span></div><p>Oi <code>{primeiro_nome}</code>! Enviei a sua cotação ontem e não tive mais seu retorno. Vamos dar continuidade ou era apenas curiosidade?</p></div><div class="tpl"><div class="th"><b>Só quer Falar pelo Whats</b><span>WHATSAPP</span></div><p>Então, <code>{primeiro_nome}</code>!<br>A nossa cotação é personalizada. Pelo WhatsApp eu posso te passar um plano simples, sem muitos recursos ou benefícios. Mas a nossa principal proposta é *montarmos juntos o melhor plano para você*, que é resgatável e acumula valor.<br>Aqui nos EUA, o seguro de vida é uma ferramenta financeira importante de acumulação, não funciona como uma tabelinha de preço.<br>E além de tudo, esse plano te protege em caso de doenças, acidentes e invalidez. Se alguma coisa grave acontecer, você está protegido em vida e recebe o valor para usar como achar melhor.<br>O que você escolhe?<br>Plano Simples ou Plano Resgatável?</p></div><h3 class="grp">Pós-venda e relacionamento</h3><div class="tpl"><div class="th"><b>APROVADO</b><span>WHATSAPP</span></div><p>🎉🎉 Ótima notícia, <code>{primeiro_nome}</code>! Seu seguro de vida foi aprovado pela seguradora! 🥳✅ Fiquei muito feliz com esse resultado e em poder acompanhar você durante todo esse processo. Agora seguimos para as próximas etapas, e vou te orientando sobre tudo o que for necessário.<br>Parabéns pela aprovação! 🎊 É muito bom saber que você está dando esse passo tão importante para proteger você e sua família. 💙</p></div><div class="tpl"><div class="th"><b>Aviso de Pagamento 3 Dias</b><span>WHATSAPP</span></div><p>😊 Só para avisar que o pagamento será descontado em até 2 ou 3 dias, ou na data que combinamos. Qualquer dúvida, estou à disposição! 💙 Assim que der tudo certo, envio a sua documentação, ok? 😊🌷</p></div><div class="tpl"><div class="th"><b>Aniversário</b><span>WHATSAPP</span></div><p>Olá, <code>{primeiro_nome}</code>! 🎉🥳 Passando para desejar um feliz aniversário! 🎂✨ Que seu novo ciclo seja cheio de saúde, alegria, conquistas e muitos momentos especiais ao lado de quem você ama. 💙🎁 Aproveite muito o seu dia! 🎊😊</p></div></section>
+<section class="sec" id="s3"><div class="sec-h"><div class="n">3</div><h2>Criar a automação de reunião<small>O CRM envia o aviso de reunião sozinho, 1 hora antes do horário marcado</small></h2></div>
+<div class="cols"><div><ol class="steps">
+<li>Vá em <b>Automações</b> e clique em <span class="btn">+ NOVA AUTOMAÇÃO</span>.</li>
+<li><b>Nome:</b> Reunião.</li>
+<li><b>Quando (gatilho):</b> “N horas antes de uma reunião”, com o número <b>1</b>.</li>
+<li><b>Então (ação):</b> “Enviar modelo (WhatsApp/E-mail)” e escolha o modelo <b>Aviso de Reunião</b>.</li>
+<li>Clique em <span class="btn">SALVAR</span>.</li></ol>
+<div class="alert"><b class="t">Faça na ordem</b>A automação usa o modelo “Aviso de Reunião”, que precisa ter sido criado no Passo 2.</div></div>
+<div><figure><img src="img/crm-automacao.png"></figure></div></div>
+<h3>Confira se ficou ligada</h3>
+<p>A automação aparece na lista com a chave verde ligada e o resumo <i>Quando: 1h antes da reunião · Ação: Enviar “Aviso de Reunião”</i>. Para mudar, use <b>Editar</b>; para desligar sem apagar, desative a chave.</p>
+<figure><img src="img/crm-automacoes-lista.png"></figure></section>
+<section class="sec" id="s4"><div class="sec-h"><div class="n">4</div><h2>Criar as sequências de follow-up<small>O CRM manda as mensagens de acompanhamento sozinho, no ritmo certo</small></h2></div>
+<p>A <b>sequência</b> é uma cadência de contatos automática: você define os passos uma vez e o CRM envia cada mensagem no tempo programado para todo lead que entrar nela. Assim nenhum lead fica esquecido em <i>Não Atendeu</i> ou <i>No Show</i>.</p>
+<h3>Como criar uma sequência</h3>
+<ol class="steps">
+<li>Abra <b>Sequências</b> e clique para criar uma nova (ou em editar, para ajustar uma existente).</li>
+<li><b>Nome da sequência:</b> use o mesmo nome do estágio do funil (ex.: <i>Não Atendeu</i>, <i>No Show</i>).</li>
+<li><b>Modo:</b> Passos tradicionais.</li>
+<li><b>Inscrição e descrição</b> (por estágio): abra e escolha o estágio do funil que coloca o lead na sequência.</li>
+<li><b>Ao responder, mover para…</b> (opcional): marque e escolha o estágio para onde o lead vai quando responder — assim ele sai da cadência e volta para o seu atendimento.</li>
+<li>Monte os <b>passos</b> com <span class="btn">+ Adicionar passo</span>. Em cada passo, defina:
+<ul><li><b>Quando:</b> ⚡ Imediatamente, +1 hora, +1 dia… (o tempo conta a partir do passo anterior).</li>
+<li><b>Tipo:</b> <i>Enviar modelo</i> (manda uma mensagem do Passo 2), <i>Esperar</i> (só aguarda) ou <i>Notificar agente</i> (avisa você para agir).</li>
+<li><b>Modelo:</b> qual mensagem enviar, quando o tipo for <i>Enviar modelo</i>.</li></ul></li>
+<li>Revise e clique em <span class="btn">Salvar alterações</span>. Para tirar um passo, use <b>× Remover</b>.</li></ol>
+<div class="alert"><b class="t">Antes de montar</b>Todo modelo usado na sequência precisa existir em <b>Modelos</b> (Passo 2), com o nome igual ao que você vai escolher na lista.</div>
+<h3>Sequência “Não Atendeu”</h3>
+<div class="cols"><div><table><thead><tr><th>Passo</th><th>Quando</th><th>Tipo</th><th>Modelo</th></tr></thead><tbody>
+<tr><td>1</td><td>⚡ Imediatamente</td><td>Enviar modelo</td><td>Não Atendeu</td></tr>
+<tr><td>2</td><td>+1 dia</td><td>Enviar modelo</td><td>Não Atendeu 3x</td></tr>
+<tr><td>3</td><td>+1 dia</td><td>Enviar modelo</td><td>Follow-up 24h Combinado</td></tr>
+<tr><td>4</td><td>+1 dia</td><td>Enviar modelo</td><td>Follow-up 3 dias</td></tr>
+<tr><td>5</td><td>+1 dia</td><td>Enviar modelo</td><td>Sem Retorno</td></tr></tbody></table>
+<p>O lead que não atende recebe uma mensagem por dia até a pergunta final do <i>Sem Retorno</i>.</p></div>
+<div><figure><img src="img/crm-seq-nao-atendeu.png"></figure></div></div>
+<h3>Sequência “No Show”</h3>
+<div class="cols"><div><table><thead><tr><th>Passo</th><th>Quando</th><th>Tipo</th><th>Modelo</th></tr></thead><tbody>
+<tr><td>1</td><td>+1 hora</td><td>Esperar</td><td>—</td></tr>
+<tr><td>2</td><td>⚡ Imediatamente</td><td>Enviar modelo</td><td>Tentar Reagendar</td></tr>
+<tr><td>3</td><td>+1 dia</td><td>Enviar modelo</td><td>Follow-up 24h</td></tr>
+<tr><td>4</td><td>+1 hora</td><td>Notificar agente</td><td>—</td></tr></tbody></table>
+<p>Uma hora depois da reunião perdida, o CRM propõe reagendar; no dia seguinte faz o follow-up e, uma hora depois, avisa você para ligar.</p></div>
+<div><figure><img src="img/crm-seq-no-show.png"></figure></div></div></section>
+<section class="sec" id="s5"><div class="sec-h"><div class="n">5</div><h2>Pronto: confira tudo<small>O seu CRM no padrão WDT</small></h2></div>
+<ul><li>✅ Funis <b>Vendas</b> e <b>Pós Vendas</b> na sequência padrão.</li>
+<li>✅ Os <b>17 modelos</b> cadastrados com os nomes exatos.</li>
+<li>✅ Automação <b>Reunião</b> ligada (chave verde).</li>
+<li>✅ Sequências <b>Não Atendeu</b> e <b>No Show</b> salvas e com os modelos certos em cada passo.</li></ul>
+<div class="term"><b>Dúvidas?</b> Fale com a equipe de suporte no WhatsApp ou no Grupo de Onboarding.</div></section>
+
+</main></div>
+<div class="webfoot">WDT AGENCY · Academy — Material de treinamento interno.</div>
+<script>try{if(window.self!==window.top||location.href==="about:srcdoc"){document.documentElement.classList.add("inframe")}}catch(e){}</script></body></html>

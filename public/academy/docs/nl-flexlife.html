@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlexLife — National Life · WDT Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+@page { size: Letter; margin: 14mm 0 16mm 0;
+  @bottom-left { content: "WDT AGENCY · Academy"; font: 600 7.5pt Poppins, sans-serif; color: #0B1B3A; padding-left: 16mm; letter-spacing: 1px; }
+  @bottom-center { content: "Tradução livre para treinamento interno — em caso de divergência, prevalece o documento oficial em inglês da National Life Group. Uso exclusivo do agente."; font: 400 6.3pt Poppins, sans-serif; color: #6B7891; width: 120mm; text-align: center; }
+  @bottom-right { content: "pág. " counter(page); font: 600 7.5pt Poppins, sans-serif; color: #A8893A; padding-right: 16mm; }
+}
+@page :first { margin-top: 0; }
+:root{--navy:#0B1B3A;--navy2:#132A52;--gold:#C9A54C;--gold2:#DDBF73;--ink:#0E1A33;--muted:#5B6880;--line:#E2E7F0;--soft:#F1F4F9;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Poppins,system-ui,sans-serif;color:var(--ink);background:#fff;font-size:10.2pt;line-height:1.55;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+a{color:#1E3A6E}
+.hero{position:relative;overflow:hidden;color:#fff;padding:22mm 16mm 16mm;background:radial-gradient(520px 260px at 92% -10%,rgba(201,165,76,.55),transparent 62%),linear-gradient(160deg,#0B1B3A 0%,#132A52 65%,#1A3463 100%)}
+.hero .brand{font-weight:800;font-size:15pt;letter-spacing:.5px}
+.hero .brand span{color:var(--gold);font-weight:600;font-size:7.5pt;letter-spacing:4px;margin-left:6px}
+.hero .eyebrow{margin-top:14mm;font-size:7.8pt;letter-spacing:3px;font-weight:600;color:var(--gold);text-transform:uppercase}
+.hero h1{font-size:27pt;line-height:1.1;font-weight:700;margin:6px 0 4px}
+.hero .sub{font-size:12pt;color:var(--gold2);font-weight:500}
+.hero p.lead{margin-top:10px;color:#C9D2E4;max-width:150mm;font-size:10pt}
+.hero .chips{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px}
+.hero .chips span{border:1px solid rgba(221,191,115,.55);color:#F3E6C3;border-radius:99px;padding:3px 10px;font-size:7.6pt;font-weight:500}
+main{padding:8mm 16mm 4mm}
+.toc{background:var(--soft);border:1px solid #D9E0EC;border-radius:12px;padding:12px 16px;margin:2mm 0 8mm;columns:2;column-gap:12mm;font-size:8.8pt}
+.toc h4{column-span:all;font-size:8pt;letter-spacing:2px;text-transform:uppercase;color:#8A6A1C;margin-bottom:6px}
+.toc a{display:block;text-decoration:none;color:var(--ink);padding:1.5px 0;break-inside:avoid}
+.toc a b{display:inline-block;width:22px;color:#A8893A}
+section.sec{margin:0 0 7mm}
+.sec-h{display:flex;align-items:center;gap:10px;margin:0 0 8px;break-after:avoid}
+.sec-h .n{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--navy);color:#fff;border:2px solid var(--gold);font-weight:700;font-size:9.5pt}
+.sec-h h2{font-size:15pt;font-weight:700;color:var(--navy);line-height:1.2}
+.sec-h small{display:block;font-size:8.6pt;color:var(--muted);font-weight:400}
+h3{font-size:11pt;color:var(--navy);margin:10px 0 4px;break-after:avoid}
+h4{font-size:9.6pt;color:#1E3A6E;margin:8px 0 3px;break-after:avoid}
+p{margin:0 0 6px}
+ul,ol{margin:2px 0 8px 18px}
+li{margin:1.5px 0}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:6mm}
+.cols3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4mm}
+.card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;break-inside:avoid;margin-bottom:8px}
+.card.navy{background:linear-gradient(160deg,#0B1B3A,#132A52);color:#E6EBF5;border:0}
+.card.navy h3,.card.navy h4{color:var(--gold2)}
+.card.soft{background:var(--soft);border-color:#D9E0EC}
+.alert{background:#FBF7EC;border:1px solid #E8D7A8;border-left:4px solid var(--gold);border-radius:10px;padding:9px 12px;margin:6px 0 10px;font-size:9.4pt;break-inside:avoid}
+.alert b.t{display:block;color:#8A6A1C;font-size:7.8pt;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px}
+.term{background:#EEF2F8;border-radius:10px;padding:8px 12px;margin:6px 0 10px;font-size:8.8pt;color:#33415C;break-inside:avoid}
+.term b{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:4px 0 10px;font-size:8.8pt;break-inside:auto}
+thead{display:table-header-group}
+tr{break-inside:avoid}
+th{background:var(--navy);color:#fff;text-align:left;font-weight:600;padding:5px 7px;font-size:8.4pt}
+th.g{background:#A8893A}
+td{padding:4.5px 7px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:nth-child(even) td{background:#F7F9FC}
+td.c,th.c{text-align:center}
+.ok{color:#1E7A4F;font-weight:800}
+table.kv td:first-child{width:32%;font-weight:600;color:var(--navy);background:#F3F5FA}
+.pill{display:inline-block;font-size:7.6pt;font-weight:600;padding:1px 8px;border-radius:99px;background:#EEF2F8;color:#1E3A6E;margin:1px 2px 1px 0}
+.pill.g{background:#F7F0DF;color:#8A6A1C}
+.foot{font-size:7.6pt;color:var(--muted);border-top:1px solid var(--line);padding-top:5px;margin-top:6px}
+.steps{counter-reset:s;list-style:none;margin-left:0}
+.steps li{counter-increment:s;position:relative;padding-left:30px;margin:6px 0;break-inside:avoid}
+.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:21px;height:21px;border-radius:50%;border:2px solid var(--gold);color:var(--navy);font-weight:700;font-size:8.5pt;display:grid;place-items:center}
+.pb{break-before:page}
+.endnote{margin:6mm 0 0;padding:10px 14px;border-radius:10px;background:var(--soft);font-size:8pt;color:var(--muted)}
+.webbar{display:none}
+@media screen{
+  body{background:#EEF1F6}
+  .doc{max-width:216mm;margin:0 auto;background:#fff;box-shadow:0 10px 40px -20px rgba(11,27,58,.35)}
+  .webbar{display:flex;position:sticky;top:0;z-index:5;background:rgba(11,27,58,.97);color:#fff;padding:9px 18px;gap:14px;align-items:center;font-size:9.5pt}
+  .webbar a{color:#F3E6C3;text-decoration:none;font-weight:600}
+  .webbar b{font-weight:800}.webbar b span{color:var(--gold);font-size:7.5pt;letter-spacing:3px;margin-left:5px}
+  .webbar .sp{flex:1}
+  .webfoot{max-width:216mm;margin:0 auto 30px;padding:12px 16mm;font-size:8pt;color:var(--muted)}
+}
+@media print{.webfoot{display:none}}
+</style></head><body>
+<div class="webbar"><a href="../index.html#seguradoras">← Voltar ao portal</a><span class="sp"></span><b>WDT<span>AGENCY</span></b></div>
+<div class="doc">
+<header class="hero"><div class="brand">WDT<span>AGENCY</span></div>
+<div class="eyebrow">National Life Group · Guia do produto</div><h1>FlexLife</h1><div class="sub">Seguro de vida universal indexado (IUL) — Guia do produto</div>
+<p class="lead">IUL de prêmio flexível, para clientes financeiramente confortáveis: proteção vitalícia, benefícios em vida, acumulação de valor de resgate e forte distribuição de renda, inclusive renda vitalícia garantida pelo LIBR.</p><div class="chips"><span>Idades 0–85</span><span>Capital a partir de US$ 50.000</span><span>S&P 500® · BTI · US Pacesetter</span><span>LIBR — renda vitalícia</span><span>GPT ou CVAT</span></div></header>
+<main>
+<nav class="toc"><h4>Conteúdo</h4><a href="#s1"><b>01</b>Guia de referência rápida</a><a href="#s2"><b>02</b>Detalhes do produto</a><a href="#s3"><b>03</b>Perfis de clientes</a><a href="#s4"><b>04</b>Entendendo o crédito de juros</a><a href="#s5"><b>05</b>Estratégias da conta</a><a href="#s6"><b>06</b>Glossário de crédito de juros</a><a href="#s7"><b>07</b>Opções de benefício por morte</a><a href="#s8"><b>08</b>Alteração do capital segurado</a><a href="#s9"><b>09</b>Empréstimos, resgates e trocas 1035</a><a href="#s10"><b>10</b>Pagamento de prêmios</a><a href="#s11"><b>11</b>Encargos (Charges)</a><a href="#s12"><b>12</b>ABR — Doença terminal</a><a href="#s13"><b>13</b>ABR — Doença crônica e Premium Chronic Care</a><a href="#s14"><b>14</b>ABR — Alzheimer</a><a href="#s15"><b>15</b>ABR — Doença e lesão crítica</a><a href="#s16"><b>16</b>ABR Doença crônica — Especial NY</a><a href="#s17"><b>17</b>Additional Protection Benefit Rider (APB)</a><a href="#s18"><b>18</b>Balance Sheet Benefit Rider (BSB)</a><a href="#s19"><b>19</b>Benefit Distribution Option Rider (BDO)</a><a href="#s20"><b>20</b>Charitable Matching Gift Death Benefit Rider (CMGDB)</a><a href="#s21"><b>21</b>Children’s Term Rider (CTR)</a><a href="#s22"><b>22</b>Value Added Services Rider (VAS) — Compassionate Care</a><a href="#s23"><b>23</b>Death Benefit Protection Rider (DBPR)</a><a href="#s24"><b>24</b>Fertility Journey Rider</a><a href="#s25"><b>25</b>Guaranteed Insurability Rider (GIR)</a><a href="#s26"><b>26</b>Lifetime Income Benefit Rider™ (LIBR)</a><a href="#s27"><b>27</b>Other Insured Rider (OIR)</a><a href="#s28"><b>28</b>Overloan Protection Rider (OPR)</a><a href="#s29"><b>29</b>Premium Deposit Account Rider (PDA)</a><a href="#s30"><b>30</b>Qualified Plan Exchange Privilege Rider (QPEP)</a><a href="#s31"><b>31</b>Systematic Allocation Rider (SAR)</a><a href="#s32"><b>32</b>Waiver of Monthly Deductions Rider (WMD)</a><a href="#s33"><b>33</b>Waiver of Specified Premium Rider (WSP)</a></nav>
+<section class="sec" id="s1"><div class="sec-h"><div class="n">1</div><h2>Guia de referência rápida<small>Proteção vitalícia, flexibilidade e desempenho na distribuição de renda</small></h2></div>
+<p>O <b>FlexLife IUL</b> é a nova geração de seguro de vida universal indexado das companhias National Life Insurance Company e Life Insurance Company of the Southwest. Esta apólice flexível oferece proteção vitalícia por meio do benefício por morte, dos benefícios em vida (Living Benefits) e da oportunidade de acumular valor de resgate, com <b>forte desempenho na distribuição de renda</b>.</p>
+<div class="cols"><div>
+<div class="card navy"><h4>Foco do produto</h4><ul>
+<li>IUL flexível com proteção vitalícia, benefícios em vida, acumulação de valor de resgate e distribuição de renda forte, com opções poderosas como o <b>LIBR</b>.</li>
+<li>Ideal para clientes <b>financeiramente confortáveis</b> que querem pagar o prêmio-alvo (target) — no caso de adultos — ou financiar ao máximo (max fund) — no caso de menores.</li>
+<li>Financiar o IUL ao máximo para aproveitar a <b>Tax-Free Retirement Strategy</b>¹ (estratégia de renda de aposentadoria livre de imposto).</li></ul></div>
+<h3>Destaques</h3>
+<ul><li><b>Desempenho na distribuição de renda</b> — potencial de alta, proteção contra queda e distribuição de renda competitiva.</li>
+<li><b>Lifetime Income Benefit Rider²</b> — potencial de receber uma renda <b>garantida pela vida toda</b>.</li>
+<li><b>Benefit Distribution Option Rider</b> — permite pagar o benefício por morte ao longo de 10 a 30 anos.</li>
+<li><b>Charitable Matching Gift Death Benefit Rider</b> — a National Life Group complementa parte do benefício pago a uma instituição de caridade.</li>
+<li><b>Death Benefit Protection Rider</b> — proteção garantida do benefício por morte por um período limitado, de até 30 anos.</li>
+<li><b>Overloan Protection Rider³</b> — protege contra a caducidade da apólice.</li>
+<li><b>Systematic Allocation Rider</b> — para prêmios anuais grandes, equilibra as oscilações das taxas de juros.</li>
+<li><b>Interest Bonus</b> — começa no <b>2º ano</b> da apólice; pode variar por estratégia e empréstimo em aberto.</li></ul>
+</div><div>
+<h3>Quatro tipos de empréstimo</h3>
+<p><span class="pill">Participating Declared Loan (não disponível em NY)</span><span class="pill">Participating Variable Loan</span><span class="pill">Participating Fixed Loan</span><span class="pill">Standard Loan</span></p>
+<ul><li><b>Accelerated Benefits Riders⁴</b> — sem custo extra, exceto o <b>Premium Chronic Care Rider</b>, que não aplica desconto ao benefício por morte.</li>
+<li><b>Compassionate Care Program</b> — apoio quando o cliente (ou seus entes queridos) enfrenta desafios de saúde, bem-estar ou financeiros, via Value Added Services Rider na maioria dos estados (não disponível em NY).</li></ul>
+<h3>Estratégias de crédito de juros</h3>
+<ul><li>Taxa de juros <b>fixa</b></li>
+<li>Point-to-Point, <b>Cap Focus</b>, baseada no S&amp;P 500®</li>
+<li>Point-to-Point, <b>Participation Rate Focus</b>, baseada no S&amp;P 500®</li>
+<li>Point-to-Point, Cap Focus, S&amp;P 500® com <b>opção de piso de 1%</b></li>
+<li>Point-to-Point, <b>sem cap</b>, baseada no <b>Balanced Trend Index</b> (não disponível em NY)</li>
+<li>Point-to-Point, <b>US Pacesetter Index</b> (não disponível em NY)</li></ul>
+</div></div>
+<p class="foot">Riders são opcionais, podem ter custo adicional e podem não estar disponíveis em todos os estados.<br>
+¹ Usar o valor de resgate do seguro de vida como fonte de renda de aposentadoria livre de imposto pressupõe que exista, antes, a necessidade da proteção por morte. Empréstimos e resgates reduzem o valor de resgate e o benefício por morte e podem gerar imposto. Resgates até a base e empréstimos depois disso não geram imposto imediato, mas pode haver consequências fiscais relevantes na caducidade ou no resgate total. Taxas de resgate podem reduzir o valor de resgate nos primeiros anos.<br>
+² O LIBR paga um benefício pela vida do segurado se certas condições forem atendidas, incluindo idade entre 60 e 85 anos e apólice em vigor há pelo menos 10 anos. Valores insuficientes, empréstimos em aberto e outros fatores podem impedir o exercício. Receber a renda reduz o benefício por morte e o valor de resgate e pode encerrar ou reduzir outros riders. Há cobrança do rider durante o período de pagamento da renda.<br>
+³ Há limitações relevantes para acionar o Overloan Protection Rider, incluindo apólice em vigor há pelo menos 15 anos e segurado com 75 anos. O acionamento torna a apólice saldada. O rider não tem custo, mas há tarifa no acionamento.<br>
+⁴ Benefícios acelerados reduzem o valor de resgate e o benefício por morte, podem gerar imposto e afetar a elegibilidade a programas de assistência pública. Pedidos por doença ou lesão crítica devem ser feitos em até 365 dias após o evento qualificador.</p></section>
+<section class="sec" id="s2"><div class="sec-h"><div class="n">2</div><h2>Detalhes do produto<small>Product Details</small></h2></div>
+<table class="kv"><tbody>
+<tr><td>Idades de emissão</td><td>0 a 85 anos (idade pelo aniversário mais próximo)</td></tr>
+<tr><td>Capital segurado mínimo</td><td>Cobertura inicial: <b>US$ 50.000</b> · Aumento da base ou do APB: <b>US$ 25.000</b></td></tr>
+<tr><td>Capital mínimo em planos de pensão</td><td>Elite e Preferred: inicial US$ 25.000; subsequente US$ 2.000<br>Standard: inicial US$ 5.000 (US$ 25.000 em WA); subsequente US$ 2.000</td></tr>
+<tr><td>Opções de benefício por morte</td><td>Opção A (nivelada) e Opção B (crescente)</td></tr>
+<tr><td>Período de proteção da apólice</td><td>10 anos</td></tr>
+<tr><td>Prêmio mínimo</td><td>US$ 10,00</td></tr>
+<tr><td>Prêmio máximo</td><td>Permite os testes GPT ou CVAT</td></tr>
+<tr><td>Classificação de risco</td><td>
+<table><thead><tr><th>Classe</th><th>Capital</th><th>Idades</th></tr></thead><tbody>
+<tr><td>Elite Non-tobacco</td><td>Todos</td><td>18–75</td></tr>
+<tr><td>Preferred Non-tobacco/Smoker</td><td>Todos</td><td>18–85</td></tr>
+<tr><td>Select Non-tobacco/Smoker</td><td>Todos</td><td>18–85</td></tr>
+<tr><td>Standard Non-tobacco/Smoker</td><td>Todos</td><td>0–85</td></tr>
+<tr><td>Express Non-tobacco/Smoker 1</td><td>Capital total &lt; US$ 3 milhões</td><td>0–85</td></tr>
+<tr><td>Express Non-tobacco/Smoker 2</td><td>Capital total &lt; US$ 3 milhões</td><td>18–85</td></tr>
+<tr><td>Preferred Tobacco/Smoker</td><td>Todos</td><td>18–85</td></tr>
+<tr><td>Standard Tobacco/Smoker</td><td>Todos</td><td>18–85</td></tr>
+<tr><td>Express Tobacco/Smoker</td><td>Capital total &lt; US$ 3 milhões</td><td>18–85</td></tr></tbody></table>
+<p>A maioria das classes vale para todos os capitais. Express Non-tobacco 1, Express Non-tobacco 2 e Express Smoker só valem para capitais de até US$ 3.000.000.</p></td></tr>
+<tr><td>Capitais de até US$ 3.000.000</td><td><ul>
+<li>Sobretaxas fixas permanentes (permanent flat extras) disponíveis em todas as classes. Sobretaxas fixas temporárias nas classes Standard e Express. Table ratings não disponíveis nas classes Express.</li>
+<li>Agravamento (table rating) de até 200%, inclusive → classe <b>Express Standard Non-tobacco 1</b>.</li>
+<li>Agravamento entre 225% e 300%, inclusive → classe <b>Express Standard Non-tobacco 2</b>.</li>
+<li>Fumante com agravamento de até 200%, inclusive → classe <b>Express Standard Tobacco</b>.</li>
+<li>Idades 75–79: não se aceitam agravamentos acima de 300%.</li>
+<li>Idades 80–85: não se aceitam agravamentos acima de 200%.</li></ul></td></tr>
+<tr><td>Capitais acima de US$ 3.000.000</td><td>Underwriting médico completo obrigatório.</td></tr>
+<tr><td>Casos de pensão</td><td>Mesmas regras de underwriting dos casos comuns, além de emissão automática, emissão simplificada e emissão garantida.</td></tr>
+<tr><td>Agravamentos (Substandard)</td><td>Table ratings e flat extras disponíveis nas classes Standard. Flat extras temporárias nas classes Standard e Express.</td></tr>
+<tr><td>Faixas de capital (Banding)</td><td>Faixa 1: capital mínimo a US$ 249.999,99 · Faixa 2: US$ 250.000,00 a US$ 999.999,99 · Faixa 3: US$ 1.000.000,00 a US$ 2.999.999,99 · Faixa 4: US$ 3.000.000 ou mais</td></tr>
+<tr><td>Taxa mínima de juros</td><td>1,75% na estratégia fixa</td></tr>
+<tr><td>Período de taxa de resgate</td><td>10 anos</td></tr>
+<tr><td>Empréstimos</td><td>Após o 1º ano: Participating Declared, Participating Variable, Participating Fixed e Standard Loans. Disponíveis já no 1º ano para apólices com transferência 1035.</td></tr>
+<tr><td>Resgates parciais</td><td>Após o 1º ano da apólice, mínimo de US$ 500.</td></tr>
+<tr><td>Encargos de despesa</td><td>Taxa mensal da apólice: US$ 6 · Carregamento sobre o prêmio: 8% nos anos 1–10, 5% a partir do 11º ano. Veja a seção Encargos.</td></tr>
+<tr><td>Riders*</td><td>Accelerated Benefit Riders (doença terminal, doença crônica, Premium Chronic Care, Alzheimer, doença crítica, lesão crítica) · Additional Protection Benefit · Balance Sheet Benefit · Benefit Distribution Option · Charitable Matching Gift Death Benefit · Children’s Term · Death Benefit Protection · Fertility Journey · Guaranteed Insurability Option · <b>Novo</b> Lifetime Income Benefit · Other Insured · Overloan Protection · Qualified Plan Exchange Privilege · Systematic Allocation · <b>Novo</b> Value Added Services · Waiver of Monthly Deductions · Waiver of Specified Premium</td></tr>
+<tr><td>Não disponível em Nova York</td><td>Participating Declared Loan · estratégia Balanced Trend Index · estratégia US Pacesetter Index</td></tr>
+</tbody></table>
+<p class="foot">* Riders são opcionais e podem ter custo extra. Nem todos estão disponíveis em todos os estados. Consulte o portal do agente: nationallife.com/agent/products/life-insurance/riders.</p></section>
+<section class="sec" id="s3"><div class="sec-h"><div class="n">3</div><h2>Perfis de clientes<small>Prospect Profiles</small></h2></div>
+<div class="cols3">
+<div class="card soft"><h4>Pessoas físicas</h4>
+<p>Quem busca proteção por morte e acumulação de valor de resgate para despesas da vida, como educação, e/ou para complementar a aposentadoria.</p>
+<p>A acumulação com <b>imposto diferido</b> e as distribuições com vantagem fiscal fazem do FlexLife um veículo eficaz, das situações mais simples às mais complexas. Oferece fortes opções de distribuição, incluindo o Lifetime Income Benefit Rider ou a Tax-Free Retirement Strategy.</p>
+<p>Para quem paga um prêmio anual grande, o <b>Systematic Allocation Rider</b> permite distribuir o prêmio líquido por vários períodos de crédito. Isso também torna mais atraente <b>dar um IUL de presente</b>, já que doações costumam envolver prêmio único ou prêmios anuais grandes.</p>
+<p>Quando o foco é o benefício por morte, o <b>Additional Protection Benefit Rider</b> dá flexibilidade de custo, mantendo um produto permanente com potencial de acumulação.</p>
+<p>O cliente também pode usar o valor de resgate para reduzir os prêmios na aposentadoria⁵.</p></div>
+<div class="card soft"><h4>Empresários</h4>
+<p>Donos de empresa que têm sócio ou funcionário-chave.</p>
+<p>O FlexLife pode ser ideal para financiar acordo de compra e venda entre sócios (buy-sell), plano de bônus executivo e acordos de remuneração diferida não qualificada. O empresário pode usá-lo para:</p>
+<ul><li>Proteger a empresa contra a perda do sócio ou do funcionário-chave.</li><li>Oferecer benefícios ao sócio ou funcionários-chave.</li><li>Construir a própria segurança na aposentadoria.</li><li>Atrair, reter e premiar talentos.</li><li>Criar um plano de sucessão da empresa.</li></ul>
+<p>O benefício por morte dá recursos para sustentar a empresa na perda de uma peça-chave ou numa transição. Com flexibilidade de prêmio, potencial de alta pelas estratégias indexadas e benefícios opcionais em caso de doença terminal, crônica ou crítica, ou lesão crítica, o FlexLife é ideal para planejamento empresarial.</p></div>
+<div class="card soft"><h4>Planejamento sucessório</h4>
+<p>Pessoas na aposentadoria, com carreiras de sucesso e patrimônio relevante, que querem transferir esse patrimônio da forma mais eficiente do ponto de vista fiscal.</p>
+<p>Patrimônios grandes podem ter custos altos de sucessão: impostos sobre doação e herança, despesas de inventário (probate) ou de administração do espólio.</p>
+<p>O FlexLife dá <b>liquidez</b> para cobrir esses custos e proteger bens que, de outra forma, poderiam ter de ser vendidos em condições ruins. Além disso, o cliente tem acesso aos Accelerated Benefits Riders, cujos valores podem ser usados para qualquer finalidade — ajudando a proteger o patrimônio da erosão causada por uma doença terminal, crônica ou crítica, ou por uma lesão crítica.</p></div></div>
+<div class="alert"><b class="t">Mensagem para o cliente</b>Para aproveitar toda a flexibilidade do FlexLife, incentive o cliente a pagar <b>mais que o prêmio mínimo</b> (full pay/max fund). Com isso ele tem potencial de valores de resgate maiores para usar em: faculdade dos filhos; renda de aposentadoria livre de imposto (via empréstimos e resgates); renda vitalícia garantida, depois de cumpridos os requisitos e exercido o rider; flexibilidade de prêmio na aposentadoria.</div>
+<p class="foot">⁵ A cobertura pode terminar se nenhum prêmio for pago após o inicial, ou se os prêmios seguintes forem insuficientes para mantê-la.</p></section>
+<section class="sec" id="s4"><div class="sec-h"><div class="n">4</div><h2>Entendendo o crédito de juros<small>Understanding Interest Crediting</small></h2></div>
+<p>O IUL oferece proteção por morte e potencial de acumular valor de resgate com base, em parte, em juros ligados a um índice de mercado.</p>
+<div class="cols"><div>
+<p>O seguro de vida cria uma <b>reserva imediata</b> de recursos que, na morte, ajuda a proteger a segurança financeira da família do cliente ou a manter sua empresa.</p>
+<p>Além do benefício por morte, o IUL permite acumular valor de resgate com <b>imposto diferido</b>, que pode ser acessado <b>sem imposto de renda</b> em vida, por meio de resgates parciais e empréstimos.</p>
+<p>A acumulação depende das taxas de juros pagas pela seguradora sobre os prêmios que excedem os custos do seguro. Além da estratégia fixa, os IULs da National Life permitem juros baseados nas variações do <b>S&amp;P 500®</b>, do <b>US Pacesetter Index</b> e do <b>Balanced Trend Index</b>.</p>
+<h3>Como funcionam o cap e a taxa de participação?</h3>
+<p>As estratégias indexadas creditam juros medindo a variação desses índices. Os IULs <b>não investem diretamente</b> nos índices nem em outros títulos.</p>
+<p>Cada estratégia tem uma <b>taxa de participação</b>, que define qual percentual da variação do índice entra no cálculo dos juros — pode ser menor, maior ou igual a 100%. Algumas estratégias também têm <b>cap</b>, que limita os juros creditados.</p>
+<h3>Estratégias de crédito indexado</h3>
+<p>Primeiro apura-se a variação do índice, medida ao longo de um ano. Se positiva, a apólice recebe juros após caps e taxas de participação. Se negativa, recebe 0% — ou 1%, na estratégia de piso de 1%.</p>
+<p>Os juros creditados são somados às estratégias escolhidas com base no valor acumulado no fim do ano, gerando potencial de <b>juros compostos</b>. As despesas mensais são descontadas antes do cálculo dos créditos.</p>
+</div><div>
+<h3>Point-to-Point</h3>
+<p>O valor inicial do índice é comparado com o valor final exatamente um ano depois, no dia 14 do 12º mês. Se o valor final for menor, o crédito é o <b>piso</b> — 0% ou 1%, conforme a estratégia. Esse é o piso garantido, a chamada <b>“proteção contra queda”</b> (downside protection) dos produtos indexados.</p>
+<p>Se o valor final for maior, calcula-se a variação: <b>(valor final ÷ valor inicial) − 1 = % de variação</b>.</p>
+<div class="card navy"><h4>Estratégias com foco em cap e em participação</h4>
+<ul><li>Se <b>% de variação × taxa de participação &gt; cap</b>, credita-se o cap.</li>
+<li>Se <b>% de variação × taxa de participação &lt; cap</b>, credita-se a variação × taxa de participação.</li>
+<li>Se a variação for negativa, vale o piso garantido de 0% ou 1%, conforme a estratégia.</li></ul></div>
+<h3>Qual estratégia é melhor?</h3>
+<p>Muitos acham que a estratégia com maior taxa ilustrada vai render mais, porque as taxas máximas ilustradas vêm de resultados históricos. Mas desempenho passado não indica desempenho futuro. Não há como saber qual estratégia vai render mais.</p>
+<p>A <b>Fixed Term Strategy</b> credita uma taxa declarada, sem depender de índice. Qualquer valor pode ir para a conta fixa. A alocação pode ser dividida entre algumas ou todas as estratégias, para capturar parte dos melhores retornos.</p>
+<p>Num prêmio único grande ou numa troca 1035, pode ser prudente alocar parte na Fixed Term Strategy e mover aos poucos para as indexadas. Outra forma é o <b>Systematic Allocation Rider</b>⁶, que distribui as alocações por 12 meses em vez de colocar tudo de uma vez.</p>
+<h3>Interest Bonus</h3>
+<p>Começa no <b>2º ano</b> da apólice e pode variar por estratégia e tipo de empréstimo em aberto. É creditado no aniversário da apólice, calculado sobre o valor acumulado médio de cada estratégia no ano anterior, e depositado na Basic Strategy. A conta de garantia do Standard Loan não recebe o bônus.</p>
+</div></div>
+<div class="cols"><div>
+<h3>Como as companhias da National Life Group investem para pagar os créditos indexados?</h3>
+<p>As companhias <b>não investem diretamente</b> no S&amp;P 500®, no Balanced Trend Index nem no US Pacesetter Index para pagar os créditos. Elas negociam <b>opções</b>, numa estratégia de investimento chamada <i>hedging</i> — técnica para reduzir ou eliminar risco financeiro.</p>
+<p>Para pagar os créditos indexados, a companhia compra opções de compra (calls) de um ano sobre os índices, em quantidade suficiente para cobrir a parte do valor da conta elegível a créditos indexados. Se o índice sobe, ela exerce as opções e recebe o necessário para pagar os créditos.</p>
+<p>Nas estratégias com cap, é possível compensar o custo dessas opções vendendo outras opções de compra ao mesmo tempo. As opções vendidas repassam ao comprador o retorno do índice que excede o necessário para cobrir os créditos. <b>A companhia não lucra com o hedging</b>; usa-o apenas para oferecer créditos de juros atrelados ao índice.</p></div><div>
+<h3>Como os caps e as taxas de participação são definidos?</h3>
+<p>Vários fatores influenciam. O mais óbvio é o <b>preço das opções</b>: em geral, quando o preço das opções sobe, caps e taxas de participação caem. Vários fatores financeiros encarecem as opções; um dos principais é a <b>volatilidade do índice</b> — quanto mais volátil, mais caras as opções. O nível de preço do índice, a taxa de juros livre de risco e o preço de exercício (“strike”) da opção também influenciam.</p>
+<p>Como o IUL é um produto de seguro <b>fixo</b>, ele é lastreado por ativos da Conta Geral (General Account) da companhia. Esses ativos geram receita de investimento, que varia com as taxas de juros. Em geral, quanto mais a companhia ganha com investimentos, mais dinheiro tem para comprar opções e mais altos ficam os caps e as taxas de participação. Em períodos de rendimento baixo, há menos para gastar com opções, e caps e taxas de participação ficam menores.</p>
+<h3>Como são definidos os caps e taxas de renovação?</h3>
+<p>Nos produtos com estratégias de um ano, as taxas de renovação têm sido iguais às de dinheiro novo, e são definidas do mesmo jeito. Todos os produtos indexados são geridos com base em <b>taxa de carteira</b> (portfolio rate): todos os ativos que lastreiam o valor em dinheiro e toda a receita deles são agregados.</p>
+<h3>Como as taxas máximas ilustradas são definidas?</h3>
+<p>Por regulamentação do setor: os caps e taxas atuais são aplicados a todas as sequências hipotéticas de 25 anos dos últimos 65 anos, como se os produtos existissem nesse período e houvesse depósitos mensais em cada janela de 25 anos. O retorno médio anual, ajustado, vira a taxa máxima ilustrada. Esse “back-casting” só estima resultados históricos hipotéticos e não prevê o futuro. Alguns estados limitam a taxa máxima ilustrada em produtos indexados.</p>
+<h3>Com que frequência posso mudar as alocações?</h3>
+<p>A qualquer momento; o dinheiro já alocado só é realocado ao fim do prazo da estratégia.</p>
+<h3>O que é a Basic Strategy?</h3>
+<p>Conta de juros fixos onde fica o prêmio não alocado até ir para as estratégias escolhidas, no <b>dia 14 de cada mês</b>.</p>
+</div></div>
+<p class="foot">⁶ A alocação sistemática não garante vantagem sobre o método de crédito anual.</p></section>
+<section class="sec" id="s5"><div class="sec-h"><div class="n">5</div><h2>Estratégias da conta<small>Account Strategies</small></h2></div>
+<div class="cols"><div class="card soft"><h4>US Pacesetter Index⁷ (não disponível em NY)</h4><p><b>Participation Focus Strategy (Point-to-Point)</b></p><ul><li>Participação sempre ≥ <b>50%</b></li><li>Garantia de <b>sem cap</b> nesta estratégia</li><li>Piso garantido de <b>0%</b></li></ul></div>
+<div class="card soft"><h4>Balanced Trend Index⁷ (não disponível em NY)</h4><p><b>Participation Focus Strategy (Point-to-Point)</b></p><ul><li>Participação sempre ≥ <b>50%</b></li><li>Garantia de <b>sem cap</b> nesta estratégia</li><li>Piso garantido de <b>0%</b></li></ul></div></div>
+<h3>Índice Standard &amp; Poor’s Composite de 500 ações (S&amp;P 500®)⁷</h3>
+<div class="cols3">
+<div class="card soft"><h4>Cap Focus Strategy (Point-to-Point)</h4><ul><li>Cap mais alto que as outras estratégias</li><li>Participação sempre ≥ 100%</li><li>Cap mínimo garantido: <b>3,1%</b></li><li>Piso garantido: <b>0%</b></li></ul></div>
+<div class="card soft"><h4>Participation Focus Strategy (Point-to-Point)</h4><ul><li>Participação mais alta que as outras estratégias</li><li>Participação de pelo menos <b>110%</b></li><li>Cap mínimo garantido: <b>3,0%</b></li><li>Piso garantido: <b>0%</b></li></ul></div>
+<div class="card soft"><h4>1% Floor Strategy (Point-to-Point)</h4><ul><li>Piso garantido de <b>1%</b></li><li>Participação sempre ≥ 100%</li><li>Cap mínimo garantido: <b>2,1%</b></li></ul></div></div>
+<div class="card navy"><h4>Conta fixa — Fixed Term Strategy</h4><p>Taxa fixa declarada pela companhia, creditada diariamente e garantida por um ano. Mínimo garantido: <b>1,75%</b>.</p></div>
+<h3>Valores históricos*</h3>
+<table><thead><tr><th>14 de dez. de</th><th>S&amp;P 500®</th><th>Var. 1 ano</th><th>Balanced Trend Index</th><th>Var. 1 ano</th><th>US Pacesetter</th><th>Var. 1 ano</th></tr></thead><tbody>
+<tr><td>2015</td><td>2.021,94</td><td>0,98%</td><td>213,65</td><td>−0,42%</td><td>245,80</td><td>1,92%</td></tr>
+<tr><td>2016</td><td>2.253,28</td><td>11,44%</td><td>221,09</td><td>3,48%</td><td>251,42</td><td>2,29%</td></tr>
+<tr><td>2017</td><td>2.652,01</td><td>17,70%</td><td>242,93</td><td>9,88%</td><td>287,44</td><td>14,33%</td></tr>
+<tr><td>2018</td><td>2.599,95</td><td>−1,96%</td><td>236,67</td><td>−2,58%</td><td>282,31</td><td>−1,78%</td></tr>
+<tr><td>2019</td><td>3.168,80</td><td>21,88%</td><td>261,47</td><td>10,48%</td><td>319,95</td><td>13,33%</td></tr>
+<tr><td>2020</td><td>3.647,49</td><td>15,11%</td><td>264,35</td><td>1,10%</td><td>365,31</td><td>14,18%</td></tr>
+<tr><td>2021</td><td>4.634,09</td><td>27,05%</td><td>277,22</td><td>4,87%</td><td>380,39</td><td>4,13%</td></tr>
+<tr><td>2022</td><td>3.995,32</td><td>−13,78%</td><td>255,57</td><td>−7,81%</td><td>325,57</td><td>−14,41%</td></tr>
+<tr><td>2023</td><td>4.719,55</td><td>18,13%</td><td>258,72</td><td>1,23%</td><td>327,85</td><td>0,70%</td></tr></tbody></table>
+<p class="foot">* Desempenho histórico não indica resultados futuros.</p><p class="foot"><b>Aviso de licença do índice S&amp;P 500® (resumo traduzido).</b> O “S&amp;P 500” é um produto da S&amp;P Dow Jones Indices LLC ou de suas afiliadas (“SPDJI”) e da S&amp;P Opco, LLC, licenciado para uso pela National Life Insurance Company (NLIC). Standard &amp; Poor’s® e S&amp;P® são marcas registradas da Standard &amp; Poor’s Financial Services LLC (“S&amp;P”), e Dow Jones® é marca registrada da Dow Jones Trademark Holdings LLC; as marcas foram licenciadas à SPDJI e sublicenciadas à NLIC para certos fins. O produto FlexLife não é patrocinado, endossado, vendido nem promovido pela SPDJI, Dow Jones, S&amp;P ou suas afiliadas (“S&amp;P Dow Jones Indices”), que não fazem nenhuma declaração ou garantia sobre a conveniência de investir em valores mobiliários ou no FlexLife, nem sobre a capacidade do S&amp;P 500 de acompanhar o mercado. A única relação com a NLIC é o licenciamento do índice e de marcas. O índice é definido, composto e calculado sem considerar a NLIC, o FlexLife ou seus titulares. A S&amp;P Dow Jones Indices e a S&amp;P Opco não participam da definição de preços, quantidades ou momento de emissão do FlexLife, nem têm obrigação ou responsabilidade por sua administração, marketing ou negociação. Não há garantia de que produtos baseados no S&amp;P 500 acompanhem o desempenho do índice ou gerem retorno positivo. A S&amp;P Dow Jones Indices LLC não é consultora de investimentos, e a inclusão de um título no índice não é recomendação de compra, venda ou manutenção. A S&amp;P DOW JONES INDICES E A S&amp;P OPCO NÃO GARANTEM A ADEQUAÇÃO, PRECISÃO, TEMPESTIVIDADE OU COMPLETUDE DO S&amp;P 500 OU DE QUAISQUER DADOS OU COMUNICAÇÕES RELACIONADOS, NÃO RESPONDEM POR ERROS, OMISSÕES OU ATRASOS, NÃO DÃO GARANTIAS EXPRESSAS OU IMPLÍCITAS DE COMERCIABILIDADE OU ADEQUAÇÃO A UMA FINALIDADE E, EM NENHUMA HIPÓTESE, RESPONDEM POR DANOS INDIRETOS, ESPECIAIS, INCIDENTAIS, PUNITIVOS OU CONSEQUENCIAIS (INCLUSIVE LUCROS CESSANTES, PERDAS DE NEGOCIAÇÃO, TEMPO OU REPUTAÇÃO), AINDA QUE AVISADAS DA POSSIBILIDADE. NÃO HÁ TERCEIROS BENEFICIÁRIOS DOS ACORDOS ENTRE A S&amp;P DOW JONES INDICES E A NLIC, ALÉM DOS LICENCIANTES DA S&amp;P DOW JONES INDICES. — O texto integral em inglês está no guia oficial.</p></section>
+<section class="sec" id="s6"><div class="sec-h"><div class="n">6</div><h2>Glossário de crédito de juros<small>Index Interest Crediting Glossary of Terms</small></h2></div><table class="kv"><tbody><tr><td><b>Basic Strategy</b></td><td>Conta de juros fixos onde fica o prêmio ainda não alocado, até ser transferido para as estratégias de crédito indexado escolhidas, no <b>dia 14 de cada mês</b>.</td></tr><tr><td><b>Basic Strategy Sweep Date</b></td><td>O dia 14 do mês: data em que o dinheiro da Basic Strategy é alocado nas estratégias de crédito indexado escolhidas.</td></tr><tr><td><b>Cap (teto)</b></td><td>A taxa de juros efetiva anual máxima que pode ser creditada a um segmento indexado. Nem todas as opções têm cap.</td></tr><tr><td><b>Ending Index Value</b></td><td>Valor do índice no fechamento do dia em que termina um segmento indexado.</td></tr><tr><td><b>Fixed-Term Account / Strategy</b></td><td>Conta que recebe, diariamente, uma taxa de juros declarada pela companhia.</td></tr><tr><td><b>Guaranteed Interest Rate</b></td><td>Taxa mínima creditada ao dinheiro nas contas de prazo fixo. Também é usada para calcular os valores acumulados e de resgate garantidos.</td></tr><tr><td><b>Index</b></td><td>Os índices usados pela National Life e pela Life Insurance Company of the Southwest são o <b>S&amp;P 500®</b>, o <b>Balanced Trend Index</b> e o <b>US Pacesetter Index</b>.</td></tr><tr><td><b>Index Segment</b></td><td>Cada vez que o prêmio passa da Basic Strategy para uma estratégia indexada, cria-se um novo segmento indexado, que dura 12 meses.</td></tr><tr><td><b>Indexed Interest</b></td><td>Juros creditados a um segmento indexado pelo método Point-to-Point.</td></tr><tr><td><b>Participation Rate (taxa de participação)</b></td><td>Percentual aplicado ao crescimento do índice na fórmula dos juros indexados de um segmento. Todas as opções têm taxa de participação.</td></tr><tr><td><b>Point-to-Point</b></td><td>Compara o valor inicial e o valor final do mesmo segmento indexado para apurar o crescimento do índice.</td></tr><tr><td><b>Policy Segment Year</b></td><td>Período de 12 meses a partir da criação do segmento, usado para apurar os juros indexados sobre o valor do segmento.</td></tr><tr><td><b>Starting Index Value</b></td><td>Valor do índice no fechamento do dia em que começa um segmento indexado.</td></tr></tbody></table></section>
+<section class="sec" id="s7"><div class="sec-h"><div class="n">7</div><h2>Opções de benefício por morte<small>Death Benefit Options</small></h2></div>
+<p>As opções de benefício por morte <b>A</b> e <b>B</b> estão disponíveis. O titular pode escolher a Opção A (nivelada) ou a Opção B (crescente).</p>
+<div class="cols"><div>
+<div class="card soft"><h4>Opção A — benefício nivelado (Level)</h4><p>O benefício por morte é o <b>maior</b> entre:</p><ul><li>o capital segurado (face amount);</li><li>o valor acumulado multiplicado pelo fator de corredor (corridor factor) aplicável.</li></ul>
+<p>Fica nivelado e, em geral, permite o <b>maior crescimento potencial</b> do valor acumulado.</p></div>
+<div class="card soft"><h4>Opção B — benefício crescente (Increasing)</h4><p>O benefício por morte é o <b>maior</b> entre:</p><ul><li>o capital segurado <b>mais</b> o valor acumulado;</li><li>o valor acumulado multiplicado pelo fator de corredor aplicável.</li></ul>
+<p>Varia com o crescimento ou a queda do valor acumulado. Indicada para quem quer proteção adicional; em geral também permite <b>prêmios maiores</b>, para quem quer financiar a apólice ao máximo (max funding).</p></div>
+<p>Nas duas opções, o benefício por morte é reduzido por qualquer dívida da apólice e por deduções mensais devidas.</p>
+</div><div>
+<p>O benefício por morte é pago em parcela única, a menos que se escolha uma opção de liquidação (settlement option) ou a opção de distribuição do benefício. No pagamento único, o valor é corrigido com juros desde a data da morte do segurado (ou do segundo segurado, em apólices de sobrevivência) até a data do pagamento. A taxa é declarada periodicamente pela companhia e nunca é inferior a <b>2% ao ano</b> ou ao mínimo exigido por lei.</p>
+<h3>Trocar a opção de benefício por morte</h3>
+<p>A opção pode ser trocada de A para B, ou de B para A, <b>uma vez por ano de apólice</b>, após o primeiro aniversário. A troca não é permitida se fizer a apólice deixar de se qualificar como seguro de vida para fins de imposto de renda federal.</p>
+<ul><li><b>De A (nivelada) para B (crescente):</b> o capital segurado é reduzido pelo valor acumulado imediatamente antes da data da troca.</li>
+<li><b>De B (crescente) para A (nivelada):</b> o capital segurado aumenta no valor acumulado imediatamente antes da data da troca.</li></ul>
+<p>Nos dois casos, o benefício por morte é o mesmo antes e depois da troca.</p>
+</div></div></section>
+<section class="sec" id="s8"><div class="sec-h"><div class="n">8</div><h2>Alteração do capital segurado<small>Changing the Face Amounts</small></h2></div>
+<p>Após o primeiro aniversário da apólice, o titular pode pedir aumento ou redução da cobertura, nestas condições:</p>
+<div class="cols"><div>
+<h3>Aumento do capital segurado</h3>
+<ul><li>Prova satisfatória de segurabilidade.</li>
+<li>O aumento pedido é de pelo menos <b>US$ 25.000</b>.</li>
+<li>Cada aumento cria um <b>segmento de cobertura próprio</b>, com seus próprios encargos mensais de custo do seguro (Cost of Insurance), encargos mensais de despesas e taxas de resgate (Surrender Charges), além de novos períodos de incontestabilidade e de exclusão por suicídio.</li><li>Cada aumento tem suas próprias taxas de resgate e encargos administrativos mensais por mil de capital.</li></ul>
+</div><div>
+<h3>Redução do capital segurado</h3>
+<ul><li>Reduções que deixem o capital abaixo do mínimo da apólice não são permitidas.</li>
+<li>Nos <b>9 primeiros anos</b> da apólice, o capital total (incluindo riders de proteção adicional) não pode ficar abaixo de <b>75%</b> do maior capital total em vigor nos 12 meses anteriores ao pedido.</li>
+<li>Reduções não alteram as taxas de resgate nem os encargos administrativos.</li>
+<li>A redução não é permitida se fizer a apólice falhar no teste de definição de seguro de vida do Internal Revenue Code (código tributário dos EUA).</li></ul>
+</div></div>
+<div class="term">Cada mudança de cobertura ajusta o <b>Commissionable Target Premium (CTP)</b> — prêmio-alvo usado para calcular a comissão — e o <b>Minimum Monthly Premium (MMP)</b> — prêmio mínimo mensal.</div></section>
+<section class="sec" id="s9"><div class="sec-h"><div class="n">9</div><h2>Empréstimos, resgates e trocas 1035<small>Loans, Withdrawals, and 1035 Exchanges</small></h2></div>
+<div class="cols"><div>
+<h3>Empréstimos (Loans)</h3>
+<p>O empréstimo da apólice dá ao cliente acesso ao valor de resgate <b>sem imposto de renda</b>⁽ᵃ⁾. Outras vantagens:</p>
+<ul><li><b>Aprovação garantida</b> (se houver valor de resgate suficiente).</li>
+<li><b>Flexibilidade financeira:</b> o dinheiro pode ser usado para qualquer finalidade — comprar um carro, reformar a casa, pagar estudos.</li>
+<li>Juros competitivos.</li>
+<li>No empréstimo participativo, o valor emprestado pode <b>continuar rendendo créditos de juros</b>, porque o cliente toma emprestado tendo a apólice como garantia, sem retirar o dinheiro dela.</li>
+<li>O cliente pode quitar o empréstimo, total ou parcialmente, no seu próprio ritmo.</li>
+<li>O cliente não é obrigado a quitar o empréstimo. (Precisa pagar prêmios suficientes para manter a apólice em vigor, e os benefícios serão reduzidos pelos empréstimos em aberto na morte.)</li></ul>
+<h4>Disponibilidade</h4>
+<p>Os empréstimos ficam disponíveis após <b>um ano</b> de vigência da apólice. A própria apólice é a garantia. Basta ter valor de resgate suficiente.</p>
+<p>O valor disponível é o <b>valor de empréstimo</b> da apólice menos qualquer dívida já garantida por ela. O valor de empréstimo é o valor acumulado na data de avaliação, menos a taxa de resgate nessa data, menos <b>três vezes</b> as deduções mensais devidas na última data mensal da apólice.</p>
+<p>Pode levar muitos anos para acumular um valor de resgate relevante numa apólice permanente. Nos primeiros anos, pode haver pouco ou nenhum valor para emprestar. Quanto mais o cliente financia a apólice, mais cedo pode tomar empréstimo.</p>
+<p>Os juros do empréstimo incidem sobre o valor emprestado e podem ser pagos no vencimento (no aniversário da apólice) ou somados ao valor emprestado, aumentando o saldo do empréstimo.</p>
+</div><div>
+<h3>Tipos de empréstimo</h3>
+<div class="card soft"><h4>Participating Declared Loan*</h4><ul>
+<li>Juros declarados, definidos pela National Life Group. Taxa máxima: <b>8,00%</b>.</li>
+<li>A garantia continua nas alocações indexadas e segue recebendo créditos indexados.</li>
+<li>O valor acumulado da garantia tem direito a um bônus de juros específico deste tipo de empréstimo.</li></ul></div>
+<div class="card soft"><h4>Participating Variable Loan</h4><ul>
+<li>Juros variáveis com base no <i>Moody’s Corporate Bond Yield Average — Monthly Corporates</i>, com mínimo de <b>3%</b>.</li>
+<li>Taxa máxima: 3% acima da taxa da Basic Strategy, que não tem teto.</li>
+<li>A garantia continua nas alocações e segue recebendo créditos indexados.</li>
+<li>O valor acumulado ligado a este empréstimo tem direito ao Interest Bonus.</li></ul></div>
+<div class="card soft"><h4>Participating Fixed Loan</h4><ul>
+<li>Taxa fixa de <b>5%</b>, definida na emissão e que não muda. (A companhia pode ajustar a taxa para novas emissões.)</li>
+<li>A garantia vai para uma <i>Indexed Loan Account</i>, que rende créditos indexados pela estratégia S&amp;P 500® Point-to-Point Cap Focus. Essa conta pode ter caps e taxas de participação diferentes da mesma estratégia usada para o valor que não serve de garantia.</li>
+<li>O valor acumulado usado neste empréstimo tem direito ao Interest Bonus na Indexed Loan Account.</li></ul></div>
+<div class="card soft"><h4>Standard Loan</h4><ul>
+<li>Juros variáveis com base no <i>Moody’s Corporate Bond Yield Average — Monthly Corporates</i>, com mínimo de 3%.</li>
+<li>O valor emprestado vai para uma conta de garantia que rende a taxa do empréstimo <b>menos 0,50%</b> do 1º ao 10º ano, e a <b>taxa do empréstimo</b> a partir do 11º ano.</li>
+<li>O valor acumulado usado no Standard Loan <b>não</b> tem direito a Interest Bonus.</li></ul></div>
+</div></div>
+<div class="cols"><div>
+<h3>O impacto de tomar um empréstimo</h3>
+<p>Quando os créditos de juros indexados superam a taxa do empréstimo, o titular de IUL ganha mais sobre a garantia do que paga sobre o empréstimo. A situação contrária — ficar <b>“de cabeça para baixo” (upside down)</b> — pode prejudicar muito a apólice.</p>
+<p>Os empréstimos devem ser bem administrados. O titular pode <b>trocar o tipo de empréstimo uma vez por ano de apólice</b> sem quitar o empréstimo existente — isso pode salvar a apólice se o empréstimo ficar upside down.</p>
+<div class="alert"><b class="t">Lembre o cliente</b>O empréstimo reduz o benefício por morte e o valor acumulado. As deduções do seguro continuam: é preciso deixar valor de resgate livre suficiente para cobri-las — o que pode exigir prêmios adicionais. Se não, a apólice pode caducar, com perda da cobertura e possíveis consequências fiscais negativas sobre os valores emprestados.</div>
+</div><div>
+<h3>Outros pontos importantes</h3>
+<ul><li>Empréstimos podem ser quitados. Valores destinados à quitação devem ser identificados como tal; caso contrário, serão tratados como pagamento de prêmio.</li>
+<li>Os empréstimos da FlexLife são recebidos sem imposto de renda. Se a apólice caducar com empréstimos em aberto, pode haver renda tributável para o titular. Se os saldos de empréstimo ameaçarem a manutenção do contrato e as condições forem atendidas, o <b>Overloan Protection Rider</b> reestrutura a apólice para que ela não caduque. Há limitações relevantes: apólice em vigor há pelo menos 15 anos e segurado com 75 anos ou mais. Há uma cobrança no exercício. Rider opcional, pode não estar disponível em todos os estados.</li><li><b>Empréstimos em aberto impedem o exercício do Lifetime Income Benefit Rider.</b> Todos os empréstimos precisam ser quitados antes de exercer o LIBR.</li></ul>
+<p class="foot">* A companhia pode descontinuar o Participating Declared Loan, para apólices novas e existentes, ao fim de um ano de apólice, mediante aviso prévio. Consulte os formulários da apólice.<br>(a) Exige que a apólice continue em vigor. O empréstimo reduz o valor acumulado no resgate e o benefício por morte. Exceto no caso de Modified Endowment Contract (MEC — apólice que excedeu os limites de prêmio e perdeu parte das vantagens fiscais), resgates parciais até a base paga e empréstimos depois disso não geram imposto imediato, mas pode haver consequências fiscais relevantes na caducidade ou no resgate total. Para MECs, empréstimos e resgates parciais são renda tributável.</p>
+</div></div>
+<div class="cols"><div>
+<h3>Resgates parciais (Withdrawals)</h3>
+<p>Ao contrário do empréstimo, o resgate parcial <b>retira de fato</b> valor de resgate da apólice. A parte do valor de resgate formada pelos prêmios pagos é a <b>“base” (basis)</b>; o que passa disso é ganho. Resgates acumulados até o valor da base <b>não são tributáveis</b>, desde que os prêmios tenham sido pagos com dinheiro já tributado. Valores acima da base são tributados como renda.</p>
+<p>Depois de retirada toda a base, em geral é melhor passar a usar empréstimos para acessar o valor restante. Isso evita imposto imediato, mas é essencial manter a apólice em vigor; senão, os empréstimos se tornam tributáveis na caducidade.</p>
+</div><div>
+<h4>Condições (a qualquer momento após o 1º ano da apólice)</h4>
+<ul><li>Valor mínimo do resgate: <b>US$ 500</b>.</li>
+<li>Hoje não há taxa sobre resgates. (A companhia pode cobrar até <b>US$ 25 por ano</b>.)</li>
+<li>O resgate não pode passar do valor de resgate menos três deduções mensais devidas no último aniversário mensal da apólice.</li>
+<li>Não é permitido se reduzir o capital abaixo do mínimo da apólice ou se fizer a apólice deixar de se qualificar como seguro de vida para fins fiscais.</li>
+<li>O valor acumulado é reduzido pelo valor do resgate mais eventuais taxas de resgate e tarifas.</li></ul>
+<p>Com a Opção A em vigor, o capital segurado é reduzido no valor do resgate e das tarifas. Resgates reduzem o valor de resgate e o benefício por morte e podem gerar imposto. Taxas de resgate podem reduzir o valor de resgate nos primeiros anos.</p>
+<h3>Trocas 1035 (1035 Exchanges)</h3>
+<p class="foot" style="border:0;padding:0;margin:0 0 4px">Troca de uma apólice/anuidade por outra sem gerar imposto, prevista na Seção 1035 do código tributário dos EUA.</p>
+<p>O FlexLife aceita trocas 1035, inclusive com empréstimos de até <b>50%</b> do valor bruto da troca. Nas trocas 1035, os empréstimos ficam disponíveis <b>já na emissão</b>. O titular escolhe um dos quatro tipos de empréstimo na proposta.</p>
+</div></div></section>
+<section class="sec" id="s10"><div class="sec-h"><div class="n">10</div><h2>Pagamento de prêmios<small>Premium Payments</small></h2></div>
+<div class="cols"><div>
+<h3>Prêmios</h3>
+<p>O IUL é um produto de <b>prêmio flexível</b>, com estes limites:</p>
+<ul><li>Prêmio mínimo: <b>US$ 10</b>.</li><li>Prêmio máximo: limite do IRS para a apólice continuar qualificada como seguro de vida.</li></ul>
+<p>Explique ao cliente como pagar prêmios menores ou maiores afeta o valor de resgate. Se o objetivo é acumular valor para usar no futuro — por exemplo, com a Tax-Free Retirement Strategy ou exercendo o Lifetime Income Benefit Rider — é ainda mais importante incentivá-lo a <b>financiar bem a apólice</b>, pagando acima do mínimo.</p>
+</div><div>
+<h3>Teste de prêmio do seguro</h3>
+<p>Pela <b>Seção 7702 do Internal Revenue Code</b>, a apólice é tratada como seguro de vida para fins fiscais se, o tempo todo, atender a um destes testes:</p>
+<ul><li><b>Guideline Premium Test (GPT)</b> — também chamado de limite DEFRA.</li><li><b>Cash Value Accumulation Test (CVAT)</b>.</li></ul>
+<p>Os dois exigem fatores de corredor, que definem o benefício por morte mínimo acima do valor acumulado.</p>
+<p>O <b>GPT</b> limita quanto prêmio pode ser pago, o que pode afetar pagamentos e mudanças (como resgates ou troca de opção de benefício). O <b>CVAT</b> não limita o prêmio, mas seus fatores de corredor costumam ser mais altos.</p>
+<div class="alert"><b class="t">Decisão irrevogável</b>O titular escolhe entre GPT e CVAT na emissão, e a escolha não pode ser mudada.</div>
+</div></div></section>
+<section class="sec" id="s11"><div class="sec-h"><div class="n">11</div><h2>Encargos (Charges)<small>O que é descontado da apólice</small></h2></div>
+<div class="cols"><div>
+<h3>Período de proteção da apólice</h3>
+<p>Ajuda a proteger a apólice contra a caducidade nos <b>10 primeiros anos</b>.</p>
+<ul><li>Nesse período, a soma dos prêmios pagos, menos resgates e dívidas, deve ser igual ou maior que a soma dos prêmios mínimos mensais.</li>
+<li>Não há ajuste de juros nesse cálculo.</li>
+<li>Atendido o teste e com valor acumulado positivo líquido de dívidas, a apólice não caduca mesmo com valor de resgate zero.</li>
+<li>Aumento de cobertura não inicia novo período, mas aumenta o prêmio mínimo mensal.</li>
+<li>Pagar só o prêmio mínimo mensal garante o benefício por morte, mas não necessariamente gera valor acumulado relevante.</li></ul>
+<h3>Taxas de resgate (Surrender Charges)</h3>
+<p>Aplicam-se, em geral, nos <b>10 primeiros anos</b>, conforme idade de emissão, sexo, classe de risco, capital e tempo de apólice. Cada aumento de capital (exceto por troca de opção de benefício, aplicação dos fatores de benefício por morte ou pelo Additional Protection Benefit Rider) tem cronograma próprio de 10 anos. Reduções de capital não reduzem as taxas de resgate.</p>
+<h3>Encargo percentual sobre o prêmio</h3>
+<p><b>8%</b> sobre todos os prêmios pagos nos anos 1–10 e <b>5%</b> a partir do 11º ano, com máximo garantido de 8% em todos os anos. Valores de trocas 1035 internas não sofrem esse encargo.</p>
+</div><div>
+<h3>Dedução mensal</h3>
+<p>Custo mensal do seguro + encargo mensal de despesas + taxa mensal da apólice + encargo mensal sobre o valor acumulado + custo mensal dos riders adicionais em vigor.</p>
+<p><b>Encargo mensal de despesas:</b> incide sobre o capital segurado e o capital do Additional Protection Benefit. Varia com idade de emissão, sexo, classe de risco e tempo de apólice. Na base atual, é cobrado por <b>10 anos</b> nas classes não fumante e <b>15 anos</b> nas classes fumante; na base garantida, em todos os anos. Cada aumento de capital (exceto por troca de opção de benefício ou fatores de benefício por morte) tem encargo próprio. Reduções não diminuem o encargo.</p>
+<p><b>Taxa mensal da apólice:</b> atualmente US$ 6,00 por mês; máximo garantido de US$ 8,00.</p>
+<p><b>Encargo mensal sobre o valor acumulado:</b> 0,04% do valor acumulado por mês nos primeiros 25 anos (base atual); todos os anos na base garantida.</p>
+<h3>Custo mensal do seguro (Cost of Insurance)</h3>
+<p>Taxa mensal de custo do seguro × valor líquido em risco. As taxas atuais variam com idade de emissão, classe de risco, sexo e tempo de apólice. O valor líquido em risco é o benefício por morte, mais a dívida com a companhia, menos o valor acumulado.</p>
+</div></div></section>
+<section class="sec" id="s12"><div class="sec-h"><div class="n">12</div><h2>ABR for Terminal Illness<small>Doença terminal</small></h2></div>
+<p><i>Antecipa o benefício por morte, em vida, em caso de doença terminal. Para mais detalhes, consulte o guia do agente dos Accelerated Benefits Riders.</i></p>
+<div class="cols"><div>
+<h3>Visão geral</h3><p>Os <b>Accelerated Benefits Riders (ABRs)</b> são benefícios complementares que podem ser incluídos na apólice de seguro de vida e só são adequados se o cliente tiver, de fato, necessidade de seguro de vida.</p>
+<p>O <b>ABR for Terminal Illness</b> é um rider <b>sem prêmio adicional</b> que permite antecipar em vida, com desconto, o benefício por morte em caso de doença terminal.</p>
+<p>Os valores <b>não precisam ser usados</b> para cobrir despesas ligadas à doença. Podem ir para outros gastos, como adaptar a casa à condição do segurado ou pagar um cuidador sem licença profissional.</p>
+<h3>Definição de doença terminal</h3>
+<p>Antecipa, em certas circunstâncias e com desconto, todo ou parte do benefício por morte antes do falecimento do segurado. O pagamento pode ser feito se o segurado tiver uma doença terminal que resultará em morte em até <b>24 meses</b> (NL: 12 meses em CT, NY e PA) (LSW: 12 meses em CT, PA e VT).</p>
+</div><div>
+<h3>Benefício (ABR Terminal)</h3>
+<p>O valor disponível é calculado aplicando um fator de desconto ao benefício por morte. O valor antecipado reduz o benefício por morte, o valor de resgate (Cash Surrender Value) e o valor disponível para empréstimo. A projeção do benefício descontado pode ser ilustrada no sistema de ilustração da National Life Group.</p>
+<div class="card navy"><h4>Números-chave</h4><ul>
+<li>Antecipação <b>livre de imposto de renda</b> do benefício descontado</li>
+<li>Limite vitalício: <b>US$ 1.500.000 por segurado</b></li>
+<li>Sem limite anual; pode ser recebido de uma vez (lump sum)</li>
+<li><b>Sem período de carência</b></li></ul></div>
+</div></div><p class="foot">Os limites podem variar por estado — consulte o formulário da apólice para os detalhes e restrições do seu estado. O pagamento de benefícios acelerados reduz o valor em dinheiro (Cash Value) e o benefício por morte a pagar. O recebimento pode ser fato gerador de imposto e afetar a elegibilidade a programas de assistência pública. O segurado deve consultar seu consultor tributário e os órgãos de assistência social.</p></section>
+<section class="sec" id="s13"><div class="sec-h"><div class="n">13</div><h2>ABR for Chronic Illness<small>Doença crônica e Premium Chronic Care</small></h2></div>
+<p><i>Antecipa o benefício por morte, em vida, em caso de doença crônica. Para mais detalhes, consulte o guia do agente dos Accelerated Benefits Riders.</i></p>
+<div class="cols"><div>
+<h3>Visão geral</h3><p>Os <b>Accelerated Benefits Riders (ABRs)</b> são benefícios complementares que podem ser incluídos na apólice de seguro de vida e só são adequados se o cliente tiver, de fato, necessidade de seguro de vida.</p>
+<p>O <b>ABR for Chronic Illness</b> é um rider <b>sem prêmio adicional</b> que permite antecipar em vida, com desconto, o benefício por morte em caso de doença crônica.</p><p>O <b>Premium Chronic Care Rider</b>, opcional, também está disponível <b>com custo extra</b>: ele antecipa o benefício por morte <b>sem desconto</b>.</p>
+<p>Os valores <b>não precisam ser usados</b> para cobrir despesas ligadas à doença. Podem ir para outros gastos, como adaptar a casa à condição do segurado ou pagar um cuidador sem licença profissional.</p>
+<p>Em <b>Massachusetts (MA)</b>, os valores do ABR só podem ser usados para despesas com <i>Qualified Long-Term Care Services</i>¹.</p>
+<div class="alert"><b class="t">Atenção</b>A disponibilidade do rider e o período de carência variam por estado — confira sempre o formulário da apólice.</div>
+<h3>Definição de doença crônica</h3>
+<p>É considerado doente crônico quem tenha sido certificado, nos últimos 12 meses, por um profissional de saúde licenciado, como incapaz de realizar sem ajuda substancial pelo menos <b>2 de 6 atividades da vida diária (ADLs)</b> por no mínimo <b>90 dias</b>, por perda de capacidade funcional:</p>
+<p><span class="pill">Alimentar-se</span><span class="pill">Usar o banheiro</span><span class="pill">Transferir-se (ex.: cama → cadeira)</span><span class="pill">Tomar banho</span><span class="pill">Vestir-se</span><span class="pill">Continência</span></p>
+<p>O comprometimento cognitivo também pode qualificar.</p>
+</div><div>
+<h3>Benefício (ABR Chronic Illness)</h3>
+<p>O valor disponível é calculado com um fator de desconto sobre o benefício por morte. O valor antecipado reduz o benefício por morte, o valor de resgate e o valor disponível para empréstimo. A projeção pode ser ilustrada no sistema da National Life Group.</p>
+<div class="card soft"><h4>NL — National Life Insurance Company</h4><p>Em geral, após <b>30 dias</b> de vigência da apólice, antecipa um benefício anual limitado ao <b>limite diário do IRS (per diem)</b>, ou ao limite vitalício atual de <b>US$ 1.500.000 por segurado</b>.</p></div>
+<div class="card soft"><h4>LSW — Life Insurance Company of the Southwest</h4><p>Em geral, após <b>30 dias</b> de vigência, antecipa <b>2% do benefício por morte líquido por mês</b> (24% ao ano), limitado ao teto anual ou ao limite vitalício atual de <b>US$ 1.500.000 por segurado</b>.</p></div>
+<div class="card navy"><h4>Benefício do Premium Chronic Rider</h4><ul>
+<li><b>Sem desconto:</b> ao antecipar, recebe-se o benefício integral.</li>
+<li>Antecipa <b>2% ou 4%</b> do benefício por morte líquido por mês (24% ou 48% ao ano), conforme escolhido pelo titular na emissão, limitado ao <b>limite per diem anual do IRS</b> ou ao teto vitalício atual de <b>US$ 3.000.000 por segurado</b>.</li>
+<li>Depois da emissão e antes do pedido, o titular pode reduzir de 4% para 2% (e baixar o custo), mas não pode passar de 2% para 4%.</li>
+<li>O benefício fica disponível imediatamente; <b>sem período de carência</b>.</li></ul></div>
+</div></div>
+<p class="foot">¹ <i>Qualified Long-Term Care Services</i>: serviços de diagnóstico, prevenção, terapia, cura, tratamento, mitigação e reabilitação, além de cuidados pessoais e de manutenção, necessários a um doente crônico e prestados conforme plano de cuidados prescrito por profissional de saúde licenciado. Os limites variam por estado — consulte o formulário da apólice.</p></section>
+<section class="sec" id="s14"><div class="sec-h"><div class="n">14</div><h2>ABR for Alzheimer’s Disease (não disponível em NY)<small>Alzheimer e demência com corpos de Lewy</small></h2></div>
+<p><i>Antecipa o benefício por morte, em vida, em caso de diagnóstico qualificado de Alzheimer ou de demência com corpos de Lewy (Lewy Body Dementia). Para mais detalhes, consulte o guia do agente dos Accelerated Benefits Riders.</i></p>
+<div class="cols"><div>
+<div class="card navy"><h4>Resumo</h4><ul>
+<li>Benefício por morte antecipado para Alzheimer ou demência com corpos de Lewy</li>
+<li><b>Sem custo adicional</b></li>
+<li>Uso do benefício, em geral, sem restrições</li>
+<li>Limite anual: <b>nenhum</b></li>
+<li>Limite vitalício atual: <b>US$ 1.500.000</b></li><li>Idades de emissão: <b>0–60</b></li></ul></div>
+<h3>Visão geral</h3><p>Os <b>Accelerated Benefits Riders (ABRs)</b> são benefícios complementares que podem ser incluídos na apólice de seguro de vida e só são adequados se o cliente tiver, de fato, necessidade de seguro de vida.</p>
+<p>Os ABRs são opcionais e podem não estar disponíveis em todos os estados. O uso de um benefício pode reduzir ou eliminar outros benefícios da apólice e dos riders. Este rider não tem prêmio adicional e permite antecipar em vida, com desconto, o benefício por morte em caso de Alzheimer ou demência com corpos de Lewy.</p>
+<p>Os valores <b>não precisam ser usados</b> para cobrir despesas ligadas à doença. Podem ir para outros gastos, como adaptar a casa à condição do segurado ou pagar um cuidador sem licença profissional.</p>
+<p>Disponível para emissão até os 60 anos.</p>
+</div><div>
+<h3>Eventos qualificadores</h3>
+<p>É necessário diagnóstico de Alzheimer ou de demência com corpos de Lewy feito por <b>especialista</b>, que também deve certificar <b>ambos</b> os itens abaixo:</p>
+<ul><li>Pontuação <b>inferior a 20 de 30</b> no Mini-Exame do Estado Mental (MMSE), ou equivalente em outro teste cognitivo amplamente aceito;</li>
+<li>Comprometimento clínico de pelo menos <b>duas</b> destas funções: orientação (pessoas, lugares ou tempo); registro (aprender e lembrar informações novas); atenção e cálculo (raciocínio e tarefas complexas); habilidades visuoespaciais; linguagem.</li></ul>
+<p>Para decidir se houve evento qualificador, a National Life Group pode analisar a certificação e os registros do histórico médico, diagnóstico e tratamentos do segurado. Outras formas de demência não são cobertas por este rider, mas podem ser cobertas pelo rider de doença crônica.</p>
+<div class="alert"><b class="t">Restrição importante</b>O rider não fica disponível se o cliente tiver parente de primeiro grau (mãe, pai ou irmãos) com histórico de Alzheimer.</div>
+<h3>Benefício</h3>
+<p>O valor efetivamente pago é menor que a parte antecipada do benefício por morte, porque é pago antes do falecimento. Os valores se baseiam na taxa de juros atual e nas taxas de mortalidade. Há uma <b>taxa administrativa inicial</b> no momento do exercício. O valor antecipado reduz o benefício por morte, o valor em dinheiro e o valor de empréstimo. Limite vitalício atual: <b>US$ 1.500.000 por segurado</b>; sem limite anual.</p>
+</div></div></section>
+<section class="sec" id="s15"><div class="sec-h"><div class="n">15</div><h2>ABR for Critical Illness and Critical Injury<small>Lesão crítica não disponível em NY</small></h2></div>
+<p><i>Antecipa o benefício por morte, em vida, em caso de doença crítica ou lesão crítica. Para mais detalhes, consulte o guia do agente dos Accelerated Benefits Riders.</i></p>
+<div class="cols"><div>
+<h3>Visão geral</h3><p>Os <b>Accelerated Benefits Riders (ABRs)</b> são benefícios complementares que podem ser incluídos na apólice de seguro de vida e só são adequados se o cliente tiver, de fato, necessidade de seguro de vida.</p>
+<p>O <b>ABR for Critical Illness and Critical Injury</b> é um rider <b>sem prêmio adicional</b> que permite, em certas circunstâncias e com desconto, antecipar em vida o benefício por morte em caso de doença crítica ou lesão crítica.</p>
+<p>Os valores <b>não precisam ser usados</b> para cobrir despesas ligadas à doença. Podem ir para outros gastos, como adaptar a casa à condição do segurado ou pagar um cuidador sem licença profissional.</p>
+<div class="alert"><b class="t">Prazo de aviso</b>Qualquer pedido de benefício por doença ou lesão crítica deve ser apresentado em até <b>365 dias</b> após a ocorrência do evento qualificador.</div>
+<h3>Doenças críticas cobertas</h3>
+<table><tbody>
+<tr><td>Diagnóstico de ELA (doença de Lou Gehrig)</td><td>Substituição de válvula cardíaca<sup>*</sup></td></tr>
+<tr><td>Anemia aplástica<sup>*</sup></td><td>Fibrose cística<sup>*</sup></td></tr>
+<tr><td>Cirurgia de enxerto da aorta<sup>*</sup></td><td>Transplante de órgão principal</td></tr>
+<tr><td>Cegueira<sup>**</sup></td><td>Ataque cardíaco (infarto)</td></tr>
+<tr><td>Insuficiência renal em estágio terminal</td><td>Doença do neurônio motor<sup>*</sup></td></tr>
+<tr><td>Câncer<sup>***</sup></td><td>AVC (derrame)</td></tr>
+<tr><td></td><td>Parada cardíaca súbita<sup>*</sup></td></tr>
+</tbody></table>
+<p class="foot">* Não é qualificadora em NY.<br>** Não é qualificadora em CT, IL, KS, MD, MA, MN, NJ, NY, OH, PA, UT, VA e WA.<br>*** Na Califórnia, apenas câncer invasivo.</p>
+</div><div>
+<h3>Lesões críticas cobertas</h3>
+<p><span class="pill">Coma</span><span class="pill">Paralisia</span><span class="pill">Queimaduras graves</span><span class="pill">Traumatismo cranioencefálico</span></p>
+<p>Na <b>Califórnia</b>, a apólice só pode incluir os riders de Critical Illness, Critical Injury e Alzheimer se o segurado tiver plano de saúde. A disponibilidade dos riders de Critical Injury e Critical Illness é limitada às idades de emissão de <b>0 a 64 anos</b>.</p>
+<h3>Benefício (ABR Critical)</h3>
+<p>O valor disponível é calculado com um fator de desconto sobre o benefício por morte. O valor antecipado reduz o benefício por morte, o valor de resgate e o valor de empréstimo. A projeção pode ser ilustrada no sistema da National Life Group.</p>
+<p>O cliente pode pedir antecipação <b>total ou parcial</b>, em pagamento único, limitada ao teto vitalício de <b>US$ 1.000.000 por segurado</b>. Não há limite anual. O desconto aplicado varia conforme a idade do segurado e a gravidade da doença ou lesão.</p>
+<div class="card soft"><p><b>NL</b> — a apólice precisa estar em vigor há <b>90 dias</b>.<br><b>LSW</b> — a apólice precisa estar em vigor há <b>30 dias</b>.</p></div>
+<div class="alert"><b class="t">Atenção</b>O período de carência e a disponibilidade do rider variam por estado. Confira o formulário da apólice. As doenças e lesões cobertas podem variar por estado.</div>
+
+</div></div></section>
+<section class="sec" id="s16"><div class="sec-h"><div class="n">16</div><h2>NL ABR for Chronic Illness — NY State Special<small>Doença crônica — versão do estado de Nova York</small></h2></div>
+<p><i>Antecipa o benefício por morte, em vida, em caso de doença crônica — versão específica do estado de Nova York. Para mais detalhes, consulte o guia do agente dos Accelerated Benefits Riders.</i></p>
+<div class="cols"><div>
+<h3>Visão geral</h3><p>Os <b>Accelerated Benefits Riders (ABRs)</b> são benefícios complementares que podem ser incluídos na apólice de seguro de vida e só são adequados se o cliente tiver, de fato, necessidade de seguro de vida.</p>
+<p>O <b>ABR for Chronic Illness</b> é um rider <b>sem prêmio adicional</b> que permite antecipar em vida, com desconto, o benefício por morte em caso de doença crônica.</p>
+<p>Os valores <b>não precisam ser usados</b> para cobrir despesas ligadas à doença. Podem ir para outros gastos, como adaptar a casa à condição do segurado ou pagar um cuidador sem licença profissional.</p>
+<p>Este rider também oferece uma <b>opção de apólice saldada garantida</b> (guaranteed paid-up) sobre qualquer parte do benefício por morte que não tenha sido antecipada.</p>
+<h3>Definição de doença crônica</h3>
+<p>Doente crônico é quem tenha sido certificado, nos últimos 12 meses, por profissional de saúde licenciado, como incapaz de realizar sem ajuda substancial pelo menos 2 de 6 atividades da vida diária (ADLs) por no mínimo 90 dias, por perda de capacidade funcional, <b>e que precisará de cuidados contínuos pelo resto da vida</b>. As seis atividades são: alimentar-se, usar o banheiro, transferir-se, tomar banho, vestir-se e continência. O comprometimento cognitivo também pode qualificar.</p>
+<p>Além desses requisitos, é preciso calcular a <b>expectativa de vida</b> no momento da antecipação.</p>
+</div><div>
+<h3>Benefício</h3>
+<p>O valor disponível é calculado com um fator de desconto sobre o benefício por morte. Esse fator é definido fazendo o underwriting (análise de risco) do segurado no momento do pedido, para determinar a expectativa de vida. O valor antecipado reduz o benefício por morte, o valor de resgate e o valor de empréstimo. A projeção pode ser ilustrada no sistema da National Life Group.</p>
+<div class="card navy"><h4>Números-chave (NY)</h4><ul>
+<li><b>Sem período de carência</b> no estado de Nova York</li>
+<li>Atendida a definição, a NL antecipa até o <b>limite per diem do IRS</b> para doença crônica</li>
+<li>Limitado ao benefício por morte total descontado ou ao teto vitalício atual de <b>US$ 2.000.000 por segurado</b></li></ul></div>
+</div></div></section>
+<section class="sec" id="s17"><div class="sec-h"><div class="n">17</div><h2>Additional Protection Benefit Rider (APB)<small>Proteção adicional de benefício por morte</small></h2></div>
+<div class="cols"><div>
+<p>O <b>APB</b> dá proteção extra por morte a um custo geralmente <b>menor que o da cobertura-base</b>, reduzindo o prêmio total por mil. O custo por mil no APB é essencialmente o custo puro do seguro: não há prêmio-alvo nem outros custos ou encargos sobre a parte coberta pelo APB.</p>
+<p>Incluir o APB aumenta o benefício por morte total sem aumentar muito o custo. No FlexLife, a cobertura do APB passa a ser <b>elegível à antecipação integral pelos ABRs</b>. O benefício do rider segue as mesmas regras de opções de benefício, DEFRA, aumentos, reduções etc.</p>
+</div><div>
+<div class="card soft"><h4>Disponibilidade</h4><ul><li>Na emissão e depois dela, nas mesmas idades e classes de risco do produto-base.</li><li>Idades de emissão: <b>0–85</b>.</li><li>Proporção máxima APB : base de <b>3 para 1</b>.</li><li>Capital mínimo: <b>US$ 25.000</b>.</li></ul></div>
+<div class="card soft"><h4>Encargos</h4><p>Não há prêmio-alvo comissionável. O rider tem encargo por mil de capital, custo do seguro, prêmios mínimos mensais e prêmios mínimos garantidos.</p></div>
+</div></div></section>
+<section class="sec" id="s18"><div class="sec-h"><div class="n">18</div><h2>Balance Sheet Benefit Rider (BSB)<small>Valores de resgate maiores nos primeiros anos</small></h2></div>
+<div class="cols"><div>
+<p>O <b>BSB</b> elimina todas as taxas de resgate sobre as unidades de seguro a que se aplica. A parte da taxa de resgate dispensada pode ser qualquer percentual inteiro entre <b>1% e 100%</b>. Há um encargo mensal por unidade de cobertura, conforme idade de emissão, sexo e classe de risco de cada segurado.</p>
+<p><b>Planejamento empresarial:</b> use o BSB quando for importante ter valores altos no início da apólice. O empresário pode querer aumentar o valor de garantia da apólice quando ela financia um benefício como Key Person, Deferred Compensation ou Endorsement Split Dollar.</p>
+<p><b>Vendas pessoais:</b> o cliente pode precisar acessar o valor de resgate antes do fim do período de resgate, para uma necessidade pontual, ou planejar uma retirada grande por pouco tempo e depois devolver. Como empréstimos da apólice são rápidos, fáceis e não exigem garantia adicional, muitos clientes veem o valor de resgate como fonte de crédito de curto prazo.</p>
+</div><div>
+<div class="card soft"><h4>Disponibilidade</h4><ul><li>Todas as idades de emissão e classes de risco do produto-base.</li><li><b>Não</b> pode ser incluído após a emissão.</li></ul></div>
+<div class="card soft"><h4>Encargos</h4><p>Encargo mensal por mil de capital-base, conforme idade de emissão, sexo e classe de risco de cada segurado, multiplicado pelo percentual de cobertura. As comissões sobre unidades com BSB seguem um cronograma diferente, que nivela a remuneração.</p></div>
+</div></div></section>
+<section class="sec" id="s19"><div class="sec-h"><div class="n">19</div><h2>Benefit Distribution Option Rider (BDO)<small>Não disponível em NY · benefício pago em parcelas para substituir renda</small></h2></div>
+<div class="cols"><div>
+<p>Na emissão, o titular pode escolher que o benefício por morte seja pago <b>em parcelas</b>, em vez de pagamento único. O prazo pode ser de <b>10 a 30 anos</b>, desde que não ultrapasse a idade atingida de 95 anos.</p>
+<p>Com o BDO, uma porcentagem do benefício por morte é destinada ao pagamento em parcelas. Esse percentual deve ser de <b>no mínimo 50%</b> e pode chegar a 100%.</p>
+<div class="alert"><b class="t">Escolhas irrevogáveis</b>Nem o prazo nem o percentual podem ser alterados após a emissão. O BDO só pode ser cancelado após a emissão se houver aumento de capital com underwriting.</div>
+<p>O prazo e o percentual valem igualmente para todos os beneficiários da apólice.</p>
+</div><div>
+<p>Como o benefício do BDO é pago ao longo do tempo, o custo do seguro sobre a parte alocada ao BDO é <b>menor</b>, o que tende a <b>aumentar os valores da apólice</b> em relação a apólices sem BDO.</p>
+<p>Os ABRs são pagos normalmente em apólices com BDO. A antecipação não muda o percentual alocado ao BDO, mas reduz o benefício por morte total. A alocação ao BDO tende a reduzir os benefícios projetados dos ABRs.</p>
+<p>O prazo e o percentual também se aplicam aos valores do Additional Protection Benefit.</p>
+<div class="card soft"><h4>Disponibilidade e encargos</h4><ul><li>Todas as idades de emissão e classes de risco.</li><li>Não pode ser incluído após a emissão.</li><li><b>Sem custo adicional.</b></li><li>Não disponível em casos de pensão.</li></ul></div>
+</div></div></section>
+<section class="sec" id="s20"><div class="sec-h"><div class="n">20</div><h2>Charitable Matching Gift Death Benefit Rider (CMGDB)<small>Não disponível em NY · complemento pago a instituições de caridade</small></h2></div>
+<div class="cols"><div>
+<p>O rider paga um <b>valor adicional</b> às instituições de caridade indicadas como beneficiárias quando o segurado falece. Esse valor é <b>somado</b> ao benefício por morte da apólice.</p>
+<p>O complemento é de até <b>2% do capital-base</b>, limitado a <b>US$ 30.000</b>. O limite é por apólice, não por beneficiário: com várias instituições, todas dividem proporcionalmente.</p>
+<p>Valores do Additional Protection Benefit não entram no cálculo do complemento.</p>
+</div><div>
+<p>O complemento vai para qualquer organização reconhecida como entidade beneficente que dê direito a dedução fiscal pelas regras do IRS. Quem paga é a <b>National Life Group</b>. O complemento é pago de uma vez, mesmo que o benefício por morte seja pago de outra forma (por exemplo, em parcelas pelo BDO).</p>
+<div class="card soft"><h4>Disponibilidade e encargos</h4><ul><li>Todas as idades de emissão e classes de risco da cobertura-base.</li><li>Não pode ser incluído após a emissão.</li><li><b>Sem custo adicional.</b></li></ul></div>
+</div></div></section>
+<section class="sec" id="s21"><div class="sec-h"><div class="n">21</div><h2>Children’s Term Rider (CTR)<small>Não disponível em NY · cobertura para os filhos</small></h2></div>
+<p><i>Cobertura temporária (term) para os filhos do segurado.</i></p>
+<p>O <b>Children’s Term Rider (CTR)</b> dá seguro de vida temporário a todos os filhos do segurado até completarem <b>25 anos</b>. Cada filho é coberto pelo mesmo valor escolhido. Também ficam cobertos os filhos nascidos ou adotados após a emissão (a partir de 15 dias de vida) e os enteados dependentes que morem com o segurado.</p>
+<p>O rider pode ser convertido enquanto estiver em vigor e: em até <b>31 dias</b> após a morte do segurado; em até 31 dias após o casamento do filho dependente; ou em até 31 dias após o aniversário da apólice seguinte aos 25 anos do filho. A cobertura é conversível em <b>até seis vezes</b> o capital do rider quando o filho completa 25 anos ou se casa, ou com a morte do segurado principal.</p>
+<div class="card soft"><h4>Disponibilidade</h4><ul>
+<li>Idades de emissão: <b>15 dias a 16 anos</b></li>
+<li>Fica em vigor até o aniversário da apólice seguinte aos 25 anos do último filho coberto, enquanto a apólice-base estiver em vigor</li>
+<li>Valor mínimo do rider: <b>US$ 5.000</b> · máximo: <b>US$ 25.000</b></li>
+<li>Cobertura comprada em múltiplos de US$ 1.000</li><li>Pode ser incluído após a emissão</li><li>O encargo é um valor nivelado por US$ 1.000, independentemente do número de filhos cobertos</li></ul></div></section>
+<section class="sec" id="s22"><div class="sec-h"><div class="n">22</div><h2>Value Added Services Rider (VAS)<small>Não disponível em NY · Compassionate Care Program</small></h2></div>
+<div class="cols"><div>
+<p>O <b>Compassionate Care Program</b> oferece apoio quando o cliente ou seus entes queridos enfrentam desafios de saúde, bem-estar ou financeiros, por meio do Value Added Services Rider.</p>
+<p>Os serviços são prestados por um <b>fornecedor terceirizado</b>, independente da National Life Group, e podem estar disponíveis ao titular, aos segurados e/ou aos beneficiários.</p>
+<div class="card soft"><h4>Disponibilidade e encargos</h4><ul><li>Disponível na emissão, só para vendas novas.</li><li><b>Sem custo</b> por este benefício.</li><li>Serviços de terceiros podem ser gratuitos ou ter custo adicional — de responsabilidade do titular, sem reembolso pela National Life Group.</li><li>Disponível assim que a apólice é emitida.</li><li>Em CA, FL e ND, os mesmos serviços são oferecidos sem incluir o rider na apólice.</li></ul></div>
+</div><div>
+<h3>Exemplos de benefícios</h3><p>Podem mudar conforme o fornecedor.</p>
+<table class="kv"><tbody>
+<tr><td>Serviços em casa</td><td>Orientação sobre segurança em casa, organização de cuidado domiciliar, ajuda com transporte.</td></tr>
+<tr><td>Navegação médica</td><td>Encontrar profissionais locais, organizar altas hospitalares, educação sobre a doença.</td></tr>
+<tr><td>Moradia</td><td>Comparar residências assistidas, organizar mudança, encontrar opções de moradia acessíveis.</td></tr>
+<tr><td>Jurídico</td><td>Explicar diretivas antecipadas e testamentos, encontrar advogados locais.</td></tr>
+<tr><td>Social e emocional</td><td>Grupos de apoio e atividades sociais locais, dicas de autocuidado, ajuda com a dinâmica familiar.</td></tr>
+<tr><td>Financeiro</td><td>Orientar sobre Medicare, Medicaid e Social Security; encontrar programas de assistência financeira.</td></tr>
+<tr><td>Círculo de cuidado</td><td>O titular pode montar um grupo de cuidadores com acesso aos benefícios do fornecedor.</td></tr></tbody></table>
+</div></div></section>
+<section class="sec" id="s23"><div class="sec-h"><div class="n">23</div><h2>Death Benefit Protection Rider (DBPR)<small>Protege a apólice contra a caducidade no período de proteção</small></h2></div>
+<div class="cols"><div>
+<p>Este rider opcional impede que a apólice caduque durante o <b>Death Benefit Protection Period</b>. Pode ser muito útil em fases de caixa apertado. O período varia conforme a idade de emissão e o tipo de produto.</p>
+<table><thead><tr><th>Idade de emissão</th><th>Período de proteção (anos)</th></tr></thead><tbody>
+<tr><td>0–29</td><td>30</td></tr><tr><td>30–39</td><td>25</td></tr><tr><td>40–54</td><td>20</td></tr><tr><td>55–64</td><td>15</td></tr><tr><td>65–75</td><td>10</td></tr></tbody></table>
+<p>No período de proteção, a apólice não caduca, mesmo com valor da conta menor ou igual a zero, desde que a acumulação com juros dos prêmios pagos, menos resgates acumulados com juros e menos dívidas, seja <b>igual ou maior</b> que a acumulação com juros dos <b>Monthly Guarantee Premiums (MGP)</b>. Esse nível de pagamento, porém, não necessariamente gera valor acumulado relevante.</p>
+</div><div>
+<div class="card soft"><h4>Disponibilidade</h4><ul><li>Só para apólices novas elegíveis, com benefício Opção A ou B.</li><li>Idades de emissão: <b>0–75</b> (sem idade mínima).</li><li>Não pode ser incluído após a emissão.</li><li>Disponível para todas as classes de risco.</li><li>Não disponível sob o GPT se o Monthly Guarantee Premium anualizado for maior que o Guideline Level Premium anual.</li></ul></div>
+<div class="alert"><b class="t">Fique de olho</b>O cumprimento das exigências é verificado em cada data mensal da apólice. Se o prêmio mínimo não for atendido, o titular é avisado de que o rider será cancelado se um prêmio específico não for pago em até <b>61 dias</b> após o envio do aviso. Depois de cancelado, o rider <b>não pode ser restabelecido</b>.</div>
+</div></div></section>
+<section class="sec" id="s24"><div class="sec-h"><div class="n">24</div><h2>Fertility Journey Rider<small>Não disponível em todos os estados · crédito único no valor acumulado</small></h2></div>
+<div class="cols"><div>
+<p>Cumpridas as condições, o <b>Fertility Journey Rider (FJR)</b> credita de uma vez no valor acumulado um valor igual a <b>3 vezes o prêmio mínimo mensal</b> ou o prêmio mínimo garantido na emissão, o que for maior. Mudanças após a emissão não alteram esse valor.</p>
+<p>Para ter direito, a National Life deve receber um formulário preenchido e comprovação satisfatória de um médico de que prestou ao segurado assistência reprodutiva num evento qualificador, com a apólice e o rider em vigor.</p>
+<div class="card soft"><h4>Disponibilidade e encargos</h4><ul><li>Disponível em qualquer classe de risco ou agravamento.</li><li>Incluído automaticamente em todas as apólices novas elegíveis, conforme aprovação do estado.</li><li><b>Sem encargos.</b></li></ul></div>
+</div><div>
+<h3>Eventos qualificadores</h3>
+<ul><li><b>Inseminação artificial:</b> procedimento em que espermatozoides lavados e concentrados são colocados diretamente no útero (inseminação intrauterina — IUI).</li>
+<li><b>Tecnologia de reprodução assistida (ART):</b> tratamentos de fertilidade em que óvulos ou embriões são manipulados, incluindo, entre outros, a fertilização in vitro (FIV).</li>
+<li><b>Cirurgia:</b> laparoscopia e histeroscopia operatórias com a finalidade explícita de assistência à fertilidade.</li></ul>
+<p>Excluem-se procedimentos de estimulação ovariana sem plano de coleta de óvulos.</p>
+<div class="alert"><b class="t">Carência</b>Há uma carência de <b>dois anos</b> entre a emissão da apólice e a data em que o evento qualificador pode ocorrer.</div>
+</div></div></section>
+<section class="sec" id="s25"><div class="sec-h"><div class="n">25</div><h2>Guaranteed Insurability Rider (GIR)<small>Aumentar a cobertura sem prova de segurabilidade</small></h2></div>
+<p>O <b>GIR</b> permite ao segurado aumentar a cobertura <b>sem prova de segurabilidade</b> em períodos de opção definidos.</p>
+<table><thead><tr><th></th><th>Life Insurance Company of the Southwest</th><th>National Life Insurance Company</th></tr></thead><tbody>
+<tr><td><b>Idades de emissão</b></td><td>0–37</td><td>0–39</td></tr>
+<tr><td><b>Valor mínimo por opção</b></td><td>US$ 5.000</td><td>US$ 25.000</td></tr>
+<tr><td><b>Valor máximo por opção</b></td><td>O menor entre o capital total da apólice e US$ 50.000</td><td>2 vezes o capital-base, sem passar de: idade 0–24: US$ 50.000 · 25–27: US$ 60.000 · 28–30: US$ 75.000 · 31–39: US$ 100.000</td></tr>
+<tr><td><b>Agravados (substandard)</b></td><td>Não disponível em apólices agravadas e não é emitido com agravamento. Portanto, não está disponível nas três classes Express Standard.</td><td>Não disponível em apólices agravadas e não é emitido com agravamento.</td></tr>
+<tr><td><b>Disponível após a emissão</b></td><td>Sim</td><td>Sim</td></tr>
+<tr><td><b>Término</b></td><td>No aniversário da apólice seguinte aos 40 anos do segurado.</td><td>Na data em que o segurado completa 40 anos.</td></tr></tbody></table>
+<p><b>Encargos:</b> há cobrança por este rider.</p></section>
+<section class="sec" id="s26"><div class="sec-h"><div class="n">26</div><h2>Lifetime Income Benefit Rider™ (LIBR)<small>Renda garantida pela vida toda</small></h2></div>
+<div class="cols"><div>
+<p>Envelhecer nos EUA não é mais como antes — e, em muitos aspectos, isso é bom. As pessoas vivem mais e têm mais estudo, o que significa mais saúde, renda maior e melhor padrão de vida na aposentadoria.</p>
+<p>Mas há o outro lado: vivendo mais, surge um novo desafio — <b>“como garantir que minha renda de aposentadoria dure?”</b> As seguradoras da National Life Group protegem a família se o cliente <b>morrer cedo demais</b>. E se ele <b>viver demais</b>?</p>
+<p>Depois de exercido, o LIBR garante renda pela vida toda — dinheiro que o cliente <b>não consegue esgotar</b>.</p>
+<h3>Perfil do cliente</h3>
+<p>Ideal para quem quer proteção por morte caso morra cedo, mas também quer a opção de usar a apólice para complementar a aposentadoria quando a proteção da família deixar de ser prioridade. Mesmo exercendo a renda vitalícia, o cliente mantém sempre um benefício por morte de pelo menos <b>US$ 15.000</b>.</p>
+<h3>Como funciona o LIBR?</h3>
+<p>É incluído automaticamente nas apólices elegíveis na emissão e dá ao segurado a opção de exercê-lo, cumpridas certas condições, para receber renda vitalícia garantida. Não há custo para incluir o rider, mas há <b>encargo mensal sobre o valor acumulado durante o período de pagamento</b>.</p>
+<p>A renda é paga a partir do valor em dinheiro da apólice por meio de <b>empréstimos</b>, reduzindo o valor de resgate e o benefício por morte. O titular mantém pleno controle do valor acumulado até atingir um patamar mínimo. Atingido esse patamar do valor de resgate, cada pagamento seguinte é creditado na apólice como bônus na Basic Strategy, e os pagamentos continuam financiados como <b>empréstimos de custo líquido fixo</b> pela vida do segurado.</p>
+<p>Como os pagamentos são empréstimos de custo líquido fixo, <b>não são tributáveis</b> se a apólice não for MEC. O benefício por morte nunca fica abaixo de <b>US$ 15.000</b>, e o valor de resgate nunca abaixo de <b>US$ 1.000</b>.</p>
+</div><div>
+<table class="kv"><tbody>
+<tr><td>Disponibilidade</td><td>Incluído automaticamente nas apólices novas elegíveis; disponível para apólices em vigor elegíveis, a pedido do titular.</td></tr>
+<tr><td>Idades de emissão</td><td>0–75. Não disponível com agravamentos acima de 250% nem na classe Express Standard Non-tobacco 2.</td></tr>
+<tr><td>Idade para exercer</td><td>Não antes dos <b>60</b> nem depois dos <b>85</b> anos.</td></tr>
+<tr><td>Valor do benefício</td><td>Usa-se uma base de renda (income base) definida. Pagamentos mensais, trimestrais, semestrais ou anuais.</td></tr>
+<tr><td>Carência</td><td><b>10 anos</b>. Aumentos de capital nesse período reiniciam a carência.</td></tr>
+<tr><td>Opção de benefício por morte</td><td>A e B. Na B, a apólice passa automaticamente para a A quando o LIBR é exercido, desde que continue qualificada como seguro de vida; senão, fica na B e o pagamento usa um Base Payout Percentage menor.</td></tr>
+<tr><td>Definição de seguro de vida</td><td>Só com <b>GPT</b>; não disponível em apólices CVAT. Disponível para apólices MEC e não MEC.</td></tr></tbody></table>
+<h3>Perguntas frequentes</h3>
+<h4>Os valores são garantidos?</h4><p>Não até o LIBR ser exercido. No exercício, a base de renda é igual ao valor de resgate e é usada para calcular os pagamentos.</p>
+<h4>Os benefícios são tributáveis?</h4><p>Em apólices não MEC, os pagamentos são empréstimos — não tributáveis. Em apólices MEC, estão sujeitos a imposto de renda. O titular pode consultar seu consultor tributário.</p>
+<h4>Quais as condições para exercer?</h4><p>Além das idades, da idade de exercício e da carência, entre outras: quitar todos os empréstimos; a razão de benefício por morte (benefício por morte ÷ valor de resgate no exercício) deve ser menor ou igual à razão máxima; pagamentos de pelo menos <b>US$ 100</b>.</p>
+</div></div>
+<div class="cols"><div>
+<h4>Ainda é preciso pagar prêmios depois de ativar o LIBR?</h4><p>Não. Depois de exercido, não se podem pagar prêmios adicionais, salvo se o titular suspender temporariamente a renda.</p>
+<h4>A renda pode ser suspensa e retomada?</h4><p>Sim, a qualquer momento até a idade atingida de 85 anos, mas só <b>uma suspensão ou retomada por ano de apólice</b>. Com a renda suspensa, não há encargo do LIBR, e o titular pode pagar prêmios, quitar empréstimos, pedir aumento ou redução de capital, fazer resgates e empréstimos — só enquanto a renda estiver suspensa. Não pode trocar a opção de benefício. Ao retomar, os novos pagamentos são garantidos pelo menos iguais aos anteriores, desde que não tenha havido aumento de capital, resgates ou empréstimos. Se a renda não for retomada antes dos 85 anos, o rider termina.</p>
+</div><div>
+<h4>Como os benefícios são pagos e podem mudar?</h4><p>O rider tem um <b>recurso de “catraca” (ratchet)</b>: a cada 5º aniversário do LIBR no período de renda, se o valor de resgate for maior que no recálculo anterior, a base de renda sobe para esse valor e os pagamentos são recalculados. Se for menor, a base não é reduzida.</p>
+<p>Ao fim do período de acumulação, o titular escolhe entre:</p>
+<div class="card soft"><h4>Level Payout Option (pagamento nivelado)</h4><p>Pagamentos nivelados, sujeitos aos aumentos da catraca. Começam mais altos que na opção crescente, mas sem aumento anual.</p></div>
+<div class="card soft"><h4>Increasing Payout Option (pagamento crescente)</h4><p>Os pagamentos aumentam a cada aniversário do rider pelo pagamento do ano anterior × o Annual Increase Percentage, hoje de <b>3,0%</b>. O aumento continua até atingir o patamar mínimo e esgotar o valor de resgate; depois, o pagamento anual garantido fica nivelado no valor do último aniversário. Também tem os aumentos da catraca.</p></div>
+<p>A opção escolhida não pode ser mudada depois de exercido o rider.</p>
+</div></div></section>
+<section class="sec" id="s27"><div class="sec-h"><div class="n">27</div><h2>Other Insured Rider (OIR)<small>Não disponível em NY · term renovável de baixo custo</small></h2></div>
+<div class="cols"><div>
+<p>O <b>OIR</b> oferece seguro temporário renovável de baixo custo sobre o segurado principal ou sobre uma pessoa com relação permitida com ele. Pode cobrir até <b>cinco</b> outros segurados.</p></div><div>
+<table class="kv"><tbody>
+<tr><td>Idades de emissão</td><td>As mesmas do produto-base</td></tr>
+<tr><td>Classes de risco</td><td>Todas, exceto Select e Express</td></tr>
+<tr><td>Relações permitidas</td><td>O próprio segurado, cônjuge, filho e sócio</td></tr>
+<tr><td>Pode ser “outro segurado principal”</td><td>Só cônjuge e sócio</td></tr>
+<tr><td>Capital total mínimo</td><td>US$ 25.000 (US$ 5.000 em casos de pensão)</td></tr>
+<tr><td>Capital total máximo</td><td>O capital total da apólice-base</td></tr>
+<tr><td>Agravados</td><td>Pode ter table ratings e/ou flat extras e ser emitido numa apólice agravada</td></tr>
+<tr><td>Riders disponíveis</td><td>Accelerated Benefits Riders</td></tr>
+<tr><td>Encargos</td><td>Há cobrança por este rider</td></tr></tbody></table></div></div></section>
+<section class="sec" id="s28"><div class="sec-h"><div class="n">28</div><h2>Overloan Protection Rider (OPR)<small>Proteção contra excesso de empréstimo</small></h2></div>
+<p><i>Protege a apólice contra a caducidade (lapse) quando os empréstimos ameaçam a apólice.</i></p>
+<div class="cols"><div>
+<h3>Visão geral</h3>
+<p>O <b>Overloan Protection Rider (OPR)</b> impede que a apólice caduque porque o valor emprestado superou o valor de resgate acumulado. Isso pode evitar uma cobrança de imposto causada pela caducidade de uma apólice com excesso de empréstimos.</p>
+<p>O titular é avisado dessa opção quando todas as condições forem atendidas. Quando o rider é acionado, a apólice passa a ser <b>“saldada” (paid-up)</b>: não há prêmios nem encargos futuros, e empréstimos e resgates parciais deixam de estar disponíveis.</p>
+</div><div>
+<h3>Condições para acionar o rider</h3>
+<ul class="steps"><li>A apólice está no <i>corridor</i> (faixa mínima de benefício exigida pela lei tributária)</li>
+<li>Empréstimos de pelo menos <b>95%</b> do valor de resgate acumulado</li>
+<li>Apólice em vigor há pelo menos <b>15 anos</b></li>
+<li>Segurado com pelo menos <b>75 anos</b></li>
+<li>Há uma <b>cobrança</b> no momento em que o rider é acionado</li></ul>
+<div class="card soft"><h4>Disponibilidade</h4><p>Idades de emissão: <b>0–85</b>. Não disponível em vendas de pensão. Incluído <b>automaticamente</b> em todas as apólices novas elegíveis. Não disponível com CVAT.</p></div>
+</div></div></section>
+<section class="sec" id="s29"><div class="sec-h"><div class="n">29</div><h2>Premium Deposit Account Rider (PDA)<small>Pagamento único para cobrir prêmios futuros</small></h2></div>
+<div class="cols"><div>
+<p>Este rider permite ao titular fazer um <b>pagamento único</b> que será usado para pagar os prêmios planejados futuros por um prazo escolhido. A Premium Deposit Account rende uma <b>taxa de juros garantida</b>, definida no momento do depósito, e os prêmios são pagos automaticamente dessa conta todo ano.</p>
+<p>Pagando antecipado, o titular acaba pagando um <b>prêmio com desconto</b>. O rider também ajuda a evitar que a apólice vire um <b>Modified Endowment Contract (MEC)</b>, preservando as vantagens fiscais do seguro de vida.</p>
+</div><div>
+<div class="card soft"><h4>Disponibilidade</h4><ul>
+<li>Incluído automaticamente em todas as apólices (com e sem pensão).</li>
+<li>Pode ser escolhido na emissão ou a qualquer momento depois.</li>
+<li>Não pode ser exercido enquanto a apólice pertencer a um plano qualificado de pensão ou participação nos lucros; nesse caso, a apólice precisa primeiro ser transferida para fora do plano.</li>
+<li>Disponível para todas as idades e classes de risco.</li>
+<li>Pode ser incluído em todas as apólices na emissão, mas não pode ser escolhido por depositantes que sejam <b>militares da ativa</b>, por uma regra que proíbe taxa de resgate para militares da ativa.</li></ul></div>
+</div></div></section>
+<section class="sec" id="s30"><div class="sec-h"><div class="n">30</div><h2>Qualified Plan Exchange Privilege Rider (QPEP)<small>Para seguros de vida de propriedade de trusts de planos qualificados de pensão e participação nos lucros</small></h2></div>
+<div class="cols"><div>
+<p>O <b>QPEP</b> permite trocar a apólice por uma nova, <b>sem prova de segurabilidade</b>.</p>
+<p><b>Disponibilidade:</b> incluído automaticamente em todos os casos de pensão na emissão. Não exige prova de segurabilidade.</p>
+<h3>Condições do rider</h3>
+<p>Pode ser exercido quando ocorrer um destes eventos:</p>
+<ul><li>O participante se aposenta ou deixa o emprego.</li><li>O plano inteiro está sendo encerrado.</li><li>O plano está descontinuando a cláusula de seguro de vida.</li><li>Os limites incidentais foram violados.</li></ul>
+<p>Só disponível em apólices emitidas dentro de um plano de pensão qualificado. A apólice original é resgatada ainda como propriedade do trust de pensão. Consulte o formulário da apólice para as condições específicas do produto.</p>
+</div><div>
+<h3>Condições da nova apólice</h3>
+<ul><li>Emitida com base na idade atingida na data da troca.</li>
+<li>O capital não pode passar do menor entre US$ 2 milhões ou o capital da apólice original, menos o valor de resgate na data da troca. As opções de dividendo flex-term não podem ser usadas.</li>
+<li>Capital máximo de <b>US$ 2.000.000</b> e mínimo de <b>US$ 25.000</b>.</li>
+<li>A classe de risco é a mesma da apólice de pensão.</li>
+<li>A data da nova apólice é a data da troca.</li>
+<li>A nova apólice pode ser qualquer Whole Life tradicional ou apólice de benefício ajustável e prêmio flexível da companhia, emitida como apólice individual, fora do plano de pensão.</li></ul>
+<p><b>Encargos:</b> sem custo adicional.</p>
+</div></div></section>
+<section class="sec" id="s31"><div class="sec-h"><div class="n">31</div><h2>Systematic Allocation Rider (SAR)<small>Distribui o prêmio líquido nas estratégias indexadas ao longo de 12 meses</small></h2></div>
+<div class="cols"><div>
+<p>Aloca o prêmio líquido (já descontados os custos do seguro e administrativos) — de prêmio novo, troca 1035 ou dinheiro de renovação dos segmentos indexados — nas estratégias indexadas ao longo de <b>12 meses</b>.</p>
+<p>Riders são benefícios complementares e só são adequados se o cliente precisar de seguro de vida. O SAR oferece uma forma prática de distribuir o pagamento ao longo do ano. Pode reduzir parte do risco, mas <b>não garante vantagem</b>¹⁰ sobre a alocação normal: simplesmente equilibra as oscilações do crédito do índice, capturando mais pontos ao longo dos 12 meses.</p>
+<h3>Como funciona</h3>
+<p>O valor líquido não fica preso ao ponto do índice na data do pagamento: é dividido em <b>12 partes iguais</b>, alocadas nas estratégias indexadas conforme o cronograma escolhido pelo cliente.</p>
+<p>Escolhido o SAR, o prêmio vai para a conta de juros fixos da alocação sistemática; 1/12 é alocado nas estratégias escolhidas a cada mês, e os 11/12 restantes ficam numa conta fixa rendendo juros fixos até serem alocados. O custo da apólice é descontado todo mês antes da transferência.</p>
+</div><div>
+<div class="card navy"><h4>Exemplo</h4><p>O cliente paga um prêmio único de <b>US$ 6.000</b> (líquido de custos) na estratégia point-to-point em 1º de janeiro.</p>
+<p><b>Sem o SAR:</b> os US$ 6.000 ficam presos a um único ponto, 14 de janeiro. A variação de 14 de janeiro deste ano a 14 de janeiro do ano seguinte define o crédito anual — pode ser bom ou ruim, dependendo de onde o índice termina.</p>
+<p><b>Com o SAR:</b> os juros são creditados com base em 12 períodos. Na prática, 1/12 do prêmio líquido (<b>US$ 500</b>) é alocado por mês, cada um com seu próprio período de crédito: janeiro a janeiro, fevereiro a fevereiro… até dezembro a dezembro.</p></div>
+<div class="card soft"><h4>Disponibilidade e encargos</h4><ul>
+<li>Incluído automaticamente em todas as apólices IUL (com e sem pensão).</li>
+<li>Não pode ser exercido enquanto a apólice pertencer a plano qualificado de pensão ou participação nos lucros; é preciso transferi-la para fora do plano.</li>
+<li>Pode ser escolhido na emissão ou depois, desde que o cronograma de alocação esteja definido.</li>
+<li>Todas as idades e classes de risco. Prêmio anual mínimo de <b>US$ 3.000</b>.</li>
+<li><b>Sem custo adicional.</b></li></ul></div>
+<p class="foot">¹⁰ A alocação sistemática não garante vantagem sobre o método de crédito anual.</p>
+</div></div></section>
+<section class="sec" id="s32"><div class="sec-h"><div class="n">32</div><h2>Waiver of Monthly Deductions Rider (WMD)<small>Não disponível em NY · isenta despesas e encargos de mortalidade na invalidez total</small></h2></div>
+<div class="cols"><div>
+<p>Este rider isenta os <b>encargos de despesas e de mortalidade</b> da apólice se o segurado ficar totalmente inválido. A isenção começa após o <b>121º dia consecutivo</b> de invalidez total e continua enquanto houver prêmios devidos, se a invalidez começar antes dos 60 anos. Se começar depois dos 60, os prêmios ficam isentos até os 65 anos ou por dois anos, o que for maior.</p>
+<h3>Invalidez total inclui</h3>
+<ul><li>Por lesão ou doença, o segurado não consegue exercer sua ocupação por <b>24 meses</b>;</li>
+<li>o segurado é apenas estudante e não consegue estudar; ou</li>
+<li>perda completa e permanente de: visão; audição; uso das duas mãos; uso dos dois pés; ou uso de uma mão e um pé.</li></ul>
+<p>Nos dois primeiros anos de invalidez, “ocupação” é a do segurado no início da invalidez. Depois de dois anos, é qualquer ocupação para a qual ele esteja razoavelmente apto.</p>
+</div><div>
+<div class="card soft"><h4>Disponibilidade e encargos</h4><ul>
+<li>Idades de emissão: <b>0–55</b></li><li>Só na emissão</li>
+<li>Não disponível junto com o Waiver of Specified Premium</li>
+<li>Carência (elimination period): NL FlexLife — <b>3 meses</b> · LSW FlexLife — <b>6 meses</b></li>
+<li>Há cobrança por este rider</li></ul></div>
+</div></div></section>
+<section class="sec" id="s33"><div class="sec-h"><div class="n">33</div><h2>Waiver of Specified Premium Rider (WSP)<small>Isenta um valor de prêmio predefinido na invalidez</small></h2></div>
+<div class="cols"><div>
+<p>O <b>WSP</b> permite ao cliente definir quanto do prêmio será isentado se ficar totalmente inválido.</p>
+<ul><li>Invalidez <b>antes dos 60 anos</b> (idade atingida): benefício pago enquanto durar a invalidez.</li>
+<li>Invalidez <b>a partir dos 60 e antes dos 63</b>: pago enquanto durar a invalidez, mas não além dos 65 anos.</li>
+<li>Invalidez <b>a partir dos 63</b>: pago enquanto durar a invalidez, por no máximo dois anos.</li>
+<li>O rider termina aos 65 anos (salvo se a invalidez começar antes dos 60; nesse caso, termina ao fim da invalidez).</li></ul>
+<div class="card soft"><h4>Disponibilidade</h4><ul>
+<li>Idades de emissão: NL <b>0–55</b> · LSW <b>15–55</b></li><li>Só na emissão</li>
+<li>Não disponível junto com o Waiver of Monthly Deductions Rider</li>
+<li>Carência de <b>6 meses</b>; os benefícios não retroagem ao início da carência</li>
+<li>Não disponível em apólices de prêmio único</li>
+<li><b>Benefício anual mínimo:</b> prêmio mínimo anualizado menos o prêmio mínimo anualizado do próprio WSP</li>
+<li><b>Benefício anual máximo:</b> o menor entre o prêmio periódico planejado anualizado e o guideline level premium da apólice, excluído o guideline level premium do WSP</li></ul></div>
+<p><b>Encargos:</b> taxa especificada × valor do benefício de isenção, descontada mensalmente.</p>
+</div><div>
+<h3>Invalidez total</h3>
+<p>O segurado só é considerado totalmente inválido se, por lesão ou doença: não puder trabalhar em uma ocupação remunerada; ou for apenas estudante e não puder estudar; ou sofrer perda completa e permanente de visão, audição, fala, uso das duas mãos, dos dois pés ou de uma mão e um pé.</p>
+<p>Nos dois primeiros anos, “ocupação” é a do segurado no início da invalidez. Depois, é qualquer ocupação para a qual ele seja ou se torne razoavelmente apto pela formação, treinamento ou experiência, considerando a profissão e a renda no início da invalidez.</p>
+<h3>Limitações</h3>
+<p>Nenhum prêmio é isentado se a invalidez resultar de lesão autoinfligida intencionalmente; ou de guerra, declarada ou não, ou ato de guerra; ou se o prêmio vencer mais de um ano antes de a companhia receber a prova da invalidez. O rider tem período de contestação de <b>dois anos</b>.</p>
+<h3>Término</h3>
+<ul><li>Quando o segurado completa 65 anos, exceto se: a invalidez começou antes dos 60 e os prazos de aviso forem cumpridos — termina no que ocorrer por último entre os 65 anos e o fim da invalidez; ou a invalidez começou entre os 60 e os 65 e os prazos forem cumpridos — termina no que ocorrer por último entre os 65 anos e dois anos após o início da invalidez.</li>
+<li>Quando a apólice termina ou é convertida.</li><li>Ao fim do último ano com prêmios a pagar.</li>
+<li>Em qualquer vencimento de prêmio, a pedido do titular.</li><li>Ao fim do prazo de tolerância (grace period) de qualquer prêmio não pago.</li></ul>
+<h3>Mudanças após a emissão</h3>
+<p>O valor isentado aumenta se benefícios opcionais adicionais elevarem o benefício mínimo acima do valor atual; nesse caso, sobe para o novo mínimo, com a taxa original. A redução é permitida para qualquer valor não inferior ao mínimo atual, também com a taxa original.</p>
+</div></div></section>
+<div class="endnote"><b>Sobre esta tradução.</b> Tradução livre para PT-BR, feita pela WDT Agency para treinamento interno de agentes, a partir do material oficial da National Life Group (TC8615572(1125)3 · Cat. nº 104727(1125)). Termos técnicos oficiais (riders, classes de risco, nomes de estratégias) foram mantidos em inglês, com explicação. Valores em formato brasileiro (ex.: US$ 1.500.000). Uso exclusivo do agente — não usar com o público. Em caso de divergência, prevalece o documento original em inglês. Produtos emitidos pela National Life Insurance Company® (NL) e pela Life Insurance Company of the Southwest® (LSW); a LSW não atua no estado de Nova York.</div>
+</main></div>
+<div class="webfoot">WDT AGENCY · Academy — Tradução livre para treinamento interno.</div>
+<script>try{if(window.self!==window.top||location.href==="about:srcdoc"){document.documentElement.classList.add("inframe")}}catch(e){}</script><style>.inframe .webbar,.inframe .webfoot{display:none!important}</style></body></html>

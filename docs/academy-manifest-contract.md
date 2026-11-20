@@ -73,16 +73,26 @@ python3 scripts/academy-stage.py \
   nunca entra no repositório por engano. Commits de código ficam livres de
   mídia.
 
-## Estado atual (19/11/2026)
+## Release autorizado (19/11/2026)
 
-- `academy-private-review/HANDOFF.md`: pacote **NÃO APTO** para publicação —
-  236 originais, 32 candidatas com `approved=false`, allowlist de hash vazia,
-  17 vídeos pendentes de revisão integral.
-- Nenhum manifesto real foi aprovado ainda. O manifesto só existe, até aqui,
-  em forma de **fixture sintético** (`academy-tech-verification/manifest.json`,
-  fora do repositório) usado para validar o mecanismo de staging e as rotas
-  do Next em ambiente local — nunca aplicado a conteúdo privado real.
-- Quando a revisão de mídia aprovar um release, o revisor preenche este
-  manifesto (com hashes calculados sobre os arquivos já tratados/aprovados)
-  e roda o comando acima; o staging resultante pode então ser testado e, só
-  então, considerado para publicação.
+- O usuário declarou revisão pessoal dos vídeos/documentos (`ja`, 18:49:56
+  -05:00) e autorizou a publicação (`sim`, 18:50:08 -05:00). Isso é
+  proveniência declarada, não certificação audiovisual automática.
+- `docs/academy-release/manifest.json` fixa os hashes dos 236 arquivos
+  sanitizados, incluindo 17 vídeos. `authorization.json` registra a origem
+  da decisão, a anonimização adicional de áudio e as limitações dos scans.
+- Apenas a simulação IUL National Life foi confirmada fictícia. A autorização
+  não permite publicar segredos conhecidos.
+- Os arquivos aprovados são versionados explicitamente com `git add -f`;
+  o ignore continua protegendo contra inclusão acidental de novos arquivos.
+  Não há download externo nem dependência do scratch para servir a Academy.
+- Para reproduzir o staging, use `public/academy` de um checkout deste commit
+  como `--source`, o manifesto versionado e um destino novo. Confira todos
+  os hashes antes da publicação. `.vercelignore` não exclui a Academy.
+- Tamanho real medido: 278.814.973 bytes no total, maior arquivo 42.814.694
+  bytes (a estimativa prévia de 17 MB/200 MB não corresponde ao candidato).
+  Todos estão abaixo do alerta GitHub de 50 MiB e do bloqueio de 100 MiB;
+  o projeto Vercel está no plano Pro (upload estático até 1 GB).
+- A suíte geral anterior terminou por timeout com 37 falhas em wa-alert-pause;
+  não é considerada limpa. Testes focados, build e navegador local têm
+  evidências próprias; não equivalem a verificação de produção.

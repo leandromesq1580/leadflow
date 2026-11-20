@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Final Expense — WDT Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+@page { size: Letter; margin: 14mm 0 16mm 0;
+  @bottom-left { content: "WDT AGENCY · Academy"; font: 600 7.5pt Poppins, sans-serif; color: #0B1B3A; padding-left: 16mm; letter-spacing: 1px; }
+  @bottom-center { content: "Guia do produto Final Expense — material de treinamento interno. Uso exclusivo do agente."; font: 400 6.3pt Poppins, sans-serif; color: #6B7891; width: 120mm; text-align: center; }
+  @bottom-right { content: "pág. " counter(page); font: 600 7.5pt Poppins, sans-serif; color: #A8893A; padding-right: 16mm; }
+}
+@page :first { margin-top: 0; }
+:root{--navy:#0B1B3A;--navy2:#132A52;--gold:#C9A54C;--gold2:#DDBF73;--ink:#0E1A33;--muted:#5B6880;--line:#E2E7F0;--soft:#F1F4F9;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Poppins,system-ui,sans-serif;color:var(--ink);background:#fff;font-size:10.2pt;line-height:1.55;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+a{color:#1E3A6E}
+.hero{position:relative;overflow:hidden;color:#fff;padding:22mm 16mm 16mm;background:radial-gradient(520px 260px at 92% -10%,rgba(201,165,76,.55),transparent 62%),linear-gradient(160deg,#0B1B3A 0%,#132A52 65%,#1A3463 100%)}
+.hero .brand{font-weight:800;font-size:15pt;letter-spacing:.5px}
+.hero .brand span{color:var(--gold);font-weight:600;font-size:7.5pt;letter-spacing:4px;margin-left:6px}
+.hero .eyebrow{margin-top:14mm;font-size:7.8pt;letter-spacing:3px;font-weight:600;color:var(--gold);text-transform:uppercase}
+.hero h1{font-size:27pt;line-height:1.1;font-weight:700;margin:6px 0 4px}
+.hero .sub{font-size:12pt;color:var(--gold2);font-weight:500}
+.hero p.lead{margin-top:10px;color:#C9D2E4;max-width:150mm;font-size:10pt}
+.hero .chips{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px}
+.hero .chips span{border:1px solid rgba(221,191,115,.55);color:#F3E6C3;border-radius:99px;padding:3px 10px;font-size:7.6pt;font-weight:500}
+main{padding:8mm 16mm 4mm}
+.toc{background:var(--soft);border:1px solid #D9E0EC;border-radius:12px;padding:12px 16px;margin:2mm 0 8mm;columns:2;column-gap:12mm;font-size:8.8pt}
+.toc h4{column-span:all;font-size:8pt;letter-spacing:2px;text-transform:uppercase;color:#8A6A1C;margin-bottom:6px}
+.toc a{display:block;text-decoration:none;color:var(--ink);padding:1.5px 0;break-inside:avoid}
+.toc a b{display:inline-block;width:22px;color:#A8893A}
+section.sec{margin:0 0 7mm}
+.sec-h{display:flex;align-items:center;gap:10px;margin:0 0 8px;break-after:avoid}
+.sec-h .n{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--navy);color:#fff;border:2px solid var(--gold);font-weight:700;font-size:9.5pt}
+.sec-h h2{font-size:15pt;font-weight:700;color:var(--navy);line-height:1.2}
+.sec-h small{display:block;font-size:8.6pt;color:var(--muted);font-weight:400}
+h3{font-size:11pt;color:var(--navy);margin:10px 0 4px;break-after:avoid}
+h4{font-size:9.6pt;color:#1E3A6E;margin:8px 0 3px;break-after:avoid}
+p{margin:0 0 6px}
+ul,ol{margin:2px 0 8px 18px}
+li{margin:1.5px 0}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:6mm}
+.cols3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4mm}
+.card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;break-inside:avoid;margin-bottom:8px}
+.card.navy{background:linear-gradient(160deg,#0B1B3A,#132A52);color:#E6EBF5;border:0}
+.card.navy h3,.card.navy h4{color:var(--gold2)}
+.card.soft{background:var(--soft);border-color:#D9E0EC}
+.alert{background:#FBF7EC;border:1px solid #E8D7A8;border-left:4px solid var(--gold);border-radius:10px;padding:9px 12px;margin:6px 0 10px;font-size:9.4pt;break-inside:avoid}
+.alert b.t{display:block;color:#8A6A1C;font-size:7.8pt;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px}
+.term{background:#EEF2F8;border-radius:10px;padding:8px 12px;margin:6px 0 10px;font-size:8.8pt;color:#33415C;break-inside:avoid}
+.term b{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:4px 0 10px;font-size:8.8pt;break-inside:auto}
+thead{display:table-header-group}
+tr{break-inside:avoid}
+th{background:var(--navy);color:#fff;text-align:left;font-weight:600;padding:5px 7px;font-size:8.4pt}
+th.g{background:#A8893A}
+td{padding:4.5px 7px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:nth-child(even) td{background:#F7F9FC}
+td.c,th.c{text-align:center}
+.ok{color:#1E7A4F;font-weight:800}
+table.kv td:first-child{width:32%;font-weight:600;color:var(--navy);background:#F3F5FA}
+.pill{display:inline-block;font-size:7.6pt;font-weight:600;padding:1px 8px;border-radius:99px;background:#EEF2F8;color:#1E3A6E;margin:1px 2px 1px 0}
+.pill.g{background:#F7F0DF;color:#8A6A1C}
+.foot{font-size:7.6pt;color:var(--muted);border-top:1px solid var(--line);padding-top:5px;margin-top:6px}
+.steps{counter-reset:s;list-style:none;margin-left:0}
+.steps li{counter-increment:s;position:relative;padding-left:30px;margin:6px 0;break-inside:avoid}
+.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:21px;height:21px;border-radius:50%;border:2px solid var(--gold);color:var(--navy);font-weight:700;font-size:8.5pt;display:grid;place-items:center}
+.pb{break-before:page}
+.endnote{margin:6mm 0 0;padding:10px 14px;border-radius:10px;background:var(--soft);font-size:8pt;color:var(--muted)}
+.webbar{display:none}
+@media screen{
+  body{background:#EEF1F6}
+  .doc{max-width:216mm;margin:0 auto;background:#fff;box-shadow:0 10px 40px -20px rgba(11,27,58,.35)}
+  .webbar{display:flex;position:sticky;top:0;z-index:5;background:rgba(11,27,58,.97);color:#fff;padding:9px 18px;gap:14px;align-items:center;font-size:9.5pt}
+  .webbar a{color:#F3E6C3;text-decoration:none;font-weight:600}
+  .webbar b{font-weight:800}.webbar b span{color:var(--gold);font-size:7.5pt;letter-spacing:3px;margin-left:5px}
+  .webbar .sp{flex:1}
+  .webfoot{max-width:216mm;margin:0 auto 30px;padding:12px 16mm;font-size:8pt;color:var(--muted)}
+}
+@media print{.webfoot{display:none}}
+.inframe .webbar,.inframe .webfoot{display:none!important}.dlpdf{display:inline-block;margin-top:14px;background:#C9A54C;color:#0B1B3A!important;font-weight:700;font-size:12px;padding:9px 16px;border-radius:8px;text-decoration:none}@media print{.dlpdf{display:none}}</style></head><body>
+<div class="webbar"><a href="../index.html#inicio">← Voltar ao portal</a><span class="sp"></span><b>WDT<span>AGENCY</span></b></div>
+<div class="doc">
+<header class="hero"><div class="brand">WDT<span>AGENCY</span></div>
+<div class="eyebrow">WDT Agency · Guia do produto</div><h1>Final Expense</h1><div class="sub">O produto — despesas finais</div>
+<p class="lead">O que é, as quatro estruturas de benefício, como a subscrição decide, para quem serve, quanto capital vender, as objeções e como manter a apólice em pé. Leia antes de assistir aos vídeos de cotação.</p><div class="chips"><span>US$ 5.000 a US$ 50.000</span><span>Sem exame</span><span>4 estruturas de benefício</span><span>6 objeções</span></div><a class="dlpdf" href="pdf/fex-produto.pdf" download>⬇ Baixar PDF</a></header>
+<main>
+<nav class="toc"><h4>Conteúdo</h4><a href="#s1"><b>01</b>O que é o Final Expense</a><a href="#s2"><b>02</b>As quatro estruturas de benefício</a><a href="#s3"><b>03</b>Como a subscrição decide</a><a href="#s4"><b>04</b>Condições que recusam em todo lugar</a><a href="#s5"><b>05</b>Medicamentos, altura e peso</a><a href="#s6"><b>06</b>Para qual cliente serve</a><a href="#s7"><b>07</b>A conversa e o dimensionamento</a><a href="#s8"><b>08</b>As seis objeções</a><a href="#s9"><b>09</b>A apólice que fica em pé</a></nav>
+<section class="sec" id="s1"><div class="sec-h"><div class="n">1</div><h2>O que é o Final Expense<small>O produto em uma frase</small></h2></div>
+<p>É um <b>whole life pequeno</b>, emitido por questionário e <b>sem exame</b>, feito para cobrir enterro, dívidas finais e o que a família não consegue pagar na semana seguinte. Capital de <b>US$ 5.000 a US$ 50.000</b>, prêmio que nunca sobe e cobertura que não acaba. O produto é simples; o difícil é a subscrição.</p>
+<div class="cols"><div>
+<div class="card"><h4>🏺 O que ele cobre</h4><p>Funeral com sepultamento costuma ficar entre US$ 8.000 e US$ 10.000 nos EUA; cremação com cerimônia, bem menos. Some contas médicas, cartão e a viagem da família.</p></div>
+<div class="card"><h4>⏱ Por que vende rápido</h4><p>Sem exame, sem sangue, sem paramed. Decisão em minutos na maioria dos carriers — do primeiro contato à apólice pode ser uma visita só.</p></div>
+</div><div>
+<div class="card"><h4>💰 Prêmio pequeno</h4><p>US$ 40 a US$ 90 por mês é a faixa típica — o que cabe num cheque de Social Security. Por isso a data do débito decide se a apólice sobrevive.</p></div>
+<div class="card soft"><h4>⚠ O que ele não é</h4><p>Não substitui term para quem tem renda a proteger, não é acumulação e não é produto de capital alto: acima de US$ 50.000, o cliente está no produto errado.</p></div>
+</div></div>
+<div class="alert"><b class="t">A frase que abre a porta</b>“Não vim te vender investimento nem nada complicado. Vim resolver uma coisa só: quando você partir, quem paga a conta? Hoje essa conta fica com os seus filhos, e chega antes do sétimo dia.”</div></section>
+<section class="sec" id="s2"><div class="sec-h"><div class="n">2</div><h2>As quatro estruturas de benefício<small>É isto que o cliente compra</small></h2></div>
+<p>Em final expense não existe “a apólice”: existe a estrutura que a saúde do cliente permite.</p>
+<table><thead><tr><th></th><th>Level / Immediate</th><th>Graded por %</th><th>Modified / ROP</th><th>Guaranteed Issue</th></tr></thead><tbody>
+<tr><td><b>Morte natural — ano 1</b></td><td>100%</td><td>30%</td><td>Prêmios + 10%</td><td>Prêmios + 10%</td></tr>
+<tr><td><b>Morte natural — ano 2</b></td><td>100%</td><td>70%</td><td>Prêmios + 10%</td><td>Prêmios + 10%</td></tr>
+<tr><td><b>A partir do ano 3</b></td><td>100%</td><td>100%</td><td>100%</td><td>100%</td></tr>
+<tr><td><b>Morte acidental</b></td><td>100% sempre</td><td>100% sempre</td><td>100% sempre</td><td>100% sempre</td></tr>
+<tr><td><b>Perguntas de saúde</b></td><td>Passa em todas</td><td>Falha em algumas</td><td>Falha em várias</td><td>Nenhuma</td></tr>
+<tr><td><b>Prêmio</b></td><td>O mais baixo</td><td>Maior</td><td>Maior</td><td>O mais alto</td></tr>
+<tr><td><b>Capital típico</b></td><td>até US$ 50.000</td><td>até US$ 25.000</td><td>até US$ 25.000</td><td>até US$ 25.000</td></tr>
+<tr><td><b>Na nossa lista</b></td><td>Todas as oito</td><td>American Amicable · Foresters</td><td>AmAm · Transamerica · Mutual of Omaha · Corebridge · Foresters</td><td>Corebridge · Royal Neighbors</td></tr>
+</tbody></table>
+<div class="term"><b>O que nunca muda:</b> morte acidental paga 100% desde o dia 1 em todas as estruturas, inclusive no guaranteed issue. Diga isso ao cliente que ficou no graduado — é verdade e tranquiliza.</div></section>
+<section class="sec" id="s3"><div class="sec-h"><div class="n">3</div><h2>Como a subscrição decide<small>A cascata</small></h2></div>
+<ol class="steps">
+<li><b>Bloco eliminatório</b> — um “sim” e não há produto para esse cliente naquela companhia.</li>
+<li><b>Bloco de rebaixamento</b> — um “sim” joga para o graduado ou para a devolução de prêmios.</li>
+<li><b>Bloco de classe</b> — define entre Preferred e Standard.</li>
+<li><b>Validação em base</b> — MIB, histórico de farmácia e build chart conferem o que o cliente disse.</li>
+<li><b>Decisão na tela</b> — aprovado, aprovado diferente, entrevista ou recusado.</li></ol>
+<div class="alert"><b class="t">A resposta que não bate</b>A base de farmácia mostra o que o cliente toma antes de ele falar. Se a resposta não bate com a receita, o caso cai. Pergunte pelos medicamentos <b>antes</b> de abrir a proposta.</div></section>
+<section class="sec" id="s4"><div class="sec-h"><div class="n">4</div><h2>Condições que recusam em todo lugar<small>Pergunte isto primeiro</small></h2></div>
+<div class="cols"><div><ul>
+<li>Insuficiência cardíaca congestiva (CHF)</li><li>Diálise — feita ou recomendada</li><li>HIV / AIDS</li><li>Transplante de órgão ou medula</li><li>Demência ou Alzheimer</li><li>ELA</li><li>Câncer metastático ou recorrente</li></ul></div>
+<div><ul><li>Morando em casa de repouso, acamado ou em hospice / home healthcare</li><li>Internado em hospital ou instituição psiquiátrica</li><li>Precisa de ajuda para banho, vestir, comer ou ir ao banheiro</li><li>Exame ou resultado pendente</li></ul></div></div>
+<div class="term"><b>Se a resposta for sim:</b> não force outro carrier — vá direto para <b>guaranteed issue</b> (Corebridge GIWL ou Royal Neighbors), que aceita dos 50 aos 80 anos sem perguntas de saúde: 110% dos prêmios nos dois primeiros anos e capital integral a partir do terceiro.</div></section>
+<section class="sec" id="s5"><div class="sec-h"><div class="n">5</div><h2>Medicamentos, altura e peso<small>O que você confere antes de rodar</small></h2></div>
+<div class="cols"><div><h3>Medicamentos</h3>
+<p>A consulta à farmácia mostra remédio, dose e há quanto tempo. Se aparecer <b>insulina, oxigênio, Coumadin, Lasix, Plavix, Spiriva ou antipsicótico</b>, já não é caso de plano integral — escolha o carrier antes de rodar.</p>
+<div class="alert"><b class="t">A regra que pega muita gente</b>Combinações de 3 ou mais remédios (inibidor de ECA + betabloqueador + diurético) podem resultar em nenhuma cobertura na Foresters, mesmo que cada um isolado fosse aceito.</div></div>
+<div><h3>Altura e peso (build chart)</h3>
+<p>É a única coisa que o cliente não consegue esconder e que você confere sozinho. Acima do limite não há cobertura — e também existe <b>peso mínimo</b> (ex.: Foresters recusa abaixo de 125 lb a 6'0").</p>
+<div class="term"><b>Na mesa:</b> pergunte altura, peso e medicamentos logo no começo. Com isso você elimina metade dos carriers antes de abrir qualquer sistema.</div></div></div></section>
+<section class="sec" id="s6"><div class="sec-h"><div class="n">6</div><h2>Para qual cliente serve<small>Perfis</small></h2></div>
+<table class="kv"><tbody>
+<tr><td>55 a 80 anos, aposentado, renda fixa pequena</td><td>O caso central do produto. Leve para Mutual of Omaha, American Amicable ou Foresters.</td></tr>
+<tr><td>Saúde comprometida</td><td>Diabético com insulina, cardíaco, oncológico em remissão: passa aqui no plano que a saúde permitir. Leve para American Amicable ROP, Foresters Basic ou Corebridge.</td></tr>
+<tr><td>Quem já foi recusado</td><td>O mais fácil de fechar — ninguém nunca ofereceu saída. Leve para guaranteed issue (Corebridge, Royal Neighbors).</td></tr>
+<tr><td>Filho comprando para o pai ou a mãe</td><td>Quem paga tem renda ativa: melhor persistência. Corebridge aceita pagador diferente do segurado.</td></tr>
+<tr><td>Já tem apólice pequena</td><td>US$ 5.000 antigos não pagam o funeral. Complemente — sem cancelar a antiga.</td></tr>
+<tr><td><b>Quando NÃO é final expense</b></td><td>Renda a proteger e filhos dependentes (é term) · mais de US$ 50.000 · quer acumular · menos de 45 anos e saúde boa.</td></tr>
+</tbody></table></section>
+<section class="sec" id="s7"><div class="sec-h"><div class="n">7</div><h2>A conversa e o dimensionamento<small>Na mesa da cozinha</small></h2></div>
+<div class="cols"><div><h3>Perguntas que funcionam</h3><ol class="steps">
+<li>O senhor já passou por isso na família? Quanto custou, quem pagou?</li>
+<li>Se acontecesse amanhã, para quem essa conta iria?</li>
+<li>O senhor tem alguma coisa hoje? De quanto? De quando é?</li>
+<li>Quer ser sepultado ou cremado? Já falou disso com eles?</li>
+<li>Quais remédios o senhor toma, e há quanto tempo?</li></ol></div>
+<div><h3>Quanto capital vender</h3>
+<ul><li><b>US$ 10.000</b> — funeral simples e pouco mais.</li><li><b>US$ 15.000</b> — resolve o funeral e sobra algo.</li><li><b>US$ 20.000 a 25.000</b> — quando há dívidas ou ele quer deixar algo.</li></ul>
+<p>Apresente <b>três opções</b> e fale o valor por dia: “US$ 1,80 por dia” pesa menos que “US$ 54 por mês”.</p>
+<div class="alert"><b class="t">A pergunta que define o teto</b>“Quanto o senhor consegue pagar por mês sem apertar, pelo resto da vida?” Melhor US$ 10.000 que fica em pé do que US$ 20.000 que cai em oito meses.</div></div></div></section>
+<section class="sec" id="s8"><div class="sec-h"><div class="n">8</div><h2>As seis objeções<small>E como responder</small></h2></div>
+<table class="kv"><tbody>
+<tr><td>“Já tenho seguro pelo trabalho”</td><td>“Quanto é? E continua depois que o senhor saiu de lá?” Quase sempre acabou na aposentadoria ou cobre metade da conta.</td></tr>
+<tr><td>“Meus filhos cuidam disso”</td><td>“Cuidam, eu sei. A pergunta é com que dinheiro — a funerária pede antes do enterro.”</td></tr>
+<tr><td>“Está caro”</td><td>Ajuste o tamanho, não desista da proteção: baixe o capital até caber com tranquilidade.</td></tr>
+<tr><td>“Vou pensar e te ligo”</td><td>A companhia decide pela saúde de hoje. Deixe a proposta rodada — se aprovar, ele decide com o número na mão.</td></tr>
+<tr><td>“Já fui recusado antes”</td><td>Cada companhia enxerga de um jeito — e existe produto sem nenhuma pergunta de saúde dos 50 aos 80.</td></tr>
+<tr><td>“Por que só paga 30% no 1º ano?”</td><td>É o que permitiu emitir com essa saúde. Do 3º ano em diante paga tudo, e acidente paga 100% desde amanhã. Diga antes que ele leia sozinho.</td></tr>
+</tbody></table></section>
+<section class="sec" id="s9"><div class="sec-h"><div class="n">9</div><h2>A apólice que fica em pé<small>Persistência e estorno</small></h2></div>
+<div class="cols"><div>
+<div class="card"><h4>📅 A data do débito</h4><p>O Social Security cai na 2ª, 3ª ou 4ª quarta-feira do mês, conforme a data de nascimento. Débito antes disso volta por falta de fundos — escolha a data olhando o calendário.</p></div>
+<div class="card"><h4>💳 A forma de pagamento</h4><p>Mutual of Omaha só aceita conta bancária. Corebridge aceita Direct Express, cartão e débito; Transamerica FE Express aceita Direct Express.</p></div>
+</div><div>
+<div class="card"><h4>📞 A ligação de boas-vindas</h4><p>Ligue em 30 dias para confirmar que o débito passou, e de novo antes do primeiro aniversário.</p></div>
+<div class="alert"><b class="t">Ainda na visita</b>Beneficiário completo (nome, nascimento e percentual) · nunca cancele a apólice antiga antes de a nova estar em vigor · deixe seu telefone com o cliente e com um filho.</div>
+</div></div>
+<p>Nos vídeos a seguir você vê como cotar Final Expense comparando todas as seguradoras e na Americo.</p></section>
+<div class="endnote"><b>Material interno.</b> Guia de produto elaborado pela WDT Agency a partir da apresentação “O produto Final Expense” (setembro de 2026), para treinamento de agentes. Regras de subscrição mudam: confirme critérios, limites e medicamentos no guia oficial de cada seguradora antes de cotar. Custos de funeral variam por estado e funerária.</div>
+</main></div>
+<div class="webfoot">WDT AGENCY · Academy — Material de treinamento interno.</div>
+<script>try{if(window.self!==window.top||location.href==="about:srcdoc"){document.documentElement.classList.add("inframe")}}catch(e){}</script></body></html>
