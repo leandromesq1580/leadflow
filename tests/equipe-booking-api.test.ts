@@ -23,6 +23,28 @@ function harness({ message = '', queryError = false, ownerError = false } = {}) 
  const request = (overrides = {}, headers = {}) => new Request('https://example.test/api/equipe/agendar',{method:'POST',headers:{origin:'https://example.test','content-type':'application/json',...headers},body:JSON.stringify({...body,...overrides})})
  return {route:exports,calls,body,request}
 }
+test('API gives field errors before RPC and normalizes national phones through real validation', async () => {
+ const {route,calls,request}=harness()
+ for (const [field,value] of [['nome',' '],['email','bad'],['telefone','1111111111'],['slot','2000-01-01T12:00:00.000Z']]) {
+  const response=await route.POST(request({[field]:value}))
+  assert.equal(response.status,400)
+  assert.deepEqual(await response.json(),{code:'invalid',field})
+ }
+ for (const bad of [{requestId:'bad'},{website:'robot'}]) {
+  const response=await route.POST(request(bad))
+  assert.equal(response.status,400)
+  assert.deepEqual(await response.json(),{code:'invalid'})
+ }
+ assert.equal(calls.length,0)
+ const before=process.env.SUPABASE_SERVICE_ROLE_KEY
+ process.env.SUPABASE_SERVICE_ROLE_KEY='local-test-secret'
+ try {
+  const response=await route.POST(request({telefone:'(202) 555-0123',country:'US'}))
+  assert.equal(response.status,200)
+  assert.equal(calls[0].args.p.telefone,'+12025550123')
+ } finally {if(before===undefined)delete process.env.SUPABASE_SERVICE_ROLE_KEY;else process.env.SUPABASE_SERVICE_ROLE_KEY=before}
+})
+
 test('API rejects invalid/cross-origin/honeypot/oversized before database writes',async()=>{
  const {route,calls,request}=harness()
  for(const bad of [{website:'robot'},{slot:'2026-99-99'},{email:'bad'}]) assert.equal((await route.POST(request(bad))).status,400)

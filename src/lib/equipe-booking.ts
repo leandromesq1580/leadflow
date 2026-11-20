@@ -1,3 +1,18 @@
+import { parsePhoneNumberFromString, getCountries, type CountryCode } from 'libphonenumber-js/max'
+
+export type BookingField = 'nome' | 'email' | 'telefone' | 'slot'
+export class BookingValidationError extends Error {
+  constructor(public field: BookingField) { super('invalid') }
+}
+
+export function normalizeBookingPhone(value: string, country: unknown = 'US') {
+  if (typeof country !== 'string' || !getCountries().includes(country as CountryCode)) throw Error('invalid')
+  if (!/^\+?[\d\s().-]+$/.test(value.trim())) throw Error('invalid')
+  const phone = parsePhoneNumberFromString(value.trim(), country as CountryCode)
+  if (!phone?.isValid()) throw Error('invalid')
+  return phone.number
+}
+
 // Same sales calendar/grid as /nova; recruitment has its own source and atomic write.
 export const SALES_EMAIL = 'regiane@myhomefirst.us'
 export const TEAM_ZONE = 'America/Sao_Paulo'
@@ -31,15 +46,22 @@ export function validateBooking(value: unknown, now = new Date()) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw Error('invalid')
   const b = value as Record<string, unknown>
   const str = (key: string, max: number) => {
-    if (typeof b[key] !== 'string' || (b[key] as string).length > max) throw Error('invalid')
+    if (typeof b[key] !== 'string' || (b[key] as string).length > max) {
+      if (['nome','email','telefone','slot'].includes(key)) throw new BookingValidationError(key as BookingField)
+      throw Error('invalid')
+    }
     return (b[key] as string).trim()
   }
   const nome = str('nome', 120), email = str('email', 254).toLowerCase()
-  const rawPhone = str('telefone', 40), telefone = rawPhone.replace(/[\s().-]/g, '')
+  if (nome.length < 2 || /[\x00-\x1f]/.test(nome)) throw new BookingValidationError('nome')
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new BookingValidationError('email')
+  let telefone: string
+  try { telefone = normalizeBookingPhone(str('telefone', 40), b.country ?? 'US') }
+  catch { throw new BookingValidationError('telefone') }
   const idioma = str('idioma', 2) as BookingLang, fuso = str('fuso', 80), slot = str('slot', 30), requestId = str('requestId', 36)
-  if (nome.length < 2 || /[\x00-\x1f]/.test(nome) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !/^\+[1-9]\d{7,14}$/.test(telefone) || !Object.hasOwn(LOCALES, idioma) || !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(requestId) || b.website !== '') throw Error('invalid')
+  if (!Object.hasOwn(LOCALES, idioma) || !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(requestId) || b.website !== '') throw Error('invalid')
   new Intl.DateTimeFormat('en-US', { timeZone: fuso }).format(now)
-  if (!availableSlots(now).includes(slot)) throw Error('invalid')
+  if (!availableSlots(now).includes(slot)) throw new BookingValidationError('slot')
   const tracking: Record<string, string> = {}
   const supplied = b.tracking as Record<string, unknown> | undefined
   for (const key of ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','campaign_id']) {

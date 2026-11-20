@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { availableSlots, SALES_EMAIL, validateBooking } from '@/lib/equipe-booking'
+import { availableSlots, BookingValidationError, SALES_EMAIL, validateBooking } from '@/lib/equipe-booking'
 
 export const dynamic = 'force-dynamic'
 const headers = { 'Cache-Control': 'private, no-store, max-age=0' }
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
       chunks.push(value)
     }
     body = validateBooking(JSON.parse(Buffer.concat(chunks).toString('utf8')))
-  } catch { return reply({ code: 'invalid' }, 400) }
+  } catch (error) { return reply({ code: 'invalid', ...(error instanceof BookingValidationError ? {field:error.field} : {}) }, 400) }
   try {
     // Vercel overwrites x-vercel-forwarded-for. Never trust user-supplied XFF
     // for per-IP throttling. Non-Vercel environments share a conservative bucket.

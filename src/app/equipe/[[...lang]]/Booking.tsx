@@ -2,11 +2,18 @@
 
 import { createContext, useContext, useRef, useState, type ReactNode, type FormEvent } from 'react'
 import { LOCALES, slotLabel, type BookingLang } from '@/lib/equipe-booking'
+import { getCountries, getCountryCallingCode } from 'libphonenumber-js/max'
+
+const FIELD_TEXT = {
+ en: { country:'Country / calling code', nome:'Enter your full name (at least 2 characters).', email:'Enter a valid email address.', telefone:'Enter a valid phone number for the selected country, or an international number starting with +.', slot:'Choose an available time.' },
+ pt: { country:'País / código do país', nome:'Informe seu nome completo (pelo menos 2 caracteres).', email:'Informe um e-mail válido.', telefone:'Informe um telefone válido para o país selecionado ou um número internacional começando com +.', slot:'Escolha um horário disponível.' },
+ es: { country:'País / código de país', nome:'Ingresa tu nombre completo (al menos 2 caracteres).', email:'Ingresa un correo electrónico válido.', telefone:'Ingresa un teléfono válido para el país seleccionado o un número internacional que empiece con +.', slot:'Elige un horario disponible.' },
+}
 
 const TEXT = {
- en: { title:'Schedule a call', intro:'Choose a 30-minute conversation about joining the team. No WhatsApp needed.', name:'Full name', email:'Email', phone:'Phone (with country code)', zone:'Times in your time zone', day:'Day', time:'Time', choose:'Choose a time', submit:'Confirm booking', close:'Close', loading:'Loading available times…', retry:'Try again', empty:'No times available. Please try again later.', unavailable:'We could not confirm your booking. Please try again.', invalid:'Check your details and choose an available time. Include the country code in your phone number.', slot_taken:'That time was just booked. Please choose another.', rate_limited:'Booking limit reached. Please try again tomorrow.', success:'Your conversation is booked.', saved:'Save this date and time. This page is your confirmation; no automatic email or SMS is sent.', privacy:'By booking, you agree that our team may contact you about recruitment.', busy:'Confirming…' },
- pt: { title:'Agendar uma conversa', intro:'Escolha 30 minutos para conversar sobre entrar na equipe. Não precisa de WhatsApp.', name:'Nome completo', email:'E-mail', phone:'Telefone (com código do país)', zone:'Horários no seu fuso', day:'Dia', time:'Horário', choose:'Escolha um horário', submit:'Confirmar agendamento', close:'Fechar', loading:'Carregando horários disponíveis…', retry:'Tentar novamente', empty:'Nenhum horário disponível. Tente novamente mais tarde.', unavailable:'Não foi possível confirmar seu agendamento. Tente novamente.', invalid:'Confira os dados e escolha um horário disponível. Inclua o código do país no telefone.', slot_taken:'Esse horário acabou de ser reservado. Escolha outro.', rate_limited:'Limite de agendamentos atingido. Tente novamente amanhã.', success:'Sua conversa está agendada.', saved:'Guarde esta data e horário. Esta tela é sua confirmação; não enviamos e-mail ou SMS automático.', privacy:'Ao agendar, você concorda que nossa equipe entre em contato sobre recrutamento.', busy:'Confirmando…' },
- es: { title:'Agendar una llamada', intro:'Elige 30 minutos para conversar sobre unirte al equipo. No necesitas WhatsApp.', name:'Nombre completo', email:'Correo electrónico', phone:'Teléfono (con código de país)', zone:'Horarios en tu zona horaria', day:'Día', time:'Hora', choose:'Elige un horario', submit:'Confirmar cita', close:'Cerrar', loading:'Cargando horarios disponibles…', retry:'Intentar de nuevo', empty:'No hay horarios disponibles. Intenta más tarde.', unavailable:'No pudimos confirmar tu cita. Intenta de nuevo.', invalid:'Revisa tus datos y elige un horario disponible. Incluye el código de país en el teléfono.', slot_taken:'Ese horario acaba de reservarse. Elige otro.', rate_limited:'Límite de citas alcanzado. Intenta mañana.', success:'Tu conversación está agendada.', saved:'Guarda esta fecha y hora. Esta pantalla es tu confirmación; no se envía correo ni SMS automático.', privacy:'Al reservar, aceptas que nuestro equipo te contacte sobre reclutamiento.', busy:'Confirmando…' },
+ en: { title:'Schedule a call', intro:'Choose a 30-minute conversation about joining the team. No WhatsApp needed.', name:'Full name', email:'Email', phone:'Phone', zone:'Times in your time zone', day:'Day', time:'Time', choose:'Choose a time', submit:'Confirm booking', close:'Close', loading:'Loading available times…', retry:'Try again', empty:'No times available. Please try again later.', unavailable:'We could not confirm your booking. Please try again.', invalid:'Check your details and try again.', slot_taken:'That time was just booked. Please choose another.', rate_limited:'Booking limit reached. Please try again tomorrow.', success:'Your conversation is booked.', saved:'Save this date and time. This page is your confirmation; no automatic email or SMS is sent.', privacy:'By booking, you agree that our team may contact you about recruitment.', busy:'Confirming…' },
+ pt: { title:'Agendar uma conversa', intro:'Escolha 30 minutos para conversar sobre entrar na equipe. Não precisa de WhatsApp.', name:'Nome completo', email:'E-mail', phone:'Telefone', zone:'Horários no seu fuso', day:'Dia', time:'Horário', choose:'Escolha um horário', submit:'Confirmar agendamento', close:'Fechar', loading:'Carregando horários disponíveis…', retry:'Tentar novamente', empty:'Nenhum horário disponível. Tente novamente mais tarde.', unavailable:'Não foi possível confirmar seu agendamento. Tente novamente.', invalid:'Confira os dados e tente novamente.', slot_taken:'Esse horário acabou de ser reservado. Escolha outro.', rate_limited:'Limite de agendamentos atingido. Tente novamente amanhã.', success:'Sua conversa está agendada.', saved:'Guarde esta data e horário. Esta tela é sua confirmação; não enviamos e-mail ou SMS automático.', privacy:'Ao agendar, você concorda que nossa equipe entre em contato sobre recrutamento.', busy:'Confirmando…' },
+ es: { title:'Agendar una llamada', intro:'Elige 30 minutos para conversar sobre unirte al equipo. No necesitas WhatsApp.', name:'Nombre completo', email:'Correo electrónico', phone:'Teléfono', zone:'Horarios en tu zona horaria', day:'Día', time:'Hora', choose:'Elige un horario', submit:'Confirmar cita', close:'Cerrar', loading:'Cargando horarios disponibles…', retry:'Intentar de nuevo', empty:'No hay horarios disponibles. Intenta más tarde.', unavailable:'No pudimos confirmar tu cita. Intenta de nuevo.', invalid:'Revisa tus datos e intenta de nuevo.', slot_taken:'Ese horario acaba de reservarse. Elige otro.', rate_limited:'Límite de citas alcanzado. Intenta mañana.', success:'Tu conversación está agendada.', saved:'Guarda esta fecha y hora. Esta pantalla es tu confirmación; no se envía correo ni SMS automático.', privacy:'Al reservar, aceptas que nuestro equipo te contacte sobre reclutamiento.', busy:'Confirmando…' },
 }
 const OpenBooking = createContext<() => void>(() => {})
 export function BookingButton({ children, small = false }: { children: ReactNode; small?: boolean }) {
@@ -22,6 +29,9 @@ export default function BookingProvider({ lang, children }: { lang: BookingLang;
  const [zone, setZone] = useState('UTC'), [slots, setSlots] = useState<string[]>([])
  const [day, setDay] = useState(''), [slot, setSlot] = useState(''), [loading, setLoading] = useState(false)
  const [error, setError] = useState(''), [busy, setBusy] = useState(false), [confirmed, setConfirmed] = useState('')
+ const [fieldError, setFieldError] = useState('')
+ const fieldMessage = (field: 'nome' | 'email' | 'telefone' | 'slot') => fieldError === field ? <span id={`eq-error-${field}`} className="eq-book-error" role="alert">{FIELD_TEXT[lang][field]}</span> : null
+ const fieldAttrs = (field: string) => ({'aria-invalid':fieldError===field, 'aria-describedby':fieldError===field ? `eq-error-${field}` : undefined})
  const request = useRef({ signature:'', id:'' }), loadId = useRef(0)
  const dayOf = (s: string, z = zone) => new Intl.DateTimeFormat('en-CA', {timeZone:z,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(s))
  async function load(z: string) {
@@ -39,15 +49,15 @@ export default function BookingProvider({ lang, children }: { lang: BookingLang;
  function open() {
   const z = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
   setZone(z); dialog.current?.showModal()
-  if (!confirmed) { setError(''); void load(z) }
+  if (!confirmed) { setError(''); setFieldError(''); void load(z) }
  }
  async function submit(e: FormEvent<HTMLFormElement>) {
   e.preventDefault()
   if (active.current || !slot) return
-  active.current = true; setBusy(true); setError('')
+  active.current = true; setBusy(true); setError(''); setFieldError('')
   const form = new FormData(e.currentTarget), tracking: Record<string,string> = {}
   for (const [key,value] of new URLSearchParams(window.location.search)) if (key.startsWith('utm_') || key === 'campaign_id') tracking[key] = value
-  const payload = {nome:form.get('nome'),email:form.get('email'),telefone:form.get('telefone'),website:form.get('website'),idioma:lang,fuso:zone,slot,tracking}
+  const payload = {nome:form.get('nome'),email:form.get('email'),telefone:form.get('telefone'),country:form.get('country'),website:form.get('website'),idioma:lang,fuso:zone,slot,tracking}
   const signature = JSON.stringify(payload)
   if (request.current.signature !== signature) request.current = {signature,id:crypto.randomUUID()}
   try {
@@ -55,8 +65,12 @@ export default function BookingProvider({ lang, children }: { lang: BookingLang;
    const data = await res.json()
    if (!res.ok || data.ok !== true) {
     const code = data.code as keyof typeof t
-    setError(['invalid','slot_taken','rate_limited'].includes(code) ? t[code] : t.unavailable)
-    if (code === 'slot_taken') await load(zone)
+    if (code === 'invalid' && ['nome','email','telefone','slot'].includes(data.field)) {
+     setFieldError(data.field)
+     // Focus after the disabled fieldset is re-enabled by the final state update.
+     requestAnimationFrame(() => dialog.current?.querySelector<HTMLElement>(`[name="${data.field}"]`)?.focus())
+    } else setError(['invalid','slot_taken','rate_limited'].includes(code) ? t[code] : t.unavailable)
+    if (code === 'slot_taken' || data.field === 'slot') {setFieldError('slot'); await load(zone)}
     return
    }
    setConfirmed(data.slot)
@@ -73,14 +87,16 @@ export default function BookingProvider({ lang, children }: { lang: BookingLang;
     <p>{t.intro}</p><p>{t.zone}: <strong>{zone}</strong></p>
     {loading && <p role="status">{t.loading}</p>}
     {!loading && !slots.length && !error && <p role="status">{t.empty}</p>}
-    <form onSubmit={submit}>
+    <form onSubmit={submit} noValidate onChange={() => setFieldError('')}>
      <fieldset disabled={busy} style={{border:0,padding:0,margin:0}}>
-      <label>{t.name}<input autoComplete="name" name="nome" required minLength={2} maxLength={120} /></label>
-      <label>{t.email}<input type="email" autoComplete="email" name="email" required maxLength={254} /></label>
-      <label>{t.phone}<input type="tel" autoComplete="tel" name="telefone" placeholder="+1 202 555 0123" required maxLength={40} /></label>
+      <label>{t.name}<input autoComplete="name" name="nome" required minLength={2} maxLength={120} {...fieldAttrs('nome')} />{fieldMessage('nome')}</label>
+      <label>{t.email}<input type="email" autoComplete="email" name="email" required maxLength={254} {...fieldAttrs('email')} />{fieldMessage('email')}</label>
+      <label>{FIELD_TEXT[lang].country}<select name="country" defaultValue="US">{getCountries().map(country => <option key={country} value={country}>{country} +{getCountryCallingCode(country)}</option>)}</select></label>
+      <label>{t.phone}<input type="tel" autoComplete="tel" name="telefone" placeholder="(202) 555-0123" required maxLength={40} {...fieldAttrs('telefone')} />{fieldMessage('telefone')}</label>
       <div className="eq-book-hp" aria-hidden="true"><label>Website<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
       <label>{t.day}<select value={day} disabled={loading || !days.length} onChange={e => {setDay(e.target.value);setSlot('')}}>{days.map(d => <option key={d} value={d}>{new Intl.DateTimeFormat(LOCALES[lang],{timeZone:zone,weekday:'long',month:'long',day:'numeric'}).format(new Date(slots.find(s => dayOf(s)===d)!))}</option>)}</select></label>
-      <label>{t.time}<select name="slot" value={slot} required disabled={loading || !slots.length} onChange={e => setSlot(e.target.value)}><option value="">{t.choose}</option>{slots.filter(s => dayOf(s)===day).map(s => <option key={s} value={s}>{new Intl.DateTimeFormat(LOCALES[lang],{timeZone:zone,hour:'numeric',minute:'2-digit',hour12:true}).format(new Date(s))}</option>)}</select></label>
+      <label>{t.time}<select name="slot" {...fieldAttrs('slot')} value={slot} required disabled={loading || !slots.length} onChange={e => setSlot(e.target.value)}><option value="">{t.choose}</option>{slots.filter(s => dayOf(s)===day).map(s => <option key={s} value={s}>{new Intl.DateTimeFormat(LOCALES[lang],{timeZone:zone,hour:'numeric',minute:'2-digit',hour12:true}).format(new Date(s))}</option>)}</select></label>
+      {fieldMessage('slot')}
       <p>{t.privacy}</p>
       <button className="eq-btn" type="submit" disabled={busy || loading || !slot}>{busy ? t.busy : t.submit}</button>
      </fieldset>
