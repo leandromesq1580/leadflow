@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Whole Life — WDT Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+@page { size: Letter; margin: 14mm 0 16mm 0;
+  @bottom-left { content: "WDT AGENCY · Academy"; font: 600 7.5pt Poppins, sans-serif; color: #0B1B3A; padding-left: 16mm; letter-spacing: 1px; }
+  @bottom-center { content: "Guia do produto Whole Life — material de treinamento interno. Uso exclusivo do agente."; font: 400 6.3pt Poppins, sans-serif; color: #6B7891; width: 120mm; text-align: center; }
+  @bottom-right { content: "pág. " counter(page); font: 600 7.5pt Poppins, sans-serif; color: #A8893A; padding-right: 16mm; }
+}
+@page :first { margin-top: 0; }
+:root{--navy:#0B1B3A;--navy2:#132A52;--gold:#C9A54C;--gold2:#DDBF73;--ink:#0E1A33;--muted:#5B6880;--line:#E2E7F0;--soft:#F1F4F9;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Poppins,system-ui,sans-serif;color:var(--ink);background:#fff;font-size:10.2pt;line-height:1.55;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+a{color:#1E3A6E}
+.hero{position:relative;overflow:hidden;color:#fff;padding:22mm 16mm 16mm;background:radial-gradient(520px 260px at 92% -10%,rgba(201,165,76,.55),transparent 62%),linear-gradient(160deg,#0B1B3A 0%,#132A52 65%,#1A3463 100%)}
+.hero .brand{font-weight:800;font-size:15pt;letter-spacing:.5px}
+.hero .brand span{color:var(--gold);font-weight:600;font-size:7.5pt;letter-spacing:4px;margin-left:6px}
+.hero .eyebrow{margin-top:14mm;font-size:7.8pt;letter-spacing:3px;font-weight:600;color:var(--gold);text-transform:uppercase}
+.hero h1{font-size:27pt;line-height:1.1;font-weight:700;margin:6px 0 4px}
+.hero .sub{font-size:12pt;color:var(--gold2);font-weight:500}
+.hero p.lead{margin-top:10px;color:#C9D2E4;max-width:150mm;font-size:10pt}
+.hero .chips{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px}
+.hero .chips span{border:1px solid rgba(221,191,115,.55);color:#F3E6C3;border-radius:99px;padding:3px 10px;font-size:7.6pt;font-weight:500}
+main{padding:8mm 16mm 4mm}
+.toc{background:var(--soft);border:1px solid #D9E0EC;border-radius:12px;padding:12px 16px;margin:2mm 0 8mm;columns:2;column-gap:12mm;font-size:8.8pt}
+.toc h4{column-span:all;font-size:8pt;letter-spacing:2px;text-transform:uppercase;color:#8A6A1C;margin-bottom:6px}
+.toc a{display:block;text-decoration:none;color:var(--ink);padding:1.5px 0;break-inside:avoid}
+.toc a b{display:inline-block;width:22px;color:#A8893A}
+section.sec{margin:0 0 7mm}
+.sec-h{display:flex;align-items:center;gap:10px;margin:0 0 8px;break-after:avoid}
+.sec-h .n{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--navy);color:#fff;border:2px solid var(--gold);font-weight:700;font-size:9.5pt}
+.sec-h h2{font-size:15pt;font-weight:700;color:var(--navy);line-height:1.2}
+.sec-h small{display:block;font-size:8.6pt;color:var(--muted);font-weight:400}
+h3{font-size:11pt;color:var(--navy);margin:10px 0 4px;break-after:avoid}
+h4{font-size:9.6pt;color:#1E3A6E;margin:8px 0 3px;break-after:avoid}
+p{margin:0 0 6px}
+ul,ol{margin:2px 0 8px 18px}
+li{margin:1.5px 0}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:6mm}
+.cols3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4mm}
+.card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;break-inside:avoid;margin-bottom:8px}
+.card.navy{background:linear-gradient(160deg,#0B1B3A,#132A52);color:#E6EBF5;border:0}
+.card.navy h3,.card.navy h4{color:var(--gold2)}
+.card.soft{background:var(--soft);border-color:#D9E0EC}
+.alert{background:#FBF7EC;border:1px solid #E8D7A8;border-left:4px solid var(--gold);border-radius:10px;padding:9px 12px;margin:6px 0 10px;font-size:9.4pt;break-inside:avoid}
+.alert b.t{display:block;color:#8A6A1C;font-size:7.8pt;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px}
+.term{background:#EEF2F8;border-radius:10px;padding:8px 12px;margin:6px 0 10px;font-size:8.8pt;color:#33415C;break-inside:avoid}
+.term b{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:4px 0 10px;font-size:8.8pt;break-inside:auto}
+thead{display:table-header-group}
+tr{break-inside:avoid}
+th{background:var(--navy);color:#fff;text-align:left;font-weight:600;padding:5px 7px;font-size:8.4pt}
+th.g{background:#A8893A}
+td{padding:4.5px 7px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:nth-child(even) td{background:#F7F9FC}
+td.c,th.c{text-align:center}
+.ok{color:#1E7A4F;font-weight:800}
+table.kv td:first-child{width:32%;font-weight:600;color:var(--navy);background:#F3F5FA}
+.pill{display:inline-block;font-size:7.6pt;font-weight:600;padding:1px 8px;border-radius:99px;background:#EEF2F8;color:#1E3A6E;margin:1px 2px 1px 0}
+.pill.g{background:#F7F0DF;color:#8A6A1C}
+.foot{font-size:7.6pt;color:var(--muted);border-top:1px solid var(--line);padding-top:5px;margin-top:6px}
+.steps{counter-reset:s;list-style:none;margin-left:0}
+.steps li{counter-increment:s;position:relative;padding-left:30px;margin:6px 0;break-inside:avoid}
+.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:21px;height:21px;border-radius:50%;border:2px solid var(--gold);color:var(--navy);font-weight:700;font-size:8.5pt;display:grid;place-items:center}
+.pb{break-before:page}
+.endnote{margin:6mm 0 0;padding:10px 14px;border-radius:10px;background:var(--soft);font-size:8pt;color:var(--muted)}
+.webbar{display:none}
+@media screen{
+  body{background:#EEF1F6}
+  .doc{max-width:216mm;margin:0 auto;background:#fff;box-shadow:0 10px 40px -20px rgba(11,27,58,.35)}
+  .webbar{display:flex;position:sticky;top:0;z-index:5;background:rgba(11,27,58,.97);color:#fff;padding:9px 18px;gap:14px;align-items:center;font-size:9.5pt}
+  .webbar a{color:#F3E6C3;text-decoration:none;font-weight:600}
+  .webbar b{font-weight:800}.webbar b span{color:var(--gold);font-size:7.5pt;letter-spacing:3px;margin-left:5px}
+  .webbar .sp{flex:1}
+  .webfoot{max-width:216mm;margin:0 auto 30px;padding:12px 16mm;font-size:8pt;color:var(--muted)}
+}
+@media print{.webfoot{display:none}}
+.inframe .webbar,.inframe .webfoot{display:none!important}.dlpdf{display:inline-block;margin-top:14px;background:#C9A54C;color:#0B1B3A!important;font-weight:700;font-size:12px;padding:9px 16px;border-radius:8px;text-decoration:none}@media print{.dlpdf{display:none}}</style></head><body>
+<div class="webbar"><a href="../index.html#inicio">← Voltar ao portal</a><span class="sp"></span><b>WDT<span>AGENCY</span></b></div>
+<div class="doc">
+<header class="hero"><div class="brand">WDT<span>AGENCY</span></div>
+<div class="eyebrow">WDT Agency · Guia do produto</div><h1>Whole Life</h1><div class="sub">O produto — vida inteira, com garantias</div>
+<p class="lead">O que é, como funcionam dividendo, Paid-Up Additions e empréstimo, para qual cliente serve, como apresentar e como responder às objeções. Leia antes de assistir aos vídeos de cotação.</p><div class="chips"><span>4 garantias contratuais</span><span>Dividendo · PUA · Empréstimo</span><span>Whole Life × IUL × Term</span><span>6 objeções</span></div><a class="dlpdf" href="pdf/whole-life-produto.pdf" download>⬇ Baixar PDF</a></header>
+<main>
+<nav class="toc"><h4>Conteúdo</h4><a href="#s1"><b>01</b>O que é o Whole Life</a><a href="#s2"><b>02</b>Dois produtos com o mesmo nome</a><a href="#s3"><b>03</b>Dividendo</a><a href="#s4"><b>04</b>Paid-Up Additions (PUA)</a><a href="#s5"><b>05</b>Empréstimo sobre a apólice</a><a href="#s6"><b>06</b>Em quantos anos pagar</a><a href="#s7"><b>07</b>Whole Life, IUL e Term</a><a href="#s8"><b>08</b>Para qual cliente serve</a><a href="#s9"><b>09</b>Descoberta e apresentação</a><a href="#s10"><b>10</b>As seis objeções</a><a href="#s11"><b>11</b>Antes de cotar</a></nav>
+<section class="sec" id="s1"><div class="sec-h"><div class="n">1</div><h2>O que é o Whole Life<small>O produto em uma frase</small></h2></div>
+<p>É o seguro de vida em que <b>a seguradora assume todo o risco</b>. O prêmio não sobe, o benefício não cai, o valor de resgate só cresce e a cobertura não acaba. O cliente não decide alocação, não escolhe índice e não acompanha mercado. Em troca dessa previsibilidade, paga o <b>prêmio mais alto do portfólio</b>.</p>
+<div class="cols"><div>
+<div class="card"><h4>💰 O prêmio nunca sobe</h4><p>Travado na emissão pelo desenho escolhido (vitalício, 20 anos, 10 anos, até os 65 ou prêmio único). A seguradora não pode recalcular.</p></div>
+<div class="card"><h4>🛡 O benefício nunca cai</h4><p>O capital contratado é o que a família recebe, livre de imposto de renda, não importa quando a morte aconteça.</p></div>
+</div><div>
+<div class="card"><h4>📈 O valor de resgate é garantido</h4><p>Uma tabela no contrato diz quanto haverá em cada aniversário da apólice. Não depende de índice nem de mercado. É o que separa o Whole Life do IUL.</p></div>
+<div class="card"><h4>∞ A cobertura não termina</h4><p>Com o prêmio combinado em dia, a apólice segue até a idade 100, 121 ou pela vida toda, conforme o contrato.</p></div>
+</div></div>
+<div class="alert"><b class="t">A frase que organiza a conversa</b>“Aqui não tem surpresa. Você sabe hoje quanto vai pagar, quanto a sua família vai receber e quanto vai ter guardado dentro da apólice em qualquer ano. O que a seguradora não pode prometer é o dividendo — e é ele que faz o número crescer acima do garantido.”</div></section>
+<section class="sec" id="s2"><div class="sec-h"><div class="n">2</div><h2>Dois produtos com o mesmo nome<small>A confusão que custa venda</small></h2></div>
+<table><thead><tr><th></th><th>Whole Life de acumulação</th><th>Final Expense (whole life simplificado)</th></tr></thead><tbody>
+<tr><td><b>Para que serve</b></td><td>Acumular valor e transferir patrimônio</td><td>Cobrir enterro e dívidas finais</td></tr>
+<tr><td><b>Capital típico</b></td><td>US$ 100.000 a US$ 15 milhões</td><td>US$ 5.000 a US$ 50.000</td></tr>
+<tr><td><b>Subscrição</b></td><td>Completa, ou acelerada até US$ 1M–3M</td><td>Questionário, sem exame</td></tr>
+<tr><td><b>Paga dividendo?</b></td><td>Em geral sim (mútuas e fraternais)</td><td>Quase sempre não</td></tr>
+<tr><td><b>Paid-Up Additions</b></td><td>Sim — é o motor do produto</td><td>Não existe</td></tr>
+<tr><td><b>Benefício no ano 1</b></td><td>Integral, sempre</td><td>Pode ser graduado (ex.: 30% no ano 1)</td></tr>
+</tbody></table>
+<div class="term"><b>Como não errar:</b> “Não quero que meus filhos paguem meu enterro” é final expense. “Quero guardar dinheiro com garantia e deixar patrimônio” é whole life de acumulação.</div></section>
+<section class="sec" id="s3"><div class="sec-h"><div class="n">3</div><h2>Dividendo<small>O ponto mais mal explicado do produto</small></h2></div>
+<p>Dividendo de apólice <b>não é juro nem rendimento de investimento</b>. É a devolução do excedente: a seguradora cobrou um prêmio calculado para o pior cenário, o ano foi melhor que o previsto, e ela devolve parte disso a quem tem apólice <i>participating</i>.</p>
+<div class="cols"><div><div class="card soft"><h4>Quem paga</h4><p>Em geral mútuas e fraternais. Na nossa lista: Assurity, Foresters, Ameritas e National Life são participating.</p></div></div>
+<div><div class="card soft"><h4>⚠ Nunca é garantido</h4><p>É declarado ano a ano pelo conselho da companhia. Histórico longo é bom sinal, não promessa. Só a coluna garantida é contrato.</p></div></div></div>
+<h3>As quatro opções de uso</h3>
+<ul><li><b>Comprar Paid-Up Additions</b> — a opção padrão e quase sempre a certa: aumenta capital e resgate e gera efeito composto.</li>
+<li><b>Reduzir o prêmio</b> — quando o orçamento aperta, mas trava o crescimento.</li>
+<li><b>Acumular a juros</b> — rende pouco e é tributável.</li>
+<li><b>Receber em dinheiro</b> — só se o cliente precisa do fluxo; mata o efeito composto.</li></ul></section>
+<section class="sec" id="s4"><div class="sec-h"><div class="n">4</div><h2>Paid-Up Additions (PUA)<small>O motor do produto</small></h2></div>
+<p>O PUA é dinheiro além do prêmio base que compra apólice quitada na hora: sobe o capital, sobe o resgate, e o pedaço comprado passa a gerar dividendo próprio.</p>
+<div class="cols"><div><div class="alert"><b class="t">O encargo decide tudo</b>Num aporte de US$ 10.000, um encargo de 6% come US$ 600 antes de o dinheiro entrar na apólice. Em 20 anos de aportes, essa diferença pesa mais que qualquer variação de dividendo.</div></div>
+<div><div class="alert"><b class="t">O limite do IRS (MEC)</b>Se os aportes passarem do teste dos 7 anos, a apólice vira <b>MEC</b>: empréstimos e saques passam a ser tributados, com multa de 10% antes dos 59½ anos. É irreversível — rode o teste antes de cada aporte extra.</div></div></div></section>
+<section class="sec" id="s5"><div class="sec-h"><div class="n">5</div><h2>Empréstimo sobre a apólice<small>Direct recognition muda o resultado</small></h2></div>
+<p>O cliente acessa o dinheiro por <b>empréstimo</b>, não por saque: a seguradora empresta usando o valor de resgate como garantia.</p>
+<div class="cols"><div><div class="card"><h4>✓ Non-direct recognition</h4><p>O dividendo não muda enquanto houver saldo devedor.</p></div></div>
+<div><div class="card"><h4>⚠ Direct recognition</h4><p>O dividendo é reduzido sobre a parte comprometida com o empréstimo.</p></div></div></div>
+<div class="term"><b>O que dizer ao cliente:</b> “É um empréstimo com o seu dinheiro como garantia, e cobra juros. Se não pagar, o saldo é descontado do que a família recebe. Se passar do valor da apólice, ela cai — e vem imposto sobre tudo o que cresceu.”</div></section>
+<section class="sec" id="s6"><div class="sec-h"><div class="n">6</div><h2>Em quantos anos pagar<small>A decisão que muda o produto</small></h2></div>
+<table><thead><tr><th>Desenho</th><th>Como funciona</th><th>Para quem</th></tr></thead><tbody>
+<tr><td><b>Vitalício</b> (Pay to 100/121)</td><td>Menor prêmio possível</td><td>Maior capital pelo menor desembolso mensal</td></tr>
+<tr><td><b>20-Pay / 10-Pay</b></td><td>Prêmio maior, apólice quitada em 20 ou 10 anos; resgate cresce mais rápido</td><td>Quem quer parar de pagar antes de aposentar e quem acumula</td></tr>
+<tr><td><b>Pay to 65</b></td><td>Quita quando a renda do trabalho para</td><td>Quem planeja a aposentadoria</td></tr>
+<tr><td><b>Prêmio único</b></td><td>Um cheque só; quase sempre vira MEC</td><td>Transferência de patrimônio, não acesso em vida</td></tr>
+</tbody></table>
+<div class="term"><b>A pergunta que define o prazo:</b> “Em que ano da sua vida você quer parar de pagar isso?”</div></section>
+<section class="sec" id="s7"><div class="sec-h"><div class="n">7</div><h2>Whole Life, IUL e Term<small>Onde cada um ganha</small></h2></div>
+<table><thead><tr><th></th><th>Term</th><th>IUL</th><th>Whole Life</th></tr></thead><tbody>
+<tr><td><b>Duração</b></td><td>10 a 40 anos</td><td>A vida toda, se bem financiado</td><td>A vida toda, garantido</td></tr>
+<tr><td><b>Custo por dólar de cobertura</b></td><td>O mais baixo</td><td>Intermediário</td><td>O mais alto</td></tr>
+<tr><td><b>Valor de resgate</b></td><td>Nenhum</td><td>Ligado a índice, com piso e teto</td><td>Garantido em tabela</td></tr>
+<tr><td><b>Quem carrega o risco</b></td><td>—</td><td>O cliente, dentro de piso e teto</td><td>A seguradora</td></tr>
+<tr><td><b>Flexibilidade do prêmio</b></td><td>Fixo</td><td>Alta</td><td>Baixa — prêmio obrigatório</td></tr>
+<tr><td><b>Upside</b></td><td>Nenhum</td><td>Crédito indexado, com teto</td><td>Dividendo, não garantido</td></tr>
+</tbody></table>
+<div class="term"><b>A pergunta que decide entre IUL e Whole Life:</b> “Você prefere um número que eu consigo te garantir hoje, ou a chance de um número maior sem garantia nenhuma?”</div></section>
+<section class="sec" id="s8"><div class="sec-h"><div class="n">8</div><h2>Para qual cliente serve<small>Perfis que sustentam a apólice</small></h2></div>
+<div class="cols"><div><ul>
+<li><b>Quem quer garantia acima de tudo</b> — já perdeu dinheiro em investimento e quer um número escrito no contrato.</li>
+<li><b>Avós ou pais comprando para a criança</b> — prêmio baixo, saúde travada para sempre.</li>
+<li><b>Quem já tem IUL</b> e quer uma base garantida ao lado.</li>
+<li><b>Quem tem dinheiro parado</b> — o prêmio único converte em capital garantido várias vezes maior.</li></ul></div>
+<div><div class="card soft"><h4>✗ Quando NÃO serve</h4><p>Quem precisa de capital máximo pelo menor custo (é Term) · orçamento sem folga para prêmio obrigatório · quem vai precisar do dinheiro em menos de 10 anos · quem busca retorno de mercado.</p></div></div></div></section>
+<section class="sec" id="s9"><div class="sec-h"><div class="n">9</div><h2>Descoberta e apresentação<small>Whole Life se vende por certeza, não por rendimento</small></h2></div>
+<div class="cols"><div><h3>Perguntas que abrem a conversa</h3><ol class="steps">
+<li>Que parte do seu dinheiro você não quer que oscile de jeito nenhum?</li>
+<li>Quando você morrer, quanto tempo a sua família leva para ter o dinheiro na mão?</li>
+<li>Alguém na sua família já ficou com uma conta para pagar depois de um falecimento?</li>
+<li>Você quer parar de pagar em algum momento, ou paga a vida toda?</li>
+<li>Seus filhos ou netos têm alguma cobertura?</li></ol></div>
+<div><h3>Como apresentar</h3><ol class="steps">
+<li><b>Mostre a coluna garantida primeiro:</b> “isso está no contrato, a seguradora não pode mudar”. Só depois a coluna com dividendo, como possibilidade.</li>
+<li><b>O ano em que ele para de pagar:</b> a resposta escolhe entre vitalício, 20-Pay, 10-Pay e Pay to 65.</li>
+<li><b>O dia seguinte:</b> “sua família recebe em semanas, sem imposto de renda e sem inventário”.</li></ol>
+<div class="alert"><b class="t">Palavras que criam problema</b>“Investimento” · “rendimento” · “o dividendo vai ser de X%” · “seja seu próprio banco” · “é como uma poupança”.</div></div></div></section>
+<section class="sec" id="s10"><div class="sec-h"><div class="n">10</div><h2>As seis objeções<small>E como responder</small></h2></div>
+<table class="kv"><tbody>
+<tr><td>“É muito caro perto do term”</td><td>O term cobre um período e acaba; este cobre a vida inteira e ainda guarda dinheiro. Se precisa do máximo de cobertura pelo menor valor, é term.</td></tr>
+<tr><td>“Compro term e invisto a diferença”</td><td>Boa estratégia para quem investe todo mês e aguenta os anos ruins. O whole life é para a parte do dinheiro que não deve depender disso.</td></tr>
+<tr><td>“O rendimento é baixo”</td><td>Comparado à bolsa, sim. Ele compete com o dinheiro parado, não com a carteira de investimentos.</td></tr>
+<tr><td>“O dinheiro demora a aparecer”</td><td>Nos primeiros anos o resgate é menor que o pago — é o custo do seguro. Se vai precisar do dinheiro em menos de 10 anos, não é o produto.</td></tr>
+<tr><td>“Meu contador disse que é ruim”</td><td>A crítica costuma ser sobre venda mal feita. Pergunte o que ele apontou e mostre se se aplica ao desenho.</td></tr>
+<tr><td>“E se eu não puder mais pagar?”</td><td>Há saídas contratuais: reduced paid-up, extended term ou empréstimo automático de prêmio. Mas o desenho certo é o que cabe sem aperto.</td></tr>
+</tbody></table></section>
+<section class="sec" id="s11"><div class="sec-h"><div class="n">11</div><h2>Antes de cotar<small>Checklist — e os vídeos a seguir</small></h2></div>
+<ul><li>Confirme qual dos dois produtos o cliente precisa: acumulação ou final expense.</li>
+<li>Defina com o cliente o prazo de pagamento.</li>
+<li>Se houver PUA, rode o teste de MEC e confirme o encargo com a mesa.</li>
+<li>Imprima e entregue a coluna garantida da ilustração.</li>
+<li>Beneficiário completo: nome, data de nascimento e percentual.</li></ul>
+<div class="term"><b>National Life TotalSecure:</b> whole life participating com subscrição acelerada sem exame até US$ 3.000.000 para clientes de até 50 anos. Peça o Product Guide antes de montar comparativos.</div>
+<p>Nos vídeos a seguir você vê, passo a passo, como cotar Whole Life na National Life e na Foresters.</p></section>
+<div class="endnote"><b>Material interno.</b> Guia de produto elaborado pela WDT Agency a partir da apresentação “O produto Whole Life” (setembro de 2026), para treinamento de agentes. Dividendos não são garantidos; confirme regras, limites e encargos de cada seguradora no material oficial antes de cotar.</div>
+</main></div>
+<div class="webfoot">WDT AGENCY · Academy — Material de treinamento interno.</div>
+<script>try{if(window.self!==window.top||location.href==="about:srcdoc"){document.documentElement.classList.add("inframe")}}catch(e){}</script></body></html>

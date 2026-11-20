@@ -1,0 +1,42 @@
+{
+  "recordedAt": "2026-11-20T00:06:21.912992+00:00",
+  "reviewDeclaration": {
+    "message": "ja",
+    "at": "2026-11-19T18:49:56-05:00",
+    "meaning": "User states personal review of videos/documents; no automated certification inferred"
+  },
+  "productionAuthorization": {
+    "question": "Autoriza publicar a versão preparada em https://lead4producers.com/academy/ agora?",
+    "answer": "sim",
+    "at": "2026-11-19T18:50:08-05:00"
+  },
+  "candidateArchiveSha256": "00cb077c5bc3d6f1a35d20543289621c544d326433a67f0c78f69ab9c3be69fc",
+  "additionalSanitization": [
+    {
+      "path": "media/cot-term-ameritas.mp4",
+      "basis": "Known client first-name spoken in source ASR segment; earlier anonymization authorization",
+      "mutedSeconds": [
+        38.0,
+        51.2
+      ],
+      "originalCandidateSha256": "a82364fbd4ad332af3c68b30c2b2dc02e8a09eeb36398439ebcb0beac8a72fa7",
+      "releaseSha256": "cfb8b46d5507ea229d6c276d53c8559a8df883246e6cea94cc622fe9ff049423",
+      "humanReviewedDerivative": false,
+      "videoStream": "copied unchanged; no new visual content",
+      "audio": "mute only within stated segment; AAC reencoded",
+      "decode": "passed"
+    }
+  ],
+  "residualScreening": {
+    "rawCredentialPatternsFiles": 236,
+    "hits": [],
+    "imageOCRCompleted": 55,
+    "imageOCRLimit": "540 second timeout; not full new OCR certification",
+    "imageOCRKnownNameFinding": "Institutional support first name on career presentation p12; visual check found no private client identifier"
+  },
+  "limitations": [
+    "Human review is a user declaration, not an agent claim of continuous audiovisual inspection.",
+    "Only IUL National Life simulation confirmed fictitious.",
+    "Known audio identifier muted additionally; no secrets authorized for publication."
+  ]
+}

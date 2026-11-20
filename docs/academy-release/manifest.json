@@ -1,0 +1,1662 @@
+{
+  "schemaVersion": 1,
+  "publicationApproved": true,
+  "reviewedBy": "User-declared personal video/document review (ja) and explicit production authorization (sim); Hermes executes hash verification and additional audio anonymization, not independent full audiovisual certification",
+  "reviewedAt": "2026-11-19T18:49:56-05:00",
+  "requiredPaths": [
+    "docs/american-amicable-guia.html",
+    "docs/ameritas-guia.html",
+    "docs/apresentacao-carreira.html",
+    "docs/assurity-guia.html",
+    "docs/corebridge-guia.html",
+    "docs/fex-produto.html",
+    "docs/fg-guia.html",
+    "docs/foresters-guia.html",
+    "docs/guia-beneficios-doencas.html",
+    "docs/guia-crm.html",
+    "docs/guia-seguradoras.html",
+    "docs/img/apresentacao-carreira-p1.jpg",
+    "docs/img/apresentacao-carreira-p10.jpg",
+    "docs/img/apresentacao-carreira-p11.jpg",
+    "docs/img/apresentacao-carreira-p12.jpg",
+    "docs/img/apresentacao-carreira-p13.jpg",
+    "docs/img/apresentacao-carreira-p14.jpg",
+    "docs/img/apresentacao-carreira-p15.jpg",
+    "docs/img/apresentacao-carreira-p2.jpg",
+    "docs/img/apresentacao-carreira-p3.jpg",
+    "docs/img/apresentacao-carreira-p4.jpg",
+    "docs/img/apresentacao-carreira-p5.jpg",
+    "docs/img/apresentacao-carreira-p6.jpg",
+    "docs/img/apresentacao-carreira-p7.jpg",
+    "docs/img/apresentacao-carreira-p8.jpg",
+    "docs/img/apresentacao-carreira-p9.jpg",
+    "docs/img/crm-automacao.png",
+    "docs/img/crm-automacoes-lista.png",
+    "docs/img/crm-funil-pos.jpg",
+    "docs/img/crm-funil-vendas.jpg",
+    "docs/img/crm-gerenciar.png",
+    "docs/img/crm-modelo.png",
+    "docs/img/crm-seq-nao-atendeu.png",
+    "docs/img/crm-seq-no-show.png",
+    "docs/img/guia-crm-p1.jpg",
+    "docs/img/guia-crm-p2.jpg",
+    "docs/img/guia-crm-p3.jpg",
+    "docs/img/guia-crm-p4.jpg",
+    "docs/img/guia-crm-p5.jpg",
+    "docs/img/guia-crm-p6.jpg",
+    "docs/img/guia-crm-p7.jpg",
+    "docs/img/guia-crm-p8.jpg",
+    "docs/img/guia-crm-p9.jpg",
+    "docs/img/passo2-p1.jpg",
+    "docs/img/passo2-p2.jpg",
+    "docs/img/passo2-p3.jpg",
+    "docs/img/passo2-p4.jpg",
+    "docs/img/passo2-p5.jpg",
+    "docs/img/passo2-p6.jpg",
+    "docs/img/passo3-email.jpg",
+    "docs/img/produto-fex-p1.jpg",
+    "docs/img/produto-fex-p10.jpg",
+    "docs/img/produto-fex-p11.jpg",
+    "docs/img/produto-fex-p12.jpg",
+    "docs/img/produto-fex-p13.jpg",
+    "docs/img/produto-fex-p14.jpg",
+    "docs/img/produto-fex-p15.jpg",
+    "docs/img/produto-fex-p16.jpg",
+    "docs/img/produto-fex-p17.jpg",
+    "docs/img/produto-fex-p18.jpg",
+    "docs/img/produto-fex-p19.jpg",
+    "docs/img/produto-fex-p2.jpg",
+    "docs/img/produto-fex-p20.jpg",
+    "docs/img/produto-fex-p21.jpg",
+    "docs/img/produto-fex-p22.jpg",
+    "docs/img/produto-fex-p23.jpg",
+    "docs/img/produto-fex-p24.jpg",
+    "docs/img/produto-fex-p25.jpg",
+    "docs/img/produto-fex-p3.jpg",
+    "docs/img/produto-fex-p4.jpg",
+    "docs/img/produto-fex-p5.jpg",
+    "docs/img/produto-fex-p6.jpg",
+    "docs/img/produto-fex-p7.jpg",
+    "docs/img/produto-fex-p8.jpg",
+    "docs/img/produto-fex-p9.jpg",
+    "docs/img/produto-iul-p1.jpg",
+    "docs/img/produto-iul-p10.jpg",
+    "docs/img/produto-iul-p11.jpg",
+    "docs/img/produto-iul-p12.jpg",
+    "docs/img/produto-iul-p13.jpg",
+    "docs/img/produto-iul-p14.jpg",
+    "docs/img/produto-iul-p15.jpg",
+    "docs/img/produto-iul-p16.jpg",
+    "docs/img/produto-iul-p17.jpg",
+    "docs/img/produto-iul-p18.jpg",
+    "docs/img/produto-iul-p19.jpg",
+    "docs/img/produto-iul-p2.jpg",
+    "docs/img/produto-iul-p20.jpg",
+    "docs/img/produto-iul-p21.jpg",
+    "docs/img/produto-iul-p22.jpg",
+    "docs/img/produto-iul-p23.jpg",
+    "docs/img/produto-iul-p24.jpg",
+    "docs/img/produto-iul-p25.jpg",
+    "docs/img/produto-iul-p3.jpg",
+    "docs/img/produto-iul-p4.jpg",
+    "docs/img/produto-iul-p5.jpg",
+    "docs/img/produto-iul-p6.jpg",
+    "docs/img/produto-iul-p7.jpg",
+    "docs/img/produto-iul-p8.jpg",
+    "docs/img/produto-iul-p9.jpg",
+    "docs/img/produto-term-p1.jpg",
+    "docs/img/produto-term-p10.jpg",
+    "docs/img/produto-term-p11.jpg",
+    "docs/img/produto-term-p12.jpg",
+    "docs/img/produto-term-p13.jpg",
+    "docs/img/produto-term-p14.jpg",
+    "docs/img/produto-term-p15.jpg",
+    "docs/img/produto-term-p16.jpg",
+    "docs/img/produto-term-p17.jpg",
+    "docs/img/produto-term-p18.jpg",
+    "docs/img/produto-term-p19.jpg",
+    "docs/img/produto-term-p2.jpg",
+    "docs/img/produto-term-p20.jpg",
+    "docs/img/produto-term-p21.jpg",
+    "docs/img/produto-term-p22.jpg",
+    "docs/img/produto-term-p3.jpg",
+    "docs/img/produto-term-p4.jpg",
+    "docs/img/produto-term-p5.jpg",
+    "docs/img/produto-term-p6.jpg",
+    "docs/img/produto-term-p7.jpg",
+    "docs/img/produto-term-p8.jpg",
+    "docs/img/produto-term-p9.jpg",
+    "docs/img/produto-wl-p1.jpg",
+    "docs/img/produto-wl-p10.jpg",
+    "docs/img/produto-wl-p11.jpg",
+    "docs/img/produto-wl-p12.jpg",
+    "docs/img/produto-wl-p13.jpg",
+    "docs/img/produto-wl-p14.jpg",
+    "docs/img/produto-wl-p15.jpg",
+    "docs/img/produto-wl-p16.jpg",
+    "docs/img/produto-wl-p17.jpg",
+    "docs/img/produto-wl-p18.jpg",
+    "docs/img/produto-wl-p19.jpg",
+    "docs/img/produto-wl-p2.jpg",
+    "docs/img/produto-wl-p20.jpg",
+    "docs/img/produto-wl-p21.jpg",
+    "docs/img/produto-wl-p22.jpg",
+    "docs/img/produto-wl-p23.jpg",
+    "docs/img/produto-wl-p24.jpg",
+    "docs/img/produto-wl-p25.jpg",
+    "docs/img/produto-wl-p3.jpg",
+    "docs/img/produto-wl-p4.jpg",
+    "docs/img/produto-wl-p5.jpg",
+    "docs/img/produto-wl-p6.jpg",
+    "docs/img/produto-wl-p7.jpg",
+    "docs/img/produto-wl-p8.jpg",
+    "docs/img/produto-wl-p9.jpg",
+    "docs/img/script-atendimento-p1.jpg",
+    "docs/img/script-atendimento-p2.jpg",
+    "docs/img/script-term-p1.jpg",
+    "docs/img/script-term-p2.jpg",
+    "docs/img/script-term-p3.jpg",
+    "docs/img/script-term-p4.jpg",
+    "docs/img/script-term-p5.jpg",
+    "docs/img/script-term-p6.jpg",
+    "docs/iul-produto.html",
+    "docs/mutual-omaha-guia.html",
+    "docs/nl-flexlife.html",
+    "docs/nl-guia.html",
+    "docs/nl-rapidprotect.html",
+    "docs/nl-term.html",
+    "docs/nl-underwriting.html",
+    "docs/passo1-levinson.html",
+    "docs/passo2-letter.html",
+    "docs/passo3-email.html",
+    "docs/pdf/american-amicable-guia.pdf",
+    "docs/pdf/ameritas-guia.pdf",
+    "docs/pdf/apresentacao-carreira.pdf",
+    "docs/pdf/assurity-guia.pdf",
+    "docs/pdf/corebridge-guia.pdf",
+    "docs/pdf/fex-produto.pdf",
+    "docs/pdf/fg-guia.pdf",
+    "docs/pdf/foresters-guia.pdf",
+    "docs/pdf/guia-beneficios-doencas.pdf",
+    "docs/pdf/guia-crm.pdf",
+    "docs/pdf/guia-seguradoras.pdf",
+    "docs/pdf/iul-produto.pdf",
+    "docs/pdf/mutual-omaha-guia.pdf",
+    "docs/pdf/nl-guia.pdf",
+    "docs/pdf/plano-carreira.pdf",
+    "docs/pdf/produto-fex.pdf",
+    "docs/pdf/produto-iul.pdf",
+    "docs/pdf/produto-term.pdf",
+    "docs/pdf/produto-wl.pdf",
+    "docs/pdf/script-atendimento.pdf",
+    "docs/pdf/script-term.pdf",
+    "docs/pdf/term-produto.pdf",
+    "docs/pdf/transamerica-guia.pdf",
+    "docs/pdf/whole-life-produto.pdf",
+    "docs/plano-carreira.html",
+    "docs/produto-fex.html",
+    "docs/produto-iul.html",
+    "docs/produto-term.html",
+    "docs/produto-wl.html",
+    "docs/script-atendimento.html",
+    "docs/script-term.html",
+    "docs/term-produto.html",
+    "docs/transamerica-guia.html",
+    "docs/whole-life-produto.html",
+    "img/hero.jpg",
+    "index.html",
+    "media/aula-solicitacao.jpg",
+    "media/aula-solicitacao.mp4",
+    "media/aula-underwriting.jpg",
+    "media/aula-underwriting.mp4",
+    "media/cot-fex-americo.jpg",
+    "media/cot-fex-americo.mp4",
+    "media/cot-fex-todas.jpg",
+    "media/cot-fex-todas.mp4",
+    "media/cot-iul-americo.jpg",
+    "media/cot-iul-americo.mp4",
+    "media/cot-iul-fg.jpg",
+    "media/cot-iul-fg.mp4",
+    "media/cot-iul-nlg.jpg",
+    "media/cot-iul-nlg.mp4",
+    "media/cot-term-americo.jpg",
+    "media/cot-term-americo.mp4",
+    "media/cot-term-ameritas.jpg",
+    "media/cot-term-ameritas.mp4",
+    "media/cot-term-foresters.jpg",
+    "media/cot-term-foresters.mp4",
+    "media/cot-term-nlg.jpg",
+    "media/cot-term-nlg.mp4",
+    "media/cot-term-todas.jpg",
+    "media/cot-term-todas.mp4",
+    "media/cot-transamerica.jpg",
+    "media/cot-transamerica.mp4",
+    "media/cot-wl-foresters.jpg",
+    "media/cot-wl-foresters.mp4",
+    "media/cot-wl-nlg.jpg",
+    "media/cot-wl-nlg.mp4",
+    "media/passo4.jpg",
+    "media/passo4.mp4",
+    "media/passo6.jpg",
+    "media/passo6.mp4",
+    "robots.txt"
+  ],
+  "assets": [
+    {
+      "path": "docs/american-amicable-guia.html",
+      "source": "docs/american-amicable-guia.html",
+      "sha256": "6174619289c287f3055712f5e99288d311e4a6345477640c2e0555a884e8830c",
+      "approved": true
+    },
+    {
+      "path": "docs/ameritas-guia.html",
+      "source": "docs/ameritas-guia.html",
+      "sha256": "f0c1da653ca55dfd28f78a386601a5569a1bb5f3054c595debfaefd33d820a0a",
+      "approved": true
+    },
+    {
+      "path": "docs/apresentacao-carreira.html",
+      "source": "docs/apresentacao-carreira.html",
+      "sha256": "e68c5b0979549de31cdbe1cb3f32d0c4e0858371a84c780ac43b99fe89b09615",
+      "approved": true
+    },
+    {
+      "path": "docs/assurity-guia.html",
+      "source": "docs/assurity-guia.html",
+      "sha256": "28d57ea2f6b334d7fa3a29e8a1493134a3b0473991671c06a65c0575a8dd29fa",
+      "approved": true
+    },
+    {
+      "path": "docs/corebridge-guia.html",
+      "source": "docs/corebridge-guia.html",
+      "sha256": "8b940beda5fef524482de1a08cd90f704e734a42ab2849b05ef6cfca6f3205c1",
+      "approved": true
+    },
+    {
+      "path": "docs/fex-produto.html",
+      "source": "docs/fex-produto.html",
+      "sha256": "4441012653682fc6fdf22845b29e95dd9eaa281c35c0259edf021c3faf0e1edb",
+      "approved": true
+    },
+    {
+      "path": "docs/fg-guia.html",
+      "source": "docs/fg-guia.html",
+      "sha256": "277d92466cb403a278bce907e2a77ba47febed7c28566a582a7524b305c690be",
+      "approved": true
+    },
+    {
+      "path": "docs/foresters-guia.html",
+      "source": "docs/foresters-guia.html",
+      "sha256": "a03c6c3d3ca81373c682dc7ce949051537c51649835e8f0d57ad0288ca7df2f3",
+      "approved": true
+    },
+    {
+      "path": "docs/guia-beneficios-doencas.html",
+      "source": "docs/guia-beneficios-doencas.html",
+      "sha256": "7cd3e03cf699fb0a07a217f73b8fe4aa18b5545157cbe20dbaad93c81ae899b7",
+      "approved": true
+    },
+    {
+      "path": "docs/guia-crm.html",
+      "source": "docs/guia-crm.html",
+      "sha256": "3bb84ceb12bfcf7fa1887e0279c6c67d899224bbe41c35b008a10ab062221dc5",
+      "approved": true
+    },
+    {
+      "path": "docs/guia-seguradoras.html",
+      "source": "docs/guia-seguradoras.html",
+      "sha256": "a0b93a44e8579a1292f18320520b1774e907fad39c598944c97cd0553056372b",
+      "approved": true
+    },
+    {
+      "path": "docs/img/apresentacao-carreira-p1.jpg",
+      "source": "docs/img/apresentacao-carreira-p1.jpg",
+      "sha256": "70ad1621d666f45627767395ccb190cd401a7396503316e067924e4b25ca3919",
+      "approved": true
+    },
+    {
+      "path": "docs/img/apresentacao-carreira-p10.jpg",
+      "source": "docs/img/apresentacao-carreira-p10.jpg",
+      "sha256": "9184ff60d946ef205e8bce777ab492a1871782ff49f96f2b12e5520c7008c9a7",
+      "approved": true
+    },
+    {
+      "path": "docs/img/apresentacao-carreira-p11.jpg",
+      "source": "docs/img/apresentacao-carreira-p11.jpg",
+      "sha256": "f3a9cbfc6dad794dfb0ac612f8f2f31f72f99adec9d9dabbf878e8a7bfaeba70",
+      "approved": true
+    },
+    {
+      "path": "docs/img/apresentacao-carreira-p12.jpg",
+      "source": "docs/img/apresentacao-carreira-p12.jpg",
+      "sha256": "defb036e2593cb3b467f4401887dd32526fd9a7b8211ed26cc739898c9c7e183",
+      "approved": true
+    },
+    {
+      "path": "docs/img/apresentacao-carreira-p13.jpg",
+      "source": "docs/img/apresentacao-carreira-p13.jpg",
+      "sha256": "a7a0e6a742ab019330f12c64ed61fb1f81a0c5a18b7d614be0d4ee17c81784d4",
+      "approved": true
+    },
+    {
+      "path": "docs/img/apresentacao-carreira-p14.jpg",
+      "source": "docs/img/apresentacao-carreira-p14.jpg",
+      "sha256": "c79a21f236ab3e7b15e31703d68fe303e5c75f43587000ea5b472905ff35631c",
+      "approved": true
+    },
+    {
+      "path": "docs/img/apresentacao-carreira-p15.jpg",
+      "source": "docs/img/apresentacao-carreira-p15.jpg",
+      "sha256": "897384701b03764bd6b2f83911f3386b5b25a737f24fc3e389ca6fc5ed0d5b26",
+      "approved": true
+    },
+    {
+      "path": "docs/img/apresentacao-carreira-p2.jpg",
+      "source": "docs/img/apresentacao-carreira-p2.jpg",
+      "sha256": "f48de31b78760d05d6ef2dbfb0bdcd3e1f54b45b13ca021556dfe2c92992a0c3",
+      "approved": true
+    },
+    {
+      "path": "docs/img/apresentacao-carreira-p3.jpg",
+      "source": "docs/img/apresentacao-carreira-p3.jpg",
+      "sha256": "41bee229224d5336e9c59f92a21221bfc8ffea9a2bcb94953e2b8dc60dc7cfd3",
+      "approved": true
+    },
+    {
+      "path": "docs/img/apresentacao-carreira-p4.jpg",
+      "source": "docs/img/apresentacao-carreira-p4.jpg",
+      "sha256": "50d2d2611fc442bbb9808df245fa10dfb980c51bb67f0394ffa27e3d4d31c291",
+      "approved": true
+    },
+    {
+      "path": "docs/img/apresentacao-carreira-p5.jpg",
+      "source": "docs/img/apresentacao-carreira-p5.jpg",
+      "sha256": "9e761f6517b286ed1faec1d1a36ee7b7458689901f7f287b1cb00095cbf264c5",
+      "approved": true
+    },
+    {
+      "path": "docs/img/apresentacao-carreira-p6.jpg",
+      "source": "docs/img/apresentacao-carreira-p6.jpg",
+      "sha256": "d3f65c4b849c78c5e649fa2bb2fe6c16e3a24b3dfcb487675869e43a4cf5077a",
+      "approved": true
+    },
+    {
+      "path": "docs/img/apresentacao-carreira-p7.jpg",
+      "source": "docs/img/apresentacao-carreira-p7.jpg",
+      "sha256": "42f00fef49984d17de3ec60ffcaa53766957603d5a8dbaf2649e3cd0d361281f",
+      "approved": true
+    },
+    {
+      "path": "docs/img/apresentacao-carreira-p8.jpg",
+      "source": "docs/img/apresentacao-carreira-p8.jpg",
+      "sha256": "0cd256749bfae0eb9514ae591a819737454daba7099bfdeb8028e9d230725c73",
+      "approved": true
+    },
+    {
+      "path": "docs/img/apresentacao-carreira-p9.jpg",
+      "source": "docs/img/apresentacao-carreira-p9.jpg",
+      "sha256": "08d39018ce14b56e71f81067e29b9a6c6c1e0674b6859b13ebe20e7e6a82c7bb",
+      "approved": true
+    },
+    {
+      "path": "docs/img/crm-automacao.png",
+      "source": "docs/img/crm-automacao.png",
+      "sha256": "4b72662c475a6b8c15778b49ff763d7cdc425da9ffd64f483962e00f4a747009",
+      "approved": true
+    },
+    {
+      "path": "docs/img/crm-automacoes-lista.png",
+      "source": "docs/img/crm-automacoes-lista.png",
+      "sha256": "28e42776f30e3af7c713b0774870a1084c1e7d01c13393e20cf897f0aa64c3fc",
+      "approved": true
+    },
+    {
+      "path": "docs/img/crm-funil-pos.jpg",
+      "source": "docs/img/crm-funil-pos.jpg",
+      "sha256": "9a6681f7050aed09b1ef09e25fde370e2c70b2c27b27415ffc6b89372789dd16",
+      "approved": true
+    },
+    {
+      "path": "docs/img/crm-funil-vendas.jpg",
+      "source": "docs/img/crm-funil-vendas.jpg",
+      "sha256": "0b694ce661f0d86c3e46d27c00065a30bcbdcfb9450fa8bbe727c5e6fea6a97d",
+      "approved": true
+    },
+    {
+      "path": "docs/img/crm-gerenciar.png",
+      "source": "docs/img/crm-gerenciar.png",
+      "sha256": "7776523b303ce763cb2b6d3aec304e3f0cf57aedbde2695d3b5ace1bb108699f",
+      "approved": true
+    },
+    {
+      "path": "docs/img/crm-modelo.png",
+      "source": "docs/img/crm-modelo.png",
+      "sha256": "910fa63143b0e8570add12a87011c51a847401e34404bbec46d259391b933942",
+      "approved": true
+    },
+    {
+      "path": "docs/img/crm-seq-nao-atendeu.png",
+      "source": "docs/img/crm-seq-nao-atendeu.png",
+      "sha256": "d4b6dcbb16301148e186903ea6da6adcde249207282f7c4034ec44eabe2d31e2",
+      "approved": true
+    },
+    {
+      "path": "docs/img/crm-seq-no-show.png",
+      "source": "docs/img/crm-seq-no-show.png",
+      "sha256": "5105801e52adcc7b3016729ef9c869f80d570c092a0a4be405aa6c2c600d38dd",
+      "approved": true
+    },
+    {
+      "path": "docs/img/guia-crm-p1.jpg",
+      "source": "docs/img/guia-crm-p1.jpg",
+      "sha256": "8d5ac3846f70636dfedbffc6b4ab5c0cc4e97f1e4c744501f3276905b84ba1ad",
+      "approved": true
+    },
+    {
+      "path": "docs/img/guia-crm-p2.jpg",
+      "source": "docs/img/guia-crm-p2.jpg",
+      "sha256": "ef5d82b3a46c94274b65ed796d152cdc3f93d767e77a4324931fb158856b635a",
+      "approved": true
+    },
+    {
+      "path": "docs/img/guia-crm-p3.jpg",
+      "source": "docs/img/guia-crm-p3.jpg",
+      "sha256": "dacd53e6365d63d978a60d546ee50e75683f7e69b5a954b0a74b0ec3139dd44c",
+      "approved": true
+    },
+    {
+      "path": "docs/img/guia-crm-p4.jpg",
+      "source": "docs/img/guia-crm-p4.jpg",
+      "sha256": "cbe50f158d98ba5c9844d54c7b795731316c1713d070df5b7702b75dab2b137d",
+      "approved": true
+    },
+    {
+      "path": "docs/img/guia-crm-p5.jpg",
+      "source": "docs/img/guia-crm-p5.jpg",
+      "sha256": "1b078cc60d5f30037ba586c210534b397c61f0788d59d72d4b1ddb469af589ed",
+      "approved": true
+    },
+    {
+      "path": "docs/img/guia-crm-p6.jpg",
+      "source": "docs/img/guia-crm-p6.jpg",
+      "sha256": "6e81f7b36981ed39ed76c9223752799072eb1e9d6e80e85f1e9f78382107cd33",
+      "approved": true
+    },
+    {
+      "path": "docs/img/guia-crm-p7.jpg",
+      "source": "docs/img/guia-crm-p7.jpg",
+      "sha256": "05178c40c110ac1d17f02fba6dd3ca3a0edfeeefc8231313f36c8c882ff60560",
+      "approved": true
+    },
+    {
+      "path": "docs/img/guia-crm-p8.jpg",
+      "source": "docs/img/guia-crm-p8.jpg",
+      "sha256": "6ddd4ff796548636a64ec15168dc9fed0e7b28a8921378f08ef7d996b9618ebe",
+      "approved": true
+    },
+    {
+      "path": "docs/img/guia-crm-p9.jpg",
+      "source": "docs/img/guia-crm-p9.jpg",
+      "sha256": "6b04f7fe23c0f02674c06ca3972c29a6e6d15d8830d1f1fa929a608cf55e5240",
+      "approved": true
+    },
+    {
+      "path": "docs/img/passo2-p1.jpg",
+      "source": "docs/img/passo2-p1.jpg",
+      "sha256": "2d1065967d9c92ae60c83fd8a1691696f61348a0cb0197543d4c9c0643b4962d",
+      "approved": true
+    },
+    {
+      "path": "docs/img/passo2-p2.jpg",
+      "source": "docs/img/passo2-p2.jpg",
+      "sha256": "c64f3949c0e80ff894c8887ff2b034d322eee90836441569b28c3c832f896a90",
+      "approved": true
+    },
+    {
+      "path": "docs/img/passo2-p3.jpg",
+      "source": "docs/img/passo2-p3.jpg",
+      "sha256": "51a432299ed1a2573b11bb0508eacc3b12675ea781d640839fd5abf7229a415a",
+      "approved": true
+    },
+    {
+      "path": "docs/img/passo2-p4.jpg",
+      "source": "docs/img/passo2-p4.jpg",
+      "sha256": "622d0deee6f5538ffc604c79dde7f43c7f73e8485e54ecad58c72e7f94085474",
+      "approved": true
+    },
+    {
+      "path": "docs/img/passo2-p5.jpg",
+      "source": "docs/img/passo2-p5.jpg",
+      "sha256": "cc8d613946096f37cc2504c2fc64330f36e58ab443c246f3a59b4631ba610672",
+      "approved": true
+    },
+    {
+      "path": "docs/img/passo2-p6.jpg",
+      "source": "docs/img/passo2-p6.jpg",
+      "sha256": "083f31e8a6a39afd85928af305c14c58c52bc49f28955adfb67cb3cbf524c022",
+      "approved": true
+    },
+    {
+      "path": "docs/img/passo3-email.jpg",
+      "source": "docs/img/passo3-email.jpg",
+      "sha256": "2e341ec6c0bd3f4ca7e74353916ff70af1dd066a18626aa798bb9bea09b8c44b",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p1.jpg",
+      "source": "docs/img/produto-fex-p1.jpg",
+      "sha256": "636680dfbfc056839d7228fd1de7f56c1114cd3644247e430eaed5ea46e92346",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p10.jpg",
+      "source": "docs/img/produto-fex-p10.jpg",
+      "sha256": "c4eb1713c4b2095154633bc83ae6c732be7fc51c3f29f69fb101bba222d3a36e",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p11.jpg",
+      "source": "docs/img/produto-fex-p11.jpg",
+      "sha256": "7a048af95a40bfa1a2471801d66cd90af7ca4d1661f31d9017bf4fdf4a379c79",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p12.jpg",
+      "source": "docs/img/produto-fex-p12.jpg",
+      "sha256": "50670674739f7938af310e9e40e61d90064c0da077f44be65c67f6ff80eb7125",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p13.jpg",
+      "source": "docs/img/produto-fex-p13.jpg",
+      "sha256": "9a21b8a94360ab7353ce6405e22f1d4552e3abed4bfbd4c5204674d381290be3",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p14.jpg",
+      "source": "docs/img/produto-fex-p14.jpg",
+      "sha256": "ef049389ad61d72a4d87514458cc078b06c8861209aca2852010a4d6e0ec7e2e",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p15.jpg",
+      "source": "docs/img/produto-fex-p15.jpg",
+      "sha256": "5d7c7a872754cf3d12ab0d063597535b7c7f25c577b2e14d1d9b2c301d4f8fec",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p16.jpg",
+      "source": "docs/img/produto-fex-p16.jpg",
+      "sha256": "92c4a78695a5afe43e79685c039e3ee0a8d9f0f7c6d0647d6f4f24e581b58d7e",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p17.jpg",
+      "source": "docs/img/produto-fex-p17.jpg",
+      "sha256": "207ef509f6761142ccced1bcd6cee34b6731f4ed51dbf83762b238ef262b967c",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p18.jpg",
+      "source": "docs/img/produto-fex-p18.jpg",
+      "sha256": "6494bfd73f2f461a6f815d39754774554c76824b6c19c77b9718e02fc0dcd3fb",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p19.jpg",
+      "source": "docs/img/produto-fex-p19.jpg",
+      "sha256": "15ac54aeb5c23840522430ddc2feb70d422ec7b32ee4f6e426c06ae0cb445352",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p2.jpg",
+      "source": "docs/img/produto-fex-p2.jpg",
+      "sha256": "efee6c5e0168206db75ba987f8c1c2a5d3eb137e3648ff6e8fc96d73d4fd944b",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p20.jpg",
+      "source": "docs/img/produto-fex-p20.jpg",
+      "sha256": "13fe69bd18869b5b72a1a7375bb1e04b3b70b27449020e44b101fa60f2df4ab9",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p21.jpg",
+      "source": "docs/img/produto-fex-p21.jpg",
+      "sha256": "bc2a65bb4593eb6217f2147d813347245587c4984464128c59f7902b18e535c1",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p22.jpg",
+      "source": "docs/img/produto-fex-p22.jpg",
+      "sha256": "fe2ccdb49a7ecacd06925d44e70e4c4acebb19dc9a1e5f36f42346e311a40f4c",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p23.jpg",
+      "source": "docs/img/produto-fex-p23.jpg",
+      "sha256": "c0d4f01dd1ea0b9f7233da2e8f428310e3f1a02e259c1dd480fc6d7bcabe0cbf",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p24.jpg",
+      "source": "docs/img/produto-fex-p24.jpg",
+      "sha256": "a4d745344dc43d6567605e3d92fc0d71f7b313db003e405255d1df91da166996",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p25.jpg",
+      "source": "docs/img/produto-fex-p25.jpg",
+      "sha256": "3589aaf7bf17f5aa17e6b9712ee80ecc61b6d343c596e3103229112bc87a1be9",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p3.jpg",
+      "source": "docs/img/produto-fex-p3.jpg",
+      "sha256": "e3ae7b68a17ec2cfb5d7e9fe9329fd449eae2f3696434ea60430aa33877f1151",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p4.jpg",
+      "source": "docs/img/produto-fex-p4.jpg",
+      "sha256": "27145e4d7a407fda313112330a14ecc90989cc999e2862b1ae9196757c63c5db",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p5.jpg",
+      "source": "docs/img/produto-fex-p5.jpg",
+      "sha256": "3d666d5b2853101f5e264c7ac96126dafacd0149c67fdcf04b3f94da9a12307e",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p6.jpg",
+      "source": "docs/img/produto-fex-p6.jpg",
+      "sha256": "a11fa4fa5cb2649e1df46aa9a5892263a5b1ec526cdd4ee2a3d5da0116c80a87",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p7.jpg",
+      "source": "docs/img/produto-fex-p7.jpg",
+      "sha256": "e1c239e65d275f3c88af4ec4f7b83280627254c51f2eac29f2f0daf0b90a9fcf",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p8.jpg",
+      "source": "docs/img/produto-fex-p8.jpg",
+      "sha256": "dccaed451a4142dc17c78bc438fa61dd6ec9a5ee8f077740f0cbc81de87d90af",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-fex-p9.jpg",
+      "source": "docs/img/produto-fex-p9.jpg",
+      "sha256": "04430061e85cfa93b24f1632e0425064fe358c0d3866586c198ae4392559f3cc",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p1.jpg",
+      "source": "docs/img/produto-iul-p1.jpg",
+      "sha256": "046c25239298495587b925f77f4449c015f7bf81e89ad2fd3f643de6caa14b73",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p10.jpg",
+      "source": "docs/img/produto-iul-p10.jpg",
+      "sha256": "3504032a3f3085caee225cede18f5d667e48aa76b1d0a2075ea069696304f330",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p11.jpg",
+      "source": "docs/img/produto-iul-p11.jpg",
+      "sha256": "160be282ad2b02037f088d5d60320f39c62915972aefb5ee8a70ccd5b705c2a1",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p12.jpg",
+      "source": "docs/img/produto-iul-p12.jpg",
+      "sha256": "7367e67ab2b0c75f179dcbadc0622af828b5eb25caa86ce34724349c857f9aa0",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p13.jpg",
+      "source": "docs/img/produto-iul-p13.jpg",
+      "sha256": "82f88cca1d80d6119e57393dc2a2d5041efd87f0076bee2ea0a84fabe219e49a",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p14.jpg",
+      "source": "docs/img/produto-iul-p14.jpg",
+      "sha256": "5ea8f4fac4688e93866802ee4bc128042369d94024e5d6daeba160b7a926ca77",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p15.jpg",
+      "source": "docs/img/produto-iul-p15.jpg",
+      "sha256": "b2bbccbbf9da2d1e305e2cd6d9fe9d38db89649739614fe7c4de2215e1dd9559",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p16.jpg",
+      "source": "docs/img/produto-iul-p16.jpg",
+      "sha256": "9bd089b24768618848034a87c036361d60c7876a08455b4bb7559bf264704fc5",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p17.jpg",
+      "source": "docs/img/produto-iul-p17.jpg",
+      "sha256": "2bbaab4de488add2664551703dd7bf693d27e5e5ce5afe7d96e6d333cdb1eb1f",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p18.jpg",
+      "source": "docs/img/produto-iul-p18.jpg",
+      "sha256": "13c5655d68e363134496d3c49ab56c03db693e5190034b4690466ff2663362d6",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p19.jpg",
+      "source": "docs/img/produto-iul-p19.jpg",
+      "sha256": "17fa5292b1a3744f4f3346e60889357806c0dfdfdf80a4e19b56c35809148703",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p2.jpg",
+      "source": "docs/img/produto-iul-p2.jpg",
+      "sha256": "0257b0c268cf27d82ac8f50d4ce8dfcc6477f6279e885257c446ecbbb197a148",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p20.jpg",
+      "source": "docs/img/produto-iul-p20.jpg",
+      "sha256": "67c12cd21ed6fe99661132bb9af00dfa3b526063a062181eb07daaf259d0e2a8",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p21.jpg",
+      "source": "docs/img/produto-iul-p21.jpg",
+      "sha256": "7a8b8665bd7783b6288248704759528ba559d1e33e95e6f83fc455b133d6d856",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p22.jpg",
+      "source": "docs/img/produto-iul-p22.jpg",
+      "sha256": "63049c051ec4ebe5e0aa5b823c86d5d5e4992929ba8383ec725595ea637b3467",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p23.jpg",
+      "source": "docs/img/produto-iul-p23.jpg",
+      "sha256": "1bf72de73e7154fae993da29628acb106257285c60597460008401f3114ac382",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p24.jpg",
+      "source": "docs/img/produto-iul-p24.jpg",
+      "sha256": "c840df836d6ed16ba19aeabea81c4076844f65b12f345fc603791ca3e2820253",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p25.jpg",
+      "source": "docs/img/produto-iul-p25.jpg",
+      "sha256": "3d092f43bdddbbc97e6a1f950365eab565937429715f86200542e1fb74b621a2",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p3.jpg",
+      "source": "docs/img/produto-iul-p3.jpg",
+      "sha256": "4d2554ef2afb1bda087e595c4ffa2ada304b09405446160d28570370a8b3d19d",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p4.jpg",
+      "source": "docs/img/produto-iul-p4.jpg",
+      "sha256": "ccae08eefe9eb22764e24f600992497324c7eafd87397e401d49caf171cafca4",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p5.jpg",
+      "source": "docs/img/produto-iul-p5.jpg",
+      "sha256": "100aa2cc2b2d226df022692e783ba581e282142a6f4fc72cc58b11b03afe9952",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p6.jpg",
+      "source": "docs/img/produto-iul-p6.jpg",
+      "sha256": "3d2d6be83778063b19bfd993b1f83287135ce84ef9e7037d05c38ef2e896790a",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p7.jpg",
+      "source": "docs/img/produto-iul-p7.jpg",
+      "sha256": "c81d68c672cea0ba81ba0caa9585f4b17a92776bc229bc1f3f61d7a86c2d1f4f",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p8.jpg",
+      "source": "docs/img/produto-iul-p8.jpg",
+      "sha256": "b90b1174dbd8dc874ca7c09eebe14bd0926a401c77575d35d91f122dc42a0e15",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-iul-p9.jpg",
+      "source": "docs/img/produto-iul-p9.jpg",
+      "sha256": "6636e5d2288a333b52a398fa774e1c1f8364d3a6423740ef2dfb4774aacb4dba",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p1.jpg",
+      "source": "docs/img/produto-term-p1.jpg",
+      "sha256": "8ab484f60ad382c15b19d5411196a539d8bbf63c6227fb8b93aed619a086c47e",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p10.jpg",
+      "source": "docs/img/produto-term-p10.jpg",
+      "sha256": "897a146d38898ddad6aa8297ac01383fc2c64dac04fa48ee386f78edaaa13d7c",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p11.jpg",
+      "source": "docs/img/produto-term-p11.jpg",
+      "sha256": "aeda766dd623364c98ed0e1b6846b7c066e14d91954f5dd18a900d155bd78da6",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p12.jpg",
+      "source": "docs/img/produto-term-p12.jpg",
+      "sha256": "edc57e42bbd6982926db9266385ba0d91f7db9063fa177e64b341cebfd0e700a",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p13.jpg",
+      "source": "docs/img/produto-term-p13.jpg",
+      "sha256": "8905135db7509487e4cf78f81f9f65ec0d19aa8209ec9544ca56c402a982f90d",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p14.jpg",
+      "source": "docs/img/produto-term-p14.jpg",
+      "sha256": "4c6ea1f2a5a6bcc6113854a25b4841db84406eb06bd9107f61add8ea8a14bef0",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p15.jpg",
+      "source": "docs/img/produto-term-p15.jpg",
+      "sha256": "96d63ea50d6b5b20d7de383b93d971fff37686761d8a73fba17616c7f78337e9",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p16.jpg",
+      "source": "docs/img/produto-term-p16.jpg",
+      "sha256": "be3217c2a108b8d77949fcddf88ba7082e13cd2c39298ac2cd72f929c644b596",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p17.jpg",
+      "source": "docs/img/produto-term-p17.jpg",
+      "sha256": "100fcfd9d582b35a0bddbef419edb1d0c4019c1dfdf05e37917c3706bf0b4a7f",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p18.jpg",
+      "source": "docs/img/produto-term-p18.jpg",
+      "sha256": "f04797cead58dce19016e836159d407a5b3b62942a4a339cf556a90e8a578b60",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p19.jpg",
+      "source": "docs/img/produto-term-p19.jpg",
+      "sha256": "7191e14156c23aa7a806163a74cd55e277a3995edbf20fbb60babcbbc74d8b26",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p2.jpg",
+      "source": "docs/img/produto-term-p2.jpg",
+      "sha256": "1e0d9221b85f8b68a8b02eef16a3e24d98f1e911bdfc1c1421c5922a5098476b",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p20.jpg",
+      "source": "docs/img/produto-term-p20.jpg",
+      "sha256": "7d237557e6cf413249e2168a1982f926b1e35a6debb70e2561d274012daeb8f7",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p21.jpg",
+      "source": "docs/img/produto-term-p21.jpg",
+      "sha256": "4023929e00aaadb521d09ca5c9ecf5e540a1988102e3c3e299587e921d5a0dcc",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p22.jpg",
+      "source": "docs/img/produto-term-p22.jpg",
+      "sha256": "5dea0f75d0ebcb2173e09c847c650ed559270874827344fa2127f0daed42d4a4",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p3.jpg",
+      "source": "docs/img/produto-term-p3.jpg",
+      "sha256": "76953e26e257d58415f6725d7a94c92ec324dc1c7e9c3c506d0564e3cfd92e5e",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p4.jpg",
+      "source": "docs/img/produto-term-p4.jpg",
+      "sha256": "8661668dba23999894dbee25261de2c54242e9914797e9b4ceeb7c98dce9b737",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p5.jpg",
+      "source": "docs/img/produto-term-p5.jpg",
+      "sha256": "1d2e8c42c3e9f7fb93c1cdfd8c2305468045b9f66a9a7ed3c428328a3efabd61",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p6.jpg",
+      "source": "docs/img/produto-term-p6.jpg",
+      "sha256": "7472e780f06be5e236e1bf3722792563246338882ab5f7af73ae307155893fdb",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p7.jpg",
+      "source": "docs/img/produto-term-p7.jpg",
+      "sha256": "8082cd4759ceb203d2f5de5532a01cbeea41a2b2d94be97012506e52cb23568f",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p8.jpg",
+      "source": "docs/img/produto-term-p8.jpg",
+      "sha256": "7933d9914a4674947bd8725be45790dd9367338efb923e8914f76d534f0483a5",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-term-p9.jpg",
+      "source": "docs/img/produto-term-p9.jpg",
+      "sha256": "1c51410242eb5dd96e8801018e3d7893eede065c9a0b5c23c5e50e81818cbbe1",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p1.jpg",
+      "source": "docs/img/produto-wl-p1.jpg",
+      "sha256": "fe4bfb2928125bd8c7393517f4662717bca2e85504f7c0968ea437850e15cc80",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p10.jpg",
+      "source": "docs/img/produto-wl-p10.jpg",
+      "sha256": "00ef6a54216900b694f52600ea61484060cb25f7c2015b95a257e33a93bbce68",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p11.jpg",
+      "source": "docs/img/produto-wl-p11.jpg",
+      "sha256": "0ebb50abf07fc254d11648737543f1892e273825e937f44d28205ebb79451517",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p12.jpg",
+      "source": "docs/img/produto-wl-p12.jpg",
+      "sha256": "11c41435c510b93e0bf15c9fbae4211650b642cc8e3d25c615ba25d4bcc9e1cd",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p13.jpg",
+      "source": "docs/img/produto-wl-p13.jpg",
+      "sha256": "afacedfaa4d2a896218917bb1c88c7b7f1b2364b75125c3d7ec7276aecf0ace9",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p14.jpg",
+      "source": "docs/img/produto-wl-p14.jpg",
+      "sha256": "5f4b58bc4f4fccc57ccbff3b2acb2f0e1be815486aa0c0fc8f94b16d9ce6bf55",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p15.jpg",
+      "source": "docs/img/produto-wl-p15.jpg",
+      "sha256": "5587fcf66b4638528d1e8e2eb75a3dd4a44a4d8dca0edba91d0d7e576d819383",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p16.jpg",
+      "source": "docs/img/produto-wl-p16.jpg",
+      "sha256": "195933eece39f9832ebf1b089e3dc6104fc76f5455484d539f13e68dadca5db5",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p17.jpg",
+      "source": "docs/img/produto-wl-p17.jpg",
+      "sha256": "865a42e14799c534b3ec293b4f2e55f2513626ed54e86dc3a9b4b8fdec6629c0",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p18.jpg",
+      "source": "docs/img/produto-wl-p18.jpg",
+      "sha256": "9d015d74829f2b836864a831744529059ea7b39e208a63a652c92674df9e1b89",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p19.jpg",
+      "source": "docs/img/produto-wl-p19.jpg",
+      "sha256": "59f8c0ee964df54465d9d9b7a2874883223391c4781216c5973847b3c338e431",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p2.jpg",
+      "source": "docs/img/produto-wl-p2.jpg",
+      "sha256": "eab51e3427cbf795ba7ae812eea4c3f5746f674a0124bbedaceaf7eb61c079ef",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p20.jpg",
+      "source": "docs/img/produto-wl-p20.jpg",
+      "sha256": "9824c63971fbc07ec6c76a1387218e0e0de033c52a2cbc519c6183c9bafff81a",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p21.jpg",
+      "source": "docs/img/produto-wl-p21.jpg",
+      "sha256": "ded5590ee6504145fd7173621031f1cc07c7059d955b7d96954efe69204efdb3",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p22.jpg",
+      "source": "docs/img/produto-wl-p22.jpg",
+      "sha256": "9222b2dae68ae3e092a73e78f9d055f32e4b17fa1d6708d70bf9b865194be638",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p23.jpg",
+      "source": "docs/img/produto-wl-p23.jpg",
+      "sha256": "82d93f0599afa1a1f26748d8491106ed9932a908b2914e14696ad4fec1347e92",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p24.jpg",
+      "source": "docs/img/produto-wl-p24.jpg",
+      "sha256": "4ab400f20de6e04214b80f7fc83b4ea3fee0b803ecd97a43405ecf81d5d7efb6",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p25.jpg",
+      "source": "docs/img/produto-wl-p25.jpg",
+      "sha256": "a3fec3b9e34b8475560f61f0b6f82738cb164b4b25e94bdec50885670fae7fca",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p3.jpg",
+      "source": "docs/img/produto-wl-p3.jpg",
+      "sha256": "29581d4b23f4291c53d22ca0f87212a4a46c1639b2901d54bf4b0ff14789b666",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p4.jpg",
+      "source": "docs/img/produto-wl-p4.jpg",
+      "sha256": "782e5e83165049e2e3196d51dd7fa7af2fbf46cb0bb0dc4f61cf28d697f243da",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p5.jpg",
+      "source": "docs/img/produto-wl-p5.jpg",
+      "sha256": "54e131b800d2ea2371e6f07931c4847805901524497b4fb0b19012b0cdc5b36d",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p6.jpg",
+      "source": "docs/img/produto-wl-p6.jpg",
+      "sha256": "67b956d4f43be152f01e2a36b288d260dfab28d038b475c622dbda739d67f220",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p7.jpg",
+      "source": "docs/img/produto-wl-p7.jpg",
+      "sha256": "6b60aa0cf299345a8a40be3d51ce2646fe71455f4785c3fa28d06d5e9292cd46",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p8.jpg",
+      "source": "docs/img/produto-wl-p8.jpg",
+      "sha256": "1bac874babc322633e8a5d738ae4426408b3213be4c78168c3228053d5789987",
+      "approved": true
+    },
+    {
+      "path": "docs/img/produto-wl-p9.jpg",
+      "source": "docs/img/produto-wl-p9.jpg",
+      "sha256": "4e1647ab044c312ade0918455e5217dc324573cabd87f009b55825f3cd6aa0ae",
+      "approved": true
+    },
+    {
+      "path": "docs/img/script-atendimento-p1.jpg",
+      "source": "docs/img/script-atendimento-p1.jpg",
+      "sha256": "c9ae98de7fb94586b78ed6b259ae21fd757d54350f302dff6af26328253b2922",
+      "approved": true
+    },
+    {
+      "path": "docs/img/script-atendimento-p2.jpg",
+      "source": "docs/img/script-atendimento-p2.jpg",
+      "sha256": "ff8c31e484239d6987d7e672ab72f54e04613cd3f1e86a5327353e011f043d31",
+      "approved": true
+    },
+    {
+      "path": "docs/img/script-term-p1.jpg",
+      "source": "docs/img/script-term-p1.jpg",
+      "sha256": "ef7ae2ebb25ae722778b0193273c7513e645cbcc1c4a9608ebaa104f0064980e",
+      "approved": true
+    },
+    {
+      "path": "docs/img/script-term-p2.jpg",
+      "source": "docs/img/script-term-p2.jpg",
+      "sha256": "b5fa9eb6199c5108a4328d6bbdb0d4fa62dc28d8e62b60f2f0459c04664f6b2c",
+      "approved": true
+    },
+    {
+      "path": "docs/img/script-term-p3.jpg",
+      "source": "docs/img/script-term-p3.jpg",
+      "sha256": "241b9c6b754d4dd79bb07b014f53d2b219937f6028f64231e398fc26dd771b5d",
+      "approved": true
+    },
+    {
+      "path": "docs/img/script-term-p4.jpg",
+      "source": "docs/img/script-term-p4.jpg",
+      "sha256": "201dcc047d88fcc1ba32e8e5c334ff922e48d9bd5309b3c32d71be11aeb66f28",
+      "approved": true
+    },
+    {
+      "path": "docs/img/script-term-p5.jpg",
+      "source": "docs/img/script-term-p5.jpg",
+      "sha256": "bf3295afc68266922a4a0f6185342c54e45dc53a1a638d23213cd979526ebd82",
+      "approved": true
+    },
+    {
+      "path": "docs/img/script-term-p6.jpg",
+      "source": "docs/img/script-term-p6.jpg",
+      "sha256": "50b90d1d24f6c26325854d191fed2f313308d86dd62bacca0be6b612e05e80f1",
+      "approved": true
+    },
+    {
+      "path": "docs/iul-produto.html",
+      "source": "docs/iul-produto.html",
+      "sha256": "07bd6680987884430623106fcdfe5d86e266f6f6292ba4b6146ede9cddab8f4b",
+      "approved": true
+    },
+    {
+      "path": "docs/mutual-omaha-guia.html",
+      "source": "docs/mutual-omaha-guia.html",
+      "sha256": "1b29b4e886ed440d2ec3d0176c6a16f5185d077b5abdf663566a6dcae68c93bf",
+      "approved": true
+    },
+    {
+      "path": "docs/nl-flexlife.html",
+      "source": "docs/nl-flexlife.html",
+      "sha256": "7235fee73c46da5f328b9f3e9118dfebee93346871d7f9d9a10e3babc2cb9696",
+      "approved": true
+    },
+    {
+      "path": "docs/nl-guia.html",
+      "source": "docs/nl-guia.html",
+      "sha256": "a0f3e19782398f6815f50ad36290facf8120039e70b05dcfb6fd432c0037ead4",
+      "approved": true
+    },
+    {
+      "path": "docs/nl-rapidprotect.html",
+      "source": "docs/nl-rapidprotect.html",
+      "sha256": "b4e0aceb9462d6ac4c6cfab1bc123575bdfa48821694905ea06057be3025a63f",
+      "approved": true
+    },
+    {
+      "path": "docs/nl-term.html",
+      "source": "docs/nl-term.html",
+      "sha256": "f5d431c4d9bba34803bf76be0a57e0c7ecdb4697b33eae4ed65b6d45796f8ba0",
+      "approved": true
+    },
+    {
+      "path": "docs/nl-underwriting.html",
+      "source": "docs/nl-underwriting.html",
+      "sha256": "06ade8562ea54de809abfc6c098d759de55f9fce11cb91d9b6b73b18ae2c0565",
+      "approved": true
+    },
+    {
+      "path": "docs/passo1-levinson.html",
+      "source": "docs/passo1-levinson.html",
+      "sha256": "19c89f0e6c9fe70d1a0b81ee29af7d42eef357cf466de6089fd219366a1cb9a2",
+      "approved": true
+    },
+    {
+      "path": "docs/passo2-letter.html",
+      "source": "docs/passo2-letter.html",
+      "sha256": "c9cf9c24347123775afeb103e5f09881c37e58eee489d43dd38f1f6dd92d8d9c",
+      "approved": true
+    },
+    {
+      "path": "docs/passo3-email.html",
+      "source": "docs/passo3-email.html",
+      "sha256": "6771e519f2735a3b07ce90857287ca890e346425bf27bb34ff1d58f5da874050",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/american-amicable-guia.pdf",
+      "source": "docs/pdf/american-amicable-guia.pdf",
+      "sha256": "b7765212c05051d2bef1d29662ccb9ee451c99f949c0579474aaa0dcbee5c964",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/ameritas-guia.pdf",
+      "source": "docs/pdf/ameritas-guia.pdf",
+      "sha256": "697f1458e5e41a6008c0bc442ca9067f5067999e11fce4133c08f98e02841887",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/apresentacao-carreira.pdf",
+      "source": "docs/pdf/apresentacao-carreira.pdf",
+      "sha256": "b430c76b70551b68f3ece407478abc527d970f30b437ec92e68f3e85a78d3be9",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/assurity-guia.pdf",
+      "source": "docs/pdf/assurity-guia.pdf",
+      "sha256": "822479b83793633c303f51b7b4d755cceee5b2072ffd6820995722bd46da168f",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/corebridge-guia.pdf",
+      "source": "docs/pdf/corebridge-guia.pdf",
+      "sha256": "4b32786ff5d74bf5443f4e137bbf47fffb59c1ac95a041a28c090f920bbfe971",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/fex-produto.pdf",
+      "source": "docs/pdf/fex-produto.pdf",
+      "sha256": "5eefe8f8748d806518b06fe7fef5cfa9bc4ab2f06bd9bbda52242ee19427c932",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/fg-guia.pdf",
+      "source": "docs/pdf/fg-guia.pdf",
+      "sha256": "890c0f4ff4acb27698551f7366e4d2ffc823444f05d2930fe796b9fc56d84d15",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/foresters-guia.pdf",
+      "source": "docs/pdf/foresters-guia.pdf",
+      "sha256": "1e58790c67b2d08724e2a063e073df678e8db99878747715e740b16a5152f83c",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/guia-beneficios-doencas.pdf",
+      "source": "docs/pdf/guia-beneficios-doencas.pdf",
+      "sha256": "a54b328c349604855cf4b7ae5516892e31c25badc08e8ad3cde776cb71836333",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/guia-crm.pdf",
+      "source": "docs/pdf/guia-crm.pdf",
+      "sha256": "0ed6c8b96dbc04478c04257bf919fa5ee00fd88cca7ee91e2b4f894d6cad8af1",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/guia-seguradoras.pdf",
+      "source": "docs/pdf/guia-seguradoras.pdf",
+      "sha256": "d0d3a3fa2c68ee0e210f14d0639aac8352f7d66cdceb844da7f9d14fd45e2c47",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/iul-produto.pdf",
+      "source": "docs/pdf/iul-produto.pdf",
+      "sha256": "6c3cf583c1fe70a52025e6f8195ee85201c9f07aeccec97735ba999df3ed7e1d",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/mutual-omaha-guia.pdf",
+      "source": "docs/pdf/mutual-omaha-guia.pdf",
+      "sha256": "f61ca5448f9672dfdef9e5b56f1c8e2431d718f08db4d74435308461c06105d8",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/nl-guia.pdf",
+      "source": "docs/pdf/nl-guia.pdf",
+      "sha256": "6e425af4707c5e7ce966acc3ac05390b8dc3bbc7c9c497e85d7a0ad0f62e65a2",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/plano-carreira.pdf",
+      "source": "docs/pdf/plano-carreira.pdf",
+      "sha256": "978993a805ae09efb66349c18f7a5f341afdd8089f3b69521a6451e642e5c865",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/produto-fex.pdf",
+      "source": "docs/pdf/produto-fex.pdf",
+      "sha256": "0b1bdf600cf21deff5b1354d073612e22b8741ddbb68a7772b243ec55158070d",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/produto-iul.pdf",
+      "source": "docs/pdf/produto-iul.pdf",
+      "sha256": "e4a6d4337581ddfc8f975c86c4bf70f8b587e3600d69d77f8354e387a0a74d78",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/produto-term.pdf",
+      "source": "docs/pdf/produto-term.pdf",
+      "sha256": "f636b3f69f55fc7f7a363b15aa8fd61d83ed1957cc4264f81545b35e03a9d9c7",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/produto-wl.pdf",
+      "source": "docs/pdf/produto-wl.pdf",
+      "sha256": "a3b0884d77aae7dc8e785675004ff7b78509bc64286004f1aa7627f4dc082c5c",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/script-atendimento.pdf",
+      "source": "docs/pdf/script-atendimento.pdf",
+      "sha256": "a807a4c8aa7ae6c685cae77d1e81efaf499051650dbdb3344a11db971f5eb3ce",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/script-term.pdf",
+      "source": "docs/pdf/script-term.pdf",
+      "sha256": "83771658427892ee0c38055ebfff35dfc2f85f1606d6a06586a70280a7cbb3fa",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/term-produto.pdf",
+      "source": "docs/pdf/term-produto.pdf",
+      "sha256": "e99e80e780fa11869ade6e52fca60b851c59b6387ffce23c6da05db22892a7a9",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/transamerica-guia.pdf",
+      "source": "docs/pdf/transamerica-guia.pdf",
+      "sha256": "d3cff01b4484b91ef7a1054ea45529921c514bb59cd8ca16804ef46196adcdc4",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/whole-life-produto.pdf",
+      "source": "docs/pdf/whole-life-produto.pdf",
+      "sha256": "05613e17ecc194bb791faf45251c60d6f6ceed77f9e33f67417384d4cd9b2d2d",
+      "approved": true
+    },
+    {
+      "path": "docs/plano-carreira.html",
+      "source": "docs/plano-carreira.html",
+      "sha256": "28539a1c8520cfbae6b4e60c216ab6fc67a7bce9827bccde9c5a0e1e6ef7f9f4",
+      "approved": true
+    },
+    {
+      "path": "docs/produto-fex.html",
+      "source": "docs/produto-fex.html",
+      "sha256": "2589b0b5c2017a57c183365d8c0883899ff1efacde9d3c925b94b1758d47f1d0",
+      "approved": true
+    },
+    {
+      "path": "docs/produto-iul.html",
+      "source": "docs/produto-iul.html",
+      "sha256": "16bdec08afad31b19b0ac0ee077894669e08b166f914e81826d804e12dabdab3",
+      "approved": true
+    },
+    {
+      "path": "docs/produto-term.html",
+      "source": "docs/produto-term.html",
+      "sha256": "6fef02a07adac7e9418c7f618d5673f3dac16282f57b8a9f0d8384695c6f752b",
+      "approved": true
+    },
+    {
+      "path": "docs/produto-wl.html",
+      "source": "docs/produto-wl.html",
+      "sha256": "6e277092952d028a05f780e9e3332afd1dc84629cf86d5a1f72e8419d1267e57",
+      "approved": true
+    },
+    {
+      "path": "docs/script-atendimento.html",
+      "source": "docs/script-atendimento.html",
+      "sha256": "31025ec6085d25e01928379c2c97aab41ad8c32260d8494d6e3b1c693b8390d4",
+      "approved": true
+    },
+    {
+      "path": "docs/script-term.html",
+      "source": "docs/script-term.html",
+      "sha256": "8a51e6075c229abccbf69019fd966a5e96082fd1809eb4172cd6f14ab877d5e8",
+      "approved": true
+    },
+    {
+      "path": "docs/term-produto.html",
+      "source": "docs/term-produto.html",
+      "sha256": "ca0ad81eb6493061d13b45127106ad7fd4b2b1bd3d2deaa7d74d9273875f1726",
+      "approved": true
+    },
+    {
+      "path": "docs/transamerica-guia.html",
+      "source": "docs/transamerica-guia.html",
+      "sha256": "a91cf9a9db74e7ead496f2113d45640de4124843f44f2a2603566e4140d3e234",
+      "approved": true
+    },
+    {
+      "path": "docs/whole-life-produto.html",
+      "source": "docs/whole-life-produto.html",
+      "sha256": "897ce2d8caa54dcad2fb4734cbb0d7d823538f3fca80a1e7786dd7d84fa8ac75",
+      "approved": true
+    },
+    {
+      "path": "img/hero.jpg",
+      "source": "img/hero.jpg",
+      "sha256": "752f67ee15a5c33a6bf6210cc2a23a0cd47c7038c116ea22c5261e22620e5975",
+      "approved": true
+    },
+    {
+      "path": "index.html",
+      "source": "index.html",
+      "sha256": "69e957612e32048204a01417697f4bc070fd3f4b58ff2ddd9d1f1f75044e554b",
+      "approved": true
+    },
+    {
+      "path": "media/aula-solicitacao.jpg",
+      "source": "media/aula-solicitacao.jpg",
+      "sha256": "084abef7b0e5bb20a4a2b730efc3bc90bb4ed7aa952428157a621823ad4fc82c",
+      "approved": true
+    },
+    {
+      "path": "media/aula-solicitacao.mp4",
+      "source": "media/aula-solicitacao.mp4",
+      "sha256": "ef501c2333156c1d35c181a84e9fd5d7ad16c5a5af11bcc87e8d495e5aea2771",
+      "approved": true
+    },
+    {
+      "path": "media/aula-underwriting.jpg",
+      "source": "media/aula-underwriting.jpg",
+      "sha256": "ea4c5e281c9e539273a72c1b49e7347d586388bd7b17f0924bca7425ba679eb1",
+      "approved": true
+    },
+    {
+      "path": "media/aula-underwriting.mp4",
+      "source": "media/aula-underwriting.mp4",
+      "sha256": "4f4b9d330f03a962ff3b7556f66dd9990c5606c55cd1350789c074eb8dd58490",
+      "approved": true
+    },
+    {
+      "path": "media/cot-fex-americo.jpg",
+      "source": "media/cot-fex-americo.jpg",
+      "sha256": "d3912b53e1f3eb56326083523c5eeab0d53e03f4791a18d7138c73b2c29722c1",
+      "approved": true
+    },
+    {
+      "path": "media/cot-fex-americo.mp4",
+      "source": "media/cot-fex-americo.mp4",
+      "sha256": "2136c0ad4fe1a50fbdc89af359f3262238ec064ff18cf2b875bb53bf3456ec38",
+      "approved": true
+    },
+    {
+      "path": "media/cot-fex-todas.jpg",
+      "source": "media/cot-fex-todas.jpg",
+      "sha256": "d5b661f3d53659aef3a28801a5fe56b63868924c9251b8c2b00dd8df22c7dd36",
+      "approved": true
+    },
+    {
+      "path": "media/cot-fex-todas.mp4",
+      "source": "media/cot-fex-todas.mp4",
+      "sha256": "9906434f6e4a17085aa0d4e535e169cd4a63cd8c2817fe6b8aed15a485dad935",
+      "approved": true
+    },
+    {
+      "path": "media/cot-iul-americo.jpg",
+      "source": "media/cot-iul-americo.jpg",
+      "sha256": "18ef7865c17065d8f9d00048ee3b6ce2386298cd09611550beeba4bfae93c614",
+      "approved": true
+    },
+    {
+      "path": "media/cot-iul-americo.mp4",
+      "source": "media/cot-iul-americo.mp4",
+      "sha256": "17ac096c8c171390fd940e1d1018e3d8f8968c9db14ce758c395ab32eabba644",
+      "approved": true
+    },
+    {
+      "path": "media/cot-iul-fg.jpg",
+      "source": "media/cot-iul-fg.jpg",
+      "sha256": "f65d19af35471c4d9b3d323c39de4517298ca8b7123bf96229930a1081e3e50a",
+      "approved": true
+    },
+    {
+      "path": "media/cot-iul-fg.mp4",
+      "source": "media/cot-iul-fg.mp4",
+      "sha256": "7d3a02e44f934924e470a3db30e1f7077495e43c671181a679daa084896a2645",
+      "approved": true
+    },
+    {
+      "path": "media/cot-iul-nlg.jpg",
+      "source": "media/cot-iul-nlg.jpg",
+      "sha256": "c2ba24c47dac2d0bcaa1f4cf4b8842fe53d76546ed23f9fe14aca93afde0d368",
+      "approved": true
+    },
+    {
+      "path": "media/cot-iul-nlg.mp4",
+      "source": "media/cot-iul-nlg.mp4",
+      "sha256": "44175eb3f59fd7041b1067023e785f8d6b562f2092e0be17e53bcc4d52e24e99",
+      "approved": true
+    },
+    {
+      "path": "media/cot-term-americo.jpg",
+      "source": "media/cot-term-americo.jpg",
+      "sha256": "67ece6cf8caca2d8f840a33c0ce5c7d01e39288f722b09c77bdf22dca9aed3f0",
+      "approved": true
+    },
+    {
+      "path": "media/cot-term-americo.mp4",
+      "source": "media/cot-term-americo.mp4",
+      "sha256": "3aae4f51d75525b95c196a5b15b63d4e82a34f24cfb449e8a23999f1bd801fb1",
+      "approved": true
+    },
+    {
+      "path": "media/cot-term-ameritas.jpg",
+      "source": "media/cot-term-ameritas.jpg",
+      "sha256": "862214c9bee05458cc7295a029a9e527d46e65075771eae2309204c5782b3981",
+      "approved": true
+    },
+    {
+      "path": "media/cot-term-ameritas.mp4",
+      "source": "media/cot-term-ameritas.mp4",
+      "sha256": "cfb8b46d5507ea229d6c276d53c8559a8df883246e6cea94cc622fe9ff049423",
+      "approved": true
+    },
+    {
+      "path": "media/cot-term-foresters.jpg",
+      "source": "media/cot-term-foresters.jpg",
+      "sha256": "e28ca0479e410e979e730e57ece8e279b7933576d447a2d72206f64c3539b193",
+      "approved": true
+    },
+    {
+      "path": "media/cot-term-foresters.mp4",
+      "source": "media/cot-term-foresters.mp4",
+      "sha256": "30d7ad6a3e2f0fbe51b6c332c3e7c059b341ef525a67b8cd82ecf6343bc42700",
+      "approved": true
+    },
+    {
+      "path": "media/cot-term-nlg.jpg",
+      "source": "media/cot-term-nlg.jpg",
+      "sha256": "2e8e7c4dc43f38ff7b69ef7d78326dd2d064430ee74d0169d09483ea0d610063",
+      "approved": true
+    },
+    {
+      "path": "media/cot-term-nlg.mp4",
+      "source": "media/cot-term-nlg.mp4",
+      "sha256": "5512b92e5cb4c96b8605051ab9e21d43031f35bb484c0bd6f2e34dd30a33bf4c",
+      "approved": true
+    },
+    {
+      "path": "media/cot-term-todas.jpg",
+      "source": "media/cot-term-todas.jpg",
+      "sha256": "13cb5310ce0dd91e1adc46f733c0da10858ddd56eb339ccbe7525400173066d8",
+      "approved": true
+    },
+    {
+      "path": "media/cot-term-todas.mp4",
+      "source": "media/cot-term-todas.mp4",
+      "sha256": "da4752fc8869e2e9ef2302982b48fb5749de5d48121afb7ff31706fee4ab560a",
+      "approved": true
+    },
+    {
+      "path": "media/cot-transamerica.jpg",
+      "source": "media/cot-transamerica.jpg",
+      "sha256": "9b0a46b700c9f17623d00e59775ec365a1fa9f34c62f0f1108d52dabcbac67d1",
+      "approved": true
+    },
+    {
+      "path": "media/cot-transamerica.mp4",
+      "source": "media/cot-transamerica.mp4",
+      "sha256": "f80f634f6ad5bc0b16123f07079654f6bf446859620da9bccbcf7f8a215ebde2",
+      "approved": true
+    },
+    {
+      "path": "media/cot-wl-foresters.jpg",
+      "source": "media/cot-wl-foresters.jpg",
+      "sha256": "267b7c87d5298ad8db18b2e7dc70e0ab330cd1d1da6ccda6da06e65fe1a9b150",
+      "approved": true
+    },
+    {
+      "path": "media/cot-wl-foresters.mp4",
+      "source": "media/cot-wl-foresters.mp4",
+      "sha256": "9824709cb18026ffd4d99f036eec3198e64ec1ece42f828d330a8d8107a1fbf8",
+      "approved": true
+    },
+    {
+      "path": "media/cot-wl-nlg.jpg",
+      "source": "media/cot-wl-nlg.jpg",
+      "sha256": "bd7b3ca21b71c46fa116f40242301596afffb6a9a3382f14b954afdd41122853",
+      "approved": true
+    },
+    {
+      "path": "media/cot-wl-nlg.mp4",
+      "source": "media/cot-wl-nlg.mp4",
+      "sha256": "f76577dd967d7f5adee73a3fa43b272b34fafebb6e3b07cbb5d873fa1e00ef05",
+      "approved": true
+    },
+    {
+      "path": "media/passo4.jpg",
+      "source": "media/passo4.jpg",
+      "sha256": "9cd01fe2df55aa7309387467cb3de8193eb96d2ffd3b351bd532f68e994e1f06",
+      "approved": true
+    },
+    {
+      "path": "media/passo4.mp4",
+      "source": "media/passo4.mp4",
+      "sha256": "85510e5f4845dcc4954f7b1eb0cd2a7ecb41b61e4383a172addad3904762252e",
+      "approved": true
+    },
+    {
+      "path": "media/passo6.jpg",
+      "source": "media/passo6.jpg",
+      "sha256": "80585ded5121451c4b7f750b0d7b7ccbccf88c48fdb9b627405d7470452cc3da",
+      "approved": true
+    },
+    {
+      "path": "media/passo6.mp4",
+      "source": "media/passo6.mp4",
+      "sha256": "a870d6a969e127090752af35f5fc6ccf101ec5bcff5660dd95ebcd9c846fb4a0",
+      "approved": true
+    },
+    {
+      "path": "robots.txt",
+      "source": "robots.txt",
+      "sha256": "331ea9090db0c9f6f597bd9840fd5b171830f6e0b3ba1cb24dfa91f0c95aedc1",
+      "approved": true
+    }
+  ]
+}

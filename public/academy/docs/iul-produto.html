@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IUL — WDT Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+@page { size: Letter; margin: 14mm 0 16mm 0;
+  @bottom-left { content: "WDT AGENCY · Academy"; font: 600 7.5pt Poppins, sans-serif; color: #0B1B3A; padding-left: 16mm; letter-spacing: 1px; }
+  @bottom-center { content: "Guia do produto IUL — material de treinamento interno. Uso exclusivo do agente."; font: 400 6.3pt Poppins, sans-serif; color: #6B7891; width: 120mm; text-align: center; }
+  @bottom-right { content: "pág. " counter(page); font: 600 7.5pt Poppins, sans-serif; color: #A8893A; padding-right: 16mm; }
+}
+@page :first { margin-top: 0; }
+:root{--navy:#0B1B3A;--navy2:#132A52;--gold:#C9A54C;--gold2:#DDBF73;--ink:#0E1A33;--muted:#5B6880;--line:#E2E7F0;--soft:#F1F4F9;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Poppins,system-ui,sans-serif;color:var(--ink);background:#fff;font-size:10.2pt;line-height:1.55;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+a{color:#1E3A6E}
+.hero{position:relative;overflow:hidden;color:#fff;padding:22mm 16mm 16mm;background:radial-gradient(520px 260px at 92% -10%,rgba(201,165,76,.55),transparent 62%),linear-gradient(160deg,#0B1B3A 0%,#132A52 65%,#1A3463 100%)}
+.hero .brand{font-weight:800;font-size:15pt;letter-spacing:.5px}
+.hero .brand span{color:var(--gold);font-weight:600;font-size:7.5pt;letter-spacing:4px;margin-left:6px}
+.hero .eyebrow{margin-top:14mm;font-size:7.8pt;letter-spacing:3px;font-weight:600;color:var(--gold);text-transform:uppercase}
+.hero h1{font-size:27pt;line-height:1.1;font-weight:700;margin:6px 0 4px}
+.hero .sub{font-size:12pt;color:var(--gold2);font-weight:500}
+.hero p.lead{margin-top:10px;color:#C9D2E4;max-width:150mm;font-size:10pt}
+.hero .chips{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px}
+.hero .chips span{border:1px solid rgba(221,191,115,.55);color:#F3E6C3;border-radius:99px;padding:3px 10px;font-size:7.6pt;font-weight:500}
+main{padding:8mm 16mm 4mm}
+.toc{background:var(--soft);border:1px solid #D9E0EC;border-radius:12px;padding:12px 16px;margin:2mm 0 8mm;columns:2;column-gap:12mm;font-size:8.8pt}
+.toc h4{column-span:all;font-size:8pt;letter-spacing:2px;text-transform:uppercase;color:#8A6A1C;margin-bottom:6px}
+.toc a{display:block;text-decoration:none;color:var(--ink);padding:1.5px 0;break-inside:avoid}
+.toc a b{display:inline-block;width:22px;color:#A8893A}
+section.sec{margin:0 0 7mm}
+.sec-h{display:flex;align-items:center;gap:10px;margin:0 0 8px;break-after:avoid}
+.sec-h .n{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--navy);color:#fff;border:2px solid var(--gold);font-weight:700;font-size:9.5pt}
+.sec-h h2{font-size:15pt;font-weight:700;color:var(--navy);line-height:1.2}
+.sec-h small{display:block;font-size:8.6pt;color:var(--muted);font-weight:400}
+h3{font-size:11pt;color:var(--navy);margin:10px 0 4px;break-after:avoid}
+h4{font-size:9.6pt;color:#1E3A6E;margin:8px 0 3px;break-after:avoid}
+p{margin:0 0 6px}
+ul,ol{margin:2px 0 8px 18px}
+li{margin:1.5px 0}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:6mm}
+.cols3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4mm}
+.card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;break-inside:avoid;margin-bottom:8px}
+.card.navy{background:linear-gradient(160deg,#0B1B3A,#132A52);color:#E6EBF5;border:0}
+.card.navy h3,.card.navy h4{color:var(--gold2)}
+.card.soft{background:var(--soft);border-color:#D9E0EC}
+.alert{background:#FBF7EC;border:1px solid #E8D7A8;border-left:4px solid var(--gold);border-radius:10px;padding:9px 12px;margin:6px 0 10px;font-size:9.4pt;break-inside:avoid}
+.alert b.t{display:block;color:#8A6A1C;font-size:7.8pt;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px}
+.term{background:#EEF2F8;border-radius:10px;padding:8px 12px;margin:6px 0 10px;font-size:8.8pt;color:#33415C;break-inside:avoid}
+.term b{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:4px 0 10px;font-size:8.8pt;break-inside:auto}
+thead{display:table-header-group}
+tr{break-inside:avoid}
+th{background:var(--navy);color:#fff;text-align:left;font-weight:600;padding:5px 7px;font-size:8.4pt}
+th.g{background:#A8893A}
+td{padding:4.5px 7px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:nth-child(even) td{background:#F7F9FC}
+td.c,th.c{text-align:center}
+.ok{color:#1E7A4F;font-weight:800}
+table.kv td:first-child{width:32%;font-weight:600;color:var(--navy);background:#F3F5FA}
+.pill{display:inline-block;font-size:7.6pt;font-weight:600;padding:1px 8px;border-radius:99px;background:#EEF2F8;color:#1E3A6E;margin:1px 2px 1px 0}
+.pill.g{background:#F7F0DF;color:#8A6A1C}
+.foot{font-size:7.6pt;color:var(--muted);border-top:1px solid var(--line);padding-top:5px;margin-top:6px}
+.steps{counter-reset:s;list-style:none;margin-left:0}
+.steps li{counter-increment:s;position:relative;padding-left:30px;margin:6px 0;break-inside:avoid}
+.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:21px;height:21px;border-radius:50%;border:2px solid var(--gold);color:var(--navy);font-weight:700;font-size:8.5pt;display:grid;place-items:center}
+.pb{break-before:page}
+.endnote{margin:6mm 0 0;padding:10px 14px;border-radius:10px;background:var(--soft);font-size:8pt;color:var(--muted)}
+.webbar{display:none}
+@media screen{
+  body{background:#EEF1F6}
+  .doc{max-width:216mm;margin:0 auto;background:#fff;box-shadow:0 10px 40px -20px rgba(11,27,58,.35)}
+  .webbar{display:flex;position:sticky;top:0;z-index:5;background:rgba(11,27,58,.97);color:#fff;padding:9px 18px;gap:14px;align-items:center;font-size:9.5pt}
+  .webbar a{color:#F3E6C3;text-decoration:none;font-weight:600}
+  .webbar b{font-weight:800}.webbar b span{color:var(--gold);font-size:7.5pt;letter-spacing:3px;margin-left:5px}
+  .webbar .sp{flex:1}
+  .webfoot{max-width:216mm;margin:0 auto 30px;padding:12px 16mm;font-size:8pt;color:var(--muted)}
+}
+@media print{.webfoot{display:none}}
+.inframe .webbar,.inframe .webfoot{display:none!important}.dlpdf{display:inline-block;margin-top:14px;background:#C9A54C;color:#0B1B3A!important;font-weight:700;font-size:12px;padding:9px 16px;border-radius:8px;text-decoration:none}@media print{.dlpdf{display:none}}</style></head><body>
+<div class="webbar"><a href="../index.html#inicio">← Voltar ao portal</a><span class="sp"></span><b>WDT<span>AGENCY</span></b></div>
+<div class="doc">
+<header class="hero"><div class="brand">WDT<span>AGENCY</span></div>
+<div class="eyebrow">WDT Agency · Guia do produto</div><h1>IUL</h1><div class="sub">O produto — Indexed Universal Life</div>
+<p class="lead">Como o IUL funciona de verdade: piso, teto, participação, empréstimos, o que quebra uma apólice, para quem serve, como apresentar sem exagerar, objeções e a regra AG 49-B. Leia antes de assistir aos vídeos de cotação.</p><div class="chips"><span>Piso · teto · participação</span><span>3 motores</span><span>4 coisas que quebram</span><span>AG 49-B</span></div><a class="dlpdf" href="pdf/iul-produto.pdf" download>⬇ Baixar PDF</a></header>
+<main>
+<nav class="toc"><h4>Conteúdo</h4><a href="#s1"><b>01</b>O que é o IUL</a><a href="#s2"><b>02</b>Como o crédito indexado é calculado</a><a href="#s3"><b>03</b>O que o IUL não é</a><a href="#s4"><b>04</b>IUL, Term e Whole Life</a><a href="#s5"><b>05</b>Os três motores e os empréstimos</a><a href="#s6"><b>06</b>As quatro coisas que quebram um IUL</a><a href="#s7"><b>07</b>Para qual cliente serve</a><a href="#s8"><b>08</b>Descoberta e apresentação</a><a href="#s9"><b>09</b>As seis objeções</a><a href="#s10"><b>10</b>O que a regra exige (AG 49-B)</a></nav>
+<section class="sec" id="s1"><div class="sec-h"><div class="n">1</div><h2>O que é o IUL<small>O produto em uma frase</small></h2></div>
+<p>É um <b>seguro de vida permanente</b> em que parte do prêmio, depois dos custos, vai para uma conta cujo rendimento acompanha um <b>índice de mercado</b> — com um <b>piso</b> que protege da queda e um <b>teto</b> que limita a alta. O cliente não compra o índice: compra um seguro cujo juro é calculado a partir do índice.</p>
+<h3>O caminho do dinheiro</h3>
+<ol class="steps">
+<li><b>Prêmio pago</b> — o cliente escolhe quanto pagar, entre um mínimo e um máximo fiscal.</li>
+<li><b>Encargo de prêmio</b> — a seguradora retira em geral de 4% a 7,5% na entrada.</li>
+<li><b>Valor da conta</b> — o que sobra vai para a conta fixa ou para as indexadas.</li>
+<li><b>Deduções mensais</b> — custo do seguro, taxa de apólice e riders saem todo mês.</li>
+<li><b>Crédito indexado</b> — no aniversário do segmento, a seguradora credita conforme índice, piso e teto.</li></ol>
+<div class="cols"><div><div class="card"><h4>🛡 O piso protege</h4><p>Se o índice cair 30%, o crédito é zero, não negativo. Mas o valor da conta ainda cai, porque as deduções mensais continuam.</p></div></div>
+<div><div class="card"><h4>✂ O teto limita</h4><p>Índice sobe 22% com teto de 10%? Credita 10%. É o preço do piso — e precisa ser dito na venda.</p></div></div></div>
+<div class="alert"><b class="t">A frase que organiza a conversa</b>“É um seguro de vida que, além de proteger sua família, guarda dinheiro por dentro. Acompanha o mercado quando ele sobe, até um limite, e não perde quando ele cai. Em troca, você abre mão de parte da alta.”</div></section>
+<section class="sec" id="s2"><div class="sec-h"><div class="n">2</div><h2>Como o crédito indexado é calculado<small>Piso · teto · participação · spread</small></h2></div>
+<div class="cols"><div><h3>As quatro alavancas</h3><ul>
+<li><b>Piso (floor):</b> o mínimo creditado, em geral 0%.</li>
+<li><b>Teto (cap):</b> o máximo creditado no período.</li>
+<li><b>Participação (par rate):</b> que fração da alta entra na conta; pode passar de 100%.</li>
+<li><b>Spread:</b> percentual descontado da alta antes do crédito, nas contas sem teto.</li></ul>
+<p>Método mais comum: <i>annual point-to-point</i> — compara o índice na abertura do segmento com o índice 12 meses depois.</p></div>
+<div><h3>Quatro cenários</h3><table><thead><tr><th>Cenário</th><th>Crédito</th></tr></thead><tbody>
+<tr><td>Índice +22% · teto 10% · part. 100%</td><td>10% (o teto cortou 12 pontos)</td></tr>
+<tr><td>Índice +6% · teto 10% · part. 100%</td><td>6%</td></tr>
+<tr><td>Índice +6% · teto 7% · part. 140%</td><td>8,4% → o teto corta em 7%</td></tr>
+<tr><td>Índice −20% · piso 0%</td><td>0% — mas as deduções saíram</td></tr></tbody></table></div></div>
+<div class="cols"><div><div class="alert"><b class="t">O dividendo não entra</b>O crédito usa só a variação de preço do índice; os dividendos do S&amp;P 500 não são creditados. Diga isso antes que o cliente compare com o noticiário.</div></div>
+<div><div class="alert"><b class="t">Teto e participação são revisáveis</b>A seguradora pode mudá-los com o tempo; o contrato garante só o mínimo (ex.: teto mínimo de 3,1% no FlexLife).</div></div></div></section>
+<section class="sec" id="s3"><div class="sec-h"><div class="n">3</div><h2>O que o IUL não é<small>A página que protege você</small></h2></div>
+<table class="kv"><tbody>
+<tr><td>✗ Não é investimento</td><td>O cliente não é dono de nada no mercado. Chamar de investimento é problema de compliance.</td></tr>
+<tr><td>✗ Não rende o que o índice rende</td><td>Sem dividendos, com teto, participação e spread, o crédito é menor que o retorno total do índice.</td></tr>
+<tr><td>✗ A ilustração não é promessa</td><td>A coluna de taxa corrente é projeção; só a garantida é contrato. Mostre as duas.</td></tr>
+<tr><td>✗ Não é barato no começo</td><td>Encargo de prêmio, custo do seguro e encargo de resgate por 10 a 15 anos. Quem cancela no ano 4 sai com muito menos do que colocou.</td></tr>
+<tr><td>✗ Não é para todo mundo</td><td>Sem fôlego para financiar por 10 a 15 anos, o produto não entrega — o certo é o Term.</td></tr>
+<tr><td>✓ O que ele é</td><td>Seguro permanente com benefício de morte livre de imposto de renda, crescimento com imposto diferido, acesso por empréstimo sem tributação enquanto a apólice viver e proteção contra ano negativo.</td></tr>
+</tbody></table></section>
+<section class="sec" id="s4"><div class="sec-h"><div class="n">4</div><h2>IUL, Term e Whole Life<small>Onde cada um ganha</small></h2></div>
+<table><thead><tr><th></th><th>Term</th><th>IUL</th><th>Whole Life</th></tr></thead><tbody>
+<tr><td><b>Duração</b></td><td>10 a 40 anos</td><td>A vida toda, se bem financiado</td><td>A vida toda, garantido</td></tr>
+<tr><td><b>Custo por dólar de cobertura</b></td><td>O mais baixo</td><td>Intermediário</td><td>O mais alto</td></tr>
+<tr><td><b>Valor acumulado</b></td><td>Nenhum</td><td>Ligado a um índice</td><td>Garantia + dividendo</td></tr>
+<tr><td><b>Risco de a apólice cair</b></td><td>Só se parar de pagar</td><td>Real se subfinanciada ou muito emprestada</td><td>Baixo</td></tr>
+<tr><td><b>Flexibilidade do prêmio</b></td><td>Fixo</td><td>Alta</td><td>Baixa</td></tr>
+<tr><td><b>Para quem</b></td><td>Renda a proteger por prazo</td><td>Sobra de caixa e horizonte de 15+ anos</td><td>Garantia acima de tudo</td></tr>
+</tbody></table>
+<div class="term"><b>A regra que evita estorno:</b> se o cliente não consegue dizer com tranquilidade quanto vai pagar por mês pelos próximos 15 anos, ele não é caso de IUL hoje. Venda o Term, deixe a conversão aberta e volte quando a renda mudar.</div></section>
+<section class="sec" id="s5"><div class="sec-h"><div class="n">5</div><h2>Os três motores e os empréstimos<small>Morte · acumulação · renda</small></h2></div>
+<div class="cols"><div><ul>
+<li><b>Benefício de morte</b> — livre de imposto de renda; a base de todo o tratamento fiscal.</li>
+<li><b>Acumulação</b> — o valor cresce com imposto diferido. Objetivo de acumular: capital no mínimo que a regra fiscal permite e prêmio no máximo.</li>
+<li><b>Renda futura</b> — acesso por empréstimo, não saque; não é renda tributável enquanto a apólice estiver em vigor.</li></ul>
+<div class="alert"><b class="t">Acumulação e morte puxam para lados opostos</b>Capital alto = custo de seguro alto saindo da conta todo mês. Defina o objetivo antes de rodar a ilustração.</div></div>
+<div><h3>Tipos de empréstimo</h3>
+<div class="card soft"><h4>Fixed / standard</h4><p>Juro definido pela seguradora; o valor emprestado vai para uma conta colateral. Previsível.</p></div>
+<div class="card soft"><h4>Preferred / wash</h4><p>A partir de certo ano, o que a seguradora cobra é igual ao que credita — custo líquido zero. O desenho de renda mais seguro.</p></div>
+<div class="card soft"><h4>Participating / indexed</h4><p>O saldo emprestado continua recebendo crédito indexado. Índice acima do juro, ganha; abaixo, perde duas vezes. Arbitragem, não mágica.</p></div></div></div>
+<div class="term">Se a estratégia é renda futura, o custo do empréstimo importa mais que o teto da conta. Confirme as taxas vigentes da seguradora antes de ilustrar.</div></section>
+<section class="sec" id="s6"><div class="sec-h"><div class="n">6</div><h2>As quatro coisas que quebram um IUL<small>Leitura obrigatória — todas evitáveis por você</small></h2></div>
+<ol class="steps">
+<li><b>Subfinanciamento:</b> o cliente paga o mínimo, o custo do seguro sobe com a idade e por volta dos 70 a apólice caduca. → Ilustre sempre o cenário garantido.</li>
+<li><b>Empréstimo demais:</b> se o saldo devedor passar do valor da conta, a apólice caduca e o IRS tributa todo o ganho, num ano sem dinheiro. → Use Overloan Protection quando houver e monitore todo ano.</li>
+<li><b>Ilustração na taxa máxima:</b> 6,5% por 30 anos apresentado como plano é o caminho para um cliente furioso. → Ilustre abaixo do máximo, com a coluna garantida ao lado.</li>
+<li><b>Virar MEC sem perceber:</b> prêmio acima do limite dos 7 anos torna empréstimos e saques tributáveis, com multa de 10% antes dos 59½. É irreversível. → Rode o teste no sistema.</li></ol>
+<div class="alert"><b class="t">A pergunta antes de emitir</b>Se o índice entregar o mínimo garantido em todos os anos, esta apólice ainda está em pé aos 85 anos do cliente? Se não, o desenho está errado.</div></section>
+<section class="sec" id="s7"><div class="sec-h"><div class="n">7</div><h2>Para qual cliente serve<small>Perfis que sustentam a apólice</small></h2></div>
+<table class="kv"><tbody>
+<tr><td>Já preencheu 401(k) e IRA</td><td>Tem sobra de caixa e não tem mais onde colocar com vantagem fiscal. O caso clássico.</td></tr>
+<tr><td>Dono de negócio com renda irregular</td><td>Paga muito num ano e pouco no outro: a flexibilidade do prêmio cabe nessa vida.</td></tr>
+<tr><td>Pai ou mãe planejando faculdade</td><td>Veículo com regra fiscal própria e acesso flexível.</td></tr>
+<tr><td>Casal de 35 a 50 com 20 anos pela frente</td><td>Horizonte para o produto funcionar e ainda precisa de proteção.</td></tr>
+<tr><td>Quer permanente com algum upside</td><td>Prioridade é a morte garantida; o ganho indexado é bônus.</td></tr>
+<tr><td><b>Quando NÃO serve</b></td><td>Orçamento apertado · horizonte menor que 10 a 15 anos · precisa de capital máximo pelo menor custo (é Term) · não quer entender a mecânica · já teve apólice caducar por falta de pagamento.</td></tr>
+</tbody></table></section>
+<section class="sec" id="s8"><div class="sec-h"><div class="n">8</div><h2>Descoberta e apresentação<small>Fale do problema antes do produto</small></h2></div>
+<div class="cols"><div><h3>Perguntas que abrem a conversa</h3><ol class="steps">
+<li>Onde você guarda o dinheiro que não vai usar nos próximos dez anos?</li>
+<li>Já usou todo o espaço do 401(k) e do IRA este ano?</li>
+<li>Quando tirar esse dinheiro lá na frente, quanto vai para o imposto?</li>
+<li>O que aconteceu com essa conta em 2008? E em 2022?</li>
+<li>Se o mercado caísse 30% no ano em que você começasse a tirar, o plano muda?</li>
+<li>Se precisasse de US$ 50.000 no ano que vem, de onde sairia?</li></ol></div>
+<div><h3>Três conceitos que funcionam</h3><ul>
+<li><b>O ano negativo que não aconteceu:</b> uma queda de 30% exige alta de 43% só para empatar. “Você não precisa recuperar o que não perdeu.”</li>
+<li><b>O imposto que ainda não foi pago:</b> no 401(k) há um sócio que decide a alíquota depois; no IUL, o imposto foi pago na entrada.</li>
+<li><b>A ordem em que se gasta:</b> no ano ruim, tira do IUL e deixa a carteira se recuperar.</li></ul>
+<div class="alert"><b class="t">Palavras que criam problema</b>“Investimento” · “retorno garantido” · “livre de imposto” sem qualificar · “seja seu próprio banco” · “rende como a bolsa” · “dinheiro disponível a qualquer momento”.</div></div></div></section>
+<section class="sec" id="s9"><div class="sec-h"><div class="n">9</div><h2>As seis objeções<small>E como responder</small></h2></div>
+<table class="kv"><tbody>
+<tr><td>“É muito caro perto de um term”</td><td>São produtos diferentes. Se precisa de cobertura máxima pelo menor valor, venda o term e volte quando a renda mudar.</td></tr>
+<tr><td>“Compro term e invisto a diferença”</td><td>Estratégia legítima, se ele investir todo mês e aguentar os anos ruins sem mexer. O IUL é a peça que não cai no ano negativo.</td></tr>
+<tr><td>“E se a seguradora baixar o teto?”</td><td>Pode baixar. Mostre o cenário com o teto mínimo garantido agora, com a coluna garantida — não com otimismo.</td></tr>
+<tr><td>“Não entendi direito”</td><td>“Então ainda não é hora de assinar.” Explique de novo; se continuar confuso, não faça.</td></tr>
+<tr><td>“Ouvi dizer que IUL é roubada”</td><td>Boa parte das críticas é sobre venda mal feita: ilustração otimista, subfinanciamento, empréstimo demais. Mostre como evitar cada uma.</td></tr>
+<tr><td>“Posso pegar meu dinheiro quando quiser?”</td><td>Não nos primeiros anos: há encargo de resgate por 10 a 15 anos. É dinheiro de longo prazo.</td></tr>
+</tbody></table></section>
+<section class="sec" id="s10"><div class="sec-h"><div class="n">10</div><h2>O que a regra exige (AG 49-B)<small>Ilustração e checklist</small></h2></div>
+<p>Desde 1º de maio de 2023, toda IUL emitida segue o <b>AG 49-B</b>, que limita a taxa máxima ilustrada e impede que contas com bônus ou multiplicador sejam ilustradas com vantagem. O número máximo que o sistema permite é o <b>teto legal</b>, não uma projeção conservadora. A regra limita o número, não o que você fala — a promessa verbal é sua responsabilidade.</p>
+<div class="cols"><div><h3>Checklist antes de emitir</h3><ul>
+<li>Coluna garantida impressa e entregue ao cliente.</li><li>Cenário rodado abaixo da taxa máxima.</li><li>Teste de MEC feito no sistema.</li>
+<li>Beneficiário completo: nome, nascimento e percentual.</li><li>O cliente sabe dizer, com as próprias palavras, o que é piso e teto.</li><li>Revisão anual agendada.</li></ul></div>
+<div><div class="term"><b>Taxas vigentes:</b> tetos e participações mudam e ficam em portal restrito na maioria das seguradoras. Material com taxa de mais de 30 dias é risco — baixe a ficha vigente antes de cada apresentação.</div>
+<p>Nos vídeos a seguir você vê como cotar IUL na National Life, F&amp;G, Transamerica e Americo.</p></div></div></section>
+<div class="endnote"><b>Material interno.</b> Guia de produto elaborado pela WDT Agency a partir da apresentação “O produto IUL” (setembro de 2026), para treinamento de agentes. Tetos, participações e taxas de empréstimo mudam: confirme as condições vigentes de cada seguradora antes de ilustrar. Ilustrações não são garantia de resultado.</div>
+</main></div>
+<div class="webfoot">WDT AGENCY · Academy — Material de treinamento interno.</div>
+<script>try{if(window.self!==window.top||location.href==="about:srcdoc"){document.documentElement.classList.add("inframe")}}catch(e){}</script></body></html>

@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WDT Academy — Área de Membros</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 44 44%27%3E%3Crect x=%271.5%27 y=%271.5%27 width=%2741%27 height=%2741%27 rx=%2711%27 fill=%27%23C9A54C%27/%3E%3Cpath d=%27M10.5 14 L16 31 L22 19.5 L28 31 L33.5 14%27 fill=%27none%27 stroke=%27%230B1A35%27 stroke-width=%273.6%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3Ccircle cx=%2722%27 cy=%2711.5%27 r=%272.1%27 fill=%27%230B1A35%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0B1A35;--bg2:#10244A;--card:#142B55;--line:rgba(201,165,76,.18);--gold:#C9A54C;--gold2:#E6C878;--gold3:#8C6D2A;--txt:#F2EEE4;--muted:#9AA6BD;--ok:#3CC48A}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Poppins',system-ui,sans-serif;background:var(--bg);color:var(--txt);-webkit-font-smoothing:antialiased;min-height:100vh}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;color:inherit}
+::-webkit-scrollbar{height:8px;width:8px}::-webkit-scrollbar-thumb{background:#22304d;border-radius:8px}::-webkit-scrollbar-track{background:transparent}
+
+/* top bar */
+.top{position:fixed;inset:0 0 auto 0;z-index:60;transition:background .3s;background:linear-gradient(180deg,rgba(11,26,53,.95),rgba(11,26,53,0))}
+.top.solid{background:rgba(11,26,53,.97);box-shadow:0 1px 0 var(--line)}
+.top-in{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:30px;padding:16px 4vw}
+.logo{display:flex;align-items:center;gap:12px;white-space:nowrap;cursor:pointer}
+.logo svg{width:40px;height:40px;filter:drop-shadow(0 6px 14px rgba(201,165,76,.35))}
+.logo b{display:block;font-size:17px;font-weight:800;letter-spacing:.6px;line-height:1}
+.logo span{display:block;font-size:9.5px;letter-spacing:4.5px;color:var(--gold);font-weight:600;margin-top:4px}
+.nav{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav button{background:none;border:0;font-size:13.5px;color:var(--muted);padding:8px 12px;border-radius:8px;white-space:nowrap;transition:.2s}
+.nav button:hover,.nav button.on{color:#fff}
+.nav button.on{box-shadow:inset 0 -2px 0 var(--gold);border-radius:0}
+.top-r{margin-left:auto;display:flex;align-items:center;gap:12px}
+.sbtn{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:99px;padding:8px 14px;font-size:13px;color:var(--muted)}
+.sbtn:hover{border-color:var(--gold3);color:#fff}
+.avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--gold2),var(--gold3));color:#0B1426;display:grid;place-items:center;font-weight:800;font-size:13px}
+
+/* hero */
+.hero{position:relative;min-height:560px;display:flex;align-items:flex-end;overflow:hidden;
+ background:radial-gradient(900px 520px at 78% 30%,rgba(201,165,76,.28),transparent 60%),radial-gradient(600px 400px at 20% 110%,rgba(40,78,150,.45),transparent 70%),linear-gradient(180deg,#0F2246 0%,#0B1A35 100%)}
+.hero-photo{position:absolute;top:0;right:0;bottom:0;width:min(60vw,900px);background:url(img/hero.jpg) center 4%/cover no-repeat;pointer-events:none;
+ -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 32%,#000 100%),linear-gradient(180deg,#000 70%,transparent 100%);-webkit-mask-composite:source-in;mask-image:linear-gradient(90deg,transparent 0%,#000 32%),linear-gradient(180deg,#000 70%,transparent 100%);mask-composite:intersect;filter:saturate(.95) contrast(1.03)}
+.hero-photo::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(11,26,53,.55),rgba(11,26,53,0) 45%),radial-gradient(600px 300px at 80% 0%,rgba(201,165,76,.18),transparent 70%)}
+.hero::after{content:"";position:absolute;inset:auto 0 0 0;height:180px;background:linear-gradient(180deg,transparent,var(--bg))}
+.hero-in{position:relative;z-index:2;max-width:1400px;width:100%;margin:0 auto;padding:120px 4vw 70px}
+.hero .tag{display:inline-flex;align-items:center;gap:8px;font-size:11px;letter-spacing:3.5px;font-weight:600;color:var(--gold);text-transform:uppercase}
+.hero .tag i{width:28px;height:1px;background:var(--gold)}
+.hero h1{font-size:clamp(34px,5.4vw,66px);line-height:1.02;font-weight:800;margin:16px 0 14px;letter-spacing:-.5px;max-width:720px;text-transform:uppercase}
+.hero h1 em{font-style:normal;background:linear-gradient(90deg,var(--gold2),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:#C3CBDA;max-width:560px;font-size:15.5px;line-height:1.6}
+.cta{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:10px;border:0;border-radius:10px;padding:14px 26px;font-weight:700;font-size:14.5px;transition:.2s}
+.btn-g{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#0B1426;box-shadow:0 10px 30px -10px rgba(201,165,76,.6)}
+.btn-g:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.btn-o{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(6px)}
+.btn-o:hover{background:rgba(255,255,255,.14)}
+.resume{margin-top:26px;display:flex;align-items:center;gap:16px;max-width:520px}
+.resume .bar{flex:1}
+.resume small{color:var(--muted);font-size:12px;white-space:nowrap}
+.bar{height:5px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold3),var(--gold2));border-radius:99px;transition:width .6s}
+
+/* rows */
+main{position:relative;z-index:3;margin-top:-30px;padding-bottom:70px}
+.row{max-width:1400px;margin:0 auto 38px;padding:0 4vw}
+.row-h{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:14px}
+.row-h h2{font-size:20px;font-weight:700;letter-spacing:.2px}
+.row-h h2 small{display:block;font-size:12.5px;font-weight:400;color:var(--muted);margin-top:2px}
+.row-h .arrows{display:flex;gap:8px}
+.row-h .arrows button{width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);font-size:15px}
+.row-h .arrows button:hover{border-color:var(--gold)}
+.rail{display:grid;grid-auto-flow:column;grid-auto-columns:clamp(170px,15.5vw,220px);gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px 2px 16px;scrollbar-width:thin}
+.rail.wide{grid-auto-columns:clamp(260px,24vw,340px)}
+
+/* poster */
+.poster{scroll-snap-align:start;position:relative;aspect-ratio:2/3;border-radius:14px;overflow:hidden;cursor:pointer;border:1px solid rgba(201,165,76,.22);transition:transform .25s,box-shadow .25s,border-color .25s;background:#10224A;isolation:isolate}
+.poster:hover{transform:translateY(-6px) scale(1.02);box-shadow:0 22px 40px -18px rgba(0,0,0,.9),0 0 0 1px rgba(201,165,76,.55);border-color:rgba(201,165,76,.6)}
+.poster .art{position:absolute;inset:0;z-index:-1}
+.poster .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,26,53,0) 35%,rgba(11,26,53,.94) 78%);z-index:0}
+.poster .meta{position:absolute;inset:auto 0 0 0;padding:14px 14px 16px;text-align:center;z-index:1}
+.poster .lbl{font-size:9.5px;letter-spacing:3px;color:var(--gold);font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}
+.poster .lbl::before,.poster .lbl::after{content:"";width:14px;height:1px;background:var(--gold3)}
+.poster h3{font-size:15px;line-height:1.22;font-weight:700;margin:7px 0 9px;min-height:37px;display:flex;align-items:center;justify-content:center}
+.poster .mk{width:20px;height:20px;margin:0 auto;opacity:.9}
+.poster .pbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.08);z-index:2}
+.poster .pbar i{display:block;height:100%;background:var(--gold)}
+.poster .badge{position:absolute;top:10px;right:10px;z-index:2;font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;background:rgba(11,26,53,.8);border:1px solid var(--line);color:var(--gold2)}
+.poster .badge.ok{color:#0B1426;background:var(--ok);border-color:var(--ok)}
+.poster.land{aspect-ratio:16/10}
+.poster.land h3{min-height:0}
+
+/* module (lesson) view */
+.mview{display:none;padding:90px 4vw 70px;max-width:1400px;margin:0 auto}
+.mview.on{display:block;animation:fade .3s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.crumb{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);margin-bottom:18px}
+.crumb button{background:none;border:0;color:var(--muted);font-size:13px}
+.crumb button:hover{color:var(--gold2)}
+.lay{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:26px;align-items:start}
+@media(max-width:1000px){.lay{grid-template-columns:1fr}}
+.player{position:relative;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:#000;border:1px solid var(--line)}
+.player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.player.docp{aspect-ratio:auto;height:78vh;min-height:560px;background:#EEF1F6}
+.player .cover{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:20px}
+.player .cover .pl{width:84px;height:84px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(180deg,var(--gold2),var(--gold));color:#0B1426;font-size:30px;box-shadow:0 0 0 10px rgba(201,165,76,.15),0 20px 40px -10px rgba(201,165,76,.5);transition:.2s}
+.player .cover:hover .pl{transform:scale(1.06)}
+.player .cover b{font-size:18px;max-width:520px}
+.player .cover small{color:var(--muted);font-size:12.5px}
+.ltitle{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin:20px 0 6px;flex-wrap:wrap}
+.ltitle h1{font-size:24px;font-weight:700;line-height:1.25}
+.ltitle .k{font-size:11px;letter-spacing:3px;color:var(--gold);font-weight:600;margin-bottom:6px}
+.lact{display:flex;gap:10px;flex-wrap:wrap}
+.chip-btn{display:inline-flex;align-items:center;gap:8px;border-radius:10px;padding:11px 16px;font-size:13px;font-weight:600;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05)}
+.chip-btn:hover{border-color:var(--gold)}
+.chip-btn.ok{background:var(--ok);border-color:var(--ok);color:#06210F}
+.chip-btn.g{background:linear-gradient(180deg,var(--gold2),var(--gold));border:0;color:#0B1426}
+.ldesc{color:#C3CBDA;font-size:14px;line-height:1.65;margin:8px 0 18px;max-width:820px}
+.mats-h{font-size:11px;letter-spacing:3px;color:var(--muted);font-weight:600;margin:22px 0 10px;text-transform:uppercase}
+.mats{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.mat{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid rgba(255,255,255,.06);font-size:13.2px;transition:.15s}
+.mat:hover{border-color:var(--gold3);background:#1A3364}
+.ft{flex:none;width:38px;height:38px;border-radius:9px;display:grid;place-items:center;font-size:9.5px;font-weight:800;letter-spacing:.4px}
+.f-pdf{background:rgba(232,92,92,.14);color:#F09090}
+.f-video{background:rgba(201,165,76,.14);color:var(--gold2)}
+.f-pptx{background:rgba(240,150,60,.14);color:#F2B070}
+.f-img{background:rgba(90,160,230,.14);color:#8EC2F2}
+.f-doc{background:rgba(201,165,76,.2);color:var(--gold2)}
+.f-guia{background:rgba(201,165,76,.2);color:var(--gold2)}
+.side{background:var(--bg2);border:1px solid rgba(255,255,255,.07);border-radius:16px;overflow:hidden;position:sticky;top:86px}
+.side-h{padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.side-h .k{font-size:10.5px;letter-spacing:3px;color:var(--gold);font-weight:600}
+.side-h h3{font-size:16px;margin:4px 0 10px}
+.side-h small{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;margin-bottom:7px}
+.lessons{max-height:62vh;overflow:auto}
+.lesson{display:flex;gap:12px;align-items:center;padding:12px 18px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:.15s;font-size:13.2px}
+.lesson:hover{background:rgba(255,255,255,.03)}
+.lesson.cur{background:linear-gradient(90deg,rgba(201,165,76,.16),transparent);box-shadow:inset 3px 0 0 var(--gold)}
+.lesson .n{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:11.5px;font-weight:700;border:1.5px solid rgba(255,255,255,.18);color:var(--muted)}
+.lesson.done .n{background:var(--ok);border-color:var(--ok);color:#06210F}
+.lesson .tx{flex:1;min-width:0}
+.lesson .tx b{display:block;font-weight:500;line-height:1.35}
+.lesson .tx span{font-size:11.5px;color:var(--muted)}
+.extra{margin-top:28px}
+
+/* onboarding journey inside module */
+.journey{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.jstep{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:16px;position:relative}
+.jstep .c{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;border:2px solid var(--gold);color:var(--gold2);margin-bottom:10px}
+.jstep h4{font-size:14px;margin-bottom:4px}
+.jstep p{font-size:12.5px;color:var(--muted);line-height:1.5}
+.jstep .who{position:absolute;top:16px;right:14px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;background:rgba(201,165,76,.12);color:var(--gold2)}
+.warn{background:linear-gradient(90deg,rgba(201,165,76,.14),rgba(201,165,76,.03));border:1px solid rgba(201,165,76,.35);border-left:4px solid var(--gold);border-radius:12px;padding:14px 16px;font-size:13.5px;color:#E6DFCC;margin:16px 0;line-height:1.55}
+.warn b{display:block;font-size:11px;letter-spacing:2px;color:var(--gold2);margin-bottom:3px;text-transform:uppercase}
+.twoc{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:800px){.twoc{grid-template-columns:1fr}}
+.box{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:18px}
+.box h4{color:var(--gold2);font-size:14px;margin-bottom:10px}
+.box ul{list-style:none;display:grid;gap:7px}
+.box li{font-size:13px;color:#C3CBDA;display:flex;gap:9px}
+.box li::before{content:"✓";color:var(--gold);font-weight:800}
+
+
+/* timeline onboarding */
+.tline{position:relative;display:grid;grid-template-columns:repeat(9,minmax(0,1fr));grid-template-rows:auto 64px auto;margin:8px 0 10px;padding:0 6%}
+.tline .axis{grid-column:1/-1;grid-row:2;align-self:center;height:3px;border-radius:3px;background:linear-gradient(90deg,var(--gold3),var(--gold2),var(--gold3));box-shadow:0 0 18px rgba(201,165,76,.35)}
+.tnode{grid-row:2;align-self:center;justify-self:center;z-index:2;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:15px;background:var(--bg);color:var(--gold2);border:2px solid var(--gold);box-shadow:0 0 0 6px var(--bg)}
+.tnode.you{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#0B1A35}
+.tcard{justify-self:center;width:calc(200% - 12px);background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:13px 14px;position:relative;transition:.2s}
+.tcard:hover{border-color:var(--gold3);transform:translateY(-2px)}
+.tcard.up{grid-row:1;align-self:end;margin-bottom:14px}
+.tcard.dn{grid-row:3;align-self:start;margin-top:14px}
+.tcard::after{content:"";position:absolute;left:50%;width:2px;height:14px;background:var(--gold3);transform:translateX(-50%)}
+.tcard.up::after{top:100%}.tcard.dn::after{bottom:100%}
+.tcard .s{font-size:10px;letter-spacing:2.5px;color:var(--gold);font-weight:700}
+.tcard h4{font-size:13.5px;margin:4px 0 5px;line-height:1.3}
+.tcard p{font-size:12px;color:var(--muted);line-height:1.5;overflow-wrap:anywhere}
+.who2{display:inline-block;margin-top:8px;font-size:10px;font-weight:700;padding:2px 9px;border-radius:99px;background:rgba(255,255,255,.07);color:#C3CBDA}
+.who2.you{background:rgba(201,165,76,.18);color:var(--gold2)}
+.tlegend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--muted);margin:4px 0 6px}
+.tlegend span{display:inline-flex;align-items:center;gap:7px}
+.tlegend i{width:14px;height:14px;border-radius:50%;border:2px solid var(--gold)}
+.tlegend i.f{background:var(--gold)}
+.tlv{display:none;position:relative;padding-left:8px}
+.tlv .it{display:grid;grid-template-columns:42px 1fr;gap:14px;position:relative;padding-bottom:16px}
+.tlv .it:not(:last-child)::before{content:"";position:absolute;left:20px;top:42px;bottom:0;width:2px;background:var(--gold3)}
+@media(max-width:1180px){.tline{display:none}.tlv{display:block}.tlv .tcard{width:auto}.tlv .tcard::after{display:none}}
+
+/* search overlay */
+.search{position:fixed;inset:0;z-index:80;background:rgba(8,20,42,.94);backdrop-filter:blur(8px);display:none;padding:90px 4vw 40px;overflow:auto}
+.search.on{display:block}
+.search-in{max-width:900px;margin:0 auto}
+.search input{width:100%;background:transparent;border:0;border-bottom:2px solid var(--gold3);font:inherit;font-size:26px;color:#fff;padding:10px 4px;outline:0}
+.search .close{position:fixed;top:22px;right:4vw;background:none;border:1px solid rgba(255,255,255,.2);border-radius:99px;padding:8px 16px;font-size:13px}
+.res{margin-top:22px;display:grid;gap:8px}
+.res a,.res button{display:flex;gap:12px;align-items:center;text-align:left;width:100%;background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px 14px;font-size:14px}
+.res a:hover,.res button:hover{border-color:var(--gold3)}
+.res span{color:var(--muted);font-size:12px;display:block}
+.note{max-width:1400px;margin:10px auto 0;padding:0 4vw;font-size:12px;color:#6F7C95}
+footer{border-top:1px solid rgba(255,255,255,.06);margin-top:30px}
+footer .in{max-width:1400px;margin:0 auto;padding:22px 4vw;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:12.5px}
+@media(max-width:700px){.sbtn span{display:none}.hero{min-height:560px}.hero-photo{width:100vw;opacity:.35}}
+</style>
+</head>
+<body>
+
+<header class="top" id="top">
+  <div class="top-in">
+    <div class="logo" onclick="goHome()">
+      <svg viewBox="0 0 44 44"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F3DA94"/><stop offset=".55" stop-color="#C9A54C"/><stop offset="1" stop-color="#8C6D2A"/></linearGradient></defs>
+        <rect x="1.5" y="1.5" width="41" height="41" rx="11" fill="url(#lg)"/>
+        <rect x="4.5" y="4.5" width="35" height="35" rx="8.5" fill="none" stroke="#0B1A35" stroke-opacity=".35"/>
+        <path d="M10.5 14 L16 31 L22 19.5 L28 31 L33.5 14" fill="none" stroke="#0B1A35" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="22" cy="11.5" r="2.1" fill="#0B1A35"/></svg>
+      <div><b>WDT ACADEMY</b><span>AGENCY</span></div>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-r="inicio" onclick="goHome()">Início</button>
+      <button data-r="row-aulas" onclick="goHome('row-aulas')">Aulas</button>
+      <button data-r="row-cot" onclick="goHome('row-cot')">Cotações</button>
+      <button data-r="row-mat" onclick="goHome('row-mat')">Materiais</button>
+      <button data-r="row-seg" onclick="goHome('row-seg')">Seguradoras</button>
+    </nav>
+    <div class="top-r">
+      <button class="sbtn" onclick="openSearch()">🔎 <span>Buscar</span></button>
+      <div class="avatar" title="Agente WDT">W</div>
+    </div>
+  </div>
+</header>
+
+<div id="home">
+  <section class="hero">
+    <div class="hero-photo" role="img" aria-label="Fundadores da WDT Agency"></div>
+    <div class="hero-in">
+      <div class="tag"><i></i>Área de membros · WDT Life Insurance</div>
+      <h1>Aprenda, venda e <em>cresça com a WDT</em></h1>
+      <p>Onboarding, aulas, vídeos de cotação, guias das seguradoras e scripts — tudo num só lugar, no seu ritmo.</p>
+      <div class="cta">
+        <button class="btn btn-g" id="resumeBtn">▶ Começar agora</button>
+        <button class="btn btn-o" onclick="openModule('onb')">Ver onboarding</button>
+      </div>
+      <div class="resume"><div class="bar"><i id="pgBar" style="width:0"></i></div><small id="pgTxt">0% concluído</small></div>
+    </div>
+  </section>
+  <main id="rows"></main>
+  <p class="note">Os vídeos e arquivos vêm do Google Drive da WDT: para abrir, o agente precisa ter acesso às pastas. O progresso fica salvo neste navegador.</p>
+</div>
+
+<section class="mview" id="mview"></section>
+
+<div class="search" id="search">
+  <button class="close" onclick="closeSearch()">Fechar ✕</button>
+  <div class="search-in"><input id="q" placeholder="Buscar aulas, seguradoras, scripts…" autocomplete="off"><div class="res" id="res"></div></div>
+</div>
+
+<footer><div class="in"><div><b style="color:#fff">WDT</b> <span style="color:var(--gold);letter-spacing:3px;font-size:11px">AGENCY</span> · Academy</div><div>Uso interno · Treinamento de agentes</div></div></footer>
+
+<script>
+const F = id => (id.startsWith('docs/')||id.startsWith('media/')) ? id : 'https://drive.google.com/file/d/'+id+'/view';
+const D = id => 'https://drive.google.com/drive/folders/'+id;
+
+/* ---------- Conteúdo (das pastas do Drive) ---------- */
+const ONB = [
+  {id:'docs/passo1-levinson.html',t:'doc',n:'Passo 1 · Guia: Contratação com seguradoras via Levinson',d:'Visão geral dos 9 passos, do cadastro ao portal da seguradora'},
+  {id:'docs/passo2-letter.html',t:'doc',n:'Passo 2 · Letter of Production Commitment',d:'Carta de compromisso de produção e pacote de cadastro da Levinson, que o agente assina eletronicamente.'},
+  {id:'docs/passo3-email.html',t:'doc',n:'Passo 3 · E-mail de confirmação da integração',d:'Clique no primeiro link para fazer seu cadastro na Levinson; depois, no segundo link, para seguir para o Passo 4 — Solicitação das seguradoras.'},
+  {id:'media/passo4.mp4',t:'video',n:'Passo 4 · Solicitação das seguradoras',d:'Como solicitar as seguradoras no site da Levinson.',poster:'media/passo4.jpg'},
+  {id:'media/passo6.mp4',t:'video',n:'Passo 6 · Vídeo: Como solicitar contratos no site Levinson',d:'Demonstração em vídeo de como solicitar contratos com as seguradoras no site da Levinson.',poster:'media/passo6.jpg'},
+];
+const JOURNEY = [
+  ['Solicitação do cadastro','A AGENTE envia o Agent Downline Request Form para a Levinson. Nada a fazer nesta etapa.','Agência'],
+  ['E-mail de integração da Levinson','Você recebe um link para concluir o onboarding na Levinson.','Você'],
+  ['Confirmação da integração','Andrew Paris confirma por e-mail e envia os links das seções do site.','Levinson'],
+  ['Solicitar as seguradoras','No site da Levinson, solicite as seguradoras que quer representar, até 5 por vez.','Você'],
+  ['Um e-mail por seguradora','O Contracting envia um e-mail separado para cada seguradora solicitada.','Levinson'],
+  ['Preencher o SureLC de cada uma','Cada e-mail de contracting@levinson.com traz um link do SureLC. Conclua um por um.','Você'],
+  ['Processamento pela seguradora','De poucos dias a 2–3 semanas, conforme a seguradora.','Seguradora'],
+  ['Aprovação e número de agente','A seguradora envia o número de agente e o acesso. A Levinson confirma em 1–2 dias.','Seguradora'],
+  ['Acesso ao portal','Crie ou acesse sua conta no portal do agente da seguradora.','Você'],
+];
+
+/* ================================================================
+   AULAS — todas num só lugar. Para incluir uma aula nova, copie um
+   bloco abaixo e cole NO TOPO da lista (a mais recente aparece primeiro).
+   video: ID do arquivo no Drive · mats: materiais de apoio da aula
+   ================================================================ */
+const AULAS = [
+  {id:'1WsDtuLJUrexITZWrJY93SEue4CdlaIEJ', tema:'IUL', n:'IUL – Indexed Universal Life', d:'Treinamento completo de IUL: o produto, o processo de vendas e o script da reunião.',
+   videos:[{id:'1WsDtuLJUrexITZWrJY93SEue4CdlaIEJ',n:'Treinamento IUL',d:'Aula gravada do treinamento de IUL com o time.'},{id:'1_aUYc2KX3-Zm_-3E8AqOP5_ylbSaV4hc',n:'Vendas IUL',d:'Processo de vendas de IUL, do primeiro contato ao fechamento.'}],
+   mats:[['pptx','IUL: treinamento de agentes','1ssKhf9wuBm0xoqSx2QCtTIkWTqi8EEwD'],['pptx','Processo de vendas IUL: script da reunião','14pFM-_mypww3KWf1iH0RqkStdkqAZh2a'],['pdf','Checklist da reunião IUL','1cj7RrEQM8u7dWnYgOB6i0Q0pXlaMxugJ'],['pdf','Script para leads de tráfego pago (IUL)','1tzTjRI-NvP6nNCOMBibA1VScp-PPyfe5'],['guia','FlexLife (IUL) — guia em PT-BR','docs/nl-flexlife.html']]},
+  {id:'1qe4az9tybi8Kvx6hBom5CTMD6C8pTpIj', tema:'Term', n:'Seguro Term e benefícios em vida', d:'Como apresentar o Term com benefícios em vida (ABRs) e conduzir o atendimento.',
+   mats:[['pptx','Seguro Term e Benefícios em Vida: treinamento','1dGj6c-FMvDG0l0B2jshcKGRjH6ZVkhEr'],['pptx','Script de atendimento Term (slides)','1o5WYfVlrzZ1hdJU7DppLIabOMrp2_TeC'],['doc','Script de atendimento Term','docs/script-term.html'],['guia','Term National Life — guia em PT-BR','docs/nl-term.html']]},
+  {id:'media/aula-underwriting.mp4', tema:'Underwriting', n:'Underwriting para riscos de saúde', d:'Como avaliar e posicionar clientes com histórico de saúde.',
+   mats:[]},
+  {id:'media/aula-solicitacao.mp4', tema:'Operacional', n:'Solicitação de seguradora', d:'Passo a passo para solicitar a contratação com uma seguradora.',
+   mats:[]},
+  /* ---- Vídeos de cotação por seguradora ---- */
+  {id:"media/cot-term-todas.mp4", tipo:'Cotação', tema:"Term", n:"Cotação Term — comparando todas as seguradoras", d:"Visão comparativa das cotações de Term entre as seguradoras.", mats:[]},
+  {id:"media/cot-term-nlg.mp4", tipo:'Cotação', tema:"Term", n:"Cotação Term — National Life", d:"Como cotar Term na National Life, passo a passo.", mats:[["doc", "Guia de estudo da National Life", "docs/nl-guia.html"], ["guia", "Term National Life — guia em PT-BR", "docs/nl-term.html"]]},
+  {id:"media/cot-term-ameritas.mp4", tipo:'Cotação', tema:"Term", n:"Cotação Term — Ameritas", d:"Como cotar Term na Ameritas, passo a passo.", mats:[["doc", "Guia de estudo da Ameritas", "docs/ameritas-guia.html"]]},
+  {id:"media/cot-term-foresters.mp4", tipo:'Cotação', tema:"Term", n:"Cotação Term — Foresters", d:"Como cotar Term na Foresters, passo a passo.", mats:[["doc", "Guia de estudo da Foresters", "docs/foresters-guia.html"]]},
+  {id:"media/cot-transamerica.mp4", tipo:'Cotação', tema:"Term", n:"Cotação Term — Transamerica", d:"Como cotar Term na Transamerica, passo a passo.", mats:[["doc", "Guia de estudo da Transamerica", "docs/transamerica-guia.html"]]},
+  {id:"media/cot-term-americo.mp4", tipo:'Cotação', tema:"Term", n:"Cotação Term — Americo", d:"Como cotar Term na Americo, passo a passo.", mats:[]},
+  {id:"media/cot-iul-nlg.mp4", tipo:'Cotação', tema:"IUL", n:"Cotação IUL — National Life", d:"Como cotar IUL na National Life, passo a passo.", mats:[["doc", "Guia de estudo da National Life", "docs/nl-guia.html"], ["guia", "FlexLife (IUL) — guia em PT-BR", "docs/nl-flexlife.html"]]},
+  {id:"media/cot-iul-fg.mp4", tipo:'Cotação', tema:"IUL", n:"Cotação IUL — F&G", d:"Como cotar IUL na F&G, passo a passo.", mats:[["doc", "Guia de estudo da F&G", "docs/fg-guia.html"]]},
+  {id:"media/cot-transamerica.mp4", tipo:'Cotação', tema:"IUL", n:"Cotação IUL — Transamerica", d:"Como cotar IUL na Transamerica, passo a passo.", mats:[["doc", "Guia de estudo da Transamerica", "docs/transamerica-guia.html"]]},
+  {id:"media/cot-iul-americo.mp4", tipo:'Cotação', tema:"IUL", n:"Cotação IUL — Americo", d:"Como cotar IUL na Americo, passo a passo.", mats:[]},
+  {id:"media/cot-wl-nlg.mp4", tipo:'Cotação', tema:"Whole Life", n:"Cotação Whole Life — National Life", d:"Como cotar Whole Life na National Life, passo a passo.", mats:[["doc", "Guia de estudo da National Life", "docs/nl-guia.html"]]},
+  {id:"media/cot-wl-foresters.mp4", tipo:'Cotação', tema:"Whole Life", n:"Cotação Whole Life — Foresters", d:"Como cotar Whole Life na Foresters, passo a passo.", mats:[["doc", "Guia de estudo da Foresters", "docs/foresters-guia.html"]]},
+  {id:"media/cot-fex-todas.mp4", tipo:'Cotação', tema:"FEX", n:"Cotação FEX — comparando todas as seguradoras", d:"Visão comparativa das cotações de FEX entre as seguradoras.", mats:[]},
+  {id:"media/cot-fex-americo.mp4", tipo:'Cotação', tema:"FEX", n:"Cotação FEX — Americo", d:"Como cotar FEX na Americo, passo a passo.", mats:[]},
+];
+
+const MODS = [
+  {k:'crm',ico:'⚙️',n:'CRM Lead4Pro',d:'Configuração do CRM Lead4Pro: pipeline, mensagens prontas e automação de reunião.',groups:[
+    ['CRM',[
+      {id:'docs/guia-crm.html',t:'doc',n:'Guia de configuração do CRM Lead4Pro'},
+    ]]]},
+  {k:'seguias',ico:'🏦',n:'Guia das Seguradoras',d:'Guia rápido das seguradoras e guia de benefícios em vida por doença.',groups:[
+    ['Guias',[
+      {id:'docs/guia-seguradoras.html',t:'doc',n:'Guia rápido de seguradoras (uma por página)'},
+      {id:'docs/guia-beneficios-doencas.html',t:'doc',n:'Benefícios em vida: o que cada seguradora paga'},
+    ]]]},
+  {k:'produtos',ico:'📦',n:'Produtos',d:'Apresentações de Final Expense, IUL, Term e Whole Life: para quem é cada produto e como apresentar.',groups:[
+    ['Apresentações de produto',[
+      {id:'docs/produto-term.html',t:'doc',n:'Term: apresentação do produto'},
+      {id:'docs/produto-wl.html',t:'doc',n:'Whole Life: apresentação do produto'},
+      {id:'docs/produto-iul.html',t:'doc',n:'IUL: apresentação do produto'},
+      {id:'docs/produto-fex.html',t:'doc',n:'Final Expense: apresentação do produto'},
+    ]]]},
+  {k:'scripts',ico:'💬',n:'Scripts de atendimento',d:'Roteiros de atendimento e perguntas de qualificação para conduzir a conversa com o cliente.',groups:[
+    ['Scripts',[
+      {id:'docs/script-atendimento.html',t:'doc',n:'Script de atendimento: perguntas de descoberta'},
+      {id:'docs/script-term.html',t:'doc',n:'Script de atendimento Term'},
+    ]]]},
+  {k:'seguradoras',ico:'🏛️',n:'Guias de seguradoras',d:'Um guia por seguradora, riders ABR e comparativo de benefícios em vida.',groups:[
+    ['Comparativos',[
+      {id:'1blju6QejlbDhU62UGwUTeIaJtHgcGmni',t:'pdf',n:'Benefício em vida por seguradora'},
+      {id:'1a_GfkxDhF2rBdF1B6PHMIzaZpByqTxsj',t:'pdf',n:'Riders ABR: doenças'},
+    ]],
+    ['Por seguradora',[
+      {id:'docs/nl-guia.html',t:'doc',n:'National Life Group'},
+      {id:'docs/ameritas-guia.html',t:'doc',n:'Ameritas'},
+      {id:'docs/assurity-guia.html',t:'doc',n:'Assurity'},
+      {id:'docs/corebridge-guia.html',t:'doc',n:'Corebridge'},
+      {id:'docs/fg-guia.html',t:'doc',n:'F&G'},
+      {id:'docs/foresters-guia.html',t:'doc',n:'Foresters'},
+      {id:'1F0_P8VLgskSqnQJavLrHM6GOP5r3JJ03',t:'pdf',n:'Foresters: ficha técnica ABR'},
+      {id:'1PI3laNKMOOVywVNG4grmTMUcPyXDIVmC',t:'pdf',n:'Foresters: Orphan Benefit'},
+      {id:'docs/mutual-omaha-guia.html',t:'doc',n:'Mutual of Omaha'},
+      {id:'docs/american-amicable-guia.html',t:'doc',n:'American Amicable'},
+      {id:'docs/transamerica-guia.html',t:'doc',n:'Transamerica'},
+    ]]]},
+  {k:'forms',ico:'📝',n:'Formulários',d:'Formulários usados na emissão, como o DocuSign da NLG e o W-8 da F&G para clientes só com passaporte.',groups:[
+    ['Formulários',[
+      {id:'1y8TDAl_Fokq6VD1a9Npi5iLz_X9NULua',t:'pdf',n:'DocuSign NLG'},
+      {id:'1W79kL_gKZP4ejgI7i7OyMjCJmbilVD9P',t:'pdf',n:'F&G: W-8 para cliente somente com passaporte'},
+    ]]]},
+];
+
+/* Mapa de seguradoras: guia + vídeos */
+const CARRIERS = [
+  {n:'National Life Group',tag:'Seguradora padrão',p:['Term','IUL','Whole Life'],tr:[['Guia de estudo da National Life','docs/nl-guia.html'],['Term — guia do produto','docs/nl-term.html'],['RapidProtect — guia do produto','docs/nl-rapidprotect.html'],['FlexLife — guia do produto','docs/nl-flexlife.html'],['Guia de Underwriting','docs/nl-underwriting.html']],g:[],v:[['Term','media/cot-term-nlg.mp4'],['IUL','media/cot-iul-nlg.mp4'],['Whole Life','1d_2yxW37RDZAmt0Wcft9f3LgF02CuCFh']],f:[['DocuSign NLG','1y8TDAl_Fokq6VD1a9Npi5iLz_X9NULua']]},
+  {n:'Foresters',p:['Term','Whole Life'],tr:[['Guia de estudo da Foresters','docs/foresters-guia.html']],g:['1F0_P8VLgskSqnQJavLrHM6GOP5r3JJ03','1PI3laNKMOOVywVNG4grmTMUcPyXDIVmC'],gn:['Ficha técnica ABR','Orphan Benefit'],v:[['Term','media/cot-term-foresters.mp4'],['Whole Life','media/cot-wl-foresters.mp4']]},
+  {n:'F&G',p:['IUL'],tr:[['Guia de estudo da F&G','docs/fg-guia.html']],g:[],v:[['IUL','media/cot-iul-fg.mp4']],f:[['W-8 (só passaporte)','1W79kL_gKZP4ejgI7i7OyMjCJmbilVD9P']]},
+  {n:'Transamerica',p:['Term','IUL'],tr:[['Guia de estudo da Transamerica','docs/transamerica-guia.html']],g:[],v:[['Term','media/cot-transamerica.mp4'],['IUL','media/cot-transamerica.mp4']]},
+  {n:'Ameritas',p:['Term'],tr:[['Guia de estudo da Ameritas','docs/ameritas-guia.html']],g:[],v:[['Term','media/cot-term-ameritas.mp4']]},
+  {n:'Americo',p:['Term','IUL','FEX'],g:[],v:[['Term','media/cot-term-americo.mp4'],['IUL','media/cot-iul-americo.mp4'],['FEX','media/cot-fex-americo.mp4']]},
+  {n:'Assurity',p:[],tr:[['Guia de estudo da Assurity','docs/assurity-guia.html']],g:[],v:[]},
+  {n:'Corebridge',p:[],tr:[['Guia de estudo da Corebridge','docs/corebridge-guia.html']],g:[],v:[]},
+  {n:'Mutual of Omaha',p:[],tr:[['Guia de estudo da Mutual of Omaha','docs/mutual-omaha-guia.html']],g:[],v:[]},
+  {n:'American Amicable',p:[],tr:[['Guia de estudo da American Amicable','docs/american-amicable-guia.html']],g:[],v:[]},
+];
+
+const PATH = [['onboarding','Onboarding'],['crm','CRM Lead4Pro'],['seguias','Guia das Seguradoras'],['produtos','Produtos'],['scripts','Scripts'],['aulas','Aulas e cotações'],['seguradoras','Seguradoras'],['forms','Formulários']];
+
+const TL = {pdf:'PDF',video:'VÍDEO',pptx:'PPTX',img:'IMG',folder:'PASTA',guia:'PT-BR'};
+const TLN = {pdf:'PDF',video:'Vídeo',pptx:'Apresentação',img:'Imagem',guia:'Guia traduzido · abre no portal'};
+
+const modItems = m => m.groups.flatMap(g=>g[1]);
+
+
+/* ================== ícones dos pôsteres ================== */
+const IC = {
+ rocket:'<path d="M50 14c14 8 20 24 18 40l-8 8H40l-8-8c-2-16 4-32 18-40z"/><circle cx="50" cy="38" r="7"/><path d="M40 62l-8 12 12-4M60 62l8 12-12-4M46 74l4 12 4-12"/>',
+ compass:'<circle cx="50" cy="50" r="32"/><circle cx="50" cy="50" r="24" stroke-opacity=".4"/><path d="M62 38l-8 16-16 8 8-16z"/><path d="M50 14v6M50 80v6M14 50h6M80 50h6"/>',
+ chart:'<path d="M18 80h64"/><rect x="24" y="58" width="9" height="22" rx="1"/><rect x="39" y="48" width="9" height="32" rx="1"/><rect x="54" y="38" width="9" height="42" rx="1"/><rect x="69" y="26" width="9" height="54" rx="1"/><path d="M22 52 40 38l14 6 24-24"/><path d="M70 20h8v8"/>',
+ shield:'<path d="M50 14l30 10v24c0 20-13 32-30 40-17-8-30-20-30-40V24z"/><path d="M38 50l9 9 17-19"/>',
+ stetho:'<path d="M30 16v20a14 14 0 0 0 28 0V16"/><path d="M44 50v10a16 16 0 0 0 32 0v-8"/><circle cx="76" cy="46" r="7"/><path d="M26 16h8M54 16h8"/>',
+ gear:'<circle cx="50" cy="50" r="11"/><path d="M50 18v10M50 72v10M18 50h10M72 50h10M27 27l7 7M66 66l7 7M27 73l7-7M66 34l7-7"/><circle cx="50" cy="50" r="24" stroke-opacity=".5"/>',
+ calc:'<rect x="26" y="14" width="48" height="72" rx="6"/><rect x="33" y="22" width="34" height="14" rx="2"/><path d="M36 48h6M47 48h6M58 48h6M36 60h6M47 60h6M58 60h6M36 72h6M47 72h17"/>',
+ infinity:'<path d="M20 50c0-10 8-16 16-16 14 0 20 32 34 32 8 0 14-7 14-16s-6-16-14-16c-14 0-20 32-34 32-8 0-16-6-16-16z"/>',
+ heart:'<path d="M50 80S18 62 18 40a16 16 0 0 1 32-6 16 16 0 0 1 32 6c0 22-32 40-32 40z"/><path d="M30 46h10l5-8 8 16 5-8h12"/>',
+ box:'<path d="M50 14l32 16v40L50 86 18 70V30z"/><path d="M18 30l32 16 32-16M50 46v40"/><path d="M34 22l32 16" stroke-opacity=".5"/>',
+ chat:'<path d="M16 22h46v30H34l-12 10V52h-6z"/><path d="M68 36h16v28h-6v10l-12-10H44v-6"/><path d="M26 34h26M26 42h18"/>',
+ bank:'<path d="M14 36L50 16l36 20z"/><path d="M22 40v32M36 40v32M50 40v32M64 40v32M78 40v32"/><path d="M14 78h72M18 84h64"/>',
+ doc:'<path d="M28 12h30l16 16v60H28z"/><path d="M58 12v16h16"/><path d="M36 44h30M36 54h30M36 64h20"/><path d="M38 78l6 4 10-10" />',
+ book:'<path d="M50 26c-8-6-20-8-32-6v56c12-2 24 0 32 6 8-6 20-8 32-6V20c-12-2-24 0-32 6z"/><path d="M50 26v56"/><path d="M26 34h16M26 42h16M58 34h16M58 42h16" stroke-opacity=".5"/>',
+ play:'<circle cx="50" cy="50" r="32"/><path d="M43 36l22 14-22 14z"/>',
+ key:'<circle cx="34" cy="50" r="14"/><path d="M48 50h36M74 50v10M64 50v8"/>',
+};
+const MK = '<svg class="mk" viewBox="0 0 44 44"><path d="M10.5 14 L16 31 L22 19.5 L28 31 L33.5 14" fill="none" stroke="#C9A54C" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="22" cy="11.5" r="2.4" fill="#C9A54C"/></svg>';
+function art(icon, seed){
+  const pos = [[80,18],[20,22],[50,10],[85,40],[15,8],[60,25]][seed%6];
+  const hue = ['#0E1E3D','#10213F','#0F1D3A','#0D1F3E','#112240','#0E1C38'][seed%6];
+  return `<svg viewBox="0 0 200 300" preserveAspectRatio="xMidYMid slice" width="100%" height="100%">
+   <defs><radialGradient id="g${seed}" cx="${pos[0]}%" cy="${pos[1]}%" r="75%"><stop offset="0" stop-color="#C9A54C" stop-opacity=".42"/><stop offset=".5" stop-color="${hue}" stop-opacity="1"/><stop offset="1" stop-color="#091530"/></radialGradient>
+   <linearGradient id="s${seed}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F3DA94"/><stop offset="1" stop-color="#8C6D2A"/></linearGradient></defs>
+   <rect width="200" height="300" fill="url(#g${seed})"/>
+   <g stroke="#C9A54C" stroke-opacity=".12">${Array.from({length:9},(_,i)=>`<path d="M${-60+i*40} 300 L${60+i*40} 0"/>`).join('')}</g>
+   <circle cx="100" cy="115" r="62" fill="none" stroke="#C9A54C" stroke-opacity=".22"/><circle cx="100" cy="115" r="78" fill="none" stroke="#C9A54C" stroke-opacity=".1"/>
+   <g transform="translate(50 65)" fill="none" stroke="url(#s${seed})" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">${IC[icon]||IC.play}</g>
+  </svg>`;
+}
+
+/* ================== monta o curso ================== */
+const EMBED = !/claude|anthropic/i.test(location.hostname) && location.protocol.startsWith('http');
+const isDoc = id => id.startsWith('docs/');
+const prev = id => 'https://drive.google.com/file/d/'+id+'/preview';
+const TNAME = {pdf:'PDF',video:'Vídeo',pptx:'Apresentação',img:'Imagem',guia:'Guia em PT-BR',doc:'Guia WDT'};
+const FT = {pdf:'PDF',video:'VÍDEO',pptx:'PPTX',img:'IMG',guia:'PT-BR',doc:'GUIA'};
+const ICON_TEMA = {IUL:'chart',Term:'shield',Underwriting:'stetho',Operacional:'gear','Whole Life':'infinity',FEX:'heart'};
+const matObj = ([t,n,id]) => ({t,n,id});
+
+const MODULES = [];
+const ROWS = [];
+function addRow(id, title, sub, mods, wide){ ROWS.push({id,title,sub,keys:mods.map(m=>{MODULES.push(m);return m.k}),wide}); }
+
+// Comece por aqui
+addRow('row-start','Comece por aqui','Onboarding, plano de carreira, CRM Lead4Pro e guia das seguradoras para quem está chegando',[
+  {k:'onb',icon:'rocket',n:'Onboarding do agente',d:'Contratação com as seguradoras pela Levinson, do cadastro ao portal do agente.',lessons:ONB.map(x=>({...x})),extra:'onb'},
+  {k:'carreira',icon:'chart',n:'Plano de Carreira',d:'Comissão real de 60% a 95%, os 5 níveis, como subir e manter, trilha de liderança e o plano de 3 meses.',lessons:[{id:'docs/apresentacao-carreira.html',t:'doc',n:'Apresentação: carreira na WDT Agency (slides)',d:'A mesma carreira em 15 slides ilustrados: mercado, estrutura, portfólio, comissão, níveis, liderança e o plano de 3 meses.'},{id:'docs/plano-carreira.html',t:'doc',n:'Plano de Carreira WDT Agency',d:'Comissão, níveis, liderança e o funil reverso até US$ 10 mil por mês.'}]},
+  ...MODS.filter(m=>m.k==='crm').map(m=>({k:'mcrm',icon:'gear',n:'CRM Lead4Pro',d:m.d,lessons:modItems(m)})),
+  ...MODS.filter(m=>m.k==='seguias').map(m=>({k:'mseguias',icon:'bank',n:'Guia das Seguradoras',d:m.d,lessons:modItems(m)})),
+]);
+// Aulas (treinamentos)
+const TREINOS = AULAS.filter(a=>!a.tipo);
+addRow('row-aulas','Aulas','Treinamentos gravados — a mais recente primeiro',
+  TREINOS.map((a,i)=>({k:'a'+i,icon:ICON_TEMA[a.tema]||'play',n:a.n,d:a.d,tema:a.tema,num:TREINOS.length-i,data:a.data,
+    lessons:[...(a.videos||[{id:a.id,n:a.n,d:a.d}]).map(v=>({id:v.id,t:'video',n:v.n,d:v.d,mats:(a.mats||[]).map(matObj)})), ...(a.mats||[]).map(matObj)]})));
+// Cotações por produto
+const COT = AULAS.filter(a=>a.tipo==='Cotação');
+const COT_INTRO = {'Whole Life':[{id:'docs/whole-life-produto.html',t:'doc',n:'Whole Life: o produto',d:'Leia antes dos vídeos: o que é o Whole Life, dividendo, Paid-Up Additions, empréstimo, para quem serve, como apresentar e as objeções.'}], 'FEX':[{id:'docs/fex-produto.html',t:'doc',n:'Final Expense: o produto',d:'Leia antes dos vídeos: as quatro estruturas de benefício, como a subscrição decide, para quem serve, quanto capital vender, objeções e persistência.'}], 'Term':[{id:'docs/term-produto.html',t:'doc',n:'Term: o produto',d:'Leia antes dos vídeos: o que é o Term, Term ou permanente, para quem serve, como dimensionar capital e prazo, fechamento, objeções e conversão.'}], 'IUL':[{id:'docs/iul-produto.html',t:'doc',n:'IUL: o produto',d:'Leia antes dos vídeos: como funciona o crédito indexado, o que o IUL não é, empréstimos, o que quebra uma apólice, para quem serve, objeções e AG 49-B.'}]};
+addRow('row-cot','Vídeos de cotação','Como cotar cada produto em cada seguradora',
+  [...new Set(COT.map(a=>a.tema))].map((t,i)=>({k:'c'+i,icon:t==='IUL'?'chart':t==='Term'?'calc':ICON_TEMA[t],n:'Cotação '+t,d:'Vídeos de cotação de '+t+' por seguradora.',tema:t,
+    lessons:[...(COT_INTRO[t]||[]), ...COT.filter(a=>a.tema===t).map(a=>({id:a.id,t:'video',n:a.n.replace('Cotação '+t+' — ','').replace('comparando todas as seguradoras','Todas as seguradoras (comparativo)'),d:a.d,mats:(a.mats||[]).map(matObj)}))]})));
+// Materiais
+const MICON = {produtos:'box',scripts:'chat',seguradoras:'bank',forms:'doc'};
+addRow('row-mat','Materiais de apoio','Produtos, scripts, guias das seguradoras e formulários',
+  MODS.filter(m=>!['crm','seguias','seguradoras'].includes(m.k)).map(m=>({k:'m'+m.k,icon:MICON[m.k]||'book',n:m.n,d:m.d,lessons:modItems(m)})));
+// Seguradoras
+addRow('row-seg','Seguradoras','Guia, vídeos de cotação e formulários de cada seguradora',
+  CARRIERS.map((c,i)=>({k:'s'+i,icon:'bank',n:c.n,d:c.tag?c.tag+' · '+c.p.join(' · '):c.p.join(' · ')||'Guia da seguradora',land:true,
+    lessons:[...(c.tr||[]).map(([n,id])=>({id,t:'guia',n})), ...c.g.map((id,j)=>({id,t:'pdf',n:c.gn?c.gn[j]:'Guia da seguradora'})), ...c.v.map(([p,id])=>({id,t:'video',n:'Cotação '+p})), ...(c.f||[]).map(([n,id])=>({id,t:'pdf',n}))]})), true);
+
+const modByKey = k => MODULES.find(m=>m.k===k);
+const lessonsAll = MODULES.flatMap(m=>m.lessons.map(l=>({...l,mk:m.k,mn:m.n})));
+const uniqL = [...new Map(lessonsAll.map(l=>[l.id,l])).values()];
+const pctL = ls => ls.length ? Math.round(ls.filter(l=>done[l.id]).length/ls.length*100) : 0;
+
+/* ================== progresso ================== */
+let done = {};
+try{ done = JSON.parse(localStorage.getItem('wdt-academy-done')||'{}') }catch(e){ done = {} }
+function save(){ try{ localStorage.setItem('wdt-academy-done',JSON.stringify(done)) }catch(e){} }
+function toggle(id){ done[id] = !done[id]; if(!done[id]) delete done[id]; save(); refresh(); }
+
+/* ================== home ================== */
+function posterHTML(m, i){
+  const p = pctL(m.lessons);
+  const lbl = m.num ? 'AULA '+String(m.num).padStart(2,'0') : (m.tema && !m.land ? m.tema.toUpperCase() : 'MÓDULO '+String(i+1).padStart(2,'0'));
+  const badge = p===100 ? '<span class="badge ok">✓ Concluído</span>' : `<span class="badge">${m.lessons.length} ${m.lessons.length===1?'item':'itens'}</span>`;
+  return `<div class="poster${m.land?' land':''}" onclick="openModule('${m.k}')">
+    <div class="art">${art(m.icon, (m.k.charCodeAt(0)+m.k.length+i))}</div><div class="shade"></div>${badge}
+    <div class="meta"><div class="lbl">${lbl}</div><h3>${m.n}</h3>${MK}</div>
+    <div class="pbar"><i style="width:${p}%"></i></div></div>`;
+}
+function renderHome(){
+  document.getElementById('rows').innerHTML = ROWS.map(r=>`
+    <section class="row" id="${r.id}">
+      <div class="row-h"><h2>${r.title}<small>${r.sub}</small></h2>
+        <div class="arrows"><button onclick="slide('${r.id}',-1)">‹</button><button onclick="slide('${r.id}',1)">›</button></div></div>
+      <div class="rail${r.wide?' wide':''}">${r.keys.map((k,i)=>posterHTML(modByKey(k),i)).join('')}</div>
+    </section>`).join('');
+  const p = pctL(uniqL);
+  document.getElementById('pgBar').style.width = p+'%';
+  document.getElementById('pgTxt').textContent = p+'% concluído · '+uniqL.filter(l=>done[l.id]).length+' de '+uniqL.length;
+  const next = nextLesson();
+  const b = document.getElementById('resumeBtn');
+  b.textContent = Object.keys(done).length ? '▶ Continuar de onde parei' : '▶ Começar agora';
+  b.onclick = () => openModule(next.mk, next.idx);
+}
+function nextLesson(){
+  for(const m of MODULES){ const i = m.lessons.findIndex(l=>!done[l.id]); if(i>=0) return {mk:m.k,idx:i}; }
+  return {mk:MODULES[0].k,idx:0};
+}
+function slide(id,dir){ const r=document.querySelector('#'+id+' .rail'); r.scrollBy({left:dir*r.clientWidth*.85,behavior:'smooth'}); }
+
+/* ================== módulo / aula ================== */
+let curMod=null, curIdx=0;
+function openModule(k, idx){ location.hash = 'm-'+k+'-'+(idx||0); }
+function playerHTML(l){
+  if(l.id.startsWith('media/')) return `<video controls playsinline preload="metadata" poster="${l.poster||l.id.replace(/\.mp4$/,'.jpg')}" src="${l.id}" style="position:absolute;inset:0;width:100%;height:100%;background:#000"></video>`;
+  if(isDoc(l.id)) return `<iframe class="docframe" data-doc="${l.id}" title="${l.n}" style="background:#fff"></iframe>`;
+  if(EMBED) return `<iframe src="${prev(l.id)}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
+  const v = l.t==='video';
+  return `<a class="cover" href="${F(l.id)}" target="_blank" rel="noopener"><div class="pl">${v?'▶':'⤢'}</div><b>${l.n}</b><small>${v?'Assistir no Google Drive':'Abrir '+(TNAME[l.t]||'arquivo')+' no Google Drive'}</small></a>`;
+}
+function renderModule(){
+  const m = curMod, l = m.lessons[curIdx], p = pctL(m.lessons);
+  const mats = (l.mats||[]).filter(x=>x.id!==l.id);
+  const nxt = m.lessons[curIdx+1];
+  const ftag = x => `<div class="ft f-${x.t}">${FT[x.t]}</div>`;
+  document.getElementById('mview').innerHTML = `
+   <div class="crumb"><button onclick="goHome()">← Início</button><span>/</span><span>${m.n}</span></div>
+   <div class="lay">
+    <div>
+     <div class="player${isDoc(l.id)?' docp':''}">${playerHTML(l)}</div>
+     <div class="ltitle"><div><div class="k">${String(curIdx+1).padStart(2,'0')} / ${String(m.lessons.length).padStart(2,'0')} · ${TNAME[l.t]||''}</div><h1>${l.n}</h1></div>
+      <div class="lact">
+       <button class="chip-btn ${done[l.id]?'ok':''}" onclick="toggle('${l.id}')">${done[l.id]?'✓ Concluído':'○ Marcar como concluído'}</button>
+       <a class="chip-btn" href="${F(l.id)}" target="_blank" rel="noopener">↗ Abrir</a>
+       ${nxt?`<button class="chip-btn g" onclick="openModule('${m.k}',${curIdx+1})">Próxima ›</button>`:''}
+      </div></div>
+     ${l.d?`<p class="ldesc">${l.d}</p>`:`<p class="ldesc">${m.d}</p>`}
+     ${mats.length?`<div class="mats-h">Materiais desta aula</div><div class="mats">${mats.map(x=>`<a class="mat" href="${F(x.id)}" target="_blank" rel="noopener">${ftag(x)}<span>${x.n}</span></a>`).join('')}</div>`:''}
+     ${m.extra==='onb'?onbExtra():''}
+    </div>
+    <aside class="side">
+     <div class="side-h"><div class="k">${m.num?'AULA '+String(m.num).padStart(2,'0'):'MÓDULO'}</div><h3>${m.n}</h3>
+      <small><span>${m.lessons.filter(x=>done[x.id]).length} de ${m.lessons.length} concluídos</span><span>${p}%</span></small><div class="bar"><i style="width:${p}%"></i></div></div>
+     <div class="lessons">${m.lessons.map((x,i)=>`<div class="lesson ${i===curIdx?'cur':''} ${done[x.id]?'done':''}" onclick="openModule('${m.k}',${i})">
+       <div class="n">${done[x.id]?'✓':i+1}</div><div class="tx"><b>${x.n}</b><span>${TNAME[x.t]||''}</span></div></div>`).join('')}</div>
+    </aside>
+   </div>`;
+}
+async function loadDocs(){
+  for(const f of document.querySelectorAll('iframe.docframe')){
+    const url = f.dataset.doc;
+    try{ const r = await fetch(url); if(!r.ok) throw 0; let h = await r.text();
+      h = h.replace('<head>','<head><base href="'+new URL(url, location.href).href+'" target="_blank">');
+      f.srcdoc = h; }
+    catch(e){ f.outerHTML = `<a class="cover" href="${url}" target="_blank" rel="noopener"><div class="pl">📖</div><b>Abrir o guia</b><small>Não foi possível carregar aqui</small></a>`; }
+  }
+}
+function onbExtra(){
+  return `<div class="extra"><div class="mats-h">A jornada de contratação em 9 passos</div>
+   <div class="tlegend"><span><i class="f"></i>Ação sua</span><span><i></i>Agência, Levinson ou seguradora — você acompanha</span></div>
+   <div class="tline"><div class="axis"></div>${JOURNEY.map((s,i)=>{const you=s[2]==='Você';return `<div class="tnode ${you?'you':''}" style="grid-column:${i+1}">${i+1}</div><div class="tcard ${i%2?'dn':'up'}" style="grid-column:${i+1}"><div class="s">PASSO ${i+1}</div><h4>${s[0]}</h4><p>${s[1]}</p><span class="who2 ${you?'you':''}">${s[2]}</span></div>`}).join('')}</div>
+   <div class="tlv">${JOURNEY.map((s,i)=>{const you=s[2]==='Você';return `<div class="it"><div class="tnode ${you?'you':''}" style="box-shadow:none">${i+1}</div><div class="tcard"><div class="s">PASSO ${i+1}</div><h4>${s[0]}</h4><p>${s[1]}</p><span class="who2 ${you?'you':''}">${s[2]}</span></div></div>`}).join('')}</div>
+   <div class="warn"><b>Onde a maioria erra</b>Muitos agentes acham que o processo termina depois de solicitar as seguradoras no site da Levinson. Não termina: chega uma série de e-mails (um por seguradora) e é preciso preencher o SureLC de cada uma.</div>
+   <div class="twoc"><div class="box"><h4>Antes de solicitar contratos, tenha em mãos</h4><ul><li>Usuário e senha do SureLC</li><li>Licença ativa no estado onde vai vender</li><li>Treinamento de AML em dia</li><li>E&amp;O ativo, com certificado no perfil</li></ul></div>
+   <div class="box"><h4>Dica: pasta “Insurance” nos favoritos</h4><ul><li>Portal do agente de cada seguradora</li><li>SureLC e conta do NIPR</li><li>Needs Analysis</li><li>Documentos do dia a dia</li></ul><p style="font-size:12.5px;color:var(--muted);margin-top:12px">Dúvidas? Fale com a equipe de suporte no WhatsApp ou no Grupo de Onboarding.</p></div></div></div>`;
+}
+
+/* ================== busca ================== */
+function openSearch(){ document.getElementById('search').classList.add('on'); const q=document.getElementById('q'); q.value=''; renderRes(); setTimeout(()=>q.focus(),50); }
+function closeSearch(){ document.getElementById('search').classList.remove('on'); }
+const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+function renderRes(){
+  const q = norm(document.getElementById('q').value||'');
+  const mods = MODULES.filter(m=>q && norm(m.n+' '+m.d).includes(q)).slice(0,8);
+  const ls = lessonsAll.filter(l=>q && norm(l.n+' '+l.mn).includes(q)).slice(0,30);
+  document.getElementById('res').innerHTML = !q ? '<p style="color:var(--muted);margin-top:10px">Digite para buscar em todas as aulas e materiais.</p>' :
+    mods.map(m=>`<button onclick="closeSearch();openModule('${m.k}')"><div class="ft f-video">MOD</div><div>${m.n}<span>Módulo · ${m.lessons.length} itens</span></div></button>`).join('') +
+    ls.map(l=>{const m=modByKey(l.mk);return `<button onclick="closeSearch();openModule('${l.mk}',${m.lessons.findIndex(x=>x.id===l.id)})"><div class="ft f-${l.t}">${FT[l.t]}</div><div>${l.n}<span>${l.mn}</span></div></button>`}).join('') || '<p style="color:var(--muted)">Nada encontrado.</p>';
+}
+document.getElementById('q').addEventListener('input',renderRes);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSearch(); });
+
+/* ================== rotas ================== */
+function goHome(row){ if(location.hash && location.hash!=='#inicio'){ location.hash='inicio'; } else { route(); } if(row) setTimeout(()=>document.getElementById(row)?.scrollIntoView({behavior:'smooth'}),80); }
+function route(){
+  const h = location.hash.slice(1);
+  const mm = h.match(/^m-([a-z0-9]+)-(\d+)$/);
+  if(mm && modByKey(mm[1])){
+    curMod = modByKey(mm[1]); curIdx = Math.min(+mm[2], curMod.lessons.length-1);
+    document.getElementById('home').style.display='none'; document.getElementById('mview').classList.add('on');
+    renderModule(); loadDocs(); window.scrollTo({top:0,behavior:'instant'});
+  } else {
+    document.getElementById('mview').classList.remove('on'); document.getElementById('home').style.display='';
+    renderHome();
+  }
+}
+function refresh(){ if(document.getElementById('mview').classList.contains('on')){ renderModule(); loadDocs(); } else renderHome(); }
+window.addEventListener('hashchange',route);
+window.addEventListener('scroll',()=>document.getElementById('top').classList.toggle('solid',scrollY>40));
+route();
+</script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Term — WDT Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+@page { size: Letter; margin: 14mm 0 16mm 0;
+  @bottom-left { content: "WDT AGENCY · Academy"; font: 600 7.5pt Poppins, sans-serif; color: #0B1B3A; padding-left: 16mm; letter-spacing: 1px; }
+  @bottom-center { content: "Guia do produto Term — material de treinamento interno. Uso exclusivo do agente."; font: 400 6.3pt Poppins, sans-serif; color: #6B7891; width: 120mm; text-align: center; }
+  @bottom-right { content: "pág. " counter(page); font: 600 7.5pt Poppins, sans-serif; color: #A8893A; padding-right: 16mm; }
+}
+@page :first { margin-top: 0; }
+:root{--navy:#0B1B3A;--navy2:#132A52;--gold:#C9A54C;--gold2:#DDBF73;--ink:#0E1A33;--muted:#5B6880;--line:#E2E7F0;--soft:#F1F4F9;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Poppins,system-ui,sans-serif;color:var(--ink);background:#fff;font-size:10.2pt;line-height:1.55;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+a{color:#1E3A6E}
+.hero{position:relative;overflow:hidden;color:#fff;padding:22mm 16mm 16mm;background:radial-gradient(520px 260px at 92% -10%,rgba(201,165,76,.55),transparent 62%),linear-gradient(160deg,#0B1B3A 0%,#132A52 65%,#1A3463 100%)}
+.hero .brand{font-weight:800;font-size:15pt;letter-spacing:.5px}
+.hero .brand span{color:var(--gold);font-weight:600;font-size:7.5pt;letter-spacing:4px;margin-left:6px}
+.hero .eyebrow{margin-top:14mm;font-size:7.8pt;letter-spacing:3px;font-weight:600;color:var(--gold);text-transform:uppercase}
+.hero h1{font-size:27pt;line-height:1.1;font-weight:700;margin:6px 0 4px}
+.hero .sub{font-size:12pt;color:var(--gold2);font-weight:500}
+.hero p.lead{margin-top:10px;color:#C9D2E4;max-width:150mm;font-size:10pt}
+.hero .chips{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px}
+.hero .chips span{border:1px solid rgba(221,191,115,.55);color:#F3E6C3;border-radius:99px;padding:3px 10px;font-size:7.6pt;font-weight:500}
+main{padding:8mm 16mm 4mm}
+.toc{background:var(--soft);border:1px solid #D9E0EC;border-radius:12px;padding:12px 16px;margin:2mm 0 8mm;columns:2;column-gap:12mm;font-size:8.8pt}
+.toc h4{column-span:all;font-size:8pt;letter-spacing:2px;text-transform:uppercase;color:#8A6A1C;margin-bottom:6px}
+.toc a{display:block;text-decoration:none;color:var(--ink);padding:1.5px 0;break-inside:avoid}
+.toc a b{display:inline-block;width:22px;color:#A8893A}
+section.sec{margin:0 0 7mm}
+.sec-h{display:flex;align-items:center;gap:10px;margin:0 0 8px;break-after:avoid}
+.sec-h .n{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--navy);color:#fff;border:2px solid var(--gold);font-weight:700;font-size:9.5pt}
+.sec-h h2{font-size:15pt;font-weight:700;color:var(--navy);line-height:1.2}
+.sec-h small{display:block;font-size:8.6pt;color:var(--muted);font-weight:400}
+h3{font-size:11pt;color:var(--navy);margin:10px 0 4px;break-after:avoid}
+h4{font-size:9.6pt;color:#1E3A6E;margin:8px 0 3px;break-after:avoid}
+p{margin:0 0 6px}
+ul,ol{margin:2px 0 8px 18px}
+li{margin:1.5px 0}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:6mm}
+.cols3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4mm}
+.card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;break-inside:avoid;margin-bottom:8px}
+.card.navy{background:linear-gradient(160deg,#0B1B3A,#132A52);color:#E6EBF5;border:0}
+.card.navy h3,.card.navy h4{color:var(--gold2)}
+.card.soft{background:var(--soft);border-color:#D9E0EC}
+.alert{background:#FBF7EC;border:1px solid #E8D7A8;border-left:4px solid var(--gold);border-radius:10px;padding:9px 12px;margin:6px 0 10px;font-size:9.4pt;break-inside:avoid}
+.alert b.t{display:block;color:#8A6A1C;font-size:7.8pt;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px}
+.term{background:#EEF2F8;border-radius:10px;padding:8px 12px;margin:6px 0 10px;font-size:8.8pt;color:#33415C;break-inside:avoid}
+.term b{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:4px 0 10px;font-size:8.8pt;break-inside:auto}
+thead{display:table-header-group}
+tr{break-inside:avoid}
+th{background:var(--navy);color:#fff;text-align:left;font-weight:600;padding:5px 7px;font-size:8.4pt}
+th.g{background:#A8893A}
+td{padding:4.5px 7px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:nth-child(even) td{background:#F7F9FC}
+td.c,th.c{text-align:center}
+.ok{color:#1E7A4F;font-weight:800}
+table.kv td:first-child{width:32%;font-weight:600;color:var(--navy);background:#F3F5FA}
+.pill{display:inline-block;font-size:7.6pt;font-weight:600;padding:1px 8px;border-radius:99px;background:#EEF2F8;color:#1E3A6E;margin:1px 2px 1px 0}
+.pill.g{background:#F7F0DF;color:#8A6A1C}
+.foot{font-size:7.6pt;color:var(--muted);border-top:1px solid var(--line);padding-top:5px;margin-top:6px}
+.steps{counter-reset:s;list-style:none;margin-left:0}
+.steps li{counter-increment:s;position:relative;padding-left:30px;margin:6px 0;break-inside:avoid}
+.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:21px;height:21px;border-radius:50%;border:2px solid var(--gold);color:var(--navy);font-weight:700;font-size:8.5pt;display:grid;place-items:center}
+.pb{break-before:page}
+.endnote{margin:6mm 0 0;padding:10px 14px;border-radius:10px;background:var(--soft);font-size:8pt;color:var(--muted)}
+.webbar{display:none}
+@media screen{
+  body{background:#EEF1F6}
+  .doc{max-width:216mm;margin:0 auto;background:#fff;box-shadow:0 10px 40px -20px rgba(11,27,58,.35)}
+  .webbar{display:flex;position:sticky;top:0;z-index:5;background:rgba(11,27,58,.97);color:#fff;padding:9px 18px;gap:14px;align-items:center;font-size:9.5pt}
+  .webbar a{color:#F3E6C3;text-decoration:none;font-weight:600}
+  .webbar b{font-weight:800}.webbar b span{color:var(--gold);font-size:7.5pt;letter-spacing:3px;margin-left:5px}
+  .webbar .sp{flex:1}
+  .webfoot{max-width:216mm;margin:0 auto 30px;padding:12px 16mm;font-size:8pt;color:var(--muted)}
+}
+@media print{.webfoot{display:none}}
+.inframe .webbar,.inframe .webfoot{display:none!important}.dlpdf{display:inline-block;margin-top:14px;background:#C9A54C;color:#0B1B3A!important;font-weight:700;font-size:12px;padding:9px 16px;border-radius:8px;text-decoration:none}@media print{.dlpdf{display:none}}</style></head><body>
+<div class="webbar"><a href="../index.html#inicio">← Voltar ao portal</a><span class="sp"></span><b>WDT<span>AGENCY</span></b></div>
+<div class="doc">
+<header class="hero"><div class="brand">WDT<span>AGENCY</span></div>
+<div class="eyebrow">WDT Agency · Guia do produto</div><h1>Term</h1><div class="sub">O produto — seguro de vida temporário</div>
+<p class="lead">O que é, quando vender Term ou permanente, para quem serve, como dimensionar capital e prazo, como fechar, as objeções e a conversão. Leia antes de assistir aos vídeos de cotação.</p><div class="chips"><span>Prêmio nivelado</span><span>10 a 40 anos</span><span>Conversível</span><span>6 objeções</span></div><a class="dlpdf" href="pdf/term-produto.pdf" download>⬇ Baixar PDF</a></header>
+<main>
+<nav class="toc"><h4>Conteúdo</h4><a href="#s1"><b>01</b>O que é o Term</a><a href="#s2"><b>02</b>Term ou permanente</a><a href="#s3"><b>03</b>Para qual cliente serve</a><a href="#s4"><b>04</b>A conversa que abre o Term</a><a href="#s5"><b>05</b>Quanto capital e por quantos anos</a><a href="#s6"><b>06</b>Seis estratégias para fechar</a><a href="#s7"><b>07</b>As seis objeções</a><a href="#s8"><b>08</b>A conversão: o ativo escondido</a><a href="#s9"><b>09</b>Antes de cotar</a></nav>
+<section class="sec" id="s1"><div class="sec-h"><div class="n">1</div><h2>O que é o Term<small>O produto em uma frase</small></h2></div>
+<p>O cliente compra <b>uma quantia de dinheiro, por um número de anos, por um preço que não muda</b>. Se morrer dentro do prazo, a família recebe o capital, livre de imposto de renda. Se chegar vivo ao fim do prazo, a apólice termina e nada é devolvido — salvo nos produtos com devolução de prêmios.</p>
+<div class="cols"><div>
+<div class="card"><h4>💰 Prêmio nivelado</h4><p>O valor do primeiro mês é o mesmo do último mês do prazo. Quem tem 35 anos trava o preço dos 35 até os 65.</p></div>
+<div class="card"><h4>📅 Prazo definido</h4><p>10, 15, 20, 25 ou 30 anos (até 40 em algumas seguradoras). No fim, a apólice termina ou vira renovável ano a ano, com prêmio que sobe muito.</p></div>
+<div class="card"><h4>🚫 Sem valor acumulado</h4><p>Não junta dinheiro e não tem resgate. É proteção pura — e por isso custa pouco.</p></div>
+</div><div>
+<div class="card"><h4>🔄 Conversível</h4><p>Quase todos os nossos produtos permitem trocar o term por um permanente sem novo exame, dentro de uma janela. É o ativo mais subestimado da apólice.</p></div>
+<div class="card"><h4>⚡ Benefícios em vida</h4><p>A maioria antecipa parte do capital em doença terminal, crônica ou crítica — em várias seguradoras, sem custo adicional.</p></div>
+<div class="card"><h4>⚖ Preço × cobertura</h4><p>Pelo mesmo valor mensal, o term compra várias vezes mais capital que um permanente: cobertura grande por tempo limitado.</p></div>
+</div></div>
+<div class="alert"><b class="t">A frase que funciona</b>“Isso é o seguro que cobre o período em que a sua família não sobreviveria financeiramente sem você. Quando os filhos estiverem criados e a casa paga, você não precisa mais dele. Até lá, precisa.”</div></section>
+<section class="sec" id="s2"><div class="sec-h"><div class="n">2</div><h2>Term ou permanente<small>A comparação honesta</small></h2></div>
+<table><thead><tr><th></th><th>Term</th><th>Permanente (IUL, WL, UL)</th></tr></thead><tbody>
+<tr><td><b>Para que serve</b></td><td>Substituir a renda enquanto há gente dependendo dela</td><td>Capital garantido, acumulação, sucessão</td></tr>
+<tr><td><b>Duração</b></td><td>Prazo escolhido: 10 a 40 anos</td><td>A vida inteira, com o prêmio em dia</td></tr>
+<tr><td><b>Custo por dólar de cobertura</b></td><td>O mais baixo do mercado</td><td>Muito mais alto pelo mesmo capital</td></tr>
+<tr><td><b>Valor acumulado</b></td><td>Nenhum</td><td>Acumula e pode ser acessado em vida</td></tr>
+<tr><td><b>No fim do prazo</b></td><td>Termina, ou renova caro</td><td>Continua</td></tr>
+<tr><td><b>Quando é a escolha certa</b></td><td>Renda a proteger, orçamento apertado, dívida com prazo, família jovem</td><td>Sobra de caixa, planejamento fiscal, herança, negócio</td></tr>
+</tbody></table>
+<div class="cols"><div><div class="alert"><b class="t">O erro que queima cliente</b>Empurrar permanente para quem não tem fôlego de caixa: a apólice cai em 8 meses e você perde o cliente e a indicação. Term bem colocado hoje é permanente convertido daqui a alguns anos.</div></div>
+<div><div class="term"><b>O que os dois têm em comum:</b> benefício de morte livre de imposto de renda e, na maior parte da nossa lista, benefícios em vida. O term não é seguro de segunda classe.</div></div></div></section>
+<section class="sec" id="s3"><div class="sec-h"><div class="n">3</div><h2>Para qual cliente serve<small>Perfis que fecham</small></h2></div>
+<table class="kv"><tbody>
+<tr><td>Família jovem com filhos pequenos</td><td>A renda sustenta várias pessoas por mais 20 anos. Prazo: até o filho mais novo sair da faculdade.</td></tr>
+<tr><td>Quem acabou de comprar casa</td><td>A hipoteca é a maior dívida da vida e tem prazo conhecido. Prazo: o que falta da hipoteca.</td></tr>
+<tr><td>Dono de pequeno negócio</td><td>Dívida da empresa com garantia pessoal, sócio a proteger. Prazo: o do financiamento ou do contrato.</td></tr>
+<tr><td>Orçamento curto, necessidade grande</td><td>Precisa de US$ 500.000 e só tem US$ 60 por mês: o permanente não cabe, o term cabe e cobre.</td></tr>
+<tr><td>Quer entrar agora e crescer depois</td><td>Jovem e saudável, sem sobra hoje: trava a saúde aos 28 e converte aos 35, sem exame.</td></tr>
+<tr><td><b>Quando NÃO serve</b></td><td>Acima de 65 buscando cobertura vitalícia · quer valor acumulado · planejamento sucessório · final expense · cliente com visto na National Life (só permanente).</td></tr>
+</tbody></table></section>
+<section class="sec" id="s4"><div class="sec-h"><div class="n">4</div><h2>A conversa que abre o Term<small>Descoberta — faça o cliente calcular em voz alta</small></h2></div>
+<div class="cols"><div><ol class="steps">
+<li>Quem depende do dinheiro que você traz para casa?</li>
+<li>Se você não acordasse amanhã, quanto tempo eles se manteriam com o que existe hoje?</li>
+<li>Quanto falta da casa?</li>
+<li>Quantos anos até o mais novo se sustentar sozinho?</li>
+<li>Tem cobertura pelo trabalho? Ela te acompanha se você sair de lá?</li>
+<li>Se o dinheiro tivesse que chegar amanhã, para quem ele iria?</li></ol></div>
+<div><div class="card soft"><h4>✓ Faça</h4><p>Escute mais do que fale. Repita o número que ele deu. Use os nomes da família. Traga o preço só depois que ele admitiu o tamanho do problema.</p></div>
+<div class="card soft"><h4>⚠ Não faça</h4><p>Abrir com preço · falar de IUL ou índice · apresentar três seguradoras de uma vez · mandar cotação por mensagem antes dessa conversa.</p></div></div></div></section>
+<section class="sec" id="s5"><div class="sec-h"><div class="n">5</div><h2>Quanto capital e por quantos anos<small>Dimensionamento</small></h2></div>
+<div class="cols"><div><h3>O método D.I.M.E.</h3><ul>
+<li><b>D — Dívidas:</b> cartão, carro, empréstimos.</li>
+<li><b>I — Income (renda):</b> renda anual × anos que a família ainda precisa dela.</li>
+<li><b>M — Mortgage:</b> saldo devedor da casa.</li>
+<li><b>E — Educação:</b> o custo de formar cada filho.</li></ul>
+<p>Some tudo e desconte a cobertura e a poupança que já existem. O que sobra é o capital.</p></div>
+<div><h3>O atalho</h3><ul><li><b>Capital:</b> 10 a 12 vezes a renda anual.</li><li><b>Prazo:</b> o maior entre os anos que faltam de hipoteca e os anos até o filho mais novo completar 22.</li></ul>
+<div class="term"><b>Exemplo:</b> renda de US$ 60.000, hipoteca com 18 anos, filho de 6 anos → capital de US$ 600.000 a US$ 720.000, prazo de 20 anos.</div></div></div>
+<div class="alert"><b class="t">Regra prática do prazo</b>Na dúvida entre dois prazos, venda o maior. A diferença de prêmio entre 20 e 30 anos é pequena para um cliente jovem, e a cobertura não acaba no ano em que a família ainda dependia dela.</div></section>
+<section class="sec" id="s6"><div class="sec-h"><div class="n">6</div><h2>Seis estratégias para fechar<small>Fechamento</small></h2></div>
+<ol class="steps">
+<li><b>Venda o custo diário:</b> US$ 45 por mês é uma conta; US$ 1,50 por dia é menos que o café.</li>
+<li><b>Três opções, nunca uma:</b> bom, melhor e ideal (ex.: US$ 250 mil, 500 mil e 750 mil). O cliente passa a decidir quanto, não se compra.</li>
+<li><b>Use os benefícios em vida:</b> “Isso não paga só se você morrer. Se tiver um AVC ou um câncer, recebe parte do dinheiro em vida.”</li>
+<li><b>Trave a saúde hoje:</b> “Você nunca mais vai estar tão saudável nem tão barato quanto hoje.” É o único argumento de urgência honesto.</li>
+<li><b>Venda a conversão junto:</b> “Comece pelo term; com mais folga, trocamos por um permanente sem exame novo.”</li>
+<li><b>Feche na hora, sem exame:</b> várias seguradoras decidem na hora ou por questionário. Caso que dorme é caso que morre.</li></ol>
+<div class="term"><b>Depois do sim:</b> beneficiário com nome completo, data de nascimento e percentual · agende a entrega da apólice · peça duas indicações.</div></section>
+<section class="sec" id="s7"><div class="sec-h"><div class="n">7</div><h2>As seis objeções<small>E o que responder</small></h2></div>
+<table class="kv"><tbody>
+<tr><td>“Term é dinheiro jogado fora”</td><td>“É como o seguro do carro: você paga e torce para não usar.” Se for o problema, há produtos com devolução de prêmios no fim do prazo (Assurity com Endowment Rider, Kansas City Life Cashback Term, American Amicable com ROP).</td></tr>
+<tr><td>“Já tenho seguro pelo trabalho”</td><td>Costuma ser 1 ou 2 vezes o salário e acaba no dia em que ele sai da empresa. O que fazemos aqui é dele e vai com ele.</td></tr>
+<tr><td>“Está caro”</td><td>Ajuste o tamanho, não cancele a proteção: baixe o capital, encurte o prazo ou troque de seguradora.</td></tr>
+<tr><td>“Preciso falar com minha esposa”</td><td>“Ela tem que participar. É o valor, o prazo ou a seguradora?” Nunca saia sem uma data — ou chame ela agora.</td></tr>
+<tr><td>“Não quero fazer exame”</td><td>“Então nem vamos fazer.” Há opções sem exame: Foresters, United of Omaha Express, American Amicable, Assurity e National Life EZ.</td></tr>
+<tr><td>“Tenho um problema de saúde”</td><td>“Me conta qual — cada seguradora enxerga de um jeito.” Use o Guia de Seguradoras antes de rodar a cotação.</td></tr>
+</tbody></table></section>
+<section class="sec" id="s8"><div class="sec-h"><div class="n">8</div><h2>A conversão: o ativo escondido<small>O que quase ninguém explica ao cliente</small></h2></div>
+<p>Todo term da nossa lista tem o direito de ser trocado por um <b>permanente sem exame e sem nova subscrição</b>, com a saúde do dia em que o cliente comprou. Um diagnóstico depois dos 45 pode tornar alguém inelegível para cobertura nova — quem tem term conversível continua elegível.</p>
+<table><thead><tr><th>Seguradora</th><th>Janela de conversão</th></tr></thead><tbody>
+<tr><td>National Life</td><td>15 primeiros anos ou até os 70, o que vier antes</td></tr>
+<tr><td>Protective</td><td>Até os 70 anos</td></tr>
+<tr><td>Assurity</td><td>Até 1 ou 2 anos antes do fim do prazo, ou até os 65</td></tr>
+<tr><td>Ameritas ClearEdge</td><td>Até os 65</td></tr>
+</tbody></table>
+<div class="term"><b>Na prática:</b> anote a data em que a janela de cada cliente fecha e revisite uma vez por ano. Nunca deixe uma janela fechar sem falar com ele.</div></section>
+<section class="sec" id="s9"><div class="sec-h"><div class="n">9</div><h2>Antes de cotar<small>Checklist — e os vídeos a seguir</small></h2></div>
+<ul><li>Capital e prazo montados com o cliente (D.I.M.E. ou atalho).</li>
+<li>Status migratório: na National Life, cliente com visto só compra permanente; green card é subscrito como cidadão.</li>
+<li>Saúde e medicamentos levantados antes de escolher a seguradora.</li>
+<li>Prepare três opções de capital.</li></ul>
+<div class="term"><b>National Life Level Term:</b> 10, 15, 20 e 30 anos, capital mínimo de US$ 100.000, sem exame até US$ 2.000.000 dos 18 aos 50 anos e quatro benefícios em vida sem custo.</div>
+<p>Nos vídeos a seguir você vê como cotar Term comparando todas as seguradoras e em National Life, Ameritas, Foresters, Transamerica e Americo.</p></section>
+<div class="endnote"><b>Material interno.</b> Guia de produto elaborado pela WDT Agency a partir da apresentação “O produto Term” (setembro de 2026), para treinamento de agentes. Confirme prazos, limites sem exame, janelas de conversão e regras de estrangeiro no material oficial de cada seguradora antes de cotar.</div>
+</main></div>
+<div class="webfoot">WDT AGENCY · Academy — Material de treinamento interno.</div>
+<script>try{if(window.self!==window.top||location.href==="about:srcdoc"){document.documentElement.classList.add("inframe")}}catch(e){}</script></body></html>
