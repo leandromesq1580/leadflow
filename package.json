@@ -12,7 +12,7 @@
     "test:crm-bonus-cutoff": "node --test tests/crm-bonus-cutoff.test.cjs",
     "test:voice-routing": "node --test tests/voice-routing.test.cjs",
     "test": "tsx --test tests/*.test.ts",
-    "test:academy": "python3 tests/academy_staging_test.py && node --import tsx --test tests/academy-routing.test.ts"
+    "test:academy": "python3 tests/academy_staging_test.py && python3 tests/academy_foresters_test.py && node --import tsx --test tests/academy-routing.test.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
