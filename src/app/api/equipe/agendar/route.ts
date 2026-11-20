@@ -1,4 +1,5 @@
 import { createHmac } from 'node:crypto'
+import { dispatchEquipeNotifications } from '@/lib/equipe-notifications'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { availableSlots, BookingValidationError, SALES_EMAIL, validateBooking } from '@/lib/equipe-booking'
 
@@ -53,7 +54,11 @@ export async function POST(req: Request) {
       return reply({ code: 'unavailable' }, 503)
     }
     if (!data?.ok) return reply({ code: 'unavailable' }, 503)
-    // No email/SMS/WhatsApp is sent or promised by this endpoint.
+    // The reservation is committed. Notification errors must never turn this
+    // into a booking failure. A durable outbox also handles request interruption.
+    try { await dispatchEquipeNotifications(body.requestId) }
+    catch { console.error('[Equipe notifications] dispatch unavailable') }
+    // Confirm the reservation, not delivery of either notification.
     return reply({ ok: true, slot: data.slot })
   } catch { return reply({ code: 'unavailable' }, 503) }
 }

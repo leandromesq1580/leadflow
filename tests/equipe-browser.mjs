@@ -32,7 +32,7 @@ try {
   if(lang==='en') {
    for(const state of ['error','rate','conflict']) {
     mode=state;await page.getByRole('button',{name:submit,exact:true}).click()
-    await dialog.getByRole('alert').waitFor({state:'visible'})
+    await dialog.getByRole('alert').first().waitFor({state:'visible'})
     assert.equal(await page.getByRole('heading',{name:success,exact:true}).count(),0)
     if(state==='conflict') {await page.waitForFunction(()=>document.querySelector('select[name=slot]').value==='');assert.ok(gets>=2)}
    }
@@ -40,6 +40,7 @@ try {
   }
   await page.getByRole('button',{name:submit,exact:true}).click()
   await page.getByRole('heading',{name:success,exact:true}).waitFor({state:'visible'})
+  assert.match(await dialog.innerText(),lang==='en'?/even if the confirmation email does not arrive/:lang==='pt'?/mesmo se o e-mail de confirmação não chegar/:/aunque no llegue el correo de confirmación/)
   assert.equal(posts.at(-1).fuso,'America/New_York'); assert.equal(posts.at(-1).idioma,lang)
   assert.equal(posts.at(-1).tracking.utm_source,'browser-test');assert.equal(posts.at(-1).tracking.campaign_id,'local')
   assert.ok(posts.at(-1).slot.endsWith('Z'))

@@ -4,6 +4,7 @@
     { "path": "/api/cron/run-all", "schedule": "*/5 * * * *" },
     { "path": "/api/cron/ai-sequences", "schedule": "* * * * *" },
     { "path": "/api/cron/email-campaigns", "schedule": "* * * * *" },
+    { "path": "/api/cron/equipe-notifications", "schedule": "*/5 * * * *" },
     { "path": "/api/cron/recruit", "schedule": "* * * * *" }
   ]
 }
