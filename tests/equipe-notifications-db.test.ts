@@ -29,6 +29,30 @@ test('reminder becomes due exactly 1h before, survives days, excludes cancelled/
  }finally{await db.close()}
 })
 
+test('A -> B -> A restores only the never-attempted reminder at its original due time',async()=>{
+ const db=new PGlite()
+ try {
+  await db.exec(readFileSync('tests/equipe-booking-db.test.ts','utf8').match(/await db.exec\(`([\s\S]*?)`\)/)![1])
+  await db.exec(`CREATE TABLE test_clock_value(t timestamptz); INSERT INTO test_clock_value VALUES ('2026-12-01T12:00:00Z'); CREATE FUNCTION test_clock() RETURNS timestamptz LANGUAGE SQL AS 'SELECT t FROM test_clock_value';`)
+  await db.exec(readFileSync('supabase/migrations/080_equipe_notifications.sql','utf8').replaceAll('now()','public.test_clock()'))
+  await db.exec(`INSERT INTO leads(name,email,phone,raw_data) VALUES ('Synthetic','test@example.test','+12025550123','{"source":"landing_equipe","requestId":"roundtrip","idioma":"en","fuso":"UTC"}'); INSERT INTO appointments(lead_id,buyer_id,scheduled_at,status) SELECT l.id,b.id,'2026-12-08T15:00:00Z','scheduled' FROM leads l CROSS JOIN buyers b;`)
+  const original=(await db.query("SELECT id FROM equipe_notification_outbox WHERE kind='reminder'")).rows[0]
+  await db.exec("UPDATE appointments SET scheduled_at='2026-12-09T15:00:00Z'; UPDATE appointments SET scheduled_at='2026-12-08T15:00:00Z'")
+  const {rows:[r]}=await db.query<any>("SELECT * FROM equipe_notification_outbox WHERE id=$1",[original.id])
+  assert.equal(r.status,'pending')
+  assert.equal(r.attempts,0);assert.equal(r.first_attempt_at,null)
+  assert.equal(new Date(r.next_attempt_at).toISOString(),'2026-12-08T14:00:00.000Z')
+  await db.exec("UPDATE test_clock_value SET t='2026-12-08T13:59:59Z'")
+  assert.equal((await db.query('SELECT * FROM equipe_claim_notifications()')).rows.length,0)
+  await db.exec("UPDATE test_clock_value SET t='2026-12-08T14:00:00Z'")
+  const claimed=await db.query<any>('SELECT * FROM equipe_claim_notifications()')
+  assert.equal(claimed.rows.length,1);assert.equal(claimed.rows[0].id,original.id)
+  assert.equal(claimed.rows[0].attempts,1)
+  assert.equal(new Date(claimed.rows[0].first_attempt_at).toISOString(),'2026-12-08T14:00:00.000Z')
+  assert.equal((await db.query('SELECT * FROM equipe_claim_notifications()')).rows.length,0)
+ }finally{await db.close()}
+})
+
 test('outbox is atomic, no historical backfill, exclusive claims, bounded safe retries and RLS',async()=>{
  const db=new PGlite()
  try {

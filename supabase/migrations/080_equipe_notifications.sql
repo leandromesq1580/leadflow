@@ -15,6 +15,7 @@ CREATE TABLE public.equipe_notification_outbox (
  created_at timestamptz NOT NULL DEFAULT now(),
  updated_at timestamptz NOT NULL DEFAULT now(),
  first_attempt_at timestamptz,
+ invalidated_by_reschedule boolean NOT NULL DEFAULT false,
  next_attempt_at timestamptz NOT NULL,
  UNIQUE(appointment_id,channel,kind,scheduled_for)
 );
@@ -29,7 +30,17 @@ BEGIN
  IF TG_OP='UPDATE' THEN
   -- Do not turn edits to historical appointments into historical notifications.
   IF NOT EXISTS(SELECT 1 FROM equipe_notification_outbox WHERE appointment_id=NEW.id) THEN RETURN NEW; END IF;
-  UPDATE equipe_notification_outbox SET status='failed',updated_at=now()
+  -- Only this explicit provenance can reopen a never-attempted email reminder.
+  -- Cancellation also revokes provenance from earlier superseded slots.
+  IF NEW.status NOT IN ('scheduled','confirmed') THEN
+   UPDATE equipe_notification_outbox SET invalidated_by_reschedule=false
+   WHERE appointment_id=NEW.id AND invalidated_by_reschedule;
+  END IF;
+  UPDATE equipe_notification_outbox SET status='failed',updated_at=now(),
+   invalidated_by_reschedule=(channel='email' AND kind='reminder'
+    AND attempts=0 AND first_attempt_at IS NULL
+    AND scheduled_for IS DISTINCT FROM NEW.scheduled_at
+    AND NEW.status IN ('scheduled','confirmed'))
   WHERE appointment_id=NEW.id AND status='pending'
    AND (scheduled_for IS DISTINCT FROM NEW.scheduled_at OR NEW.status NOT IN ('scheduled','confirmed'));
   IF NEW.scheduled_at IS NOT DISTINCT FROM OLD.scheduled_at THEN RETURN NEW; END IF;
@@ -42,7 +53,12 @@ BEGIN
  jsonb_build_object('name',l.name,'email',l.email,'phone',l.phone,'locale',l.raw_data->>'idioma','timezone',l.raw_data->>'fuso','slot',NEW.scheduled_at),
  CASE WHEN c.kind='reminder' THEN NEW.scheduled_at-interval '1 hour' ELSE now() END
  FROM (VALUES ('email','confirmation'),('whatsapp','confirmation'),('email','reminder')) c(channel,kind)
- ON CONFLICT DO NOTHING;
+ ON CONFLICT (appointment_id,channel,kind,scheduled_for) DO UPDATE
+ SET status='pending',updated_at=now(),next_attempt_at=EXCLUDED.next_attempt_at,
+  invalidated_by_reschedule=false
+ WHERE equipe_notification_outbox.channel='email' AND equipe_notification_outbox.kind='reminder'
+  AND equipe_notification_outbox.status='failed' AND equipe_notification_outbox.invalidated_by_reschedule
+  AND equipe_notification_outbox.attempts=0 AND equipe_notification_outbox.first_attempt_at IS NULL;
  RETURN NEW;
 END $$;
 CREATE TRIGGER equipe_enqueue_notifications AFTER INSERT OR UPDATE OF scheduled_at,status ON public.appointments
