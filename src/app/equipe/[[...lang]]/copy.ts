@@ -31,7 +31,7 @@ export const COPY: Record<Lang, Copy> = {
   pt: {
     title: 'Venha para o time Lead4Pro',
     desc: 'Comissão a partir de 65%, o CRM mais avançado para Life Insurance, leads qualificados com subsídio para a equipe, treinamento diário e o Método 20K.',
-    cta: 'Quero conversar agora', navCta: 'Falar com a gente',
+    cta: 'Agendar uma conversa', navCta: 'Agendar uma conversa',
     wa: 'Olá! Vi a página da equipe Lead4Pro e quero conhecer os benefícios.',
     kicker: 'PARA AGENTES DE LIFE INSURANCE',
     h1a: 'Outras agências começam em 45%.', h1b: 'Aqui você começa em 65%.',
@@ -88,7 +88,7 @@ export const COPY: Record<Lang, Copy> = {
   en: {
     title: 'Join the Lead4Pro team',
     desc: 'Commission starting at 65%, the most advanced CRM for life insurance, qualified leads with a big team subsidy, daily training and the 20K Method.',
-    cta: 'Let’s talk now', navCta: 'Talk to us',
+    cta: 'Schedule a call', navCta: 'Schedule a call',
     wa: 'Hi! I saw the Lead4Pro team page and I want to learn about the benefits.',
     kicker: 'FOR LIFE INSURANCE AGENTS',
     h1a: 'Other agencies start at 45%.', h1b: 'Here you start at 65%.',
@@ -145,7 +145,7 @@ export const COPY: Record<Lang, Copy> = {
   es: {
     title: 'Únete al equipo Lead4Pro',
     desc: 'Comisión desde el 65%, el CRM más avanzado para seguros de vida, leads calificados con gran subsidio para el equipo, entrenamiento diario y el Método 20K.',
-    cta: 'Quiero hablar ahora', navCta: 'Hablar con nosotros',
+    cta: 'Agendar una llamada', navCta: 'Agendar una llamada',
     wa: '¡Hola! Vi la página del equipo Lead4Pro y quiero conocer los beneficios.',
     kicker: 'PARA AGENTES DE SEGUROS DE VIDA',
     h1a: 'Otras agencias empiezan en 45%.', h1b: 'Aquí empiezas en 65%.',
