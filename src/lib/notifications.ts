@@ -81,6 +81,12 @@ async function sendWhatsApp(phone: string, message: string, bridge?: { url: stri
   }
 }
 
+/** Recruitment confirmations use the existing global bridge, once per outbox claim. */
+export async function sendEquipeWhatsApp(phone: string, message: string): Promise<boolean> {
+  if (!process.env.WA_BRIDGE_URL?.trim() || !process.env.WA_BRIDGE_KEY?.trim()) return false
+  return sendWhatsApp(phone, message, undefined, { noReplay: true })
+}
+
 /**
  * Avisa o dono do book quando a National Life muda uma apólice ou publica/remove
  * uma exigência. O alerta é agrupado por leitura do portal para não transformar
