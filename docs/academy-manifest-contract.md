@@ -78,7 +78,7 @@ python3 scripts/academy-stage.py \
 - O usuário declarou revisão pessoal dos vídeos/documentos (`ja`, 18:49:56
   -05:00) e autorizou a publicação (`sim`, 18:50:08 -05:00). Isso é
   proveniência declarada, não certificação audiovisual automática.
-- `docs/academy-release/manifest.json` fixa os hashes dos 236 arquivos
+- `docs/academy-release/manifest.json` fixa os hashes dos 248 arquivos (236 + 12 guias Foresters)
   sanitizados, incluindo 17 vídeos. `authorization.json` registra a origem
   da decisão, a anonimização adicional de áudio e as limitações dos scans.
 - Apenas a simulação IUL National Life foi confirmada fictícia. A autorização

@@ -1,6 +1,6 @@
 # Guias de produto Foresters em PT-BR (WDT Academy)
 
-Estado: **PR draft, não publicado.** Proveniência: texto traduzido de PDFs oficiais
+Estado: **publicado em 20/11/2026 por autorização expressa do dono (18:24:15 -05:00).** Proveniência: texto traduzido de PDFs oficiais
 fornecidos pelo proprietário em 20/11/2026; sem dados pessoais. Tradução de apoio:
 vale o texto original em inglês.
 
@@ -58,12 +58,17 @@ Term (Level Term) troca dividendos/empréstimos por conversão e renovação anu
   Precisa de playwright+chromium (pula sem eles); não entra no `npm run test:academy`.
 - Fixtures: `tests/fixtures/foresters-source/*.txt` = texto extraído dos originais EN.
 
-## Publicação (o que ainda exige "sim" do dono)
+## Publicação
 
-`public/academy/` é ignorado pelo git; os 13 arquivos entram com `git add -f`. O registro
-publicado (`manifest.json`, `allowlist.json`, `authorization.json`, 236 arquivos) **não foi
-alterado**. `scripts/academy-pending-foresters.py` gera
-`docs/academy-release/pending-foresters-guias.json` (hashes SHA-256, `approved: false`).
-Para publicar: autorização explícita; mover os 13 itens para allowlist/manifest com hash
-novo do `index.html`; atualizar `authorization.json` (236 → 249); rodar
-`scripts/academy-stage.py` e conferir hashes; deploy conforme `deploy-vercel.md`.
+`public/academy/` é ignorado pelo git; os 13 arquivos (12 novos + `index.html` alterado) entram com
+`git add -f`, como os 236 anteriores. Registro de release: `manifest.json`, `allowlist.json` e
+`authorization.json` (chave `foresters-guias-2026-11-20`) passaram de 236 para **248** arquivos
+(236 + 12 novos; `index.html` mudou de hash, não de contagem). Os demais hashes não mudaram.
+
+Decisão do dono e limites registrados em `authorization.json`:
+- Os PDFs originais em inglês trazem "For Producer Use Only. Not For Use With The Public."; o dono foi
+  avisado e autorizou publicar mesmo assim.
+- A tradução PT-BR não foi revisada por humano: material de apoio, vale o original; não é certificação.
+
+Conferência: `python3 scripts/academy-stage.py --manifest docs/academy-release/manifest.json --source public/academy --destination <novo>`
+(ver `docs/academy-manifest-contract.md`) deve staging de 248 arquivos; deploy conforme `deploy-vercel.md`.

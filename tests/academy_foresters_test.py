@@ -177,33 +177,48 @@ class IndexTest(unittest.TestCase):
 
 
 class ReleaseRegistryTest(unittest.TestCase):
+    """Registro de release: 236 assets anteriores + 12 novos = 248; hashes iguais ao disco."""
+
     def setUp(self):
-        self.pending = json.loads((REL / 'pending-foresters-guias.json').read_text())
-        self.live = json.loads((REL / 'manifest.json').read_text())
-
-    def test_published_manifest_untouched_and_not_extended(self):
-        paths = {a['path'] for a in self.live['assets']}
-        self.assertEqual(len(paths), 236)
-        self.assertFalse(any('foresters-smart' in p or 'original' in p for p in paths))
-
-    def test_pending_is_not_approved_and_hashes_match_disk(self):
-        self.assertIs(self.pending['publicationApproved'], False)
-        want = {'index.html'}
+        self.man = json.loads((REL / 'manifest.json').read_text())
+        self.allow = json.loads((REL / 'allowlist.json').read_text())
+        self.auth = json.loads((REL / 'authorization.json').read_text())['foresters-guias-2026-11-20']
+        self.want_new = set()
         for slug, p in PRODUCTS.items():
-            want |= {f'docs/foresters-{slug}.html', f'docs/pdf/foresters-{slug}.pdf',
-                     f'docs/pdf/foresters-{p["code"]}-{slug}-original.pdf'}
-        got = {a['path']: a for a in self.pending['assets']}
-        self.assertEqual(set(got), want)
-        for path, a in got.items():
-            self.assertIs(a['approved'], False, path)
-            self.assertEqual(hashlib.sha256((ACAD / path).read_bytes()).hexdigest(), a['sha256'], path)
-        self.assertIn('sem dados pessoais', self.pending['provenance'])
-        self.assertIn('20/11/2026', self.pending['provenance'])
+            self.want_new |= {f'docs/foresters-{slug}.html', f'docs/pdf/foresters-{slug}.pdf',
+                              f'docs/pdf/foresters-{p["code"]}-{slug}-original.pdf'}
 
-    def test_pending_baseline_matches_published_manifest(self):
-        base = {a['path']: a['sha256'] for a in self.live['assets']}
-        self.assertEqual(self.pending['baseline']['index.html'], base['index.html'])
-        self.assertEqual(self.pending['baseline']['docs/foresters-guia.html'], base['docs/foresters-guia.html'])
+    def test_manifest_allowlist_required_paths_consistent(self):
+        paths = [a['path'] for a in self.man['assets']]
+        self.assertEqual(len(paths), 248)
+        self.assertEqual(len(set(paths)), 248)
+        self.assertEqual(self.man['requiredPaths'], paths)
+        self.assertEqual([a['path'] for a in self.allow], paths)
+        self.assertTrue(self.want_new <= set(paths))
+        self.assertEqual(len(self.want_new), 12)
+
+    def test_registered_hashes_match_disk_and_are_approved(self):
+        allow = {a['path']: a for a in self.allow}
+        for a in self.man['assets']:
+            self.assertIs(a['approved'], True, a['path'])
+            self.assertEqual(hashlib.sha256((ACAD / a['path']).read_bytes()).hexdigest(), a['sha256'], a['path'])
+            self.assertEqual(allow[a['path']]['sha256'], a['sha256'], a['path'])
+        for p in self.want_new:
+            self.assertEqual(allow[p]['provenance'], 'authorization.json#foresters-guias-2026-11-20', p)
+
+    def test_authorization_records_owner_decision_provenance_and_limits(self):
+        self.assertEqual(self.auth['counts'], {'previousAssets': 236, 'newAssets': 12, 'modifiedAssets': 1, 'totalAssets': 248})
+        self.assertIn('sem dados pessoais', self.auth['provenance'])
+        self.assertIn('20/11/2026', self.auth['provenance'])
+        self.assertEqual(self.auth['ownerDecision']['at'], '2026-11-20T18:24:15-05:00')
+        self.assertIs(self.auth['producerUseNotice']['ownerWasWarned'], True)
+        self.assertIn('For Producer Use Only', self.auth['producerUseNotice']['text'])
+        self.assertTrue(any('NÃO revisada por humano' in x for x in self.auth['limitations']))
+        self.assertEqual({x['path'] for x in self.auth['newAssets']}, self.want_new)
+        man = {a['path']: a['sha256'] for a in self.man['assets']}
+        for x in self.auth['newAssets']:
+            self.assertEqual(man[x['path']], x['sha256'])
+        self.assertEqual(man['index.html'], self.auth['indexHtml']['sha256'])
 
 
 if __name__ == '__main__':

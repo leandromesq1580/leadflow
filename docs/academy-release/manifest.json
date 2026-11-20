@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "publicationApproved": true,
-  "reviewedBy": "User-declared personal video/document review (ja) and explicit production authorization (sim); Hermes executes hash verification and additional audio anonymization, not independent full audiovisual certification",
+  "reviewedBy": "User-declared personal video/document review (ja) and explicit production authorization (sim); Hermes executes hash verification and additional audio anonymization, not independent full audiovisual certification | 2026-11-20T18:24:15-05:00: owner explicitly authorized registering the 13 Foresters files (12 new + modified index.html) and publishing; translation not human-reviewed; see authorization.json#foresters-guias-2026-11-20",
   "reviewedAt": "2026-11-19T18:49:56-05:00",
   "requiredPaths": [
     "docs/american-amicable-guia.html",
@@ -11,7 +11,11 @@
     "docs/corebridge-guia.html",
     "docs/fex-produto.html",
     "docs/fg-guia.html",
+    "docs/foresters-advantage-plus-ii.html",
     "docs/foresters-guia.html",
+    "docs/foresters-level-term.html",
+    "docs/foresters-live-well-plus.html",
+    "docs/foresters-smart-ul.html",
     "docs/guia-beneficios-doencas.html",
     "docs/guia-crm.html",
     "docs/guia-seguradoras.html",
@@ -176,7 +180,15 @@
     "docs/pdf/corebridge-guia.pdf",
     "docs/pdf/fex-produto.pdf",
     "docs/pdf/fg-guia.pdf",
+    "docs/pdf/foresters-503346-smart-ul-original.pdf",
+    "docs/pdf/foresters-504387-level-term-original.pdf",
+    "docs/pdf/foresters-504933-advantage-plus-ii-original.pdf",
+    "docs/pdf/foresters-506014-live-well-plus-original.pdf",
+    "docs/pdf/foresters-advantage-plus-ii.pdf",
     "docs/pdf/foresters-guia.pdf",
+    "docs/pdf/foresters-level-term.pdf",
+    "docs/pdf/foresters-live-well-plus.pdf",
+    "docs/pdf/foresters-smart-ul.pdf",
     "docs/pdf/guia-beneficios-doencas.pdf",
     "docs/pdf/guia-crm.pdf",
     "docs/pdf/guia-seguradoras.pdf",
@@ -285,9 +297,33 @@
       "approved": true
     },
     {
+      "path": "docs/foresters-advantage-plus-ii.html",
+      "source": "docs/foresters-advantage-plus-ii.html",
+      "sha256": "190a3676d793c94344d597056b35e46da4d1276b7843fb1ee41e0458aeae6479",
+      "approved": true
+    },
+    {
       "path": "docs/foresters-guia.html",
       "source": "docs/foresters-guia.html",
       "sha256": "a03c6c3d3ca81373c682dc7ce949051537c51649835e8f0d57ad0288ca7df2f3",
+      "approved": true
+    },
+    {
+      "path": "docs/foresters-level-term.html",
+      "source": "docs/foresters-level-term.html",
+      "sha256": "9916eb81cb2c7b3c7aac757aa7ffccff514ca9840eb2b1279fd2c3332de20f7a",
+      "approved": true
+    },
+    {
+      "path": "docs/foresters-live-well-plus.html",
+      "source": "docs/foresters-live-well-plus.html",
+      "sha256": "9829064286346d1c49d106abd01af3b8bd57bc3d6538afb3c1529de6e0989798",
+      "approved": true
+    },
+    {
+      "path": "docs/foresters-smart-ul.html",
+      "source": "docs/foresters-smart-ul.html",
+      "sha256": "66922b1a2750bc68c99133108847deaa71d79e38348fbebaadd5d06d665c1295",
       "approved": true
     },
     {
@@ -1275,9 +1311,57 @@
       "approved": true
     },
     {
+      "path": "docs/pdf/foresters-503346-smart-ul-original.pdf",
+      "source": "docs/pdf/foresters-503346-smart-ul-original.pdf",
+      "sha256": "81e6d0c8351ddd24831f8f5ee3cc27a07d4a4ee3857cbe1c9acafdbd3085fcce",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/foresters-504387-level-term-original.pdf",
+      "source": "docs/pdf/foresters-504387-level-term-original.pdf",
+      "sha256": "a8f86616c0a927eefacfefedc68cb872d781b7f8b429acddcb88e537b0edbc91",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/foresters-504933-advantage-plus-ii-original.pdf",
+      "source": "docs/pdf/foresters-504933-advantage-plus-ii-original.pdf",
+      "sha256": "7291e70a3718e095465ee1394ba808e4dc51f786a5a80307b62f5d90e102355f",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/foresters-506014-live-well-plus-original.pdf",
+      "source": "docs/pdf/foresters-506014-live-well-plus-original.pdf",
+      "sha256": "6bde3dea8b3518761e685c9b37bec2e9bf865cc24198a85472aeb63535631e58",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/foresters-advantage-plus-ii.pdf",
+      "source": "docs/pdf/foresters-advantage-plus-ii.pdf",
+      "sha256": "17297b74d8d90efecc6b78d6f426c92909e01f588e155e81cb018da62222c012",
+      "approved": true
+    },
+    {
       "path": "docs/pdf/foresters-guia.pdf",
       "source": "docs/pdf/foresters-guia.pdf",
       "sha256": "1e58790c67b2d08724e2a063e073df678e8db99878747715e740b16a5152f83c",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/foresters-level-term.pdf",
+      "source": "docs/pdf/foresters-level-term.pdf",
+      "sha256": "2865da75960f34cf27c7e05b31712dfa06d92308df01c315bd4791444c9998d8",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/foresters-live-well-plus.pdf",
+      "source": "docs/pdf/foresters-live-well-plus.pdf",
+      "sha256": "92d860d6f5ac9e71b0224b154dd6efc787681118517e2bee6be243a6a3342c39",
+      "approved": true
+    },
+    {
+      "path": "docs/pdf/foresters-smart-ul.pdf",
+      "source": "docs/pdf/foresters-smart-ul.pdf",
+      "sha256": "addc032131972e55596d5c68672146644c38225b09f47386d28c8031cff3309f",
       "approved": true
     },
     {
@@ -1445,7 +1529,7 @@
     {
       "path": "index.html",
       "source": "index.html",
-      "sha256": "69e957612e32048204a01417697f4bc070fd3f4b58ff2ddd9d1f1f75044e554b",
+      "sha256": "0c68098391b6b9496166af4b3bcbffd279ca5fefc37ff97eb3a8b941401e254d",
       "approved": true
     },
     {
