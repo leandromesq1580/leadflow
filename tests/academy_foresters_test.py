@@ -177,22 +177,22 @@ class IndexTest(unittest.TestCase):
 
 
 class ReleaseRegistryTest(unittest.TestCase):
-    """Registro de release: 236 anteriores + 12 guias + 6 vídeos = 254; hashes iguais ao disco."""
+    """Registro de release: 248 anteriores + 3 capas = 251; os três vídeos grandes ficam fora do Git."""
 
     def setUp(self):
         self.man = json.loads((REL / 'manifest.json').read_text())
         self.allow = json.loads((REL / 'allowlist.json').read_text())
         self.auth = json.loads((REL / 'authorization.json').read_text())['academy-drive-videos-2026-11-20']
-        self.want_new = {f'media/{name}' for name in ('aula-seguro-term.jpg', 'aula-seguro-term.mp4', 'aula-treinamento-iul.jpg', 'aula-treinamento-iul.mp4', 'aula-vendas-iul.jpg', 'aula-vendas-iul.mp4')}
+        self.want_new = {f'media/{name}.jpg' for name in ('aula-seguro-term', 'aula-treinamento-iul', 'aula-vendas-iul')}
 
     def test_manifest_allowlist_required_paths_consistent(self):
         paths = [a['path'] for a in self.man['assets']]
-        self.assertEqual(len(paths), 254)
-        self.assertEqual(len(set(paths)), 254)
+        self.assertEqual(len(paths), 251)
+        self.assertEqual(len(set(paths)), 251)
         self.assertEqual(self.man['requiredPaths'], paths)
         self.assertEqual([a['path'] for a in self.allow], paths)
         self.assertTrue(self.want_new <= set(paths))
-        self.assertEqual(len(self.want_new), 6)
+        self.assertEqual(len(self.want_new), 3)
 
     def test_registered_hashes_match_disk_and_are_approved(self):
         allow = {a['path']: a for a in self.allow}
@@ -204,11 +204,11 @@ class ReleaseRegistryTest(unittest.TestCase):
             self.assertEqual(allow[p]['provenance'], 'authorization.json#academy-drive-videos-2026-11-20', p)
 
     def test_authorization_records_owner_decision_provenance_and_limits(self):
-        self.assertEqual(self.auth['counts'], {'previousAssets': 248, 'newAssets': 6, 'modifiedAssets': 1, 'totalAssets': 254})
+        self.assertEqual(self.auth['counts'], {'previousAssets': 248, 'newAssets': 3, 'modifiedAssets': 1, 'totalAssets': 251, 'externalVideos': 3})
         self.assertIn('Treinamento para Agentes', self.auth['provenance'])
         self.assertIn('20/11/2026', self.auth['provenance'])
         self.assertEqual(self.auth['ownerDecision']['at'], '2026-11-20T18:43:52-05:00')
-        self.assertTrue(any('Whole Life' in x for x in self.auth['limitations']))
+        self.assertTrue(any('fora do release versionado' in x for x in self.auth['limitations']))
         self.assertEqual({x['path'] for x in self.auth['newAssets']}, self.want_new)
         man = {a['path']: a['sha256'] for a in self.man['assets']}
         for x in self.auth['newAssets']:
