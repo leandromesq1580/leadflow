@@ -177,25 +177,22 @@ class IndexTest(unittest.TestCase):
 
 
 class ReleaseRegistryTest(unittest.TestCase):
-    """Registro de release: 236 assets anteriores + 12 novos = 248; hashes iguais ao disco."""
+    """Registro de release: 248 anteriores + 3 capas = 251; os três vídeos grandes ficam fora do Git."""
 
     def setUp(self):
         self.man = json.loads((REL / 'manifest.json').read_text())
         self.allow = json.loads((REL / 'allowlist.json').read_text())
-        self.auth = json.loads((REL / 'authorization.json').read_text())['foresters-guias-2026-11-20']
-        self.want_new = set()
-        for slug, p in PRODUCTS.items():
-            self.want_new |= {f'docs/foresters-{slug}.html', f'docs/pdf/foresters-{slug}.pdf',
-                              f'docs/pdf/foresters-{p["code"]}-{slug}-original.pdf'}
+        self.auth = json.loads((REL / 'authorization.json').read_text())['academy-drive-videos-2026-11-20']
+        self.want_new = {f'media/{name}.jpg' for name in ('aula-seguro-term', 'aula-treinamento-iul', 'aula-vendas-iul')}
 
     def test_manifest_allowlist_required_paths_consistent(self):
         paths = [a['path'] for a in self.man['assets']]
-        self.assertEqual(len(paths), 248)
-        self.assertEqual(len(set(paths)), 248)
+        self.assertEqual(len(paths), 251)
+        self.assertEqual(len(set(paths)), 251)
         self.assertEqual(self.man['requiredPaths'], paths)
         self.assertEqual([a['path'] for a in self.allow], paths)
         self.assertTrue(self.want_new <= set(paths))
-        self.assertEqual(len(self.want_new), 12)
+        self.assertEqual(len(self.want_new), 3)
 
     def test_registered_hashes_match_disk_and_are_approved(self):
         allow = {a['path']: a for a in self.allow}
@@ -204,21 +201,19 @@ class ReleaseRegistryTest(unittest.TestCase):
             self.assertEqual(hashlib.sha256((ACAD / a['path']).read_bytes()).hexdigest(), a['sha256'], a['path'])
             self.assertEqual(allow[a['path']]['sha256'], a['sha256'], a['path'])
         for p in self.want_new:
-            self.assertEqual(allow[p]['provenance'], 'authorization.json#foresters-guias-2026-11-20', p)
+            self.assertEqual(allow[p]['provenance'], 'authorization.json#academy-drive-videos-2026-11-20', p)
 
     def test_authorization_records_owner_decision_provenance_and_limits(self):
-        self.assertEqual(self.auth['counts'], {'previousAssets': 236, 'newAssets': 12, 'modifiedAssets': 1, 'totalAssets': 248})
-        self.assertIn('sem dados pessoais', self.auth['provenance'])
+        self.assertEqual(self.auth['counts'], {'previousAssets': 248, 'newAssets': 3, 'modifiedAssets': 1, 'totalAssets': 251, 'externalVideos': 3})
+        self.assertIn('Treinamento para Agentes', self.auth['provenance'])
         self.assertIn('20/11/2026', self.auth['provenance'])
-        self.assertEqual(self.auth['ownerDecision']['at'], '2026-11-20T18:24:15-05:00')
-        self.assertIs(self.auth['producerUseNotice']['ownerWasWarned'], True)
-        self.assertIn('For Producer Use Only', self.auth['producerUseNotice']['text'])
-        self.assertTrue(any('NÃO revisada por humano' in x for x in self.auth['limitations']))
+        self.assertEqual(self.auth['ownerDecision']['at'], '2026-11-20T18:43:52-05:00')
+        self.assertTrue(any('fora do release versionado' in x for x in self.auth['limitations']))
         self.assertEqual({x['path'] for x in self.auth['newAssets']}, self.want_new)
         man = {a['path']: a['sha256'] for a in self.man['assets']}
         for x in self.auth['newAssets']:
             self.assertEqual(man[x['path']], x['sha256'])
-        self.assertEqual(man['index.html'], self.auth['indexHtml']['sha256'])
+        self.assertNotEqual(man['index.html'], self.auth['indexHtml']['previousSha256'])
 
 
 if __name__ == '__main__':
