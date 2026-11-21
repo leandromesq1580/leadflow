@@ -217,10 +217,16 @@
     "docs/whole-life-produto.html",
     "img/hero.jpg",
     "index.html",
+    "media/aula-seguro-term.jpg",
+    "media/aula-seguro-term.mp4",
     "media/aula-solicitacao.jpg",
     "media/aula-solicitacao.mp4",
+    "media/aula-treinamento-iul.jpg",
+    "media/aula-treinamento-iul.mp4",
     "media/aula-underwriting.jpg",
     "media/aula-underwriting.mp4",
+    "media/aula-vendas-iul.jpg",
+    "media/aula-vendas-iul.mp4",
     "media/cot-fex-americo.jpg",
     "media/cot-fex-americo.mp4",
     "media/cot-fex-todas.jpg",
@@ -1529,7 +1535,19 @@
     {
       "path": "index.html",
       "source": "index.html",
-      "sha256": "0c68098391b6b9496166af4b3bcbffd279ca5fefc37ff97eb3a8b941401e254d",
+      "sha256": "a6f9e82090002505f034aa8d6a26ea17e75a8678bb68158bb927a4a40ca5344d",
+      "approved": true
+    },
+    {
+      "path": "media/aula-seguro-term.jpg",
+      "source": "media/aula-seguro-term.jpg",
+      "sha256": "1883f651ca55975669130d26b5f913f104631ef14882d89ea144110f2434d6d2",
+      "approved": true
+    },
+    {
+      "path": "media/aula-seguro-term.mp4",
+      "source": "media/aula-seguro-term.mp4",
+      "sha256": "f9a4019274e86759e46dd7a8d6656accae6419a93bafaca0d6cd6da70d49947b",
       "approved": true
     },
     {
@@ -1545,6 +1563,18 @@
       "approved": true
     },
     {
+      "path": "media/aula-treinamento-iul.jpg",
+      "source": "media/aula-treinamento-iul.jpg",
+      "sha256": "06a06408225c58f99dceaa9669c33ede4ec2dcecd9151c39831128afbf116c18",
+      "approved": true
+    },
+    {
+      "path": "media/aula-treinamento-iul.mp4",
+      "source": "media/aula-treinamento-iul.mp4",
+      "sha256": "b5a333d4db4fab96224b823a28488e7425e2ae003da8f4278e29e2b71835e82a",
+      "approved": true
+    },
+    {
       "path": "media/aula-underwriting.jpg",
       "source": "media/aula-underwriting.jpg",
       "sha256": "ea4c5e281c9e539273a72c1b49e7347d586388bd7b17f0924bca7425ba679eb1",
@@ -1554,6 +1584,18 @@
       "path": "media/aula-underwriting.mp4",
       "source": "media/aula-underwriting.mp4",
       "sha256": "4f4b9d330f03a962ff3b7556f66dd9990c5606c55cd1350789c074eb8dd58490",
+      "approved": true
+    },
+    {
+      "path": "media/aula-vendas-iul.jpg",
+      "source": "media/aula-vendas-iul.jpg",
+      "sha256": "2c56a498659d5d05c2fbc6b65736cac982555e4c8e6cdfe3d4739e6ff617b3f2",
+      "approved": true
+    },
+    {
+      "path": "media/aula-vendas-iul.mp4",
+      "source": "media/aula-vendas-iul.mp4",
+      "sha256": "635677bab1f8d110f9d56ddfad5b1485c5d1408a2850b8d162f568ee8762dad9",
       "approved": true
     },
     {

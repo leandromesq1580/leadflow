@@ -141,5 +141,34 @@
       "Os 236 assets anteriores mantêm hash e autorização anteriores; só index.html foi alterado.",
       "Suíte geral do repositório não certificada."
     ]
+  },
+  "academy-drive-videos-2026-11-20": {
+    "recordedAt": "2026-11-20T23:48:00-05:00",
+    "ownerDecision": {
+      "at": "2026-11-20T18:43:52-05:00",
+      "by": "Leandro (dono)",
+      "scope": "baixar os vídeos das aulas da pasta pública do Drive e substituir os links temporários por arquivos permanentes na WDT Academy"
+    },
+    "provenance": "vídeos baixados da pasta pública Treinamento para Agentes, fornecida pelo proprietário em 20/11/2026; cópias permanentes das aulas já exibidas na Academy",
+    "sources": [
+      {"lesson": "Treinamento IUL", "driveFileId": "1WsDtuLJUrexITZWrJY93SEue4CdlaIEJ", "path": "media/aula-treinamento-iul.mp4"},
+      {"lesson": "Vendas IUL", "driveFileId": "1_aUYc2KX3-Zm_-3E8AqOP5_ylbSaV4hc", "path": "media/aula-vendas-iul.mp4"},
+      {"lesson": "Seguro Term", "driveFileId": "1qe4az9tybi8Kvx6hBom5CTMD6C8pTpIj", "path": "media/aula-seguro-term.mp4"}
+    ],
+    "counts": {"previousAssets": 248, "newAssets": 6, "modifiedAssets": 1, "totalAssets": 254},
+    "indexHtml": {"previousSha256": "0c68098391b6b9496166af4b3bcbffd279ca5fefc37ff97eb3a8b941401e254d"},
+    "newAssets": [
+      {"path": "media/aula-seguro-term.jpg", "sha256": "1883f651ca55975669130d26b5f913f104631ef14882d89ea144110f2434d6d2"},
+      {"path": "media/aula-seguro-term.mp4", "sha256": "f9a4019274e86759e46dd7a8d6656accae6419a93bafaca0d6cd6da70d49947b"},
+      {"path": "media/aula-treinamento-iul.jpg", "sha256": "06a06408225c58f99dceaa9669c33ede4ec2dcecd9151c39831128afbf116c18"},
+      {"path": "media/aula-treinamento-iul.mp4", "sha256": "b5a333d4db4fab96224b823a28488e7425e2ae003da8f4278e29e2b71835e82a"},
+      {"path": "media/aula-vendas-iul.jpg", "sha256": "2c56a498659d5d05c2fbc6b65736cac982555e4c8e6cdfe3d4739e6ff617b3f2"},
+      {"path": "media/aula-vendas-iul.mp4", "sha256": "635677bab1f8d110f9d56ddfad5b1485c5d1408a2850b8d162f568ee8762dad9"}
+    ],
+    "limitations": [
+      "A pasta não continha vídeo para a aula Whole Life da National Life; esse link do Drive permanece.",
+      "Os vídeos mostram a Regiane e são material interno, com aviso de não distribuir a clientes.",
+      "Os 248 arquivos anteriores mantêm hash e autorização anteriores; só index.html foi alterado."
+    ]
   }
 }
