@@ -141,5 +141,24 @@
       "Os 236 assets anteriores mantêm hash e autorização anteriores; só index.html foi alterado.",
       "Suíte geral do repositório não certificada."
     ]
+  },
+  "academy-remove-pptx-2026-11-24": {
+    "recordedAt": "2026-11-24T16:44:48-05:00",
+    "ownerDecision": {
+      "at": "2026-11-24T16:44:48-05:00",
+      "by": "Leandro (dono)",
+      "scope": "remover os quatro materiais PowerPoint das aulas de IUL e Term"
+    },
+    "removed": [
+      "IUL: treinamento de agentes",
+      "Processo de vendas IUL: script da reunião",
+      "Seguro Term e Benefícios em Vida: treinamento",
+      "Script de atendimento Term (slides)"
+    ],
+    "indexHtml": {
+      "previousSha256": "0c68098391b6b9496166af4b3bcbffd279ca5fefc37ff97eb3a8b941401e254d",
+      "sha256": "3ab8818fce9edd1d12de77a899c5e5cdc8822e5d334751f2ccb8918b817072f1"
+    },
+    "kept": "PDFs, guias e vídeos das mesmas aulas permanecem."
   }
 }
