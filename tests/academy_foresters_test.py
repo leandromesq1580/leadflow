@@ -171,6 +171,17 @@ class IndexTest(unittest.TestCase):
         self.assertIn("v:[['Term','media/cot-term-foresters.mp4'],['Whole Life','media/cot-wl-foresters.mp4']]", row)
         self.assertEqual(self.idx.count('docs/foresters-guia.html'), 4)  # lista de docs, carrier e 2 mats de cotação
 
+    def test_lesson_materials_have_no_powerpoint(self):
+        mats = '\n'.join(re.findall(r'mats:\[(.*?)\]', self.idx))
+        self.assertNotIn("'pptx'", mats)
+        for title in (
+            'IUL: treinamento de agentes',
+            'Processo de vendas IUL: script da reunião',
+            'Seguro Term e Benefícios em Vida: treinamento',
+            'Script de atendimento Term (slides)',
+        ):
+            self.assertNotIn(title, self.idx)
+
     def test_local_pdfs_are_not_loaded_as_html_doc(self):
         self.assertTrue(re.search(r"const isDoc = id => id\.startsWith\('docs/'\) && !id\.endsWith\('\.pdf'\)", self.idx),
                         'isDoc deve excluir .pdf locais (senão o PDF é carregado como HTML)')
@@ -218,7 +229,7 @@ class ReleaseRegistryTest(unittest.TestCase):
         man = {a['path']: a['sha256'] for a in self.man['assets']}
         for x in self.auth['newAssets']:
             self.assertEqual(man[x['path']], x['sha256'])
-        self.assertEqual(man['index.html'], self.auth['indexHtml']['sha256'])
+        self.assertEqual(man['index.html'], json.loads((REL / 'authorization.json').read_text())['academy-remove-pptx-2026-11-24']['indexHtml']['sha256'])
 
 
 if __name__ == '__main__':
