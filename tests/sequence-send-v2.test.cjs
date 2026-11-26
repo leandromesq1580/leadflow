@@ -84,10 +84,14 @@ module.exports = { load, transport, contract, body, sender, operation }
 
 async function runEngine(mode, scenario, options = {}) {
   const t = transport(scenario), calls = []
+  const official = load('src/lib/official-whatsapp.ts')
   const enrollment = { id: '00000000-0000-4000-8000-000000000011', buyer_id: 'synthetic-buyer', lead_id: 'synthetic-lead', sequence_id: 'synthetic-sequence', lease_token: operation, enrolled_at: '2026-10-07T12:00:00.000Z', current_step: 0, recent_choices: [] }
-  const bridge = { url: 'https://synthetic.invalid', key: 'synthetic-not-secret', phone: sender, ownerBuyerId: enrollment.buyer_id }
+  const bridge = { url: 'https://synthetic.invalid', key: 'synthetic-not-secret', phone: options.cloud ? official.OFFICIAL_WHATSAPP_NUMBER : sender, ownerBuyerId: enrollment.buyer_id }
   const request = async (url, init) => {
-    if (url.endsWith('/status')) return Response.json({ ready: true, number: sender })
+    if (url.endsWith('/status')) {
+      calls.push({ name: 'bridge_status' })
+      return Response.json({ ready: true, number: sender })
+    }
     assert.equal(url, bridge.url + '/send'); t.state.posts++
     const payload = JSON.parse(init.body)
     assert.deepEqual(payload.sequence, contract)
@@ -105,7 +109,25 @@ async function runEngine(mode, scenario, options = {}) {
     return t.invoke(payload)
   }
   const globals = { fetch: request, setTimeout, AbortSignal: { timeout: ms => ({ syntheticTimeout: ms }) } }
-  const batch = load('src/lib/sequence-batch.ts', {}, globals)
+  const transportConfig = load('src/lib/wa-cloud.ts', { './official-whatsapp': official }, {
+    process: { env: { WA_CLOUD_AUTOMATION_ENABLED: String(options.cloud === true) } },
+  })
+  const batch = load('src/lib/sequence-batch.ts', { './official-whatsapp': official, './wa-cloud': transportConfig }, globals)
+  const cloud = {
+    prepareCloudMessage: async (_db, args) => {
+      calls.push({ name: 'cloud_prepare', args })
+      return options.cloudNoPlan ? null : { body: options.cloudText ? null : 'Approved message', to: body.number }
+    },
+    beginCloudSequence: async (_db, _plan, args) => {
+      calls.push({ name: 'cloud_begin', args })
+      return !options.cloudNoBegin
+    },
+    dispatchCloudMessage: async (_db, plan, args) => {
+      calls.push({ name: 'cloud_dispatch', args })
+      if (options.cloudUnknown) throw Error('Unknown Cloud API outcome')
+      return { id: 'wamid.synthetic', from: official.OFFICIAL_WHATSAPP_NUMBER, to: plan.to }
+    },
+  }
   const models = load('src/lib/ai-sequence-models.ts')
   const config = load('src/lib/ai-sequence-config.ts', { './ai-sequence-models': models })
   const cfg = { ...config.defaultAIConfig, timezone: 'UTC', days: [0, 1, 2, 3, 4, 5, 6], start: '00:00', end: '23:59' }
@@ -121,23 +143,87 @@ async function runEngine(mode, scenario, options = {}) {
       return { data: true }
     },
     from: table => {
-      const records = { sequences: { ai_config: cfg }, sequence_steps: [{ step_order: 0, step_type: 'send_template', custom_body: body.message }], leads: { phone: body.number, lead_language: 'pt' }, buyers: { name: 'SYNTHETIC', is_active: true } }
+      const records = { sequences: { ai_config: cfg }, sequence_steps: [{ step_order: 0, step_type: 'send_template', custom_body: body.message }], leads: { phone: options.cloud ? '(555) 555-0200' : body.number, lead_language: 'pt' }, buyers: { name: 'SYNTHETIC', is_active: true } }
       const q = { select() { return this }, eq() { return this }, single: async () => ({ data: records[table] }), order: async () => ({ data: records[table] }), insert: async () => { calls.push({ name: 'follow_ups' }); return {} } }; return q
     },
   }
   let result, thrown
   if (mode === 'ai') {
-    const engine = load('src/lib/ai-sequence-engine.ts', { './sequence-batch': batch, './ai-sequence-config': config, './ai-sequence-copy': { generateSequenceCopy: async () => ({ body: body.message, choice: 'synthetic' }), generationStopReason: () => 'AI_INTERNAL_ERROR' }, './wa-bridge': { getBridgeForBuyer: async () => bridge }, './send-guard': { checkSendRate: async () => ({ ok: true }) } }, globals)
+    const engine = load('src/lib/ai-sequence-engine.ts', {
+      './sequence-batch': batch, './ai-sequence-config': config,
+      './ai-sequence-copy': {
+        generateSequenceCopy: async () => {
+          calls.push({ name: 'generate_copy' })
+          return { body: body.message, choice: 'synthetic' }
+        },
+        generationStopReason: () => 'AI_INTERNAL_ERROR',
+      },
+      './wa-bridge': { getBridgeForBuyer: async () => bridge },
+      './send-guard': { checkSendRate: async () => ({ ok: true }) },
+      './lead-message-locale': { leadMessageLocale: () => 'pt' },
+      './wa-cloud-automation': cloud,
+    }, globals)
     const ports = engine.aiEnginePorts(db); ports.now = () => new Date('2026-10-07T16:00:00Z')
     result = await engine.runAIEnrollment(enrollment.id, ports)
   } else {
     const unused = () => { throw Error('Unused synthetic IO') }
-    const engine = load('src/lib/sequence-engine.ts', { './sequence-batch': batch, '@/lib/supabase/admin': { createAdminClient: unused }, '@/lib/template-render': { renderTemplate: s => s }, '@/lib/wa-bridge': { getBridgeForBuyer: async () => bridge }, '@/lib/send-guard': { checkSendRate: async () => ({ ok: true }) }, resend: { Resend: unused }, '@/lib/buyer-locale': { localeDoBuyer: unused, trad: unused }, '@/lib/lead-message-template': { localizeLeadTemplate: async (_db, tpl) => tpl }, '@/lib/lead-message-locale': { requireLeadMessageLocale: () => 'pt' } }, globals)
+    const engine = load('src/lib/sequence-engine.ts', {
+      './sequence-batch': batch, '@/lib/supabase/admin': { createAdminClient: unused },
+      '@/lib/template-render': { renderTemplate: s => s },
+      '@/lib/wa-bridge': { getBridgeForBuyer: async () => bridge },
+      '@/lib/send-guard': { checkSendRate: async () => ({ ok: true }) },
+      resend: { Resend: unused }, '@/lib/buyer-locale': { localeDoBuyer: unused, trad: unused },
+      '@/lib/lead-message-template': { localizeLeadTemplate: async (_db, tpl) => {
+        calls.push({ name: 'localize_copy' })
+        return tpl
+      } },
+      '@/lib/lead-message-locale': { requireLeadMessageLocale: () => 'pt' },
+      './wa-cloud-automation': cloud,
+    }, globals)
     try { result = await engine.runLegacyEnrollment(enrollment.id, db) } catch (error) { thrown = error }
   }
-  return { ...t, calls, result, thrown }
+  return { ...t, calls, result, thrown, officialPhone: official.OFFICIAL_WHATSAPP_NUMBER }
 }
 for (const mode of ['ai', 'legacy']) {
+  test(`${mode}: company Cloud API uses the approved body and existing sequence receipt`, async () => {
+    const r = await runEngine(mode, 'confirmed', { cloud: true })
+    assert.equal(r.result, true)
+    assert.equal(r.state.posts, 0)
+    assert.ok(!r.calls.some(c => ['bridge_status', 'begin_sequence_batch', 'generate_copy', 'localize_copy'].includes(c.name)))
+    assert.equal(r.calls.find(c => c.name === 'cloud_prepare').args.templateKey, `${mode}:synthetic-sequence:0`)
+    assert.equal(r.calls.find(c => c.name === 'cloud_begin').args.body, 'Approved message')
+    const dispatch = r.calls.filter(c => c.name === 'cloud_dispatch')
+    assert.equal(dispatch.length, 1)
+    assert.deepEqual({ ...dispatch[0].args }, { operationId: operation, body: 'Approved message', alreadyReserved: true })
+    const receipt = r.calls.find(c => c.name === 'finish_sequence_batch').args
+    assert.equal(receipt.p_wa, 'wamid.synthetic')
+    assert.equal(receipt.p_from, r.officialPhone)
+    assert.equal(receipt.p_to, body.number.slice(1))
+  })
+  test(`${mode}: a Cloud policy hold waits without sending or falling back`, async () => {
+    for (const hold of [{ cloudNoPlan: true }, { cloudNoBegin: true }]) {
+      const r = await runEngine(mode, 'confirmed', { cloud: true, ...hold })
+      assert.equal(r.result, false)
+      assert.equal(r.state.posts, 0)
+      assert.ok(r.calls.some(c => c.name === 'wait_sequence_batch'))
+      assert.ok(!r.calls.some(c => ['bridge_status', 'cloud_dispatch', 'finish_sequence_batch', 'defer_sequence_batch'].includes(c.name)))
+    }
+  })
+  test(`${mode}: a Cloud service-window plan keeps the generated or localized text`, async () => {
+    const r = await runEngine(mode, 'confirmed', { cloud: true, cloudText: true })
+    assert.equal(r.result, true)
+    assert.equal(r.state.posts, 0)
+    assert.ok(r.calls.some(c => c.name === (mode === 'ai' ? 'generate_copy' : 'localize_copy')))
+    assert.equal(r.calls.find(c => c.name === 'cloud_begin').args.body, body.message)
+    assert.equal(r.calls.find(c => c.name === 'cloud_dispatch').args.body, body.message)
+  })
+  test(`${mode}: an unknown Cloud response quarantines the existing dispatch without replay`, async () => {
+    const r = await runEngine(mode, 'confirmed', { cloud: true, cloudUnknown: true })
+    assert.equal(r.state.posts, 0)
+    assert.equal(r.calls.filter(c => c.name === 'cloud_dispatch').length, 1)
+    assert.equal(r.calls.find(c => c.name === 'defer_sequence_batch')?.args.p_unknown, true)
+    assert.ok(!r.calls.some(c => ['bridge_status', 'finish_sequence_batch'].includes(c.name)))
+  })
   for (const scenario of ['pre_503', 'pre_404']) test(`${mode} ${scenario}: settles rejection, never finishes/defer/retries`, async () => {
     const r = await runEngine(mode, scenario)
     assert.equal(r.state.posts, 1); assert.equal(r.state.sends, 0); assert.equal(r.result, false)
