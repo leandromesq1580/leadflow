@@ -1273,9 +1273,15 @@
   },
   {
     "path": "index.html",
-    "sha256": "0c68098391b6b9496166af4b3bcbffd279ca5fefc37ff97eb3a8b941401e254d",
+    "sha256": "c2d2d850d7bc027468d2ed7500c0be3b0bf4700954ec364f028f6999aa547170",
     "approved": true,
     "provenance": "release-authorization-provenance.json"
+  },
+  {
+    "path": "media/aula-seguro-term.jpg",
+    "sha256": "1883f651ca55975669130d26b5f913f104631ef14882d89ea144110f2434d6d2",
+    "approved": true,
+    "provenance": "authorization.json#academy-drive-videos-2026-11-20"
   },
   {
     "path": "media/aula-solicitacao.jpg",
@@ -1290,6 +1296,12 @@
     "provenance": "release-authorization-provenance.json"
   },
   {
+    "path": "media/aula-treinamento-iul.jpg",
+    "sha256": "06a06408225c58f99dceaa9669c33ede4ec2dcecd9151c39831128afbf116c18",
+    "approved": true,
+    "provenance": "authorization.json#academy-drive-videos-2026-11-20"
+  },
+  {
     "path": "media/aula-underwriting.jpg",
     "sha256": "ea4c5e281c9e539273a72c1b49e7347d586388bd7b17f0924bca7425ba679eb1",
     "approved": true,
@@ -1300,6 +1312,12 @@
     "sha256": "4f4b9d330f03a962ff3b7556f66dd9990c5606c55cd1350789c074eb8dd58490",
     "approved": true,
     "provenance": "release-authorization-provenance.json"
+  },
+  {
+    "path": "media/aula-vendas-iul.jpg",
+    "sha256": "2c56a498659d5d05c2fbc6b65736cac982555e4c8e6cdfe3d4739e6ff617b3f2",
+    "approved": true,
+    "provenance": "authorization.json#academy-drive-videos-2026-11-20"
   },
   {
     "path": "media/cot-fex-americo.jpg",
